@@ -1,0 +1,8 @@
+(executable
+ (name rast)
+ (libraries core)
+ (preprocess (pps ppx_let)))
+
+(env
+    (dev
+      (flags (:standard -warn-error -A))))

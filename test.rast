@@ -1,0 +1,35 @@
+type bits = +{b0 : bits, b1 : bits, $ : 1}
+
+proc copy : (x : bits) |- (y : bits) =
+  case x
+  ( b0 => y.b0 ; y <- copy <- x
+  | b1 => y.b1 ; y <- copy <- x
+  | $ => y.$ ; y <- x)
+
+type A = 1
+
+type listA = +{cons : A * listA,
+               nil : 1}
+
+proc append : (l1 : listA), (l2 : listA) |- (l : listA) =
+  case l1
+  ( cons => l.cons ; x <- recv l1 ; send l x ; l <- append <- l1 l2
+  | nil => wait l1 ; l <- l2)
+
+type bits1 = +{b0 : |{1}> bits1, b1 : |{1}> bits1, $ : |{1}> 1}
+
+type bits0 = +{b0 : bits0, b1 : bits0, $ : 1}
+
+proc wcopy : (x : bits1) |- (y : bits0) =
+  case x
+  ( b0 => get x ; work ; y.b0 ; y <- wcopy <- x
+  | b1 => get x ; work ; y.b1 ; y <- wcopy <- x
+  | $ => get x ; work ; y.$ ; y <- x)
+
+type listA2 = +{cons : |{2}> A * listA2,
+               nil : 1}
+
+proc wappend : (l1 : listA2), (l2 : listA) |- (l : listA) =
+  case l1
+  ( cons => get l1 {2} ; work ; l.cons ; x <- recv l1 ; work ; send l x ; l <- wappend <- l1 l2
+  | nil => wait l1 ; l <- l2)
