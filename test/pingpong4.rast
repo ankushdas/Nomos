@@ -1,0 +1,7 @@
+type ping  = +{pin : pong}
+type pong  = &{pon : ping}
+
+proc p1 : (x : ping) |- (sink : 1) =
+  case x
+  ( pin => x.pon; x.pon; sink <- p1 <- x
+  )
