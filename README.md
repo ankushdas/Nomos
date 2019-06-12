@@ -1,4 +1,5 @@
-# Nomos (Resource-Aware Session Types for Digital Contracts)
+# Nomos
+## Resource-Aware Session Types for Digital Contracts
 This repository will contain an implementation of Nomos, a programming language for smart contracts based on resource-aware session types.
 
 ## Installation
