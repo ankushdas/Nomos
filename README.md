@@ -18,8 +18,8 @@ $ opam init
 ### Installing Dependencies
 Clone the repository and obtain the source code, and install the necessary libraries to build.
 ```
-$ git clone https://github.com/ankushdas/SmartContracts.git
-$ cd SmartContracts/implementation
+$ git clone https://github.com/ankushdas/Nomos.git
+$ cd Nomos
 $ opam update
 $ opam pin add -y rast .    # only the first time you build
 $ opam upgrade              # after packages upgrade
