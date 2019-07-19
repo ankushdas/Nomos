@@ -169,9 +169,9 @@ let rec pp_exp env i exp = match exp with
   | A.Recv(x,y,p) -> y ^ " <- recv " ^ x ^ " ;\n" ^ pp_exp_indent env i p
   | A.Close(x) -> "close " ^ x
   | A.Wait(x,q) -> "wait " ^ x ^ " ;\n" ^ pp_exp_indent env i q
-  | A.Work(pot, p) -> "work" ^ pp_potpos pot ^ " ;\n" ^ pp_exp_indent env i p
-  | A.Pay(x,pot,p) -> "pay " ^ x ^ " " ^ pp_potpos pot ^ " ;\n" ^ pp_exp_indent env i p
-  | A.Get(x,pot,q) -> "get " ^ x ^ " " ^ pp_potpos pot ^ " ;\n" ^ pp_exp_indent env i q
+  | A.Work(pot, p) -> "work " ^ pp_potpos pot ^ ";\n" ^ pp_exp_indent env i p
+  | A.Pay(x,pot,p) -> "pay " ^ x ^ " " ^ pp_potpos pot ^ ";\n" ^ pp_exp_indent env i p
+  | A.Get(x,pot,q) -> "get " ^ x ^ " " ^ pp_potpos pot ^ ";\n" ^ pp_exp_indent env i q
   | A.Marked(marked_exp) -> pp_exp env i (Mark.data marked_exp)
 
 and pp_exp_indent env i p = spaces i ^ pp_exp env i p
@@ -198,9 +198,9 @@ let rec pp_exp_prefix exp = match exp with
   | A.Recv(x,y,_p) -> y ^ " <- recv " ^ x ^ " ; ..."
   | A.Close(x) -> "close " ^ x
   | A.Wait(x,_q) -> "wait " ^ x ^ " ; ..."
-  | A.Work(pot, _p) -> "work" ^ pp_potpos pot ^ " ; ..."
-  | A.Pay(x,pot,_p) -> "pay " ^ x ^ " " ^ pp_potpos pot ^ " ; ..."
-  | A.Get(x,pot,_q) -> "get " ^ x ^ " " ^ pp_potpos pot ^ " ; ..."
+  | A.Work(pot, _p) -> "work " ^ pp_potpos pot ^ "; ..."
+  | A.Pay(x,pot,_p) -> "pay " ^ x ^ " " ^ pp_potpos pot ^ "; ..."
+  | A.Get(x,pot,_q) -> "get " ^ x ^ " " ^ pp_potpos pot ^ "; ..."
   | A.Marked(marked_exp) -> pp_exp_prefix (Mark.data marked_exp)
 
 

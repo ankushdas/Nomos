@@ -178,7 +178,7 @@ let pp_pot e = match e with
 
 let pp_potpos e = match e with
     R.Int(1) -> ""
-  | e -> "{" ^ R.pp_arith e ^ "}";;
+  | e -> "{" ^ R.pp_arith e ^ "} ";;
 
 let rec pp_tp a = match a with
     (One) -> "1"
