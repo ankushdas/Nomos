@@ -7,6 +7,10 @@ type terminal =
   | RBRACKET
   | LANGLE
   | RANGLE
+  | SLASH
+  | BACKSLASH
+  | UP
+  | DOWN
   | COLON
   | COMMA
   | SEMICOLON
@@ -28,6 +32,10 @@ type terminal =
   | WORK
   | PAY
   | GET
+  | ACQUIRE
+  | ACCEPT
+  | RELEASE
+  | DETACH
   | TURNSTILE
   | TYPE
   | EQTYPE

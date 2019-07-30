@@ -20,19 +20,26 @@ type stype =
   | PayPot of potential * stype       (* |> A  or  |{p}> A *)
   | GetPot of potential * stype       (* <| A  or  <{p}| A *)
   | TpName of tpname                  (* v *)
+  | Up of stype                       (* /\ A *)
+  | Down of stype                     (* \/ A *)
 
 and choices = (label * stype) list
 
 type chan_tp = chan * stype
 
-type context = chan_tp list
+type context =
+  {
+    shared: chan_tp list;
+    linear: chan_tp list
+  }
 
 (* Process Expressions *)
 type expression =
   (* judgmental constructs *)
-    Fwd of chan * chan                                                      (* x <- y *)
-  | Spawn of chan * expname * chan list * expression                        (* x <- f <- [y] ; Q *)
-  | ExpName of chan * expname * chan list                                   (* x <- f <- [y] *)
+    Fwd of chan * chan                                  (* x <- y *)
+  | Spawn of chan * expname *
+    chan list * expression                              (* x <- f <- [y] ; Q *)
+  | ExpName of chan * expname * chan list               (* x <- f <- [y] *)
 
   (* choice +{...} or &{...} *)
   | Lab of chan * label * expression                    (* x.k ; P *)
@@ -53,6 +60,14 @@ type expression =
   | Pay of chan * potential * expression                (* pay x {pot} ; P *)
   | Get of chan * potential * expression                (* get x {pot} ; P *)
 
+  (* acquire/accept *)
+  | Acquire of chan * chan * expression                 (* y <- acquire x *)
+  | Accept of chan * chan * expression                  (* y <- accept x *)
+
+  (* release/detach *)
+  | Release of chan * chan * expression                 (* y <- release x *)
+  | Detach of chan * chan * expression                  (* y <- detach x *)
+
   (* mark with source region *)
   | Marked of expression Mark.marked
 
@@ -66,13 +81,13 @@ and branches = branch list          (* (l1 => P1 | ... | ln => Pn) *)
 
 (* Declarations *)
 type decl =
-    Pragma of string * string                         (* #options, #test *)
-  | TpDef of tpname * stype                           (* type a = A *)
-  | TpEq of stype * stype                             (* eqtype a = b *)
+    Pragma of string * string                 (* #options, #test *)
+  | TpDef of tpname * stype                   (* type a = A *)
+  | TpEq of stype * stype                     (* eqtype a = b *)
   | ExpDecDef of expname *
-    (context * potential * chan_tp) *                 (* proc f : Delta |{p}- c : C = expression *)
+    (context * potential * chan_tp) *         (* proc f : Delta |{p}- c : C = expression *)
     expression
-  | Exec of expname                                   (* exec f *)
+  | Exec of expname                           (* exec f *)
 
 type decl_ext =
   {
@@ -127,6 +142,15 @@ let rec lookup_branch bs k = match bs with
       else lookup_branch branches' k
   | [] -> None;;
 
+let is_shared tp = match tp with
+    Up _ -> true
+  | TpName _
+  | Plus _ | With _
+  | Tensor _ | Lolli _
+  | One
+  | PayPot _ | GetPot _
+  | Down _ -> false;;
+
 (*************************)
 (* Operational Semantics *)
 (*************************)
@@ -147,6 +171,10 @@ let rec strip_exts expr = match expr with
   | Work(pot,p) -> Work(pot,strip_exts p)
   | Pay(x,pot,p) -> Pay(x,pot,strip_exts p)
   | Get(x,pot,p) -> Get(x,pot,strip_exts p)
+  | Acquire(x,y,p) -> Acquire(x,y,strip_exts p)
+  | Accept(x,y,p) -> Accept(x,y,strip_exts p)
+  | Release(x,y,p) -> Release(x,y,strip_exts p)
+  | Detach(x,y,p) -> Detach(x,y,strip_exts p)
   | Marked(marked_p) -> strip_exts (Mark.data marked_p)
 
 and strip_exts_branches bs = match bs with
@@ -160,8 +188,9 @@ type msg =
   | MClose of chan                       (* close c *)
   | MPay of chan * potential * chan      (* pay c {p} ; c <- c' *)
   
-type sem = Proc of chan * int * (int * int) * expression   (* Proc(chan, time, (work, pot), P) *)
-         | Msg of chan * int * (int * int) * msg           (* Msg(chan, time, (work, pot), M) *)
+type sem =
+    Proc of chan * int * (int * int) * expression   (* Proc(chan, time, (work, pot), P) *)
+  | Msg of chan * int * (int * int) * msg           (* Msg(chan, time, (work, pot), M) *)
 
 type config =
     Node of sem * (config list)
@@ -188,6 +217,8 @@ let rec pp_tp a = match a with
   | Lolli(a,b) -> pp_tp a ^ " -o " ^ pp_tp b
   | GetPot(pot,a) -> "<" ^ pp_potpos pot ^ "| " ^ pp_tp a
   | PayPot(pot,a) -> "|" ^ pp_potpos pot ^ "> " ^ pp_tp a
+  | Up(a) -> "/\\ " ^ pp_tp a
+  | Down(a) -> "\\/ " ^ pp_tp a 
   | TpName(a) -> a
 
 and pp_choice cs = match cs with
@@ -197,16 +228,18 @@ and pp_choice cs = match cs with
       l ^ " : " ^ pp_tp a ^ ", " ^ pp_choice cs';;
 
 let rec pp_channames chans = match chans with
-  | [] -> ""
+    [] -> ""
   | [c] -> c
   | c::chans' -> c ^ " " ^ pp_channames chans';;
 
 let pp_chan (c,a) = "(" ^ c ^ " : " ^ pp_tp a ^ ")";;
 
-let rec pp_ctx delta = match delta with
+let rec pp_lsctx delta = match delta with
     [] -> ""
   | [(c,a)] -> pp_chan (c,a)
-  | (c,a)::delta' -> pp_chan (c,a) ^ ", " ^ pp_ctx delta';;
+  | (c,a)::delta' -> pp_chan (c,a) ^ ", " ^ pp_lsctx delta';;
+
+let pp_ctx delta = pp_lsctx delta.shared ^ " ; " ^ pp_lsctx delta.linear;;
 
 let rec pp_exp p = match p with
     Fwd(x,y) -> x ^ " <- " ^ y
@@ -221,6 +254,10 @@ let rec pp_exp p = match p with
   | Work(pot,p) -> "work " ^ pp_potpos pot ^ " ; " ^ pp_exp p
   | Pay(x,pot,p) -> "pay " ^ x ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp p
   | Get(x,pot,p) -> "get " ^ x ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp p
+  | Acquire(x,y,p) -> y ^ " <- acquire " ^ x ^ " ; " ^ pp_exp p
+  | Accept(x,y,p) -> y ^ " <- accept " ^ x ^ " ; " ^ pp_exp p
+  | Release(x,y,p) -> y ^ " <- release " ^ x ^ " ; " ^ pp_exp p
+  | Detach(x,y,p) -> y ^ " <- detach " ^ x ^ " ; " ^ pp_exp p
   | Marked(marked_p) -> pp_exp (Mark.data marked_p)
 
 and pp_branches bs = match bs with
@@ -235,8 +272,8 @@ let pp_decl dcl = match dcl.declaration with
     TpDef(v,a) -> "type " ^ v ^ " = " ^ pp_tp a
   | TpEq(TpName(a),TpName(a')) -> "eqtype " ^ a ^ " = " ^ a'
   | ExpDecDef(f,(delta,pot,(c,a)),p) -> "proc " ^ f ^ " : " ^
-                                        pp_ctx delta ^ " |" ^ pp_pot pot ^ "- " ^ pp_chan (c,a) ^
-                                        " = " ^ pp_exp p
+                                        pp_ctx delta ^ " |" ^ pp_pot pot ^ "- " ^
+                                        pp_chan (c,a) ^ " = " ^ pp_exp p
   | Exec(f) -> "exec " ^ f
   | Pragma(p,line) -> p ^ line
   | TpEq(_a,_a') -> raise AstUnsupported;;

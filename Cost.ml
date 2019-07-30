@@ -19,6 +19,11 @@ let rec cost_recv f exp = match exp with
   | A.Pay(x,pot,p) -> A.Pay(x,pot,cost_recv f p)
   | A.Get(x,pot,p) -> A.Get(x,pot,cost_recv f p)
 
+  | A.Acquire(x,y,p) -> A.Acquire(x,y,cost_recv f p)
+  | A.Accept(x,y,p) -> A.Accept(x,y,cost_recv f p)
+  | A.Release(x,y,p) -> A.Release(x,y,cost_recv f p)
+  | A.Detach(x,y,p) -> A.Detach(x,y,cost_recv f p)
+
   | A.Marked(marked_P) ->
       A.Marked(Mark.mark'(cost_recv f (Mark.data marked_P), Mark.ext marked_P))
 
@@ -43,8 +48,14 @@ let rec cost_send f exp = match exp with
 
 
   | A.Work(pot,p) -> A.Work(pot, cost_send f p)   (* allow in source *)
-  | A.Pay(x,pot,p) -> A.Pay(x,pot,cost_send f p)
+  | A.Pay(x,pot,p) -> A.Pay(x,pot, cost_send f p)
   | A.Get(x,pot,p) -> A.Get(x,pot, cost_send f p)
+
+  | A.Acquire(x,y,p) -> A.Acquire(x,y,cost_send f p)
+  | A.Accept(x,y,p) -> A.Accept(x,y,cost_send f p)
+  | A.Release(x,y,p) -> A.Release(x,y,cost_send f p)
+  | A.Detach(x,y,p) -> A.Detach(x,y,cost_send f p)
+
 
   | A.Marked(marked_P) ->
       A.Marked(Mark.mark'(cost_send f (Mark.data marked_P), Mark.ext marked_P))

@@ -178,6 +178,14 @@ exception UnknownReduceChoiceError
 exception UnknownReducePrecError
 exception UnknownReduceContextError
 
+let rec split ctx = match ctx with
+    [] -> {A.shared = [] ; A.linear = []}
+  | (c,t)::ctx' ->
+      let {A.shared = s; A.linear = l} = split ctx' in
+        if A.is_shared t
+        then {A.shared = (c,t)::s ; A.linear = l}
+        else {A.shared = s ; A.linear = (c,t)::l};;
+
 (* <decl> *)
 let rec p_decl st = match first st with
     T.TYPE -> st |> shift @> p_id @> p_eq_type @> reduce r_decl
@@ -243,13 +251,13 @@ and r_decl st_decl = match st_decl with
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.TURNSTILE,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(ctx,R.Int(0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(split ctx,R.Int(0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
     (* 'proc' <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Arith(pot,_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(ctx,pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(split ctx,pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
 
     (* 'exec' <id> *)
   | Tok(T.IDENT(id),r2) :: Tok(T.EXEC,r1) :: s ->
@@ -316,13 +324,10 @@ and p_type st = match first st with
   | T.BAR -> st |> shift @> p_tpopr_rtri @> p_type @> reduce r_type @> p_type    (* maybe not shift *)
   | T.STAR -> st |> drop @> push (TpInfix(1, ptensor, here st)) @> p_type_prec
   | T.LOLLI -> st |> drop @> push (TpInfix(1, plolli, here st)) @> p_type_prec
+  | T.UP -> st |> shift @> p_type @> reduce r_type @> p_type
+  | T.DOWN -> st |> shift @> p_type @> reduce r_type @> p_type
   | T.IDENT(_id) -> st |> p_id @> reduce r_type @> p_type
   | _t -> st |> reduce r_type
-  (*
-  | t -> error_expected_list (here st, [T.NAT(1); T.PLUS; T.AMPERSAND;
-                                        T.LPAREN; T.LANGLE; T.BAR;
-                                        T.STAR; T.MINUS;
-                                        T.IDENT("<id>")], t)*)
     
 (* <arith> *)
 (* shift/reduce decision based on operator precedence *)
@@ -367,6 +372,8 @@ and r_type st = match st with
   | Tp(tp, r2) :: Tok(T.BAR,_) :: Arith(p,_) :: Tok(T.LANGLE,r1) :: s -> s $ Tp(A.GetPot(p,tp), join r1 r2)
   | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot(R.Int(1),tp), join r1 r2)
   | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Arith(p,_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot(p,tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.UP,r1) :: s -> s $ Tp(A.Up(tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.DOWN,r1) :: s -> s $ Tp(A.Down(tp), join r1 r2)
   | Tok(T.IDENT(id),r) :: s -> s $ Tp(A.TpName(id),r)
   | Tok(T.RPAREN, r2) :: Tp(tp, _) :: Tok(T.LPAREN, r1) :: s -> s $ Tp(tp, join r1 r2)
   | Tp(tp2, r2) :: TpInfix(_, con, _) :: Tp(tp1, r1) :: s -> r_type (s $ Tp(con(tp1,tp2), join r1 r2))
@@ -374,7 +381,6 @@ and r_type st = match st with
   | TpInfix(_,_,r) :: _s -> parse_error (r, "trailing infix type operator")
   | Tp(tp,r) :: s -> s $ Tp(tp,r)
   | Tok(_,r) :: _s -> parse_error (r, "unknown or empty type expression")
-  (*| Tok(T.PERIOD,r) :: s -> s $ Tp(A.Dot,r) (* only for lhs of turnstile *)*)
   (* should be the only possibilities *)
   | _st -> raise UnknownReduceTypeError
 
@@ -400,7 +406,7 @@ and m_exp (exp, r) = mark_exp (exp, r)
 
 (* <exp> *)
 and p_exp st = match first st with
-    T.IDENT(_id) -> st |> shift @> p_fwd_or_spawn_or_label_send_or_chan_recv
+    T.IDENT(_id) -> st |> shift @> p_fwd_or_spawn_or_label_send_or_chan_recv_or_shared
   | T.CASE -> st |> shift @> p_id @> p_terminal T.LPAREN @> push (Branches []) @> p_branches @> p_terminal T.RPAREN @> reduce r_exp_atomic @> p_exp
   | T.CLOSE -> st |> shift @> p_id @> reduce r_exp_atomic @> p_exp
   | T.WAIT -> st |> shift @> p_id @> p_terminal T.SEMICOLON @> reduce r_action @> p_exp
@@ -424,13 +430,17 @@ and r_exp st = match st with
   | Exp(exp,r) :: s -> s $ Exp(exp,r)
   | _t -> raise UnknownParseError
 
-and p_fwd_or_spawn_or_label_send_or_chan_recv st = match first st with
+and p_fwd_or_spawn_or_label_send_or_chan_recv_or_shared st = match first st with
     T.PERIOD -> st |> shift @> p_id @> p_terminal T.SEMICOLON @> reduce r_action @> p_exp
-  | T.LARROW -> st |> shift @> p_fwd_or_spawn_or_recv
+  | T.LARROW -> st |> shift @> p_fwd_or_spawn_or_recv_or_shared
   | t -> error_expected_list (here st, [T.PERIOD; T.LARROW], t)
 
-and p_fwd_or_spawn_or_recv st = match first st with
+and p_fwd_or_spawn_or_recv_or_shared st = match first st with
     T.RECV -> st |> shift @> p_id @> p_terminal T.SEMICOLON @> reduce r_action @> p_exp
+  | T.ACQUIRE -> st |> shift @> p_id @> p_terminal T.SEMICOLON @> reduce r_action @> p_exp
+  | T.ACCEPT -> st |> shift @> p_id @> p_terminal T.SEMICOLON @> reduce r_action @> p_exp
+  | T.RELEASE -> st |> shift @> p_id @> p_terminal T.SEMICOLON @> reduce r_action @> p_exp
+  | T.DETACH -> st |> shift @> p_id @> p_terminal T.SEMICOLON @> reduce r_action @> p_exp
   | T.IDENT(_id) -> st |> p_id @> p_fwd_or_spawn
   | t -> parse_error (here st, "expected 'recv' or identifier, found " ^ pp_tok t)
 
@@ -483,6 +493,14 @@ and r_action st = match st with
       s $ Action((fun k -> m_exp(A.Pay(chan,pot,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Arith(pot,r2) :: Tok(T.IDENT(chan),_) :: Tok(T.GET,r1) :: s ->
       s $ Action((fun k -> m_exp(A.Get(chan,pot,k),join r1 r2)), join r1 r3)
+  | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACQUIRE,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
+      s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
+  | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACCEPT,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
+      s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
+  | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.RELEASE,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
+      s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
+  | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.DETACH,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
+      s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Args(args,r2) :: Tok(T.LARROW,_) :: Tok(T.IDENT(id),_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan),r1) :: s ->
       s $ Action((fun k -> m_exp(A.Spawn(chan,id,args,k),join r1 r2)), join r1 r3)
   | _t -> raise UnknownParseError

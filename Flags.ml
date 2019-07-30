@@ -60,8 +60,8 @@ let help = ref false;;
 
 let reset () =
     time := None
-    ; work := None
-    ; syntax := Implicit
-    ; terminate := None
-    ; verbosity := 1
-    ; help := false;;
+  ; work := None
+  ; syntax := Implicit
+  ; terminate := None
+  ; verbosity := 1
+  ; help := false;;

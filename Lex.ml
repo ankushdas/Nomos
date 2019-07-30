@@ -106,6 +106,18 @@ let rec lex_code (pos, charstream) =
           | _ -> (T.LPAREN, pos, pos+1, cs)
         end
     | M.Cons (')', cs) -> (T.RPAREN, pos, pos+1, cs)
+    | M.Cons ('/', cs) ->
+        begin
+          match M.force cs with
+            M.Cons('\\', cs) -> (T.UP, pos, pos+2, cs)
+          | _ -> (T.SLASH, pos, pos+1, cs)
+        end
+    | M.Cons('\\', cs) ->
+        begin
+          match M.force cs with
+            M.Cons('/', cs) -> (T.DOWN, pos, pos+2, cs)
+          | _ -> (T.BACKSLASH, pos, pos+1, cs)
+        end
     | M.Cons (c, _cs') ->
         begin
           if isDigit c
@@ -124,6 +136,10 @@ let rec lex_code (pos, charstream) =
               | ("work", n, cs) -> (T.WORK, pos, pos+n, cs)
               | ("pay", n, cs) -> (T.PAY, pos, pos+n, cs)
               | ("get", n, cs) -> (T.GET, pos, pos+n, cs)
+              | ("acquire", n, cs) -> (T.ACQUIRE, pos, pos+n, cs)
+              | ("accept", n, cs) -> (T.ACCEPT, pos, pos+n, cs)
+              | ("release", n, cs) -> (T.RELEASE, pos, pos+n, cs)
+              | ("detach", n, cs) -> (T.DETACH, pos, pos+n, cs)
               | ("type", n, cs) -> (T.TYPE, pos, pos+n, cs)
               | ("eqtype", n, cs) -> (T.EQTYPE, pos, pos+n, cs)
               | ("proc", n, cs) -> (T.PROC, pos, pos+n, cs)

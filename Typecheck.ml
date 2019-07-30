@@ -14,6 +14,25 @@ let error = ErrorMsg.error ErrorMsg.Type;;
 (* Validity of types *)
 (*********************)
 
+let rec esync env seen tp c = match tp with
+    A.Plus(choice) -> esync_choices env seen choice c
+  | With(choice) -> esync_choices env seen choice c
+  | Tensor(_a,b) -> esync env seen b c
+  | Lolli(_a,b) -> esync env seen b c
+  | One -> false
+  | PayPot(_pot,a) -> esync env seen a c
+  | GetPot(_pot,a) -> esync env seen a c
+  | TpName(v) -> esync env (v::seen) (A.expd_tp env v) c
+  | Up(a) -> esync env seen a c
+  | Down(a) ->
+      match a with
+          A.TpName(v) -> List.exists (fun x -> x = v) seen
+        | _a -> false
+  
+  and esync_choices env seen cs c = match cs with
+      (_l,a)::as' -> esync env seen a c && esync_choices env seen as' c
+    | [] -> true;; 
+
 (* Occurrences of |> and <| are restricted to
 * positive and negative positions in a type, respectively
 *)
@@ -32,6 +51,9 @@ let rec valid env pol tp ext = match pol, tp with
   | _, A.Tensor(s,t) -> valid env pol s ext ; valid env Pos t ext
   | _, A.Lolli(s,t) -> valid env pol s ext ; valid env Neg t ext
   | _, A.One -> ()
+
+  | _, A.Up(a) -> valid env pol a ext
+  | _, A.Down(a) -> valid env pol a ext
 
   | Pos, A.PayPot(pot,a) ->
       if not (R.non_neg pot) (* allowing 0, for uniformity *)
@@ -68,7 +90,8 @@ let contractive tp = match tp with
   | A.Plus _ | A.With _
   | A.Tensor _ | A.Lolli _
   | A.One
-  | A.PayPot _ | A.GetPot _ -> true;;
+  | A.PayPot _ | A.GetPot _
+  | A.Up _ | A.Down _ -> true;;
 
 (*****************)
 (* Type equality *)
@@ -168,25 +191,40 @@ let is_tpname tp = match tp with
   | A.Plus _ | A.With _
   | A.Tensor _ | A.Lolli _
   | A.One
-  | A.PayPot _ | A.GetPot _ -> false;;
+  | A.PayPot _ | A.GetPot _
+  | A.Up _ | A.Down _ -> false;;
 
 let zero = R.Int(0);;
 
 let chan_of (c, _tp) = c 
 let tp_of (_c, tp) = tp;;
 
-let rec check_tp c delta = match delta with
+let rec checktp c delta = match delta with
     [] -> false
   | (x,_t)::delta' ->
       if x = c then true
-      else check_tp c delta';;
+      else checktp c delta';;
+
+let check_tp c (sdelta, ldelta) = checktp c sdelta || checktp c ldelta;;
 
 (* must check for existence first *)
-let rec find_tp c delta = match delta with
+let rec findtp c delta = match delta with
       [] -> raise UnknownTypeError
     | (x,t)::delta' ->
         if x = c then t
-        else find_tp c delta';;
+        else findtp c delta';;
+
+let find_stp c (sdelta, ldelta) = findtp c sdelta;;
+let find_ltp c (sdelta, ldelta) = findtp c ldelta;;
+
+let rec removetp x delta = match delta with
+    [] -> raise UnknownTypeError
+  | (y,t)::delta' ->
+      if x = y
+      then delta'
+      else (y,t)::(removetp x delta');;
+
+let remove_tp x (sdelta, ldelta) = (sdelta, removetp x ldelta);;
 
 let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx with
     (_sc,st)::sig_ctx', c::ctx' ->
@@ -194,26 +232,28 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
         if not (check_tp c delta)
         then E.error_unknown_var_ctx (c,ext)
         else
-          let t = find_tp c delta in
-          if eqtp env st t
-          then match_ctx env sig_ctx' ctx' delta sig_len len ext
-          else error ext ("type mismatch: type of " ^ c ^ " : " ^ PP.pp_tp_compact env t ^
+          let (sdelta, ldelta) = delta in
+          if checktp c sdelta
+          then
+            begin
+              let t = find_stp c delta in
+              if eqtp env st t
+              then match_ctx env sig_ctx' ctx' delta sig_len len ext
+              else error ext ("type mismatch: type of " ^ c ^ " : " ^ PP.pp_tp_compact env t ^
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
+            end
+          else
+            begin
+              let t = find_ltp c delta in
+              if eqtp env st t
+              then match_ctx env sig_ctx' ctx' (remove_tp c delta) sig_len len ext
+              else error ext ("type mismatch: type of " ^ c ^ " : " ^ PP.pp_tp_compact env t ^
+                          " does not match type in declaration: " ^ PP.pp_tp_compact env st)
+            end
       end
-  | [], [] -> ()
+  | [], [] -> delta
   | _, _ -> error ext ("process defined with " ^ string_of_int sig_len ^ 
             " arguments but called with " ^ string_of_int len ^ " arguments");;
-
-let rec remove_tp x delta = match delta with
-    [] -> raise UnknownTypeError
-  | (y,t)::delta' ->
-      if x = y
-      then delta'
-      else (y,t)::(remove_tp x delta');;
-
-let rec remove_tps xs delta = match xs with
-    [] -> delta
-  | x::xs' -> remove_tps xs' (remove_tp x delta);;
 
 let rec consume_chans xs delta ext = match delta with
     [] -> ()
@@ -254,37 +294,59 @@ let rec check_exp' trace env delta pot p zc ext =
 
 
  (* judgmental constructs: id, cut, spawn, call *)
-and check_exp trace env delta pot exp zc ext = match delta, exp, zc with
-    delta, A.Fwd(x,y), zc ->
+and check_exp trace env delta pot exp zc ext = match exp with
+    A.Fwd(x,y) ->
       begin
-        let a = tp_of (List.hd delta) in
-        let c = tp_of zc in
-        let ty = chan_of (List.hd delta) in
+        let (sdelta, ldelta) = delta in
         let tx = chan_of zc in
-        if (List.length delta <> 1)
-        then error ext ("context " ^ A.pp_ctx delta ^ " must have only one channel")
-        else if x <> tx
-        then E.error_unknown_var_right (x,ext)
-        else if y <> ty
-        then E.error_unknown_var_ctx (y,ext)
-        else if not (R.eq pot zero)
-        then error ext ("unconsumed potential: " ^ R.pp_uneq pot zero)
-        else if eqtp env a c
-        then ()
-        else error ext ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
+        let () =
+          if x <> tx
+          then E.error_unknown_var_right (x,ext)
+          else ()
+        in
+        let c = tp_of zc in
+        if A.is_shared c
+        then
+          begin
+            if List.length sdelta = 0
+            then error ext ("shared context empty while offered channel is shared")
+            else if not (check_tp y sdelta)
+            then E.error_unknown_var_ctx (y,ext)
+            else
+              let a = find_stp y delta in
+              if eqtp env a c
+              then ()
+              else error ext ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
+              PP.pp_tp_compact env c)
+          end
+        else
+          begin
+            if List.length sdelta = 0
+            then error ext ("shared context empty while offered channel is shared")
+            else
+              let (ty, a) = List.hd ldelta in
+              if List.length ldelta <> 1
+              then error ext ("linear context " ^ A.pp_lsctx ldelta ^ " must have only one channel")
+              else if y <> ty
+              then E.error_unknown_var_ctx (y,ext)
+              else if not (R.eq pot zero)
+              then error ext ("unconsumed potential: " ^ R.pp_uneq pot zero)
+              else if eqtp env a c
+              then ()
+              else error ext ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
                         PP.pp_tp_compact env c)
+          end
       end
-  | delta, A.Spawn(x,f,xs,q), zc ->
+  | A.Spawn(x,f,xs,q) ->
       begin
         match A.lookup_expdec env f with
-          None -> E.error_undeclared (f, ext)
-        | Some (ctx,lpot,(_x',a')) ->
-            if not (R.ge pot lpot)
-            then error ext ("insufficient potential to spawn: " ^ R.pp_lt pot lpot)
-            else
-              let () = no_dups xs ext in
-              let () = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
-              check_exp' trace env ((x,a')::(remove_tps xs delta)) (R.minus pot lpot) q zc ext
+            None -> E.error_undeclared (f, ext)
+          | Some (ctx,lpot,(_x',a')) ->
+              if not (R.ge pot lpot)
+              then error ext ("insufficient potential to spawn: " ^ R.pp_lt pot lpot)
+              else
+                let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
+                check_exp' trace env ((x,a')::(remove_tps xs delta)) (R.minus pot lpot) q zc ext
       end
   | delta, A.ExpName(x,f,xs), zc ->
       begin
@@ -544,6 +606,18 @@ and check_exp trace env delta pot exp zc ext = match delta, exp, zc with
             | A.One | A.GetPot _ -> error ext ("invalid type of " ^ x ^
                                           ", expected paypot, found: " ^ PP.pp_tp_compact env a)
 
+      end
+  | delta, (A.Acquire(x,y,p) as exp), zc ->
+      begin
+      end
+  | delta, (A.Accept(x,y,p) as exp), zc ->
+      begin
+      end
+  | delta, (A.Release(x,y,p) as exp), zc ->
+      begin
+      end
+  | delta, (A.Detach(x,y,p) as exp), zc ->
+      begin
       end
   | delta, A.Marked(marked_P), zc ->
       check_exp trace env delta pot (Mark.data marked_P) zc (Mark.ext marked_P)

@@ -91,6 +91,10 @@ let rec pp_tp i a = match a with
       let potstr = pp_potpos pot in
       let inc = len potstr in
       "<" ^ potstr ^ "| " ^ pp_tp (i+inc+3) a
+  | A.Up(a) ->
+      "/\\ " ^ pp_tp (i+3) a
+  | A.Down(a) ->
+      "\\/ " ^ pp_tp (i+3) a
   | A.TpName(v) -> v
 
 and pp_tp_indent i a = spaces i ^ pp_tp i a
@@ -113,10 +117,12 @@ let pp_tp = fun _env -> fun a -> pp_tp 0 a;;
  *)
 let pp_tp_compact _env a = A.pp_tp a;;
 
-let rec pp_ctx env delta = match delta with
+let rec pp_lsctx env delta = match delta with
     [] -> "."
   | [(x,a)] -> "(" ^ x ^ " : " ^ pp_tp_compact env a ^ ")"
-  | (x,a)::delta' -> "(" ^ x ^ " : " ^ pp_tp_compact env a ^ ")" ^ ", " ^ pp_ctx env delta';;
+  | (x,a)::delta' -> "(" ^ x ^ " : " ^ pp_tp_compact env a ^ ")" ^ ", " ^ pp_lsctx env delta';;
+
+let pp_ctx env delta = pp_lsctx env delta.A.shared ^ " ; " ^ pp_lsctx env delta.A.linear;;
 
 (* pp_tpj env delta pot (x,a) = "delta |{pot}- (x : a)" *)
 let pp_tpj env delta pot (x,a) =
@@ -143,7 +149,8 @@ let rec atomic p = match p with
   | A.Close _ | A.ExpName _ -> true
   | A.Spawn _
   | A.Lab _ | A.Send _ | A.Wait _
-  | A.Work _ | A.Pay _ | A.Get _ -> false
+  | A.Work _ | A.Pay _ | A.Get _
+  | A.Acquire _ | A.Accept _ | A.Release _ | A.Detach _ -> false
   | A.Marked(marked_exp) -> atomic (Mark.data marked_exp);;
 
 let rec long p = match p with
@@ -151,7 +158,8 @@ let rec long p = match p with
   | A.Marked(marked_exp) -> long (Mark.data marked_exp)
   | A.Fwd _ | A.Spawn _ | A.ExpName _
   | A.Lab _ | A.Send _ | A.Recv _ | A.Close _ | A.Wait _
-  | A.Work _ | A.Pay _ | A.Get _ -> false;;
+  | A.Work _ | A.Pay _ | A.Get _
+  | A.Acquire _ | A.Accept _ | A.Release _ | A.Detach _ -> false;;
 
 let pp_cut env pot b = match pot with
     R.Int(0) -> "[" ^ pp_tp_compact env b ^ "]"
@@ -172,6 +180,10 @@ let rec pp_exp env i exp = match exp with
   | A.Work(pot, p) -> "work " ^ pp_potpos pot ^ ";\n" ^ pp_exp_indent env i p
   | A.Pay(x,pot,p) -> "pay " ^ x ^ " " ^ pp_potpos pot ^ ";\n" ^ pp_exp_indent env i p
   | A.Get(x,pot,q) -> "get " ^ x ^ " " ^ pp_potpos pot ^ ";\n" ^ pp_exp_indent env i q
+  | A.Acquire(x,y,p) -> y ^ " <- acquire " ^ x ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Accept(x,y,p) -> y ^ " <- accept " ^ x ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Release(x,y,p) -> y ^ " <- release " ^ x ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Detach(x,y,p) -> y ^ " <- detach " ^ x ^ " ;\n" ^ pp_exp_indent env i p
   | A.Marked(marked_exp) -> pp_exp env i (Mark.data marked_exp)
 
 and pp_exp_indent env i p = spaces i ^ pp_exp env i p
@@ -201,6 +213,10 @@ let rec pp_exp_prefix exp = match exp with
   | A.Work(pot, _p) -> "work " ^ pp_potpos pot ^ "; ..."
   | A.Pay(x,pot,_p) -> "pay " ^ x ^ " " ^ pp_potpos pot ^ "; ..."
   | A.Get(x,pot,_q) -> "get " ^ x ^ " " ^ pp_potpos pot ^ "; ..."
+  | A.Acquire(x,y,_p) -> y ^ " <- acquire " ^ x ^ " ; ..."
+  | A.Accept(x,y,_p) -> y ^ " <- accept " ^ x ^ " ; ..."
+  | A.Release(x,y,_p) -> y ^ " <- release " ^ x ^ " ; ..."
+  | A.Detach(x,y,_p) -> y ^ " <- detach " ^ x ^ " ; ..."
   | A.Marked(marked_exp) -> pp_exp_prefix (Mark.data marked_exp)
 
 

@@ -14,9 +14,11 @@ type stype =
   | PayPot of potential * stype
   | GetPot of potential * stype
   | TpName of tpname
+  | Up of stype
+  | Down of stype
 and choices = (label * stype) list
 type chan_tp = chan * stype
-type context = chan_tp list
+type context = { shared : chan_tp list; linear : chan_tp list; }
 type expression =
     Fwd of chan * chan
   | Spawn of chan * expname * chan list * expression
@@ -30,6 +32,10 @@ type expression =
   | Work of potential * expression
   | Pay of chan * potential * expression
   | Get of chan * potential * expression
+  | Acquire of chan * chan * expression
+  | Accept of chan * chan * expression
+  | Release of chan * chan * expression
+  | Detach of chan * chan * expression
   | Marked of expression Mark.marked
 and branch = { lab_exp : label * expression; exp_extent : ext; }
 and branches = branch list
@@ -50,6 +56,7 @@ val lookup_expdec :
 val lookup_expdef : decl_ext list -> expname -> expression option
 val lookup_choice : ('a * 'b) list -> 'a -> 'b option
 val lookup_branch : branch list -> label -> expression option
+val is_shared : stype -> bool
 val strip_exts : expression -> expression
 val strip_exts_branches : branches -> branches
 type msg =
@@ -67,7 +74,8 @@ val pp_tp : stype -> tpname
 val pp_choice : choices -> string
 val pp_channames : string list -> string
 val pp_chan : string * stype -> string
-val pp_ctx : (string * stype) list -> string
+val pp_lsctx : (string * stype) list -> string
+val pp_ctx : context -> string
 val pp_exp : expression -> string
 val pp_branches : branches -> string
 exception AstUnsupported
