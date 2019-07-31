@@ -50,13 +50,14 @@ type environment = decl_ext list
 exception AstImpossible
 val lookup_tp : decl_ext list -> tpname -> stype option
 val expd_tp : decl_ext list -> tpname -> stype
-val update_tp : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
+val updatetp : 'a -> 'b -> ('a * 'b) list -> ('a * 'b) list
+val update_tp : chan -> stype -> context -> context
 val lookup_expdec :
   decl_ext list -> expname -> (context * potential * chan_tp) option
 val lookup_expdef : decl_ext list -> expname -> expression option
 val lookup_choice : ('a * 'b) list -> 'a -> 'b option
 val lookup_branch : branch list -> label -> expression option
-val is_shared : stype -> bool
+val is_shared : decl_ext list -> stype -> bool
 val strip_exts : expression -> expression
 val strip_exts_branches : branches -> branches
 type msg =

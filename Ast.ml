@@ -111,12 +111,16 @@ let expd_tp env v = match lookup_tp env v with
     Some a -> a
   | None -> raise AstImpossible;;
 
-let rec update_tp x t ctx = match ctx with
+let rec updatetp x t ctx = match ctx with
     [] -> []
   | (y,a)::ctx' ->
     if x = y
     then (x,t)::ctx'
-    else (y,a)::(update_tp x t ctx');;
+    else (y,a)::(updatetp x t ctx');;
+
+let update_tp x t delta =
+  let {shared = sdelta ; linear = ldelta} = delta in
+  {shared = updatetp x t sdelta ; linear = updatetp x t ldelta};;
 
 let rec lookup_expdec decls f = match decls with
     {declaration = ExpDecDef(f',(ctx, pot, zc),_p); decl_extent = _ext}::decls' ->
@@ -142,9 +146,9 @@ let rec lookup_branch bs k = match bs with
       else lookup_branch branches' k
   | [] -> None;;
 
-let is_shared tp = match tp with
+let rec is_shared env tp = match tp with
     Up _ -> true
-  | TpName _
+  | TpName(v) -> is_shared env (expd_tp env v)
   | Plus _ | With _
   | Tensor _ | Lolli _
   | One
