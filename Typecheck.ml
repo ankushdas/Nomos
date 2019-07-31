@@ -205,7 +205,9 @@ let rec checktp c delta = match delta with
       if x = c then true
       else checktp c delta';;
 
-let check_tp c (sdelta, ldelta) = checktp c sdelta || checktp c ldelta;;
+let check_tp c delta =
+  let {A.shared = sdelta ; A.linear = ldelta} = delta in
+  checktp c sdelta || checktp c ldelta;;
 
 (* must check for existence first *)
 let rec findtp c delta = match delta with
@@ -214,8 +216,13 @@ let rec findtp c delta = match delta with
         if x = c then t
         else findtp c delta';;
 
-let find_stp c (sdelta, ldelta) = findtp c sdelta;;
-let find_ltp c (sdelta, ldelta) = findtp c ldelta;;
+let find_stp c delta =
+  let {A.shared = sdelta ; A.linear = _ldelta} = delta in
+  findtp c sdelta;;
+
+let find_ltp c delta = 
+  let {A.shared = _sdelta ; A.linear = ldelta} = delta in
+  findtp c ldelta;;
 
 let rec removetp x delta = match delta with
     [] -> raise UnknownTypeError
@@ -224,15 +231,17 @@ let rec removetp x delta = match delta with
       then delta'
       else (y,t)::(removetp x delta');;
 
-let remove_tp x (sdelta, ldelta) = (sdelta, removetp x ldelta);;
+let remove_tp x delta =
+  let {A.shared = sdelta ; A.linear = ldelta} = delta in
+  {A.shared = sdelta ; A.linear = removetp x ldelta};;
 
 let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx with
     (_sc,st)::sig_ctx', c::ctx' ->
       begin
         if not (check_tp c delta)
-        then E.error_unknown_var_ctx (c,ext)
+        then error ext ("unknown or duplicate variable: " ^ c)
         else
-          let (sdelta, ldelta) = delta in
+          let {A.shared = sdelta ; A.linear = _ldelta} = delta in
           if checktp c sdelta
           then
             begin
@@ -255,19 +264,15 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
   | _, _ -> error ext ("process defined with " ^ string_of_int sig_len ^ 
             " arguments but called with " ^ string_of_int len ^ " arguments");;
 
-let rec consume_chans xs delta ext = match delta with
-    [] -> ()
-  | (x,_t)::delta' ->
-      if List.mem x xs
-      then consume_chans xs delta' ext
-      else error ext ("unconsumed channel from context: " ^ x);;
+let join delta =
+  let {A.shared = sdelta ; A.linear = ldelta} = delta in
+  sdelta @ ldelta;;
 
-let rec no_dups ctx ext = match ctx with
-    [] -> ()
-  | x::xs ->
-      if List.mem x xs
-      then error ext ("duplicate channel in call: " ^ x)
-      else no_dups xs ext;;
+let add_chan (x,a) delta =
+  let {A.shared = sdelta ; A.linear = ldelta} = delta in
+  if A.is_shared a
+  then {A.shared = (x,a)::sdelta ; A.linear = ldelta}
+  else {A.shared = sdelta ; A.linear = (x,a)::ldelta}
 
 (* check_exp trace env ctx con A pot P C = () if A |{pot}- P : C
 * raises ErrorMsg.Error otherwise
@@ -297,7 +302,7 @@ let rec check_exp' trace env delta pot p zc ext =
 and check_exp trace env delta pot exp zc ext = match exp with
     A.Fwd(x,y) ->
       begin
-        let (sdelta, ldelta) = delta in
+        let {A.shared = sdelta ; A.linear = ldelta} = delta in
         let tx = chan_of zc in
         let () =
           if x <> tx
@@ -310,7 +315,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
           begin
             if List.length sdelta = 0
             then error ext ("shared context empty while offered channel is shared")
-            else if not (check_tp y sdelta)
+            else if not (checktp y sdelta)
             then E.error_unknown_var_ctx (y,ext)
             else
               let a = find_stp y delta in
@@ -345,10 +350,11 @@ and check_exp trace env delta pot exp zc ext = match exp with
               if not (R.ge pot lpot)
               then error ext ("insufficient potential to spawn: " ^ R.pp_lt pot lpot)
               else
+                let ctx = join ctx in
                 let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
-                check_exp' trace env ((x,a')::(remove_tps xs delta)) (R.minus pot lpot) q zc ext
+                check_exp' trace env (add_chan (x,a') delta') (R.minus pot lpot) q zc ext
       end
-  | delta, A.ExpName(x,f,xs), zc ->
+  | A.ExpName(x,f,xs) ->
       begin
         match A.lookup_expdec env f with
           None -> E.error_undeclared (f, ext)
@@ -363,11 +369,13 @@ and check_exp trace env delta pot exp zc ext = match exp with
               then error ext ("type mismatch on right, expected: " ^ PP.pp_tp_compact env a' ^
                               ", found: " ^ PP.pp_tp_compact env c)
               else
-                let () = consume_chans xs delta ext in
-                let () = no_dups xs ext in
-                match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext
+                let ctx = join ctx in
+                let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
+                if List.length delta'.linear <> 0
+                then error ext ("unconsumed channel(s) from linear context: " ^ A.pp_lsctx delta'.linear)
+                else ()
       end
-  | delta, (A.Lab(x,k,p) as exp), zc ->
+  | A.Lab(x,k,p) ->
       begin
         if not (check_tp x delta)
         then

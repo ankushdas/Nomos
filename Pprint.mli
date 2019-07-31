@@ -15,11 +15,11 @@ val pp_choice : int -> A.choices -> string
 val pp_choice_indent : int -> A.choices -> string
 val pp_tp : 'a -> A.stype -> A.tpname
 val pp_tp_compact : 'a -> A.stype -> A.tpname
-val pp_ctx : 'a -> (string * A.stype) list -> string
-val pp_tpj :
-  'a -> (string * A.stype) list -> A.R.arith -> string * A.stype -> string
+val pp_lsctx : 'a -> (string * A.stype) list -> string
+val pp_ctx : 'a -> A.context -> string
+val pp_tpj : 'a -> A.context -> A.R.arith -> string * A.stype -> string
 val pp_tpj_compact :
-  'a -> (string * A.stype) list -> A.R.arith -> string * A.stype -> string
+  'a -> A.context -> A.R.arith -> string * A.stype -> string
 val atomic : A.expression -> bool
 val long : A.expression -> bool
 val pp_cut : 'a -> R.arith -> A.stype -> string
