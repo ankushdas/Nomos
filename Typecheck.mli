@@ -3,9 +3,17 @@ module A = Ast
 module PP = Pprint
 module E = TpError
 val error : ((int * int) * (int * int) * string) option -> string -> 'a
-val esync : A.decl_ext list -> A.tpname list -> A.stype -> 'a -> bool
+val esync :
+  A.decl_ext list ->
+  A.tpname list ->
+  A.stype -> 'a -> ((int * int) * (int * int) * string) option -> unit
 val esync_choices :
-  A.decl_ext list -> A.tpname list -> A.choices -> 'a -> bool
+  A.decl_ext list ->
+  A.tpname list ->
+  A.choices -> 'a -> ((int * int) * (int * int) * string) option -> unit
+val esync_tp :
+  A.decl_ext list ->
+  A.stype -> ((int * int) * (int * int) * string) option -> unit
 type polarity = Pos | Neg | Zero
 val valid :
   A.decl_ext list ->

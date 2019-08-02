@@ -14,24 +14,26 @@ let error = ErrorMsg.error ErrorMsg.Type;;
 (* Validity of types *)
 (*********************)
 
-let rec esync env seen tp c = match tp with
-    A.Plus(choice) -> esync_choices env seen choice c
-  | With(choice) -> esync_choices env seen choice c
-  | Tensor(_a,b) -> esync env seen b c
-  | Lolli(_a,b) -> esync env seen b c
-  | One -> false
-  | PayPot(_pot,a) -> esync env seen a c
-  | GetPot(_pot,a) -> esync env seen a c
-  | TpName(v) -> esync env (v::seen) (A.expd_tp env v) c
-  | Up(a) -> esync env seen a c
+let rec esync env seen tp c ext = match tp with
+    A.Plus(choice) -> esync_choices env seen choice c ext
+  | With(choice) -> esync_choices env seen choice c ext
+  | Tensor(_a,b) -> esync env seen b c ext
+  | Lolli(_a,b) -> esync env seen b c ext
+  | One -> error ext ("type not equi-synchronizing")
+  | PayPot(_pot,a) -> esync env seen a c ext
+  | GetPot(_pot,a) -> esync env seen a c ext
+  | TpName(v) -> esync env (v::seen) (A.expd_tp env v) c ext
+  | Up(a) -> esync env seen a c ext
   | Down(a) ->
       match a with
-          A.TpName(v) -> List.exists (fun x -> x = v) seen
-        | _a -> false
+          A.TpName(v) -> if List.exists (fun x -> x = v) seen then () else error ext ("type not equi-synchronizing")
+        | _a -> error ext ("type not equi-synchronizing")
   
-  and esync_choices env seen cs c = match cs with
-      (_l,a)::as' -> esync env seen a c && esync_choices env seen as' c
-    | [] -> true;; 
+  and esync_choices env seen cs c ext = match cs with
+      (_l,a)::as' -> esync env seen a c ext ; esync_choices env seen as' c ext
+    | [] -> ();;
+
+let esync_tp env tp ext = esync env [] tp tp ext;;
 
 (* Occurrences of |> and <| are restricted to
 * positive and negative positions in a type, respectively

@@ -39,15 +39,26 @@ let rec dups delta = match delta with
   | [] -> false
   | (x,_t)::ctx' -> List.exists (fun (v,_t) -> v = x) ctx' || dups ctx';;
 
-let rec valid_ctx env delta ext = match delta with
+let rec valid_ctx env ctx ext = match ctx with
     [] -> ()
-  | (_x,t)::delta' ->
+  | (_x,t)::ctx' ->
       let () = TC.valid env TC.Zero t ext in
-      valid_ctx env delta' ext;;
+      let () = TC.esync_tp env t ext in
+      valid_ctx env ctx' ext;;
+
+let valid_delta env delta ext = valid_ctx env (delta.A.shared @ delta.A.linear) ext;;
 
 let check_nonneg pot ext =
   if R.non_neg pot then ()
   else error ext ("process potential " ^ R.pp_arith pot ^ " not positive");;
+
+let rec commit env ctx = match ctx with
+    [] -> {A.shared = [] ; A.linear = []}
+  | (c,t)::ctx' ->
+      let {A.shared = s; A.linear = l} = commit env ctx' in
+        if A.is_shared env t
+        then {A.shared = (c,t)::s ; A.linear = l}
+        else {A.shared = s ; A.linear = (c,t)::l};;
 
 (***************************)
 (* Elaboration, First Pass *)
@@ -67,6 +78,7 @@ let rec elab_tps env dcls = match dcls with
                then print_string (postponed dcl.declaration ^ PP.pp_decl env dcl.declaration ^ "\n")
                else () in
       let () = TC.valid env TC.Zero a ext in
+      let () = TC.esync_tp env a ext in
       let () = if TC.contractive a then ()
                else error ext ("type " ^ PP.pp_tp env a ^ " not contractive") in
       dcl::(elab_tps env dcls')
@@ -76,14 +88,18 @@ let rec elab_tps env dcls = match dcls with
               else () in
       let () = TC.valid env TC.Zero a ext in
       let () = TC.valid env TC.Zero a' ext in
+      let () = TC.esync_tp env a ext in
+      let () = TC.esync_tp env a' ext in
       dcl::(elab_tps env dcls')
-  | ({A.declaration = A.ExpDecDef(_f,(delta,pot,(x,a)),_p); A.decl_extent = ext} as dcl)::dcls' ->
+  | {A.declaration = A.ExpDecDef(f,(delta,pot,(x,a)),p); A.decl_extent = ext}::dcls' ->
       (* do not print process declaration so they are printed close to their use *)
-      let () = if dups ((x,a)::delta) then error ext ("duplicate variable in process declaration") else () in
-      let () = valid_ctx env delta ext in
+      let () = if dups ((x,a)::delta.linear) then error ext ("duplicate variable in process declaration") else () in
+      let delta' = commit env delta.linear in
+      let () = valid_delta env delta' ext in
       let () = TC.valid env TC.Zero a ext in
+      let () = TC.esync_tp env a ext in
       let () = check_nonneg pot ext in
-      dcl::(elab_tps env dcls')
+      {A.declaration = A.ExpDecDef(f,(delta',pot,(x,a)),p); A.decl_extent = ext}::(elab_tps env dcls')
   | dcl::dcls' -> dcl::(elab_tps env dcls');;
 
 (****************************)

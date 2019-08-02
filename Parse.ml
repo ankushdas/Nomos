@@ -178,13 +178,8 @@ exception UnknownReduceChoiceError
 exception UnknownReducePrecError
 exception UnknownReduceContextError
 
-let rec split ctx = match ctx with
-    [] -> {A.shared = [] ; A.linear = []}
-  | (c,t)::ctx' ->
-      let {A.shared = s; A.linear = l} = split ctx' in
-        if A.is_shared t
-        then {A.shared = (c,t)::s ; A.linear = l}
-        else {A.shared = s ; A.linear = (c,t)::l};;
+let uncommit ctx =
+  {A.shared = [] ; A.linear = ctx};;
 
 (* <decl> *)
 let rec p_decl st = match first st with
@@ -251,13 +246,13 @@ and r_decl st_decl = match st_decl with
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.TURNSTILE,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(split ctx,R.Int(0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,R.Int(0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
     (* 'proc' <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Arith(pot,_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(split ctx,pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
 
     (* 'exec' <id> *)
   | Tok(T.IDENT(id),r2) :: Tok(T.EXEC,r1) :: s ->
