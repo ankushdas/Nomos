@@ -1,0 +1,31 @@
+type A = /\ \/ A
+
+type squeue = /\ &{enq : A -o \/ squeue,
+                   deq : +{none : \/ squeue,
+                           some : A * \/ squeue}}
+
+proc empty : . |- (q : squeue) =
+  lq <- accept q ;
+  case lq
+  ( enq => x <- recv lq ;
+           e <- empty <- ;
+           q <- detach lq ;
+           q <- elem <- x e
+  | deq => lq.none ;
+           q <- detach lq ;
+           q <- empty <- )
+
+proc elem : (x : A), (t : squeue) |- (q : squeue) =
+  lq <- accept q ;
+  case lq
+  ( enq => y <- recv lq ;
+           lt <- acquire t ;
+           lt.enq ;
+           send lt y ;
+           t <- release lt ;
+           q <- detach lq ;
+           q <- elem <- x t
+  | deq => lq.some ;
+           send lq x ;
+           q <- detach lq ;
+           q <- t)

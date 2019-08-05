@@ -5,15 +5,17 @@ module E = TpError
 val error : ((int * int) * (int * int) * string) option -> string -> 'a
 val esync :
   A.decl_ext list ->
-  A.tpname list ->
-  A.stype -> 'a -> ((int * int) * (int * int) * string) option -> unit
+  PP.A.tpname list ->
+  PP.A.stype ->
+  PP.A.stype -> ((int * int) * (int * int) * string) option -> unit
 val esync_choices :
   A.decl_ext list ->
-  A.tpname list ->
-  A.choices -> 'a -> ((int * int) * (int * int) * string) option -> unit
+  PP.A.tpname list ->
+  A.choices ->
+  PP.A.stype -> ((int * int) * (int * int) * string) option -> unit
 val esync_tp :
   A.decl_ext list ->
-  A.stype -> ((int * int) * (int * int) * string) option -> unit
+  PP.A.stype -> ((int * int) * (int * int) * string) option -> unit
 type polarity = Pos | Neg | Zero
 val valid :
   A.decl_ext list ->

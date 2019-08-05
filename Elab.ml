@@ -73,12 +73,12 @@ let rec commit env ctx = match ctx with
  *)
 let rec elab_tps env dcls = match dcls with
     [] -> []
-  | ({A.declaration = A.TpDef(_v,a); A.decl_extent = ext} as dcl)::dcls' ->
+  | ({A.declaration = A.TpDef(v,a); A.decl_extent = ext} as dcl)::dcls' ->
       let () = if !Flags.verbosity >= 1
                then print_string (postponed dcl.declaration ^ PP.pp_decl env dcl.declaration ^ "\n")
                else () in
       let () = TC.valid env TC.Zero a ext in
-      let () = TC.esync_tp env a ext in
+      let () = TC.esync_tp env (A.TpName(v)) ext in
       let () = if TC.contractive a then ()
                else error ext ("type " ^ PP.pp_tp env a ^ " not contractive") in
       dcl::(elab_tps env dcls')

@@ -423,6 +423,7 @@ and r_exp st = match st with
   | Exp(_exp2,r2) :: Exp(_exp1,r1) :: _s -> parse_error (join r1 r2, "consecutive expressions")
   (* done reducing *)
   | Exp(exp,r) :: s -> s $ Exp(exp,r)
+  | Tok(t,r) :: _s -> parse_error (r, "unknown or empty expression: " ^ pp_tok t)
   | _t -> raise UnknownParseError
 
 and p_fwd_or_spawn_or_label_send_or_chan_recv_or_shared st = match first st with
@@ -437,7 +438,8 @@ and p_fwd_or_spawn_or_recv_or_shared st = match first st with
   | T.RELEASE -> st |> shift @> p_id @> p_terminal T.SEMICOLON @> reduce r_action @> p_exp
   | T.DETACH -> st |> shift @> p_id @> p_terminal T.SEMICOLON @> reduce r_action @> p_exp
   | T.IDENT(_id) -> st |> p_id @> p_fwd_or_spawn
-  | t -> parse_error (here st, "expected 'recv' or identifier, found " ^ pp_tok t)
+  | t -> parse_error (here st, "expected 'recv', 'acquire', 'accept',
+                                'release', 'detach' or identifier, found " ^ pp_tok t)
 
 and p_fwd_or_spawn st = match first st with
     T.LARROW -> st |> shift @> push (Args ([], here st)) @> p_id_list_opt_exp
@@ -491,11 +493,11 @@ and r_action st = match st with
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACQUIRE,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
       s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACCEPT,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Accept(chan2,chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.RELEASE,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Release(chan2,chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.DETACH,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Detach(chan2,chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Args(args,r2) :: Tok(T.LARROW,_) :: Tok(T.IDENT(id),_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan),r1) :: s ->
       s $ Action((fun k -> m_exp(A.Spawn(chan,id,args,k),join r1 r2)), join r1 r3)
   | _t -> raise UnknownParseError

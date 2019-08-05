@@ -14,7 +14,9 @@ let error = ErrorMsg.error ErrorMsg.Type;;
 (* Validity of types *)
 (*********************)
 
-let rec esync env seen tp c ext = match tp with
+let rec esync env seen tp c ext =
+  print_string ("checking esync: \n" ^ PP.pp_tp env tp ^ "\n" ^ PP.pp_tp env c ^ "\n") ;
+  match tp with
     A.Plus(choice) -> esync_choices env seen choice c ext
   | With(choice) -> esync_choices env seen choice c ext
   | Tensor(_a,b) -> esync env seen b c ext
@@ -22,11 +24,16 @@ let rec esync env seen tp c ext = match tp with
   | One -> error ext ("type not equi-synchronizing")
   | PayPot(_pot,a) -> esync env seen a c ext
   | GetPot(_pot,a) -> esync env seen a c ext
-  | TpName(v) -> esync env (v::seen) (A.expd_tp env v) c ext
+  | TpName(v) ->
+      if List.exists (fun x -> x = v) seen
+      then error ext ("type not equi-synchronizing")
+      else esync env (v::seen) (A.expd_tp env v) c ext
   | Up(a) -> esync env seen a c ext
   | Down(a) ->
       match a with
-          A.TpName(v) -> if List.exists (fun x -> x = v) seen then () else error ext ("type not equi-synchronizing")
+          A.TpName(v) -> if List.exists (fun x -> x = v) seen
+                         then ()
+                         else error ext ("type not equi-synchronizing")
         | _a -> error ext ("type not equi-synchronizing")
   
   and esync_choices env seen cs c ext = match cs with
@@ -142,6 +149,11 @@ and eq_tp env seen tp tp' = match tp, tp' with
       R.eq pot pot' && eq_tp' env seen a a'
   | A.GetPot(pot,a), A.GetPot(pot',a') -> 
       R.eq pot pot' && eq_tp' env seen a a'
+  
+  | A.Up(a), A.Up(a') ->
+      eq_tp' env seen a a'
+  | A.Down(a), A.Down(a') ->
+      eq_tp' env seen a a'
 
   | A.TpName(a), A.TpName(a') ->
       eq_name_name env seen a a' (* coinductive type equality *)
@@ -720,7 +732,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
           let a = find_ltp x delta in
           match a with
               A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
-            | A.Down(a') -> check_exp' trace env (add_chan env (y,a') delta) pot p zc ext
+            | A.Down(a') -> check_exp' trace env (add_chan env (y,a') (remove_tp x delta)) pot p zc ext
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
             | A.One
