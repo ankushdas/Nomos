@@ -179,7 +179,7 @@ exception UnknownReducePrecError
 exception UnknownReduceContextError
 
 let uncommit ctx =
-  {A.shared = [] ; A.linear = ctx};;
+  {A.shared = [] ; A.linear = [] ; A.ordered = ctx};;
 
 (* <decl> *)
 let rec p_decl st = match first st with

@@ -18,7 +18,11 @@ type stype =
   | Down of stype
 and choices = (label * stype) list
 type chan_tp = chan * stype
-type context = { shared : chan_tp list; linear : chan_tp list; }
+type context = {
+  shared : chan_tp list;
+  linear : chan_tp list;
+  ordered : chan_tp list;
+}
 type expression =
     Fwd of chan * chan
   | Spawn of chan * expname * chan list * expression

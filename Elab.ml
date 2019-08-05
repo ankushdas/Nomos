@@ -52,13 +52,13 @@ let check_nonneg pot ext =
   if R.non_neg pot then ()
   else error ext ("process potential " ^ R.pp_arith pot ^ " not positive");;
 
-let rec commit env ctx = match ctx with
-    [] -> {A.shared = [] ; A.linear = []}
+let rec commit env ctx octx = match ctx with
+    [] -> {A.shared = [] ; A.linear = [] ; A.ordered = octx}
   | (c,t)::ctx' ->
-      let {A.shared = s; A.linear = l} = commit env ctx' in
+      let {A.shared = s; A.linear = l; A.ordered = o} = commit env ctx' octx in
         if A.is_shared env t
-        then {A.shared = (c,t)::s ; A.linear = l}
-        else {A.shared = s ; A.linear = (c,t)::l};;
+        then {A.shared = (c,t)::s ; A.linear = l ; A.ordered = o}
+        else {A.shared = s ; A.linear = (c,t)::l ; A.ordered = o};;
 
 (***************************)
 (* Elaboration, First Pass *)
@@ -211,7 +211,7 @@ let rec check_redecl env dcls = match dcls with
 let rec commit_channels env dcls = match dcls with
     [] -> []
   | {A.declaration = A.ExpDecDef(f,(delta,pot,(x,a)),p); A.decl_extent = ext}::dcls' ->
-      let delta' = commit env delta.linear in
+      let delta' = commit env delta.ordered delta.ordered in
       {A.declaration = A.ExpDecDef(f,(delta',pot,(x,a)),p); A.decl_extent = ext}::(commit_channels env dcls')
   | dcl::dcls' -> dcl::(commit_channels env dcls');;
  

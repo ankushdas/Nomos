@@ -15,7 +15,8 @@ val valid_delta :
   A.context -> ((int * int) * (int * int) * string) option -> unit
 val check_nonneg :
   R.arith -> ((int * int) * (int * int) * string) option -> unit
-val commit : A.decl_ext list -> (A.chan * A.stype) list -> A.context
+val commit :
+  A.decl_ext list -> (A.chan * A.stype) list -> A.chan_tp list -> A.context
 val elab_tps : TC.A.decl_ext list -> A.decl_ext list -> A.decl_ext list
 exception ElabImpossible
 val elab_exps' : A.decl_ext list -> A.decl_ext list -> A.decl_ext list

@@ -30,7 +30,8 @@ type chan_tp = chan * stype
 type context =
   {
     shared: chan_tp list;
-    linear: chan_tp list
+    linear: chan_tp list;
+    ordered: chan_tp list
   }
 
 (* Process Expressions *)
@@ -119,8 +120,8 @@ let rec updatetp x t ctx = match ctx with
     else (y,a)::(updatetp x t ctx');;
 
 let update_tp x t delta =
-  let {shared = sdelta ; linear = ldelta} = delta in
-  {shared = updatetp x t sdelta ; linear = updatetp x t ldelta};;
+  let {shared = sdelta ; linear = ldelta ; ordered = odelta} = delta in
+  {shared = updatetp x t sdelta ; linear = updatetp x t ldelta ; ordered = updatetp x t odelta};;
 
 let rec lookup_expdec decls f = match decls with
     {declaration = ExpDecDef(f',(ctx, pot, zc),_p); decl_extent = _ext}::decls' ->

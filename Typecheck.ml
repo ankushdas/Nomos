@@ -222,15 +222,15 @@ let rec checktp c delta = match delta with
       else checktp c delta';;
 
 let check_tp c delta =
-  let {A.shared = sdelta ; A.linear = ldelta} = delta in
+  let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
   checktp c sdelta || checktp c ldelta;;
 
 let check_stp c delta =
-  let {A.shared = sdelta ; A.linear = _ldelta} = delta in
+  let {A.shared = sdelta ; A.linear = _ldelta ; A.ordered = _odelta} = delta in
     checktp c sdelta;;
 
 let check_ltp c delta =
-  let {A.shared = _sdelta ; A.linear = ldelta} = delta in
+  let {A.shared = _sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
     checktp c ldelta;;
 
 (* must check for existence first *)
@@ -241,23 +241,23 @@ let rec findtp c delta = match delta with
         else findtp c delta';;
 
 let find_stp c delta =
-  let {A.shared = sdelta ; A.linear = _ldelta} = delta in
+  let {A.shared = sdelta ; A.linear = _ldelta ; A.ordered = _odelta} = delta in
   findtp c sdelta;;
 
 let find_ltp c delta = 
-  let {A.shared = _sdelta ; A.linear = ldelta} = delta in
+  let {A.shared = _sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
   findtp c ldelta;;
 
 let rec removetp x delta = match delta with
-    [] -> raise UnknownTypeError
+    [] -> []
   | (y,t)::delta' ->
       if x = y
       then delta'
       else (y,t)::(removetp x delta');;
 
 let remove_tp x delta =
-  let {A.shared = sdelta ; A.linear = ldelta} = delta in
-  {A.shared = sdelta ; A.linear = removetp x ldelta};;
+  let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
+  {A.shared = removetp x sdelta ; A.linear = removetp x ldelta ; A.ordered = removetp x odelta};;
 
 let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx with
     (_sc,st)::sig_ctx', c::ctx' ->
@@ -265,7 +265,7 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
         if not (check_tp c delta)
         then error ext ("unknown or duplicate variable: " ^ c)
         else
-          let {A.shared = sdelta ; A.linear = _ldelta} = delta in
+          let {A.shared = sdelta ; A.linear = _ldelta ; A.ordered = _odelta} = delta in
           if checktp c sdelta
           then
             begin
@@ -289,14 +289,14 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
             " arguments but called with " ^ string_of_int len ^ " arguments");;
 
 let join delta =
-  let {A.shared = sdelta ; A.linear = ldelta} = delta in
-  sdelta @ ldelta;;
+  let {A.shared = _sdelta ; A.linear = _ldelta ; A.ordered = odelta} = delta in
+  odelta;;
 
 let add_chan env (x,a) delta =
-  let {A.shared = sdelta ; A.linear = ldelta} = delta in
+  let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
   if A.is_shared env a
-  then {A.shared = (x,a)::sdelta ; A.linear = ldelta}
-  else {A.shared = sdelta ; A.linear = (x,a)::ldelta}
+  then {A.shared = (x,a)::sdelta ; A.linear = ldelta ; A.ordered = (x,a)::odelta}
+  else {A.shared = sdelta ; A.linear = (x,a)::ldelta ; A.ordered = (x,a)::odelta};;
 
 (* check_exp trace env ctx con A pot P C = () if A |{pot}- P : C
 * raises ErrorMsg.Error otherwise
@@ -326,7 +326,7 @@ let rec check_exp' trace env delta pot p zc ext =
 and check_exp trace env delta pot exp zc ext = match exp with
     A.Fwd(x,y) ->
       begin
-        let {A.shared = sdelta ; A.linear = ldelta} = delta in
+        let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
         let tx = chan_of zc in
         let () =
           if x <> tx
@@ -587,7 +587,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
       end
   | A.Close(x) ->
       begin
-        let {A.shared = _sdelta ; A.linear = ldelta} = delta in
+        let {A.shared = _sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
         if List.length ldelta > 0
         then error ext ("linear context " ^ A.pp_lsctx ldelta ^ " not empty")
         else if not (checktp x [zc])
@@ -696,13 +696,15 @@ and check_exp trace env delta pot exp zc ext = match exp with
       end
   | A.Acquire(x,y,p) ->
       begin
-        if not (check_stp x delta)
+        if check_tp y delta || checktp y [zc]
+        then error ext ("variable " ^ y ^ " is not fresh")
+        else if not (check_stp x delta)
         then E.error_unknown_var_ctx (x,ext)
         else
           let a = find_stp x delta in
           match a with
               A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
-            | A.Up(a') -> check_exp' trace env (add_chan env (y,a') delta) pot p zc ext
+            | A.Up(a') -> check_exp' trace env (add_chan env (y,a') (remove_tp x delta)) pot p zc ext
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
             | A.One
@@ -728,7 +730,9 @@ and check_exp trace env delta pot exp zc ext = match exp with
       end
   | A.Release(x,y,p) ->
       begin
-        if not (check_ltp x delta)
+        if check_tp y delta || checktp y [zc]
+        then error ext ("variable " ^ y ^ " is not fresh")
+        else if not (check_ltp x delta)
         then E.error_unknown_var_ctx (x,ext)
         else
           let a = find_ltp x delta in
