@@ -14,33 +14,35 @@ let error = ErrorMsg.error ErrorMsg.Type;;
 (* Validity of types *)
 (*********************)
 
-let rec esync env seen tp c ext =
-  print_string ("checking esync: \n" ^ PP.pp_tp env tp ^ "\n" ^ PP.pp_tp env c ^ "\n") ;
+
+(*
+  Equi-Synchronizing Session Types
+  Purely linear types are always equi-synchronizing
+*)
+
+let rec esync env seen tp c ext is_shared =
+  if !Flags.verbosity > 1
+  then print_string ("checking esync: \n" ^ PP.pp_tp env tp ^ "\n" ^ PP.pp_tp env c ^ "\n") ;
   match tp with
-    A.Plus(choice) -> esync_choices env seen choice c ext
-  | With(choice) -> esync_choices env seen choice c ext
-  | Tensor(_a,b) -> esync env seen b c ext
-  | Lolli(_a,b) -> esync env seen b c ext
-  | One -> error ext ("type not equi-synchronizing")
-  | PayPot(_pot,a) -> esync env seen a c ext
-  | GetPot(_pot,a) -> esync env seen a c ext
-  | TpName(v) ->
-      if List.exists (fun x -> x = v) seen
-      then error ext ("type not equi-synchronizing")
-      else esync env (v::seen) (A.expd_tp env v) c ext
-  | Up(a) -> esync env seen a c ext
-  | Down(a) ->
-      match a with
-          A.TpName(v) -> if List.exists (fun x -> x = v) seen
-                         then ()
-                         else error ext ("type not equi-synchronizing")
-        | _a -> error ext ("type not equi-synchronizing")
+      A.Plus(choice) -> esync_choices env seen choice c ext is_shared
+    | A.With(choice) -> esync_choices env seen choice c ext is_shared
+    | A.Tensor(_a,b) -> esync env seen b c ext is_shared
+    | A.Lolli(_a,b) -> esync env seen b c ext is_shared
+    | A.One -> if is_shared then error ext ("type not equi-synchronizing") else ()
+    | A.PayPot(_pot,a) -> esync env seen a c ext is_shared
+    | A.GetPot(_pot,a) -> esync env seen a c ext is_shared
+    | A.TpName(v) ->
+        if List.exists (fun x -> x = v) seen
+        then ()
+        else esync env (v::seen) (A.expd_tp env v) c ext is_shared
+    | A.Up(a) -> esync env seen a c ext true
+    | A.Down(a) -> esync env seen a c ext false
   
-  and esync_choices env seen cs c ext = match cs with
-      (_l,a)::as' -> esync env seen a c ext ; esync_choices env seen as' c ext
+  and esync_choices env seen cs c ext is_shared = match cs with
+      (_l,a)::as' -> esync env seen a c ext is_shared ; esync_choices env seen as' c ext is_shared
     | [] -> ();;
 
-let esync_tp env tp ext = esync env [] tp tp ext;;
+let esync_tp env tp ext = esync env [] tp tp ext false;;
 
 (* Occurrences of |> and <| are restricted to
 * positive and negative positions in a type, respectively
@@ -270,7 +272,7 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
               let t = find_stp c delta in
               if eqtp env st t
               then match_ctx env sig_ctx' ctx' delta sig_len len ext
-              else error ext ("type mismatch: type of " ^ c ^ " : " ^ PP.pp_tp_compact env t ^
+              else error ext ("shared type mismatch: type of " ^ c ^ " : " ^ PP.pp_tp_compact env t ^
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
             end
           else
@@ -278,7 +280,7 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
               let t = find_ltp c delta in
               if eqtp env st t
               then match_ctx env sig_ctx' ctx' (remove_tp c delta) sig_len len ext
-              else error ext ("type mismatch: type of " ^ c ^ " : " ^ PP.pp_tp_compact env t ^
+              else error ext ("linear type mismatch: type of " ^ c ^ " : " ^ PP.pp_tp_compact env t ^
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
             end
       end

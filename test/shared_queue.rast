@@ -1,8 +1,9 @@
-type A = /\ \/ A
+type A = 1 -o A
 
 type squeue = /\ &{enq : A -o \/ squeue,
                    deq : +{none : \/ squeue,
                            some : A * \/ squeue}}
+
 
 proc empty : . |- (q : squeue) =
   lq <- accept q ;

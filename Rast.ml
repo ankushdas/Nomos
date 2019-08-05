@@ -97,9 +97,10 @@ let load file =
   let () = Elab.check_redecl [] decls in                (* may raise ErrorMsg.Error *)
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
-  let decls' = apply_pragmas decls in                   (* remove pragmas; may raise ErrorMsg.Error *)
+  let decls' = Elab.commit_channels decls decls in
+  let decls'' = apply_pragmas decls' in                   (* remove pragmas; may raise ErrorMsg.Error *)
   (* allow for mutually recursive definitions in the same file *)
-  match Elab.elab_decls decls' decls' with
+  match Elab.elab_decls decls'' decls'' with
       Some env' -> env'
     | None -> raise ErrorMsg.Error;;                    (* error during elaboration *)
 

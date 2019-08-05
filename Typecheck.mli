@@ -5,14 +5,14 @@ module E = TpError
 val error : ((int * int) * (int * int) * string) option -> string -> 'a
 val esync :
   A.decl_ext list ->
-  PP.A.tpname list ->
+  A.tpname list ->
   PP.A.stype ->
-  PP.A.stype -> ((int * int) * (int * int) * string) option -> unit
+  PP.A.stype -> ((int * int) * (int * int) * string) option -> bool -> unit
 val esync_choices :
   A.decl_ext list ->
-  PP.A.tpname list ->
+  A.tpname list ->
   A.choices ->
-  PP.A.stype -> ((int * int) * (int * int) * string) option -> unit
+  PP.A.stype -> ((int * int) * (int * int) * string) option -> bool -> unit
 val esync_tp :
   A.decl_ext list ->
   PP.A.stype -> ((int * int) * (int * int) * string) option -> unit

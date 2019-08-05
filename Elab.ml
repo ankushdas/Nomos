@@ -91,15 +91,14 @@ let rec elab_tps env dcls = match dcls with
       let () = TC.esync_tp env a ext in
       let () = TC.esync_tp env a' ext in
       dcl::(elab_tps env dcls')
-  | {A.declaration = A.ExpDecDef(f,(delta,pot,(x,a)),p); A.decl_extent = ext}::dcls' ->
+  | ({A.declaration = A.ExpDecDef(_f,(delta,pot,(x,a)),_p); A.decl_extent = ext} as dcl)::dcls' ->
       (* do not print process declaration so they are printed close to their use *)
       let () = if dups ((x,a)::delta.linear) then error ext ("duplicate variable in process declaration") else () in
-      let delta' = commit env delta.linear in
-      let () = valid_delta env delta' ext in
+      let () = valid_delta env delta ext in
       let () = TC.valid env TC.Zero a ext in
       let () = TC.esync_tp env a ext in
       let () = check_nonneg pot ext in
-      {A.declaration = A.ExpDecDef(f,(delta',pot,(x,a)),p); A.decl_extent = ext}::(elab_tps env dcls')
+      dcl::(elab_tps env dcls')
   | dcl::dcls' -> dcl::(elab_tps env dcls');;
 
 (****************************)
@@ -207,6 +206,14 @@ let rec check_redecl env dcls = match dcls with
    | {A.declaration = A.TpEq _; A.decl_extent = _ext}::dcls' -> check_redecl env dcls'
    | {A.declaration = A.Pragma _; A.decl_extent = _ext}::dcls' -> check_redecl env dcls'
    | {A.declaration = A.Exec _; A.decl_extent = _ext}::dcls' -> check_redecl env dcls';;
+
+(* separates channels into shared and linear *)
+let rec commit_channels env dcls = match dcls with
+    [] -> []
+  | {A.declaration = A.ExpDecDef(f,(delta,pot,(x,a)),p); A.decl_extent = ext}::dcls' ->
+      let delta' = commit env delta.linear in
+      {A.declaration = A.ExpDecDef(f,(delta',pot,(x,a)),p); A.decl_extent = ext}::(commit_channels env dcls')
+  | dcl::dcls' -> dcl::(commit_channels env dcls');;
  
 (* structure Elab *)
  

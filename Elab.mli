@@ -25,3 +25,4 @@ val elab_decls :
 val is_tpdef : A.decl_ext list -> A.tpname -> bool
 val is_expdecdef : A.decl_ext list -> A.expname -> bool
 val check_redecl : A.decl_ext list -> A.decl_ext list -> unit
+val commit_channels : A.decl_ext list -> A.decl_ext list -> A.decl_ext list
