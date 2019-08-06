@@ -350,20 +350,17 @@ and check_exp trace env delta pot exp zc ext = match exp with
           end
         else
           begin
-            if List.length sdelta = 0
-            then error ext ("shared context empty while offered channel is shared")
-            else
-              let (ty, a) = List.hd ldelta in
-              if List.length ldelta <> 1
-              then error ext ("linear context " ^ A.pp_lsctx ldelta ^ " must have only one channel")
-              else if y <> ty
-              then E.error_unknown_var_ctx (y,ext)
-              else if not (R.eq pot zero)
-              then error ext ("unconsumed potential: " ^ R.pp_uneq pot zero)
-              else if eqtp env a c
-              then ()
-              else error ext ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
-                        PP.pp_tp_compact env c)
+            let (ty, a) = List.hd ldelta in
+            if List.length ldelta <> 1
+            then error ext ("linear context " ^ A.pp_lsctx ldelta ^ " must have only one channel")
+            else if y <> ty
+            then E.error_unknown_var_ctx (y,ext)
+            else if not (R.eq pot zero)
+            then error ext ("unconsumed potential: " ^ R.pp_uneq pot zero)
+            else if eqtp env a c
+            then ()
+            else error ext ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
+                      PP.pp_tp_compact env c)
           end
       end
   | A.Spawn(x,f,xs,q) ->
