@@ -1,0 +1,20 @@
+type lfork = \/ sfork
+
+type sfork = /\ lfork
+
+type phil = 1
+
+proc fork_proc : . |- (c : sfork) =
+  lc <- accept c ;
+  c <- detach lc ;
+  c <- fork_proc <-
+
+proc thinking : (left : sfork), (right : sfork) |- (c : phil) =
+  lleft <- acquire left ;
+  lright <- acquire right ;
+  c <- eating <- lleft lright
+
+proc eating : (lleft : lfork), (lright : lfork) |- (c : phil) =
+  right <- release lright ;
+  left <- release lleft ;
+  c <- thinking <- left right
