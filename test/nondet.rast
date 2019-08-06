@@ -1,0 +1,35 @@
+type coin = /\ +{head : \/ coin, tail : \/ coin}
+
+proc coin_head : . |- (c : coin) =
+  lc <- accept c ;
+  lc.head ;
+  c <- detach lc ;
+  c <- coin_tail <-
+
+proc coin_tail : . |- (c : coin) =
+  lc <- accept c ;
+  lc.tail ;
+  c <- detach lc ;
+  c <- coin_head <-
+
+proc coin_flipper : (c : coin) |- (d : 1) =
+  lc <- acquire c ;
+  case lc
+  ( head => c <- release lc ;
+            close d
+  | tail => c <- release lc ;
+            close d)
+
+proc nd_choice : . |- (d : +{yes : 1, no : 1}) =
+  c <- coin_head <- ;
+  f <- coin_flipper <- c ;
+  lc <- acquire c ;
+  case lc
+  ( head => c <- release lc ;
+            d.yes ;
+            wait f ;
+            close d
+  | tail => c <- release lc ;
+            d.no ;
+            wait f ;
+            close d )
