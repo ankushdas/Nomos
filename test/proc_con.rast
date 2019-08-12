@@ -1,3 +1,5 @@
+#test success
+
 type A = /\ \/ 1
 
 type squeue = /\ &{enq : A -o \/ squeue,

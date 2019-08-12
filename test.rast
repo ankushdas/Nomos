@@ -1,3 +1,5 @@
+#test success
+
 type bits = +{b0 : bits, b1 : bits, $ : 1}
 
 proc copy : (x : bits) |- (y : bits) =

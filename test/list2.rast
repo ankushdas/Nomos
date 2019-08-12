@@ -1,3 +1,5 @@
+#test success
+
 type A = 1
 
 type list2 = +{cons2 : A * A * list2, cons1 : A * 1, nil : 1}

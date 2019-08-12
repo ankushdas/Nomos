@@ -1,3 +1,5 @@
+#test success
+
 type ping  = +{pin : &{pon : ping}}
 
 proc p1 : (x : ping) |- (sink : 1) =

@@ -1,3 +1,5 @@
+#test error
+
 type ping  = +{pin : pong}
 type pong  = &{pon : ping}
 

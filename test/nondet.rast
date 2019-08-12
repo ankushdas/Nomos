@@ -1,3 +1,5 @@
+#test success
+
 type coin = /\ +{head : \/ coin, tail : \/ coin}
 
 proc coin_head : . |- (c : coin) =

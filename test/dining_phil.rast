@@ -1,3 +1,5 @@
+#test success
+
 type lfork = \/ sfork
 
 type sfork = /\ lfork

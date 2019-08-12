@@ -1,3 +1,5 @@
+#test success
+
 type nat = +{ z : 1, s : nat }
 
 % (pos,neg) ~ pos - neg
