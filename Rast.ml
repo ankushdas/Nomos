@@ -16,44 +16,6 @@ type option =
   | Syntax of string
   | Verbose of int;;
 
-(*
- val options : option G.opt_descr list =
-     [
-      {short = "v", long = ["verbose"],
-       desc = G.NoArg (fn () => Verbose(2)),
-       help = "Give verbose status messages"},
-      {short = "q", long = ["quiet"],
-       desc = G.NoArg (fn () => Verbose(0)),
-       help = "Run quietly"},
-      {short = "d", long = ["debug"],
-       desc = G.NoArg (fn () => Verbose(3)),
-       help = "Print some debugging information"},
-      {short = "h", long = ["help"],
-       desc = G.NoArg (fn () => Help(true)),
-       help = "Give short usage message and exit"},
-      {short = "t", long = ["time"],
-       desc = G.ReqArg ((fn cm => Time(cm)), "<cost_model>"),
-       help = "Cost model for time, one of 'none' (default), 'free', 'recv', 'recvsend', or 'send'"},
-      {short = "w", long = ["work"],
-       desc = G.ReqArg ((fn cm => Work(cm)), "<cost_model>"),
-       help = "Cost model for work, one of 'none' (default), 'free', 'recv', 'recvsend', or 'send'"},
-      {short = "s", long = ["syntax"],
-       desc = G.ReqArg ((fn s => Syntax(s)), "<syntax>"),
-       help = "Syntax, one of 'implicit' (default) or 'explicit'"},
-      {short = "e", long = ["terminate"],
-       desc = G.ReqArg ((fn r => Terminate(r)), "<recursion>"),
-       help = "Perform termination checking, on 'equi' or 'iso' recursive syntax"}
-     ]
- 
- val usage_info = G.usageInfo {header = header, options = options}
-
- 
- fun get_options (args) =
-     G.getOpt {argOrder = G.RequireOrder,
-               options = options,
-               errFn = exit_failure}
-              args
-*)
 let process_option op = match op with
     Work(s) ->
       begin
@@ -92,13 +54,13 @@ let rec apply_pragmas dcls = match dcls with
   | dcls' -> dcls';;
 
 let load file =
-  let () = reset () in                                  (* internal lexer and parser state *)
-  let decls = Parse.parse file in                       (* may raise ErrorMsg.Error *)
-  let () = Elab.check_redecl [] decls in                (* may raise ErrorMsg.Error *)
+  let () = reset () in                        (* internal lexer and parser state *)
+  let decls = Parse.parse file in             (* may raise ErrorMsg.Error *)
+  let () = Elab.check_redecl [] decls in      (* may raise ErrorMsg.Error *)
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
   let decls' = Elab.commit_channels decls decls in
-  let decls'' = apply_pragmas decls' in                   (* remove pragmas; may raise ErrorMsg.Error *)
+  let decls'' = apply_pragmas decls' in       (* remove pragmas; may raise ErrorMsg.Error *)
   (* allow for mutually recursive definitions in the same file *)
   match Elab.elab_decls decls'' decls'' with
       Some env' -> env'
@@ -123,9 +85,11 @@ fun run env (A.Exec(f,ext)::decls) =
                 then TextIO.print (PP.pp_decl env (A.Exec(f,ext)) ^ "\n")
                 else ()
         val p = init_pot env f
-        val config = Exec.exec env [A.Proc(0,(0,p),A.ExpName(f,[]))] (* may raise Exec.SoftError/Exec.HardError *)
+        val config = Exec.exec env [A.Proc(0,(0,p),A.ExpName(f,[]))]
+        (* may raise Exec.SoftError/Exec.HardError *)
         val () = if !Flags.verbosity >= 1
-                then TextIO.print (PP.pp_config (measure (!Flags.time)) (measure (!Flags.work)) config
+                then TextIO.print (PP.pp_config (measure (!Flags.time))
+                (measure (!Flags.work)) config
                                     ^ "%------------------------------\n")
                 else ()
     in
@@ -192,10 +156,8 @@ let command =
           let () = F.reset () in
           let () = List.iter [vlevel; work_cm; syntax] ~f:process_option in
           try
-            let _env = load file in print_string ("file processing successful!\n")
-          with ErrorMsg.Error -> eprintf "file processing failed!\n"; exit 1);;
+            let _env = load file in print_string ("% file processing successful!\n")
+          with ErrorMsg.Error -> eprintf "%% file processing failed!\n"; exit 1);;
 
 let () =
   Command.run ~version:"1.0" ~build_info:"RWO" command;;
- 
-(* structure Top *)
