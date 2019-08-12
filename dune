@@ -1,5 +1,5 @@
-(executable
- (name rast)
+(executables
+ (names rast regression)
  (libraries core)
  (preprocess (pps ppx_let)))
 
