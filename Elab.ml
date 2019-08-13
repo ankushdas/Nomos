@@ -144,7 +144,8 @@ and elab_exps env dcls = match dcls with
                     then print_string ("% with cost model " ^ pp_costs () ^ "\n"
                                       ^ (PP.pp_decl env (A.ExpDecDef(f,(delta,pot,(x,a)),p'))) ^ "\n")
                     else ()
-        end in
+        end
+      in
       let () = try TC.checkexp false env delta pot p' (x,a) ext (* type check *)
                 with ErrorMsg.Error ->
                       (* if verbosity >= 2, type-check again, this time with tracing *)

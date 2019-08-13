@@ -2,12 +2,32 @@
 
 module A = Ast
 module F = Flags
-module R = Rast
+module RC = RastConfig
 module C = Core
 
 exception OS_FAILURE;;
 exception OS_SUCCESS;;
 exception RegressionImpossible;;
+
+type option =
+    Work of string
+  | Syntax of string
+  | Verbose of int;;
+
+let process_option op = match op with
+  Work(s) ->
+    begin
+      match F.parseCost s with
+          None -> C.eprintf "cost model %s not recognized" s; exit 1
+        | Some cm -> F.work := cm
+    end
+| Syntax(s) ->
+    begin
+      match F.parseSyntax s with
+          None -> C.eprintf "syntax %s not recognized" s; exit 1
+        | Some syn -> F.syntax := syn
+    end
+| Verbose(level) -> F.verbosity := level;;
 
 type outcome =
     StaticError            (* includes lexer, parser, type-checker error *)
@@ -20,8 +40,8 @@ type outcome =
   | None;;                 (* no outcome at all... *)
 
 let parse_outcome str = match str with
-    ["error"] -> StaticError
-  | ["success"] -> Success
+    " error" -> StaticError
+  | " success" -> Success
   | _ -> IllegalTestFormat;;
 
 let pp_outcome oc = match oc with
@@ -39,7 +59,7 @@ let rec extract_outcome pragmas =
     [] -> Success
   | {A.declaration = A.Pragma("#test", line); A.decl_extent = _ext}::_preamble ->
     (* ignore remaining preamble *)
-    parse_outcome (String.split_on_char ' ' line)
+    parse_outcome line
   | {A.declaration = A.Pragma _; A.decl_extent = _ext}::preamble ->
     extract_outcome preamble
     (* should only be pragmas allowed here *)
@@ -48,10 +68,10 @@ let rec extract_outcome pragmas =
 exception Outcome of outcome * outcome;; (* expected, actual *)
 
 let load_file expected filename =
-  let _env = try R.load filename
-            with ErrorMsg.Error -> raise (Outcome (expected, StaticError))
+  let _env = try RC.load filename
+             with ErrorMsg.Error -> raise (Outcome (expected, StaticError))
   in
-  try raise (Outcome(expected, Success))
+  try raise (Outcome (expected, Success))
   with
     (Outcome (_expected, _actual) as e) -> raise e
   | _e -> raise (Outcome (expected, UncaughtException));;
@@ -75,7 +95,7 @@ let succeeded = ref 0;;
 let failed = ref 0;;
 
 let success (_expected, _actual) =
-    print_string "[OK]\n"
+    print_string ("[OK]\n")
   ; succeeded := !succeeded+1;;
 
 let failure (expected, actual) =
@@ -85,7 +105,7 @@ let failure (expected, actual) =
   ; failed := !failed+1;;
 
 let test_file filename =
-    print_string (filename ^ "... ")
+    print_string (filename ^ ": ")
   ; flush stdout
   ; try run_file filename
     with Outcome(expected, actual) ->
@@ -130,16 +150,36 @@ let command =
       let%map_open
         verbosity_flag = flag "-v" (optional int)
           ~doc:"verbosity 0: quiet, 1: default, 2: verbose, 3: debugging mode"
+        and work_flag = flag "-w" (optional string)
+          ~doc:"work-cost-model: none, recv, send, recvsend, free"
+        and syntax_flag = flag "-s" (optional string)
+          ~doc:"syntax: implicit, explicit"
         and files = anon (sequence ("filename" %: rast_file)) in
         fun () ->
-          let () = reset_counts () in
-          let () =
+          let vlevel =
+          begin
+            match verbosity_flag with
+                None -> Verbose(1)
+              | Some n -> Verbose(n)
+          end
+          in
+          let work_cm =
             begin
-              match verbosity_flag with
-                  None -> F.verbosity := 0
-                | Some n -> F.verbosity := n
+              match work_flag with
+                  None -> Work("none")
+                | Some s -> Work(s)
             end
           in
+          let syntax =
+            begin
+              match syntax_flag with
+                  None -> Syntax("explicit")
+                | Some s -> Syntax(s)
+            end
+          in
+          let () = reset_counts () in
+          let () = F.reset () in
+          let () = List.iter process_option [vlevel; work_cm; syntax] in
           let () = List.iter test_file files in
           let () = print_results () in
           if !total = !succeeded

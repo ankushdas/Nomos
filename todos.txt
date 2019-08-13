@@ -1,4 +1,9 @@
 TODOS:
 ======
 
-- None
+- Fixing the mli files with required functions only
+- Fixing the parsing of options pragmas
+- Reset of flags happening within regression
+- Add polymorphism
+- Implement semantics
+- Integration with RaML
