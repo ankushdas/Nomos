@@ -352,7 +352,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
           begin
             let (ty, a) = List.hd ldelta in
             if List.length ldelta <> 1
-            then error ext ("linear context " ^ A.pp_lsctx ldelta ^ " must have only one channel")
+            then error ext ("linear context " ^ PP.pp_lsctx env ldelta ^ " must have only one channel")
             else if y <> ty
             then E.error_unknown_var_ctx (y,ext)
             else if not (R.eq pot zero)
@@ -393,7 +393,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
                 let ctx = join ctx in
                 let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
                 if List.length delta'.linear <> 0
-                then error ext ("unconsumed channel(s) from linear context: " ^ A.pp_lsctx delta'.linear)
+                then error ext ("unconsumed channel(s) from linear context: " ^ PP.pp_lsctx env delta'.linear)
                 else ()
       end
   | A.Lab(x,k,p) ->
@@ -586,7 +586,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
       begin
         let {A.shared = _sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
         if List.length ldelta > 0
-        then error ext ("linear context " ^ A.pp_lsctx ldelta ^ " not empty")
+        then error ext ("linear context " ^ PP.pp_lsctx env ldelta ^ " not empty")
         else if not (checktp x [zc])
         then E.error_unknown_var (x,ext)
         else if not (R.eq pot zero)

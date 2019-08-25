@@ -2,6 +2,7 @@ TODOS:
 ======
 
 - Fixing the mli files with required functions only
+- Fixing the pretty printing in Ast
 - Fixing the parsing of options pragmas
 - Reset of flags happening within regression
 - Add polymorphism

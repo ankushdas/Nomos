@@ -141,12 +141,6 @@ let rec lookup_choice cs k = match cs with
       else lookup_choice choices' k
   | [] -> None;;
 
-let rec lookup_branch bs k = match bs with 
-    {lab_exp = (l,p); _}::branches' ->
-      if k = l then Some p
-      else lookup_branch branches' k
-  | [] -> None;;
-
 let rec is_shared env tp = match tp with
     Up _ -> true
   | TpName(v) -> is_shared env (expd_tp env v)
@@ -239,13 +233,6 @@ let rec pp_channames chans = match chans with
 
 let pp_chan (c,a) = "(" ^ c ^ " : " ^ pp_tp a ^ ")";;
 
-let rec pp_lsctx delta = match delta with
-    [] -> ""
-  | [(c,a)] -> pp_chan (c,a)
-  | (c,a)::delta' -> pp_chan (c,a) ^ ", " ^ pp_lsctx delta';;
-
-let pp_ctx delta = pp_lsctx delta.shared ^ " ; " ^ pp_lsctx delta.linear;;
-
 let rec pp_exp p = match p with
     Fwd(x,y) -> x ^ " <- " ^ y
   | Spawn(x,f,xs,q) -> x ^ " <- " ^ f ^ " <- " ^ pp_channames xs ^ " ; " ^ pp_exp q
@@ -270,18 +257,6 @@ and pp_branches bs = match bs with
   | [{lab_exp = (l,p); exp_extent = _ext}] -> l ^ " => " ^ pp_exp p
   | {lab_exp = (l,p); exp_extent = _ext}::bs' ->
       l ^ " => " ^ pp_exp p ^ " | " ^ pp_branches bs';;
-
-exception AstUnsupported
-
-let pp_decl dcl = match dcl.declaration with
-    TpDef(v,a) -> "type " ^ v ^ " = " ^ pp_tp a
-  | TpEq(TpName(a),TpName(a')) -> "eqtype " ^ a ^ " = " ^ a'
-  | ExpDecDef(f,(delta,pot,(c,a)),p) -> "proc " ^ f ^ " : " ^
-                                        pp_ctx delta ^ " |" ^ pp_pot pot ^ "- " ^
-                                        pp_chan (c,a) ^ " = " ^ pp_exp p
-  | Exec(f) -> "exec " ^ f
-  | Pragma(p,line) -> p ^ line
-  | TpEq(_a,_a') -> raise AstUnsupported;;
 
 let pp_msg m = match m with
     MLab(c,k,c') -> c ^ "." ^ k ^ " ; " ^ pp_exp (Fwd(c,c'))
