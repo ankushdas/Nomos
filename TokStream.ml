@@ -9,11 +9,3 @@ type 'a front =
 and 'a stream = unit -> 'a front;;
 
 let force ts = ts ()
-
-let rec fromList l () = match l with
-    [] -> Nil
-  | t :: ts -> Cons (t, fromList ts);;
-
-let isNil s = match s with
-    Nil -> true
-  | Cons _ -> false;;
