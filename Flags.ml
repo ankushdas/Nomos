@@ -36,25 +36,10 @@ let pp_syntax syn = match syn with
     Implicit -> "implicit"
   | Explicit -> "explicit";;
 
-(* Recursion *)
-type recursion = Equi | Iso
-
-let parseRecursion s = match s with
-    "equi" -> Some Equi
-  | "iso" -> Some Iso
-  | "none" -> None
-  | _ -> None;;
-
-let pp_recursion recs = match recs with
-    Some Equi -> "equi"
-  | Some Iso -> "iso"
-  | None -> "none";;
-
 (* Default values *)
 let time = ref None;;
 let work = ref None;;
 let syntax = ref Implicit;;
-let terminate = ref (None:recursion option);;
 let verbosity = ref 1;;           (* -1 = print nothing, 0 = quiet, 1 = normal, 2 = verbose, 3 = debug *)
 let help = ref false;;
 
@@ -62,6 +47,5 @@ let reset () =
     time := None
   ; work := None
   ; syntax := Explicit
-  ; terminate := None
   ; verbosity := 1
   ; help := false;;
