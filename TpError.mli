@@ -1,3 +1,5 @@
+(* Interface for TpError *)
+
 module A = Ast
 module PP = Pprint
 val error : ((int * int) * (int * int) * string) option -> string -> 'a

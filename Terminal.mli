@@ -1,3 +1,5 @@
+(* Interface for Terminal *)
+
 type terminal =
     LBRACE
   | RBRACE

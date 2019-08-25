@@ -202,14 +202,6 @@ fun interactsR P = case P of
 
 exception UnknownTypeError;;
 
-let is_tpname tp = match tp with
-    A.TpName(_a) -> true
-  | A.Plus _ | A.With _
-  | A.Tensor _ | A.Lolli _
-  | A.One
-  | A.PayPot _ | A.GetPot _
-  | A.Up _ | A.Down _ -> false;;
-
 let zero = R.Int(0);;
 
 let chan_of (c, _tp) = c 

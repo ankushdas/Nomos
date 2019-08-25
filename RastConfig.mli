@@ -1,3 +1,5 @@
+(* Interface for RastConfig *)
+
 module A = Ast
 module C = Core
 

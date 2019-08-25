@@ -1,4 +1,4 @@
-(* Interface for Parsestate *)
+(* Interface for Parser *)
 
 module R = Arith
 module A = Ast

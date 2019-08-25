@@ -39,11 +39,6 @@ let pp_arith e = pp_arith_prec 0 e;;
 
 type opr = Or | And | Implies | Not | None
 
-let parens_opr opr_above opr s = match opr_above with
-    None -> s           (* root: no parentheses *)
-  | opr_above ->
-      if opr_above = opr then s else "(" ^ s ^ ")";;
-
 (*******************************)
 (* Types, and their components *)
 (*******************************)
@@ -97,8 +92,6 @@ let rec pp_tp i a = match a with
       "\\/ " ^ pp_tp (i+3) a
   | A.TpName(v) -> v
 
-and pp_tp_indent i a = spaces i ^ pp_tp i a
-
 and pp_tp_after i s a = s ^ pp_tp (i+len(s)) a
 
 and pp_choice i cs = match cs with
@@ -124,11 +117,6 @@ let rec pp_lsctx env delta = match delta with
 
 let pp_ctx env delta = pp_lsctx env delta.A.shared ^ " ; " ^ pp_lsctx env delta.A.linear;;
 
-(* pp_tpj env delta pot (x,a) = "delta |{pot}- (x : a)" *)
-let pp_tpj env delta pot (x,a) =
-    pp_ctx env delta ^ " |" ^ pp_pot pot ^ "- (" ^
-    x ^ " : " ^ pp_tp env a ^ ")";;
-
 (* pp_tp_compact env delta pot a = "delta |{p}- C", on one line *)
 let pp_tpj_compact env delta pot (x,a) =
   pp_ctx env delta ^ " |" ^ pp_pot pot ^ "- (" ^
@@ -144,26 +132,6 @@ let pp_tpj_compact env delta pot (x,a) =
  * Rather than propagating a binding strength downward,
  * we just peek ahead.
  *)
-let rec atomic p = match p with
-    A.Fwd _ | A.Case _ | A.Recv _
-  | A.Close _ | A.ExpName _ -> true
-  | A.Spawn _
-  | A.Lab _ | A.Send _ | A.Wait _
-  | A.Work _ | A.Pay _ | A.Get _
-  | A.Acquire _ | A.Accept _ | A.Release _ | A.Detach _ -> false
-  | A.Marked(marked_exp) -> atomic (Mark.data marked_exp);;
-
-let rec long p = match p with
-    A.Case _ -> true
-  | A.Marked(marked_exp) -> long (Mark.data marked_exp)
-  | A.Fwd _ | A.Spawn _ | A.ExpName _
-  | A.Lab _ | A.Send _ | A.Recv _ | A.Close _ | A.Wait _
-  | A.Work _ | A.Pay _ | A.Get _
-  | A.Acquire _ | A.Accept _ | A.Release _ | A.Detach _ -> false;;
-
-let pp_cut env pot b = match pot with
-    R.Int(0) -> "[" ^ pp_tp_compact env b ^ "]"
-  | pot -> "[|" ^ pp_pot pot ^ "- " ^ pp_tp_compact env b ^ "]";;
 
 let rec pp_exp env i exp = match exp with
     A.Fwd(x,y) -> x ^ " <- " ^ y
