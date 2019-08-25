@@ -8,30 +8,22 @@
 
 
 let currFilenames = ref ([] : string list)
-let currLiness = ref ([] : int list list)
+let currLines = ref ([] : int list list)
 
 let reset () =
   currFilenames := []
-  ; currLiness := [];;
+  ; currLines := [];;
 
 let pushfile filename =
   currFilenames := filename::(!currFilenames)
-  ; currLiness := []::!currLiness;;
+  ; currLines := []::!currLines;;
 
 let popfile () =
   currFilenames := List.tl (!currFilenames)
-  ; currLiness := List.tl (!currLiness);;
+  ; currLines := List.tl (!currLines);;
 
 let newline pos =
-    (currLiness := (pos::(List.hd (!currLiness)))::(List.tl (!currLiness)));;
-
-(* toolong max_col checks if the last line was too long *)
-(* call only right after 'newline pos' *)
-let linewidth () =
-  match List.hd (!currLiness) with
-    [] -> 0
-  | [pos] -> pos
-  | (last::prev::_rest) -> last-prev-1;; (* do not count '\n' character *)
+    (currLines := (pos::(List.hd (!currLines)))::(List.tl (!currLines)));;
 
 (* look (pos, newline_positions, line_number) = (line, col)
 * pos is buffer position
@@ -48,7 +40,7 @@ let rec look (pos, l, n) = match l with
       if a < pos then (n+1, pos-a)
       else look (pos, rest, n-1);;
 
-let last () = (List.length (List.hd (!currLiness)) + 1,  0);;
+let last () = (List.length (List.hd (!currLines)) + 1,  0);;
 
 (* ext (leftpos, rightpos) = SOME((leftline, leftcol), (rightline, rightcol), filename)
 * guess end of current file for invalid position (0,0)
@@ -58,6 +50,6 @@ let ext (l, r) = match l, r with
     (* guess EOF, for potentially better error message? *)
       Some (last (), last (), List.hd (!currFilenames))
 | left, right ->
-      Some (look (left, List.hd (!currLiness), List.length (List.hd (!currLiness))),
-      look (right, List.hd (!currLiness), List.length (List.hd (!currLiness))),
+      Some (look (left, List.hd (!currLines), List.length (List.hd (!currLines))),
+      look (right, List.hd (!currLines), List.length (List.hd (!currLines))),
       List.hd (!currFilenames));;

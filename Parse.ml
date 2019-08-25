@@ -21,8 +21,6 @@ let rec pp_toks toks = match toks with
   | [t] -> " or " ^ pp_tok t
   | t::ts -> pp_tok t ^ ", " ^ pp_toks ts;;
 
-let (^^) s1 s2 = s1 ^ "\n[Hint: " ^ s2 ^ "]";;
-
 let parse_error (region, s) =
   ErrorMsg.error_msg ErrorMsg.Parse (PS.ext region) s
   ; raise ErrorMsg.Error;;
@@ -34,10 +32,6 @@ let error_expected (region, t', t) =
   ErrorMsg.error_msg ErrorMsg.Parse (PS.ext region) (msg_expected t' t)
   ; raise ErrorMsg.Error;;
 
-let error_expected_h (region, t', t, error_hint) =
-  ErrorMsg.error_msg ErrorMsg.Parse (PS.ext region) (msg_expected t' t ^^ error_hint)
-  ; raise ErrorMsg.Error;;
-
 let msg_expected_list ts t =
     "expected one of " ^ pp_toks ts ^ ", found: " ^ pp_tok t;;
 
@@ -45,20 +39,9 @@ let error_expected_list (region, ts, t) =
   ErrorMsg.error_msg ErrorMsg.Parse (PS.ext region) (msg_expected_list ts t)
   ; raise ErrorMsg.Error;;
 
-let error_expected_list_h (region, ts, t, error_hint) =
-  ErrorMsg.error_msg ErrorMsg.Parse (PS.ext region) (msg_expected_list ts t ^^ error_hint)
-  ; raise ErrorMsg.Error;;
- 
-let location loc = match loc with
-    None -> "_"
-  | Some mark -> Mark.show(mark);;
-
 (****************************)
 (* Building abstract syntax *)
 (****************************)
-let rec vars varphis = match varphis with
-    (x,_phi)::l -> x::(vars l)
-  | [] -> [];;
 
 let mark_exp (exp, (left, right)) = A.Marked (Mark.mark' (exp, PS.ext (left, right)));;
 
@@ -151,8 +134,6 @@ let join (left1, _right1) (_left2, right2) = (left1, right2);;
 let here st = match st with
     (_s, M.Cons((_t, r), _ts')) -> r
   | _t -> raise StackError;;
-
-let nowhere = (0,0);;
 
 let padd (x,y) = R.Add(x,y);;
 let psub (x,y) = R.Sub(x,y);;
@@ -349,12 +330,7 @@ and p_tpopr_ltri st = match first st with
 and p_tpopr_rtri st = match first st with
     T.RANGLE -> st |> shift
   | T.LBRACE -> st |> p_idx @> p_terminal T.RANGLE
-  | t -> error_expected_list (here st, [T.RANGLE; T.LBRACE], t)
-
-(* <type_opt> *)
-and p_type_opt st = match first st with
-    T.PERIOD -> st |> shift @> reduce r_type
-  | _ -> p_type st                              
+  | t -> error_expected_list (here st, [T.RANGLE; T.LBRACE], t)                           
 
 (* reduce <type> *)
 and r_type st = match st with
@@ -530,11 +506,6 @@ and p_terminal t_needed st = match first st with
     t -> if t_needed = t
 	        then st |> shift
 	        else error_expected (here st, t_needed, t)
-
-and p_terminal_h t_needed error_hint st = match first st with
-    t -> if t_needed = t
-	        then st |> shift
-	        else error_expected_h (here st, t_needed, t, error_hint);;
 
 (* (<pragma> | <decl>)* *)
 let rec parse_decls token_front =
