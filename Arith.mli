@@ -1,3 +1,5 @@
+(* Interface for Arith *)
+
 type arith =
     Int of int
   | Add of arith * arith

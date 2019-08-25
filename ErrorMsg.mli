@@ -1,3 +1,5 @@
+(* Interface for ErrorMsg *)
+
 val anyErrors : bool ref
 val reset : unit -> unit
 type error_cat = Lex | Parse | Type | Pragma

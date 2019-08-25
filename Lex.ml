@@ -42,7 +42,6 @@ let rec run_cond cond (n, accum, cs) =
         then run_cond cond (n+1, c::accum, cs')
         else (implode (List.rev accum), n, cs);;
 
-exception LexImpossible
 (* lex_code (pos, charstream) = (token, lpos, rpos, cs') *)
 (* token is the lexed token, [lpos,rpos) is the source region,
  * and cs' is the remaining character stream
@@ -197,7 +196,6 @@ and lex_comment (pos, charstream, depth) = (* depth >= 1 *)
           end
       | M.Cons(_, cs) -> lex_comment (pos+1, cs, depth);;
 
-exception Match
 (* some infrastructure to allow strings, files, and
  * interactive streams to be lexed
  *)

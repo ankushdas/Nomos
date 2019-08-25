@@ -1,3 +1,5 @@
+(* Interface for Flags *)
+
 type cost = None | Free | Recv | RecvSend | Send
 val parseCost : string -> cost option
 val pp_cost : cost -> string
