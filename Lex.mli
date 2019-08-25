@@ -1,3 +1,5 @@
+(* Interface for Lex *)
+
 module T = Terminal
 module M = TokStream
 type lexresult = T.terminal * (int * int);;

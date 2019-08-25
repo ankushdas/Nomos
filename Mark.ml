@@ -9,10 +9,6 @@ let pos (line, col) = match col with
 
 let show (left, right, file) = file ^ ":" ^ pos left ^ "-" ^ pos right;;
 
-let show' oext = match oext with
-  | Some ext -> show ext
-  | None -> "<unknown location>";;
-
 let theLine line = String.sub line 0 (String.length(line));;
 
 let rec inputLines n instream = match n with
@@ -54,35 +50,7 @@ let show_source ((line1, col1), (line2, col2), file) =
 
 type 'a marked = 'a * ext option
 
-let mark (x, ext) = (x, Some ext);;
 let mark' (x, ext_opt) = (x, ext_opt);;
 
 let data (x, _ext_opt) = x;;
 let ext (_x, ext_opt) = ext_opt;;
-
-let extmin ((line1, col1), (line2, col2)) =
-if line1 < line2 then (line1, col1)
-else if line1 > line2 then (line2, col2)
-else (* line1 = line2 *) 
-    (line1, min col1 col2);;
-
-let extmax ((line1, col1), (line2, col2)) =
-if line1 > line2 then (line1, col1)
-else if line1 > line2 then (line2, col2)
-else (* line1 = line2 *)
-    (line1, min col1 col2);;
-
-let rec wrap l = match l with
-  | [] -> None
-  | [ext_opt] -> ext_opt
-  | (ext_opt :: ext_opts) ->
-      (match (ext_opt, wrap ext_opts) with
-        | (_, None) -> None
-        | (Some (left1, right1, filename1), Some (left, right, filename)) ->
-            if filename1 = filename
-            then Some (extmin (left1, left), extmax (right1, right), filename)
-            else None
-  | (None, ext_opt') -> ext_opt');;
-
-let map f (x, ext_opt) = (f x, ext_opt);;
-let map' f m = let (_x, ext_opt) = m in (f m, ext_opt);;
