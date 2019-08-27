@@ -2,8 +2,7 @@ TODOS:
 ======
 
 - Fixing the pretty printing in Ast
-- Reset of flags happening within regression
-- Separate out regression from rast config
+- Cleaning out the dependencies
 - Add polymorphism
 - Implement semantics
 - Integration with RaML

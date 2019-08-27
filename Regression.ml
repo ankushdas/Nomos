@@ -5,29 +5,7 @@ module F = Flags
 module RC = RastConfig
 module C = Core
 
-exception OS_FAILURE;;
-exception OS_SUCCESS;;
 exception RegressionImpossible;;
-
-type option =
-    Work of string
-  | Syntax of string
-  | Verbose of int;;
-
-let process_option op = match op with
-  Work(s) ->
-    begin
-      match F.parseCost s with
-          None -> C.eprintf "cost model %s not recognized" s; exit 1
-        | Some cm -> F.work := cm
-    end
-| Syntax(s) ->
-    begin
-      match F.parseSyntax s with
-          None -> C.eprintf "syntax %s not recognized" s; exit 1
-        | Some syn -> F.syntax := syn
-    end
-| Verbose(level) -> F.verbosity := level;;
 
 type outcome =
     StaticError            (* includes lexer, parser, type-checker error *)
@@ -124,67 +102,21 @@ let print_results () =
   ; print_string ("Succeeded:   " ^ string_of_int (!succeeded) ^ "\n")
   ; print_string ("Failed:      " ^ string_of_int (!failed) ^ "\n");;
 
-let rast_file =
-  C.Command.Arg_type.create
-    (fun filename ->
-      match C.Sys.is_file filename with
-          `No | `Unknown ->
-            begin
-              C.eprintf "'%s' is not a regular file.\n%!" filename;
-              exit 1
-            end
-        | `Yes ->
-            if Filename.check_suffix filename ".rast"
-            then filename
-            else
-              begin
-                C.eprintf "'%s' does not have rast extension.\n%!" filename;
-                exit 1
-              end);;
-
-let command =
+let reg_command =
   C.Command.basic
     ~summary:"Regression Testing"
     ~readme:(fun () -> "More detailed information")
     C.Command.Let_syntax.(
       let%map_open
-        verbosity_flag = flag "-v" (optional int)
-          ~doc:"verbosity 0: quiet, 1: default, 2: verbose, 3: debugging mode"
-        and work_flag = flag "-w" (optional string)
-          ~doc:"work-cost-model: none, recv, send, recvsend, free"
-        and syntax_flag = flag "-s" (optional string)
-          ~doc:"syntax: implicit, explicit"
-        and files = anon (sequence ("filename" %: rast_file)) in
+        files = anon (sequence ("filename" %: RC.rast_file)) in
         fun () ->
-          let vlevel =
-          begin
-            match verbosity_flag with
-                None -> Verbose(1)
-              | Some n -> Verbose(n)
-          end
-          in
-          let work_cm =
-            begin
-              match work_flag with
-                  None -> Work("none")
-                | Some s -> Work(s)
-            end
-          in
-          let syntax =
-            begin
-              match syntax_flag with
-                  None -> Syntax("explicit")
-                | Some s -> Syntax(s)
-            end
-          in
           let () = reset_counts () in
           let () = F.reset () in
-          let () = List.iter process_option [vlevel; work_cm; syntax] in
           let () = List.iter test_file files in
           let () = print_results () in
           if !total = !succeeded
-          then print_string ("regression testing successful!\n")
-          else C.eprintf "regression testing failed!\n"; exit 1);;
+          then print_string ("Regression testing successful!\n")
+          else C.eprintf "Regression testing failed!\n"; exit 1);;
 
 let () =
-  C.Command.run ~version:"1.0" ~build_info:"RWO" command;;
+  C.Command.run ~version:"1.0" ~build_info:"RWO" reg_command;;

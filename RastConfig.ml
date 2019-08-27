@@ -1,11 +1,10 @@
-(* Top Level *)
+(* Configuration for running rast files *)
  
 module R = Arith
 module A = Ast
 module PP = Pprint
 module F = Flags
 module C = Core
-module S = Str
  
 (************************)
 (* Command Line Options *)
@@ -148,7 +147,7 @@ let rast_file =
                 exit 1
               end);;
 
-let command =
+let rast_command =
   C.Command.basic
     ~summary:"Typechecking Rast files"
     ~readme:(fun () -> "More detailed information")
