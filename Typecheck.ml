@@ -132,7 +132,7 @@ let rec mem_seen env seen a a' = match seen with
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
 let rec eq_tp' env seen a a' =
   if !Flags.verbosity > 1
-  then print_string ("comparing " ^ A.pp_tp a ^ " and " ^ A.pp_tp a' ^ "\n")
+  then print_string ("comparing " ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
   else ()
   ; eq_tp env seen a a'
 

@@ -76,14 +76,3 @@ type msg =
   | MSend of chan * chan * chan
   | MClose of chan
   | MPay of chan * potential * chan
-
-type sem =
-    Proc of chan * int * (int * int) * expression
-  | Msg of chan * int * (int * int) * msg
-type config = Node of sem * config list | Leaf
-val pp_pot : R.arith -> string
-val pp_potpos : R.arith -> string
-val pp_tp : stype -> tpname
-val pp_channames : string list -> string
-val pp_chan : string * stype -> string
-val pp_config : config -> string

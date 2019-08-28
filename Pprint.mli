@@ -12,5 +12,4 @@ val pp_tpj_compact :
   'a -> A.context -> A.R.arith -> string * A.stype -> string
 val pp_exp_prefix : A.expression -> string
 val pp_decl : 'a -> A.decl -> string
-val pp_config : 'a -> 'b -> A.config -> string
 val pp_exp : 'a -> A.expression -> string

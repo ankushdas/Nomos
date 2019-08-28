@@ -1,8 +1,6 @@
 TODOS:
 ======
 
-- Fixing the pretty printing in Ast
-- Cleaning out the dependencies
-- Add polymorphism
 - Implement semantics
+- Add polymorphism
 - Integration with RaML

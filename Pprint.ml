@@ -44,10 +44,14 @@ type opr = Or | And | Implies | Not | None
 (*******************************)
 
 (* pp_pot p = "{p}", "" if p = 0 *)
-let pp_pot e = A.pp_pot e;;
+let pp_pot e = match e with
+    R.Int(0) -> ""
+  | e -> "{" ^ R.pp_arith e ^ "}";;
 
 (* pp_pospos p = "{p}", "" if p = 1 *)
-let pp_potpos e = A.pp_potpos e;;
+let pp_potpos e = match e with
+    R.Int(1) -> ""
+  | e -> "{" ^ R.pp_arith e ^ "} ";;
 
 (***********************)
 (* Externalizing types *)
@@ -62,6 +66,31 @@ let rec spaces n =
     else " " ^ spaces (n-1);;
 
 let len s = String.length s;;
+
+let rec pp_tp_simple a = match a with
+    A.One -> "1"
+  | Plus(choice) -> "+{ " ^ pp_choice_simple choice ^ " }"
+  | With(choice) -> "&{ " ^ pp_choice_simple choice ^ " }"
+  | Tensor(a,b) -> pp_tp_simple a ^ " * " ^ pp_tp_simple b
+  | Lolli(a,b) -> pp_tp_simple a ^ " -o " ^ pp_tp_simple b
+  | GetPot(pot,a) -> "<" ^ pp_potpos pot ^ "| " ^ pp_tp_simple a
+  | PayPot(pot,a) -> "|" ^ pp_potpos pot ^ "> " ^ pp_tp_simple a
+  | Up(a) -> "/\\ " ^ pp_tp_simple a
+  | Down(a) -> "\\/ " ^ pp_tp_simple a 
+  | TpName(a) -> a
+
+and pp_choice_simple cs = match cs with
+    [] -> ""
+  | [(l,a)] -> l ^ " : " ^ pp_tp_simple a
+  | (l,a)::cs' ->
+      l ^ " : " ^ pp_tp_simple a ^ ", " ^ pp_choice_simple cs';;
+
+let rec pp_channames chans = match chans with
+    [] -> ""
+  | [c] -> c
+  | c::chans' -> c ^ " " ^ pp_channames chans';;
+
+let pp_chan (c,a) = "(" ^ c ^ " : " ^ pp_tp_simple a ^ ")";;
 
 (* pp_tp i A = "A", where i is the indentation after a newline
  * A must be externalized, or internal name '%n' will be printed
@@ -108,7 +137,7 @@ let pp_tp = fun _env -> fun a -> pp_tp 0 a;;
 (* pp_tp_compact env A = "A", without newlines
  * this first externalizes A, then prints on one line
  *)
-let pp_tp_compact _env a = A.pp_tp a;;
+let pp_tp_compact _env a = pp_tp_simple a;;
 
 let rec pp_lsctx env delta = match delta with
     [] -> "."
@@ -136,9 +165,9 @@ let pp_tpj_compact env delta pot (x,a) =
 let rec pp_exp env i exp = match exp with
     A.Fwd(x,y) -> x ^ " <- " ^ y
   | A.Spawn(x,f,xs,q) -> (* exp = x <- f <- xs ; q *)
-      x ^ " <- " ^ f ^ " <- " ^ A.pp_channames xs ^ " ;\n"
+      x ^ " <- " ^ f ^ " <- " ^ pp_channames xs ^ " ;\n"
       ^ pp_exp_indent env i q
-  | A.ExpName(x,f,xs) -> x ^ " <- " ^ f ^ " <- " ^ A.pp_channames xs
+  | A.ExpName(x,f,xs) -> x ^ " <- " ^ f ^ " <- " ^ pp_channames xs
   | A.Lab(x,k,p) -> x ^ "." ^ k ^ " ;\n" ^ pp_exp_indent env i p
   | A.Case(x,bs) -> "case " ^ x ^ " ( " ^ pp_branches env (i+8+len x) bs ^ " )"
   | A.Send(x,w,p) -> "send " ^ x ^ " " ^ w ^ " ;\n" ^ pp_exp_indent env i p
@@ -170,8 +199,8 @@ and pp_branches_indent env i bs = spaces (i-2) ^ "| " ^ pp_branches env i bs;;
 let rec pp_exp_prefix exp = match exp with
     A.Fwd(x,y) -> x ^ " <- " ^ y
   | A.Spawn(x,f,xs,_q) -> (* exp = x <- f <- xs ; q *)
-      x ^ " <- " ^ f ^ " <- " ^ A.pp_channames xs ^ " ; ..."
-  | A.ExpName(x,f,xs) -> x ^ " <- " ^ f ^ " <- " ^ A.pp_channames xs
+      x ^ " <- " ^ f ^ " <- " ^ pp_channames xs ^ " ; ..."
+  | A.ExpName(x,f,xs) -> x ^ " <- " ^ f ^ " <- " ^ pp_channames xs
   | A.Lab(x,k,_p) -> x ^ "." ^ k ^ " ; ..."
   | A.Case(x,_bs) -> "case " ^ x ^ " ( ... )"
   | A.Send(x,w,_p) -> "send " ^ x ^ " " ^ w ^ " ; ..."
@@ -187,7 +216,32 @@ let rec pp_exp_prefix exp = match exp with
   | A.Detach(x,y,_p) -> y ^ " <- detach " ^ x ^ " ; ..."
   | A.Marked(marked_exp) -> pp_exp_prefix (Mark.data marked_exp)
 
+(*
+let rec pp_exp_simple p = match p with
+    A.Fwd(x,y) -> x ^ " <- " ^ y
+  | Spawn(x,f,xs,q) -> x ^ " <- " ^ f ^ " <- " ^ pp_channames xs ^ " ; " ^ pp_exp_simple q
+  | ExpName(x,f,xs) -> x ^ " <- " ^ f ^ " <- " ^ pp_channames xs
+  | Lab(x,k,p) -> x ^ "." ^ k ^ " ; " ^ pp_exp_simple p
+  | Case (x,bs) -> "case " ^ x ^ " (" ^ pp_branches_simple bs ^ ")"
+  | Send(x,w,p) -> "send " ^ x ^ " " ^ w ^ " ; " ^ pp_exp_simple p
+  | Recv(x,y,p) -> y ^ " <- recv " ^ x ^ " ; " ^ pp_exp_simple p
+  | Close(x) -> "close " ^ x
+  | Wait(x,p) -> "wait " ^ x ^ " ; " ^ pp_exp_simple p
+  | Work(pot,p) -> "work " ^ pp_potpos pot ^ " ; " ^ pp_exp_simple p
+  | Pay(x,pot,p) -> "pay " ^ x ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp_simple p
+  | Get(x,pot,p) -> "get " ^ x ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp_simple p
+  | Acquire(x,y,p) -> y ^ " <- acquire " ^ x ^ " ; " ^ pp_exp_simple p
+  | Accept(x,y,p) -> y ^ " <- accept " ^ x ^ " ; " ^ pp_exp_simple p
+  | Release(x,y,p) -> y ^ " <- release " ^ x ^ " ; " ^ pp_exp_simple p
+  | Detach(x,y,p) -> y ^ " <- detach " ^ x ^ " ; " ^ pp_exp_simple p
+  | Marked(marked_p) -> pp_exp_simple (Mark.data marked_p)
 
+and pp_branches_simple bs = match bs with
+    [] -> ""
+  | [{A.lab_exp = (l,p); exp_extent = _ext}] -> l ^ " => " ^ pp_exp_simple p
+  | {A.lab_exp = (l,p); exp_extent = _ext}::bs' ->
+    l ^ " => " ^ pp_exp_simple p ^ " | " ^ pp_branches_simple bs';;
+*)
 
 (****************)
 (* Declarations *)
@@ -202,17 +256,11 @@ let pp_decl env dcl = match dcl with
     "eqtype " ^ v ^ " = " ^ v'
   | A.ExpDecDef(f,(delta,pot,(x,a)),p) ->
     "proc " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ pp_pot pot ^ "- "
-    ^ A.pp_chan (x,a) ^ " = \n" ^
+    ^ pp_chan (x,a) ^ " = \n" ^
     (pp_exp_indent env 4 p)
   | A.Exec(f) -> "exec " ^ f
   | A.Pragma(p,line) -> p ^ line
   | A.TpEq(_a,_a') -> raise Unsupported;;
-
-(******************)
-(* Configurations *)
-(******************)
-
-let pp_config _mtime _mwork conf = A.pp_config conf;;
 
 (**********************)
 (* External Interface *)
