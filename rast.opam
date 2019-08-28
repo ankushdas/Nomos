@@ -6,15 +6,9 @@ authors: ["Ankush Das, Frank Pfenning"]
 license: "Apache-2.0"
 synopsis: "Resource-Aware Session Types Implementation"
 depends: [
-  "cmdliner" {>= "1.0.2"}
-  "uuseg" {>= "11.0.0"}
-  "uutf" {>= "1.0.1"}
   "dune" {build & >= "1.4.0"}
-  "lwt" {>= "4.1.0"}
   "menhir" {>= "20180703"}
-  "ezjsonm" {= "0.6.0"}
-  "ezgzip" {= "0.2.1"}
-  "core"
+  "core" {>= "0.12.1"}
 ]
 build: [
   ["dune" "build" "-p" name "@install" "-j" jobs]
