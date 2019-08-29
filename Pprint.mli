@@ -13,3 +13,4 @@ val pp_tpj_compact :
 val pp_exp_prefix : A.expression -> string
 val pp_decl : 'a -> A.decl -> string
 val pp_exp : 'a -> A.expression -> string
+val pp_msg : A.msg -> string

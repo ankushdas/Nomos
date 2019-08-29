@@ -19,12 +19,6 @@ exception ChannelMismatch (* channel name mismatch in sem *)
 
 exception ExecImpossible (* should never happen at runtime *)
 
-let pp_msg m = match m with
-    A.MLab(c,k,c') -> c ^ "." ^ k ^ " ; " ^ PP.pp_exp_prefix (Fwd(c,c'))
-  | A.MSend(c,e,c') -> "send " ^ c ^ " " ^ e ^ " ; " ^ PP.pp_exp_prefix (Fwd(c,c'))
-  | A.MClose(c) -> "close " ^ c
-  | A.MPay(c,pot,c') -> "pay " ^ c ^ " " ^ A.pp_potpos pot ^ " ; " ^ PP.pp_exp_prefix (Fwd(c,c'));;
-
 type sem =
     Proc of A.chan * int * (int * int) * A.expression   (* Proc(chan, time, (work, pot), P) *)
   | Msg of A.chan * int * (int * int) * A.msg           (* Msg(chan, time, (work, pot), M) *)
@@ -35,7 +29,7 @@ let pp_sem semobj = match semobj with
       ", " ^ string_of_int pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
   | Msg(c,t,(w,pot),m) ->
       "msg(" ^ c ^ ", " ^ string_of_int t ^ "(" ^ string_of_int w ^
-      ", " ^ string_of_int pot ^ "), " ^ pp_msg m ^ ")";;
+      ", " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
 type configuration =
     Leaf
