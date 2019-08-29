@@ -31,12 +31,10 @@ let pp_sem semobj = match semobj with
       "msg(" ^ c ^ ", " ^ string_of_int t ^ "(" ^ string_of_int w ^
       ", " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
-type configuration =
-    Leaf
-  | Node of sem * (configuration M.t);;
+type configuration = sem M.t;;
 
 let fwd_p d s l = match s with
-    A.Proc(c1,t,(w,pot),A.Fwd(c2,d)) ->
+    Proc(c1,t,(w,pot),A.Fwd(c2,d)) ->
       let s' = M.find d l in
       let l' = M.remove d l in
 
