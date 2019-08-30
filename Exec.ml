@@ -1,7 +1,7 @@
 module R = Arith
 module A = Ast
 module PP = Pprint
-module M = Map.Make(String)
+module C = Core
 
 exception InsufficientPotential (* not enough potential to work or pay *)
 
@@ -31,7 +31,24 @@ let pp_sem semobj = match semobj with
       "msg(" ^ c ^ ", " ^ string_of_int t ^ "(" ^ string_of_int w ^
       ", " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
-type configuration = sem M.t;;
+type map_string_sem = sem C.String.Map.t;;
+
+(* poised processes and messages *)
+type poised_sem = map_string_sem;;
+
+(* processes that can take a step readily *)
+type ready_sem = map_string_sem;;
+
+(* shared processes *)
+type shared_sem = map_string_sem;;
+
+(* configuration type *)
+type configuration =
+  {
+    poised : poised_sem;
+    ready : ready_sem;
+    shared : shared_sem
+  };;
 
 let chan_num = ref 0;;
 
@@ -39,14 +56,6 @@ let fresh () =
   let n = !chan_num in
   let () = chan_num := n+1 in
   "c" ^ (string_of_int n);;
-
-let fwd_p d s l = match s with
-    Proc(c1,t,(w,pot),A.Fwd(c2,d)) ->
-      let s' = M.find d l in
-      let l' = M.remove d l in
-
-      ()
-  | _s -> raise ExecImpossible
 
 (*
 let rec one_step steps env config =
