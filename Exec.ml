@@ -33,6 +33,13 @@ let pp_sem semobj = match semobj with
 
 type configuration = sem M.t;;
 
+let chan_num = ref 0;;
+
+let fresh () =
+  let n = !chan_num in
+  let () = chan_num := n+1 in
+  "c" ^ (string_of_int n);;
+
 let fwd_p d s l = match s with
     Proc(c1,t,(w,pot),A.Fwd(c2,d)) ->
       let s' = M.find d l in
