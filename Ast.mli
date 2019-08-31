@@ -70,6 +70,7 @@ val lookup_expdef : decl_ext list -> expname -> expression option
 val lookup_choice : ('a * 'b) list -> 'a -> 'b option
 val is_shared : decl_ext list -> stype -> bool
 val strip_exts : expression -> expression
+val subst : chan -> chan -> expression -> expression
 
 type msg =
     MLab of chan * label * chan

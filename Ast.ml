@@ -181,6 +181,41 @@ and strip_exts_branches bs = match bs with
   | {lab_exp = (l,p); exp_extent = ext}::bs' ->
       {lab_exp = (l,strip_exts p); exp_extent = ext}::strip_exts_branches bs';;
 
+let sub c' c x =
+  if x = c then c' else x;;
+
+let rec subst_list c' c l = match l with
+    [] -> []
+  | x::xs ->
+      if x = c
+      then c'::(subst_list c' c xs)
+      else x::(subst_list c' c xs);;
+
+let rec subst c' c expr = match expr with
+    Fwd(x,y) -> Fwd(sub c' c x, sub c' c y)
+  | Spawn(x,f,xs,q) -> Spawn(x,f, subst_list c' c xs, subst c' c q)
+  | ExpName(x,f,xs) -> ExpName(x,f, subst_list c' c xs)
+  | Lab(x,k,p) -> Lab(sub c' c x, k, subst c' c p)
+  | Case(x,branches) -> Case(sub c' c x, subst_branches c' c branches)
+  | Send(x,w,p) -> Send(sub c' c x, sub c' c w, subst c' c p)
+  | Recv(x,y,p) -> Recv(sub c' c x, y, subst c' c p)
+  | Close(x) -> Close(sub c' c x)
+  | Wait(x,q) -> Wait(sub c' c x, subst c' c q)
+  | Work(pot,p) -> Work(pot, subst c' c p)
+  | Pay(x,pot,p) -> Pay(sub c' c x, pot, subst c' c p)
+  | Get(x,pot,p) -> Get(sub c' c x, pot, subst c' c p)
+  | Acquire(x,y,p) -> Acquire(sub c' c x, y, subst c' c p)
+  | Accept(x,y,p) -> Accept(sub c' c x, y, subst c' c p)
+  | Release(x,y,p) -> Release(sub c' c x, y, subst c' c p)
+  | Detach(x,y,p) -> Detach(sub c' c x, y, subst c' c p)
+  | Marked(marked_p) -> Marked(subst c' c (Mark.data marked_p), Mark.ext marked_p)
+
+and subst_branches c' c bs = match bs with
+    [] -> []
+  | {lab_exp = (l,p); exp_extent = ext}::bs' ->
+      {lab_exp = (l, subst c' c p); exp_extent = ext}::
+      (subst_branches c' c bs')
+
 type msg =
     MLab of chan * label * chan          (* c.k ; c <- c' *)
   | MSend of chan * chan * chan          (* send c d ; c <- c' *)
