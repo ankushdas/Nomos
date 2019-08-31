@@ -703,7 +703,9 @@ and check_exp trace env delta pot exp zc ext = match exp with
       end
   | A.Accept(x,y,p) ->
       begin
-        if not (checktp x [zc])
+        if check_tp y delta || checktp y [zc]
+        then error ext ("variable " ^ y ^ " is not fresh")
+        else if not (checktp x [zc])
         then E.error_unknown_var_right (x,ext)
         else
           let (z,c) = zc in
@@ -737,7 +739,9 @@ and check_exp trace env delta pot exp zc ext = match exp with
       end
   | A.Detach(x,y,p) ->
       begin
-        if not (checktp x [zc])
+        if check_tp y delta || checktp y [zc]
+        then error ext ("variable " ^ y ^ " is not fresh")
+        else if not (checktp x [zc])
         then E.error_unknown_var_right (x,ext)
         else
           let (z,c) = zc in
