@@ -2,6 +2,7 @@ module R = Arith
 module A = Ast
 module PP = Pprint
 module C = Core
+module M = C.Map
 
 exception InsufficientPotential (* not enough potential to work or pay *)
 
@@ -19,11 +20,13 @@ exception ChannelMismatch (* channel name mismatch in sem *)
 
 exception ExecImpossible (* should never happen at runtime *)
 
+exception FinalConfig
+
 type sem =
     Proc of A.chan * int * (int * int) * A.expression   (* Proc(chan, time, (work, pot), P) *)
   | Msg of A.chan * int * (int * int) * A.msg           (* Msg(chan, time, (work, pot), M) *)
 
-let pp_sem semobj = match semobj with
+let pp_sem sem = match sem with
     Proc(c,t,(w,pot),p) ->
       "proc(" ^ c ^ ", " ^ string_of_int t ^ "(" ^ string_of_int w ^
       ", " ^ string_of_int pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
@@ -31,46 +34,334 @@ let pp_sem semobj = match semobj with
       "msg(" ^ c ^ ", " ^ string_of_int t ^ "(" ^ string_of_int w ^
       ", " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
+(* map from offered channel to semantic object *)
 type map_string_sem = sem C.String.Map.t;;
 
-(* poised processes and messages *)
-type poised_sem = map_string_sem;;
-
-(* processes that can take a step readily *)
-type ready_sem = map_string_sem;;
-
-(* shared processes *)
-type shared_sem = map_string_sem;;
+(* map from channel to its continuation *)
+type map_string_string = string C.String.Map.t;;
 
 (* configuration type *)
-type configuration =
-  {
-    poised : poised_sem;
-    ready : ready_sem;
-    shared : shared_sem
-  };;
+type configuration = map_string_sem * map_string_string;;
 
 let chan_num = ref 0;;
 
-let fresh () =
+let lfresh () =
   let n = !chan_num in
   let () = chan_num := n+1 in
   "c" ^ (string_of_int n);;
 
-(*
-let rec one_step steps env config =
-  match config with
-      Leaf -> Leaf
-    | Node(s, l) ->
-        match s with
-          (* fwd+ *)
-            A.Proc(c1,t,(w,pot),A.Fwd(c2,d)) ->
-              if c1 <> c2
-              then raise ChannelMismatch
-              else if pot > 0
-              then raise UnconsumedPotential
-              else fwd_p d s l
-*)
+let max(t,t') =
+  if t > t' then t else t';;
+
+let rec find_branch l bs =
+  match bs with
+      {A.lab_exp = (k,p); A.exp_extent = _ext}::bs' ->
+        if k = l then p
+        else find_branch l bs'
+    | [] -> raise ExecImpossible;;
+
+let find_sem c (conf,_conts) =
+  match M.find conf c with
+      None -> raise ExecImpossible
+    | Some v -> v;;
+
+type pol = Pos | Neg;;
+
+let find_msg c ((_conf,conts) as config) dual =
+  match dual with
+      Neg ->
+        begin
+          match M.find conts c with
+              None -> raise ExecImpossible
+            | Some c' -> find_sem c' config
+        end
+    | Pos -> find_sem c config;;
+
+let remove_sem c (conf,conts) =
+  (M.remove conf c, conts);;
+
+let add_sem sem (conf,conts) =
+  match sem with
+      Proc(c,_t,_wp,_p) ->
+        (M.add_exn conf ~key:c ~data:sem, conts)
+    | Msg(c,_t,_wp,_p) ->
+        (M.add_exn conf ~key:c ~data:sem, conts);;
+
+let add_cont (c,c') (conf,conts) =
+  (conf, M.add_exn conts ~key:c ~data:c');;
+
+let remove_cont c (conf,conts) =
+  (conf, M.remove conts c);;
+
+let get_pot env f =
+  match A.lookup_expdec env f with
+      None -> raise ExecImpossible
+    | Some(_ctx,pot,_zc) -> pot;;
+
+let spawn env ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(d,t,(w,pot),A.Spawn(x,f,xs,q)) ->
+        let c' = lfresh () in
+        let pot' = R.evaluate (get_pot env f) in
+        let proc1 = Proc(c',t+1,(0,pot'),A.ExpName(c',f,xs)) in
+        let proc2 = Proc(d,t+1,(w,pot-pot'),A.subst c' x q) in
+        let config = add_sem proc1 config in
+        let config = add_sem proc2 config in
+        config
+    | _s -> raise ExecImpossible;;
+
+let rec fst l = match l with
+    (c,_t)::l' -> c::(fst l')
+  | [] -> [];;
+
+let expd_def env x f xs =
+  match A.lookup_expdef env f with
+      None -> raise ExecImpossible
+    | Some(exp) ->
+        match A.lookup_expdec env f with
+            None -> raise ExecImpossible
+          | Some (ctx,_pot,(z,_c)) ->
+              let exp = A.subst x z exp in
+              let exp = A.subst_ctx xs (fst ctx.ordered) exp in
+              exp;;
+
+let expand env ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c,t,wp,A.ExpName(x,f,xs)) ->
+        let p = expd_def env x f xs in
+        let proc = Proc(c,t,wp,p) in
+        let config = add_sem proc config in
+        config
+    | _s -> raise ExecImpossible;;
+
+let ichoice_S ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c1,t,wp,A.Lab(c2,l,p)) ->
+        if c1 <> c2
+        then raise ExecImpossible
+        else
+          let c' = lfresh () in
+          let msg = Msg(c1,t+1,(0,0),A.MLabI(c1,l,c')) in
+          let proc = Proc(c',t+1,wp,A.subst c' c1 p) in
+          let config = add_sem msg config in
+          let config = add_sem proc config in
+          let config = add_cont (c1,c') config in
+          config
+    | _s -> raise ExecImpossible;;
+
+let ichoice_R ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(d,t,(w,pot),A.Case(c,bs)) ->
+        if d = c
+        then raise ExecImpossible
+        else
+          let msg = find_msg c config Pos in
+          begin
+            match msg with
+                Msg(ceq, t', (w',pot'), A.MLabE(_ceq,l,c')) ->
+                  if ceq <> c
+                  then raise ExecImpossible
+                  else
+                    let q = find_branch l bs in
+                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
+                    let config = remove_sem c config in
+                    let config = add_sem proc config in
+                    let config = remove_cont c config in
+                    config
+              | _m -> raise ExecImpossible
+          end
+    | _s -> raise ExecImpossible;;
+
+let echoice_S ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(d,t,wp,A.Lab(c,l,p)) ->
+        if d = c
+        then raise ExecImpossible
+        else
+          let c' = lfresh () in
+          let msg = Msg(c',t+1,(0,0),A.MLabE(c,l,c')) in
+          let proc = Proc(d,t+1,wp,A.subst c' c p) in
+          let config = add_sem msg config in
+          let config = add_sem proc config in
+          let config = add_cont (c,c') config in
+          config
+    | _s -> raise ExecImpossible;;
+
+let echoice_R ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c1,t,(w,pot),A.Case(c2,bs)) ->
+        if c1 <> c2
+        then raise ExecImpossible
+        else
+          let msg = find_msg c2 config Neg in
+          begin
+            match msg with
+                Msg(c2', t', (w',pot'), A.MLabE(c2eq,l,_c2')) ->
+                  if c2eq <> c2
+                  then raise ExecImpossible
+                  else
+                    let q = find_branch l bs in
+                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
+                    let config = remove_sem c2' config in
+                    let config = add_sem proc config in
+                    let config = remove_cont c2 config in
+                    config
+              | _m -> raise ExecImpossible
+          end
+    | _s -> raise ExecImpossible;;
+
+let tensor_S ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c1,t,wp,A.Send(c2,e,p)) ->
+        if c1 <> c2
+        then raise ExecImpossible
+        else
+          let c' = lfresh () in
+          let msg = Msg(c1,t+1,(0,0),A.MSendT(c1,e,c')) in
+          let proc = Proc(c',t+1,wp,A.subst c' c1 p) in
+          let config = add_sem msg config in
+          let config = add_sem proc config in
+          let config = add_cont (c1,c') config in
+          config
+    | _s -> raise ExecImpossible;;
+
+let tensor_R ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(d,t,(w,pot),A.Recv(c,x,q)) ->
+        if d = c
+        then raise ExecImpossible
+        else
+          let msg = find_msg c config Pos in
+          begin
+            match msg with
+                Msg(ceq, t', (w',pot'), A.MSendT(_ceq,e,c')) ->
+                  if ceq <> c
+                  then raise ExecImpossible
+                  else
+                    let q = A.subst e x q in
+                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
+                    let config = remove_sem c config in
+                    let config = add_sem proc config in
+                    let config = remove_cont c config in
+                    config
+              | _m -> raise ExecImpossible
+          end
+    | _s -> raise ExecImpossible;;
+        
+let lolli_S ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(d,t,wp,A.Send(c,e,p)) ->
+        if d = c
+        then raise ExecImpossible
+        else
+          let c' = lfresh () in
+          let msg = Msg(c',t+1,(0,0),A.MSendL(c,e,c')) in
+          let proc = Proc(d,t+1,wp,A.subst c' c p) in
+          let config = add_sem msg config in
+          let config = add_sem proc config in
+          let config = add_cont (c,c') config in
+          config
+    | _s -> raise ExecImpossible;;
+
+let lolli_R ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c1,t,(w,pot),A.Recv(c2,x,q)) ->
+        if c1 <> c2
+        then raise ExecImpossible
+        else
+          let msg = find_msg c2 config Neg in
+          begin
+            match msg with
+                Msg(c2', t', (w',pot'), A.MSendL(c2eq,e,_c2')) ->
+                  if c2eq <> c2
+                  then raise ExecImpossible
+                  else
+                    let q = A.subst e x q in
+                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
+                    let config = remove_sem c2' config in
+                    let config = add_sem proc config in
+                    let config = remove_cont c2 config in
+                    config
+              | _m -> raise ExecImpossible
+          end
+    | _s -> raise ExecImpossible;;
+    
+let match_and_step env stepped vs config =
+  match vs with
+      [] -> if stepped then config else raise FinalConfig
+    | sem::sems ->
+        match sem with
+            Proc(c,_t,_wp,p) ->
+              begin
+                match p with
+                    A.Fwd(c',d') ->
+                      (* TODO: how to handle forward *)
+                      config
+                  | A.Spawn _ ->
+                      spawn env c config
+                  | A.ExpName _ ->
+                      expand env c config
+
+                  | A.Lab(c',_l,_p) ->
+                      if c = c'
+                      then ichoice_S c config
+                      else echoice_S c config
+                  
+                  | A.Case(c', _bs) ->
+                      if c = c'
+                      then echoice_R c config
+                      else ichoice_R c config
+                  
+                  | A.Send(c',_e,_p) ->
+                      if c = c'
+                      then tensor_S c config
+                      else lolli_S c config
+                  | A.Recv(c',_x,_p) ->
+                      if c = c'
+                      then lolli_R c config
+                      else tensor_R c config
+                  | _ -> config
+              end
+          | Msg(c,_t,_wp,m) -> config;;
+
+let get_vals (conf,_conts) =
+  M.fold_right conf ~init:[] ~f:(fun ~key:_k ~data:v l -> v::l);;
+          
+let one_step env stepped config =
+  let vs = get_vals config in
+  match_and_step env stepped vs config;;
+
+let rec print_list vs = match vs with
+    [] -> ()
+  | v::vs' -> print_string (v ^ "\n") ; print_list vs';;
+
+let () =
+  let m = M.empty (module C.String) in
+  let m = M.add_exn m ~key:"a" ~data:"c" in
+  let m = M.add_exn m ~key:"c" ~data:"e" in
+  let m = M.add_exn m ~key:"b" ~data:"d" in
+  let vs = get_vals (m,()) in
+  print_list vs;;
 (*
 fun compute steps env (A.Proc(t,(w,p),A.Cut(P,pote,A,Q))::config) queue =
     let val pot = R.evaluate pote

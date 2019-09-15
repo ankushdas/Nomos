@@ -71,9 +71,14 @@ val lookup_choice : ('a * 'b) list -> 'a -> 'b option
 val is_shared : decl_ext list -> stype -> bool
 val strip_exts : expression -> expression
 val subst : chan -> chan -> expression -> expression
+val subst_ctx : chan list -> chan list -> expression -> expression
 
 type msg =
-    MLab of chan * label * chan
-  | MSend of chan * chan * chan
+    MLabI of chan * label * chan
+  | MLabE of chan * label * chan
+  | MSendT of chan * chan * chan
+  | MSendL of chan * chan * chan
   | MClose of chan
-  | MPay of chan * potential * chan
+  | MPayP of chan * potential * chan
+  | MPayG of chan * potential * chan
+

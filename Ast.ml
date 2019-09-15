@@ -214,11 +214,20 @@ and subst_branches c' c bs = match bs with
     [] -> []
   | {lab_exp = (l,p); exp_extent = ext}::bs' ->
       {lab_exp = (l, subst c' c p); exp_extent = ext}::
-      (subst_branches c' c bs')
+      (subst_branches c' c bs');;
+
+let rec subst_ctx ctx' ctx expr = match ctx',ctx with
+    c'::ctx', c::ctx ->
+      subst c' c (subst_ctx ctx' ctx expr)
+  | [], [] -> expr
+  | _c', _c -> raise AstImpossible;;
 
 type msg =
-    MLab of chan * label * chan          (* c.k ; c <- c' *)
-  | MSend of chan * chan * chan          (* send c d ; c <- c' *)
-  | MClose of chan                       (* close c *)
-  | MPay of chan * potential * chan      (* pay c {p} ; c <- c' *)
+    MLabI of chan * label * chan          (* c.k ; c <- c+ *)
+  | MLabE of chan * label * chan          (* c.k ; c+ <- c *)
+  | MSendT of chan * chan * chan          (* send c d ; c <- c+ *)
+  | MSendL of chan * chan * chan          (* send c d ; c+ <- c *)
+  | MClose of chan                        (* close c *)
+  | MPayP of chan * potential * chan      (* pay c {p} ; c <- c+ *)
+  | MPayG of chan * potential * chan      (* pay c {p} ; c+ <- c *)
   
