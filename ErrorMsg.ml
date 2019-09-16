@@ -7,13 +7,15 @@ type error_cat =
     Lex
   | Parse
   | Type
-  | Pragma;;
+  | Pragma
+  | Runtime;;
 
 let err_string cat = match cat with
     Lex -> "lex"
   | Parse -> "parse"
   | Type -> "type"
-  | Pragma -> "pragma";;
+  | Pragma -> "pragma"
+  | Runtime -> "runtime";;
 
 (* We turn tabs into spaces because they are counted as a single character in
     the extents, so in order for the emphasis to be correct we need each

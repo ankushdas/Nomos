@@ -5,6 +5,7 @@ module A = Ast
 module PP = Pprint
 module F = Flags
 module C = Core
+module E = Exec
  
 (************************)
 (* Command Line Options *)
@@ -94,38 +95,23 @@ let load file =
       Some env' -> env'
     | None -> raise ErrorMsg.Error;;                    (* error during elaboration *)
 
-(*
+
 (**********************)
 (* Executing Programs *)
 (**********************)
 
-fun init_pot env f =
-  (case A.lookup_expdec env f
-    of SOME(_,_,(_,pot,_)) => R.evaluate pot
-    |  NONE => raise ErrorMsg.Error) 
-
-(* measure cost = true if 'cost' is measured *)
-fun measure Flags.None = false
-  | measure _ = true
-
-fun run env (A.Exec(f,ext)::decls) =
-    let val () = if !Flags.verbosity >= 1
-                then TextIO.print (PP.pp_decl env (A.Exec(f,ext)) ^ "\n")
-                else ()
-        val p = init_pot env f
-        val config = Exec.exec env [A.Proc(0,(0,p),A.ExpName(f,[]))]
-        (* may raise Exec.SoftError/Exec.HardError *)
-        val () = if !Flags.verbosity >= 1
-                then TextIO.print (PP.pp_config (measure (!Flags.time))
-                (measure (!Flags.work)) config
-                                    ^ "%------------------------------\n")
-                else ()
-    in
-        run env decls
-    end
-  | run env (_::decls) = run env decls
-  | run env nil = ()
-*)
+let rec run env dcls =
+  match dcls with
+      {A.declaration = A.Exec(c,f) ; A.decl_extent = _ext}::dcls' ->
+        let () = if !Flags.verbosity >= 1
+                 then print_string (PP.pp_decl env (A.Exec(c,f)) ^ "\n")
+                 else () in
+        let pot = R.evaluate (E.get_pot env f) in
+        let _config = E.exec env (E.Proc(c,0,(0,pot),A.ExpName(c,f,[]))) in
+        (* may raise Exec.RuntimeError *)
+        run env dcls'
+  | _dcl::dcls' -> run env dcls'
+  | [] -> ();;
 
 let cmd_ext = None;;
 
@@ -184,6 +170,10 @@ let rast_command =
           in
           let () = F.reset () in
           let () = List.iter (process_option cmd_ext) [vlevel; work_cm; syntax] in
+          let env = try load file
+                    with ErrorMsg.Error -> C.eprintf "%% file compilation failed!\n"; exit 1 
+          in
+          let () = print_string ("% file compilation successful!\n") in
           try
-            let _env = load file in print_string ("% file processing successful!\n")
-          with ErrorMsg.Error -> C.eprintf "%% file processing failed!\n"; exit 1);;
+            run env env
+          with E.RuntimeError ->  C.eprintf "%% runtime failed!\n"; exit 1);;

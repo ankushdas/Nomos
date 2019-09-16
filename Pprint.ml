@@ -222,7 +222,8 @@ let pp_msg m = match m with
   | A.MSendT(c,e,c') -> "send " ^ c ^ " " ^ e ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
   | A.MSendL(c,e,c') -> "send " ^ c ^ " " ^ e ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
   | A.MClose(c) -> "close " ^ c
-  | A.MPay(c,pot,c') -> "pay " ^ c ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp_prefix (Fwd(c,c'));;
+  | A.MPayP(c,pot,c') -> "pay " ^ c ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
+  | A.MPayG(c,pot,c') -> "pay " ^ c ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp_prefix (Fwd(c',c));;
 
 
 (*
@@ -267,7 +268,7 @@ let pp_decl env dcl = match dcl with
     "proc " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ pp_pot pot ^ "- "
     ^ pp_chan (x,a) ^ " = \n" ^
     (pp_exp_indent env 4 p)
-  | A.Exec(f) -> "exec " ^ f
+  | A.Exec(c,f) -> "exec " ^ c ^ " <- " ^ f
   | A.Pragma(p,line) -> p ^ line
   | A.TpEq(_a,_a') -> raise Unsupported;;
 

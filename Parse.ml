@@ -167,7 +167,7 @@ let rec p_decl st = match first st with
     T.TYPE -> st |> shift @> p_id @> p_eq_type @> reduce r_decl
   | T.EQTYPE -> st |> shift @> p_eqtype @> reduce r_decl
   | T.PROC -> st |> shift @> p_id @> p_exp_decl_def @> reduce r_decl
-  | T.EXEC -> st |> shift @> p_id @> reduce r_decl
+  | T.EXEC -> st |> shift @> p_id @> p_terminal T.LARROW @> p_id @> reduce r_decl
   | T.PRAGMA _ -> st |> shift @> reduce r_decl
   | T.EOF -> st
   | t -> parse_error (here st, "unexpected token " ^ pp_tok t ^ " at top level")
@@ -235,9 +235,9 @@ and r_decl st_decl = match st_decl with
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
     s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
 
-    (* 'exec' <id> *)
-  | Tok(T.IDENT(id),r2) :: Tok(T.EXEC,r1) :: s ->
-    s $ Decl({A.declaration = A.Exec(id); decl_extent = PS.ext(join r1 r2)})
+    (* 'exec' <id> <- <id> *)
+  | Tok(T.IDENT(f),r3) :: Tok(T.LARROW,_) :: Tok(T.IDENT(c),_) :: Tok(T.EXEC,r1) :: s ->
+    s $ Decl({A.declaration = A.Exec(c,f); decl_extent = PS.ext(join r1 r3)})
 
     (* '#' <line> '\n' *)
   | Tok(T.PRAGMA(p,line),r) :: s ->

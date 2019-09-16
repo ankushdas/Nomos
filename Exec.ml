@@ -18,9 +18,11 @@ exception ProgressError (* final configuration inconsistent *)
 
 exception ChannelMismatch (* channel name mismatch in sem *)
 
+exception UndefinedProcess (* spawning an undefined process *)
+
 exception ExecImpossible (* should never happen at runtime *)
 
-exception FinalConfig
+exception RuntimeError (* should never happen at runtime *)
 
 type sem =
     Proc of A.chan * int * (int * int) * A.expression   (* Proc(chan, time, (work, pot), P) *)
@@ -58,7 +60,7 @@ let rec find_branch l bs =
       {A.lab_exp = (k,p); A.exp_extent = _ext}::bs' ->
         if k = l then p
         else find_branch l bs'
-    | [] -> raise ExecImpossible;;
+    | [] -> raise MissingBranch;;
 
 let find_sem c (conf,_conts) =
   match M.find conf c with
@@ -72,10 +74,10 @@ let find_msg c ((_conf,conts) as config) dual =
       Neg ->
         begin
           match M.find conts c with
-              None -> raise ExecImpossible
-            | Some c' -> find_sem c' config
+              None -> None
+            | Some c' -> Some (find_sem c' config)
         end
-    | Pos -> find_sem c config;;
+    | Pos -> Some (find_sem c config);;
 
 let remove_sem c (conf,conts) =
   (M.remove conf c, conts);;
@@ -95,8 +97,10 @@ let remove_cont c (conf,conts) =
 
 let get_pot env f =
   match A.lookup_expdec env f with
-      None -> raise ExecImpossible
+      None -> raise UndefinedProcess
     | Some(_ctx,pot,_zc) -> pot;;
+
+let stepped = ref false;;
 
 let spawn env ch config =
   let s = find_sem ch config in
@@ -105,11 +109,15 @@ let spawn env ch config =
       Proc(d,t,(w,pot),A.Spawn(x,f,xs,q)) ->
         let c' = lfresh () in
         let pot' = R.evaluate (get_pot env f) in
-        let proc1 = Proc(c',t+1,(0,pot'),A.ExpName(c',f,xs)) in
-        let proc2 = Proc(d,t+1,(w,pot-pot'),A.subst c' x q) in
-        let config = add_sem proc1 config in
-        let config = add_sem proc2 config in
-        config
+        if pot < pot'
+        then raise InsufficientPotential
+        else
+          let proc1 = Proc(c',t+1,(0,pot'),A.ExpName(c',f,xs)) in
+          let proc2 = Proc(d,t+1,(w,pot-pot'),A.subst c' x q) in
+          let config = add_sem proc1 config in
+          let config = add_sem proc2 config in
+          let () = stepped := true in
+          config
     | _s -> raise ExecImpossible;;
 
 let rec fst l = match l with
@@ -118,7 +126,7 @@ let rec fst l = match l with
 
 let expd_def env x f xs =
   match A.lookup_expdef env f with
-      None -> raise ExecImpossible
+      None -> raise UndefinedProcess
     | Some(exp) ->
         match A.lookup_expdec env f with
             None -> raise ExecImpossible
@@ -131,11 +139,16 @@ let expand env ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(c,t,wp,A.ExpName(x,f,xs)) ->
+      Proc(c,t,(w,pot),A.ExpName(x,f,xs)) ->
         let p = expd_def env x f xs in
-        let proc = Proc(c,t,wp,p) in
-        let config = add_sem proc config in
-        config
+        let pot' = R.evaluate (get_pot env f) in
+        if pot <> pot'
+        then raise PotentialMismatch
+        else
+          let proc = Proc(c,t,(w,pot),p) in
+          let config = add_sem proc config in
+          let () = stepped := true in
+          config
     | _s -> raise ExecImpossible;;
 
 let ichoice_S ch config =
@@ -144,7 +157,7 @@ let ichoice_S ch config =
   match s with
       Proc(c1,t,wp,A.Lab(c2,l,p)) ->
         if c1 <> c2
-        then raise ExecImpossible
+        then raise ChannelMismatch
         else
           let c' = lfresh () in
           let msg = Msg(c1,t+1,(0,0),A.MLabI(c1,l,c')) in
@@ -152,31 +165,33 @@ let ichoice_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
+          let () = stepped := true in
           config
     | _s -> raise ExecImpossible;;
 
 let ichoice_R ch config =
   let s = find_sem ch config in
-  let config = remove_sem ch config in
   match s with
       Proc(d,t,(w,pot),A.Case(c,bs)) ->
         if d = c
-        then raise ExecImpossible
+        then raise ChannelMismatch
         else
           let msg = find_msg c config Pos in
           begin
             match msg with
-                Msg(ceq, t', (w',pot'), A.MLabE(_ceq,l,c')) ->
+                Some(Msg(ceq, t', (w',pot'), A.MLabE(_ceq,l,c'))) ->
                   if ceq <> c
-                  then raise ExecImpossible
+                  then raise ChannelMismatch
                   else
                     let q = find_branch l bs in
                     let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
+                    let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
                     let config = remove_cont c config in
+                    let () = stepped := true in
                     config
-              | _m -> raise ExecImpossible
+              | _m -> config
           end
     | _s -> raise ExecImpossible;;
 
@@ -186,7 +201,7 @@ let echoice_S ch config =
   match s with
       Proc(d,t,wp,A.Lab(c,l,p)) ->
         if d = c
-        then raise ExecImpossible
+        then raise ChannelMismatch
         else
           let c' = lfresh () in
           let msg = Msg(c',t+1,(0,0),A.MLabE(c,l,c')) in
@@ -194,33 +209,35 @@ let echoice_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
+          let () = stepped := true in
           config
     | _s -> raise ExecImpossible;;
 
 let echoice_R ch config =
   let s = find_sem ch config in
-  let config = remove_sem ch config in
   match s with
       Proc(c1,t,(w,pot),A.Case(c2,bs)) ->
         if c1 <> c2
-        then raise ExecImpossible
+        then raise ChannelMismatch
         else
           let msg = find_msg c2 config Neg in
           begin
             match msg with
-                Msg(c2', t', (w',pot'), A.MLabE(c2eq,l,_c2')) ->
+                Some(Msg(c2', t', (w',pot'), A.MLabE(c2eq,l,_c2'))) ->
                   if c2eq <> c2
-                  then raise ExecImpossible
+                  then raise ChannelMismatch
                   else
                     let q = find_branch l bs in
                     let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
+                    let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
                     let config = remove_cont c2 config in
+                    let () = stepped := true in
                     config
-              | _m -> raise ExecImpossible
+              | _m -> config
           end
-    | _s -> raise ExecImpossible;;
+    | _s -> config;;
 
 let tensor_S ch config =
   let s = find_sem ch config in
@@ -228,7 +245,7 @@ let tensor_S ch config =
   match s with
       Proc(c1,t,wp,A.Send(c2,e,p)) ->
         if c1 <> c2
-        then raise ExecImpossible
+        then raise ChannelMismatch
         else
           let c' = lfresh () in
           let msg = Msg(c1,t+1,(0,0),A.MSendT(c1,e,c')) in
@@ -236,31 +253,33 @@ let tensor_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
+          let () = stepped := true in
           config
     | _s -> raise ExecImpossible;;
 
 let tensor_R ch config =
   let s = find_sem ch config in
-  let config = remove_sem ch config in
   match s with
       Proc(d,t,(w,pot),A.Recv(c,x,q)) ->
         if d = c
-        then raise ExecImpossible
+        then raise ChannelMismatch
         else
           let msg = find_msg c config Pos in
           begin
             match msg with
-                Msg(ceq, t', (w',pot'), A.MSendT(_ceq,e,c')) ->
+                Some(Msg(ceq, t', (w',pot'), A.MSendT(_ceq,e,c'))) ->
                   if ceq <> c
-                  then raise ExecImpossible
+                  then raise ChannelMismatch
                   else
                     let q = A.subst e x q in
                     let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
+                    let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
                     let config = remove_cont c config in
+                    let () = stepped := true in
                     config
-              | _m -> raise ExecImpossible
+              | _m -> config
           end
     | _s -> raise ExecImpossible;;
         
@@ -270,7 +289,7 @@ let lolli_S ch config =
   match s with
       Proc(d,t,wp,A.Send(c,e,p)) ->
         if d = c
-        then raise ExecImpossible
+        then raise ChannelMismatch
         else
           let c' = lfresh () in
           let msg = Msg(c',t+1,(0,0),A.MSendL(c,e,c')) in
@@ -278,78 +297,257 @@ let lolli_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
+          let () = stepped := true in
           config
     | _s -> raise ExecImpossible;;
 
 let lolli_R ch config =
   let s = find_sem ch config in
-  let config = remove_sem ch config in
   match s with
       Proc(c1,t,(w,pot),A.Recv(c2,x,q)) ->
         if c1 <> c2
-        then raise ExecImpossible
+        then raise ChannelMismatch
         else
           let msg = find_msg c2 config Neg in
           begin
             match msg with
-                Msg(c2', t', (w',pot'), A.MSendL(c2eq,e,_c2')) ->
+                Some(Msg(c2', t', (w',pot'), A.MSendL(c2eq,e,_c2'))) ->
                   if c2eq <> c2
                   then raise ExecImpossible
                   else
                     let q = A.subst e x q in
                     let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
+                    let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
                     let config = remove_cont c2 config in
+                    let () = stepped := true in
+                    config
+              | _m -> config
+          end
+    | _s -> raise ExecImpossible;;
+
+let one_S ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c1,t,(w,pot),A.Close(c2)) ->
+        if c1 <> c2
+        then raise ChannelMismatch
+        else if pot > 0
+        then raise UnconsumedPotential
+        else
+          let msg = Msg(c1,t+1,(w,pot),A.MClose(c1)) in
+          let config = add_sem msg config in
+          let () = stepped := true in
+          config
+    | _s -> raise ExecImpossible;;
+
+let one_R ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(d,t,(w,pot),A.Wait(c,q)) ->
+        if d = c
+        then raise ChannelMismatch
+        else
+          let msg = find_msg c config Pos in
+          begin
+            match msg with
+                Some(Msg(ceq, t', (w',pot'), A.MClose(_ceq))) ->
+                  if ceq <> c
+                  then raise ExecImpossible
+                  else
+                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), q) in
+                    let config = remove_sem c config in
+                    let config = add_sem proc config in
+                    let () = stepped := true in
                     config
               | _m -> raise ExecImpossible
           end
     | _s -> raise ExecImpossible;;
-    
-let match_and_step env stepped vs config =
-  match vs with
-      [] -> if stepped then config else raise FinalConfig
-    | sem::sems ->
-        match sem with
-            Proc(c,_t,_wp,p) ->
-              begin
-                match p with
-                    A.Fwd(c',d') ->
-                      (* TODO: how to handle forward *)
-                      config
-                  | A.Spawn _ ->
-                      spawn env c config
-                  | A.ExpName _ ->
-                      expand env c config
 
-                  | A.Lab(c',_l,_p) ->
-                      if c = c'
-                      then ichoice_S c config
-                      else echoice_S c config
-                  
-                  | A.Case(c', _bs) ->
-                      if c = c'
-                      then echoice_R c config
-                      else ichoice_R c config
-                  
-                  | A.Send(c',_e,_p) ->
-                      if c = c'
-                      then tensor_S c config
-                      else lolli_S c config
-                  | A.Recv(c',_x,_p) ->
-                      if c = c'
-                      then lolli_R c config
-                      else tensor_R c config
-                  | _ -> config
-              end
-          | Msg(c,_t,_wp,m) -> config;;
+let work ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c,t,(w,pot),A.Work(k,p)) ->
+        let k = R.evaluate k in
+        if pot < k
+        then raise InsufficientPotential
+        else
+          let proc = Proc(c,t+1,(w+k,pot-k),p) in
+          let config = add_sem proc config in
+          let () = stepped := true in
+          config
+    | _s -> raise ExecImpossible;;
+
+let paypot_S ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c1,t,(w,pot),A.Pay(c2,epot,p)) ->
+        if c1 <> c2
+        then raise ChannelMismatch
+        else if pot < R.evaluate epot
+        then raise InsufficientPotential
+        else
+          let c' = lfresh () in
+          let vpot = R.evaluate epot in
+          let msg = Msg(c1,t+1,(0,vpot),A.MPayP(c1,epot,c')) in
+          let proc = Proc(c',t+1,(w,pot-vpot),A.subst c' c1 p) in
+          let config = add_sem msg config in
+          let config = add_sem proc config in
+          let config = add_cont (c1,c') config in
+          let () = stepped := true in
+          config
+    | _s -> raise ExecImpossible;;
+
+let paypot_R ch config =
+  let s = find_sem ch config in
+  match s with
+      Proc(d,t,(w,pot),A.Get(c,epot,q)) ->
+        if d = c
+        then raise ChannelMismatch
+        else
+          let msg = find_msg c config Pos in
+          begin
+            match msg with
+                Some(Msg(ceq, t', (w',pot'), A.MPayP(_ceq,epot',c'))) ->
+                  if ceq <> c
+                  then raise ChannelMismatch
+                  else if not (R.eq epot epot')
+                  then raise PotentialMismatch
+                  else
+                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
+                    let config = remove_sem ch config in
+                    let config = remove_sem c config in
+                    let config = add_sem proc config in
+                    let config = remove_cont c config in
+                    let () = stepped := true in
+                    config
+              | _m -> config
+          end
+    | _s -> raise ExecImpossible;;
+        
+let getpot_S ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(d,t,(w,pot),A.Pay(c,epot,p)) ->
+        if d = c
+        then raise ChannelMismatch
+        else if pot < R.evaluate epot
+        then raise InsufficientPotential
+        else
+          let c' = lfresh () in
+          let vpot = R.evaluate epot in
+          let msg = Msg(c',t+1,(0,vpot),A.MPayG(c,epot,c')) in
+          let proc = Proc(d,t+1,(w,pot-vpot),A.subst c' c p) in
+          let config = add_sem msg config in
+          let config = add_sem proc config in
+          let config = add_cont (c,c') config in
+          let () = stepped := true in
+          config
+    | _s -> raise ExecImpossible;;
+
+let getpot_R ch config =
+  let s = find_sem ch config in
+  match s with
+      Proc(c1,t,(w,pot),A.Get(c2,epot,q)) ->
+        if c1 <> c2
+        then raise ChannelMismatch
+        else
+          let msg = find_msg c2 config Neg in
+          begin
+            match msg with
+                Some(Msg(c2', t', (w',pot'), A.MPayG(c2eq,epot',_c2'))) ->
+                  if c2eq <> c2
+                  then raise ChannelMismatch
+                  else if not (R.eq epot epot')
+                  then raise PotentialMismatch
+                  else
+                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
+                    let config = remove_sem ch config in
+                    let config = remove_sem c2' config in
+                    let config = add_sem proc config in
+                    let config = remove_cont c2 config in
+                    let () = stepped := true in
+                    config
+              | _m -> config
+          end
+    | _s -> raise ExecImpossible;;
+
+let match_and_one_step env sem config =
+  match sem with
+      Proc(c,_t,_wp,p) ->
+        begin
+          match p with
+              A.Fwd(c',d') ->
+                (* TODO: how to handle forward *)
+                config
+            | A.Spawn _ ->
+                spawn env c config
+            | A.ExpName _ ->
+                expand env c config
+
+            | A.Lab(c',_l,_p) ->
+                if c = c'
+                then ichoice_S c config
+                else echoice_S c config
+            
+            | A.Case(c', _bs) ->
+                if c = c'
+                then echoice_R c config
+                else ichoice_R c config
+            
+            | A.Send(c',_e,_p) ->
+                if c = c'
+                then tensor_S c config
+                else lolli_S c config
+            | A.Recv(c',_x,_p) ->
+                if c = c'
+                then lolli_R c config
+                else tensor_R c config
+            
+            | A.Close _ ->
+                one_S c config
+            | A.Wait _ ->
+                one_R c config
+
+            | A.Work _ ->
+                work c config
+            | A.Pay(c',_pot,_p) ->
+                if c = c'
+                then paypot_S c config
+                else getpot_S c config
+            | A.Get(c',_pot,_p) ->
+                if c = c'
+                then getpot_R c config
+                else paypot_R c config
+            
+            | A.Marked _ ->
+                raise MarkedExpCategory
+            
+            | _ -> config
+        end
+    | Msg _ -> config;;
 
 let get_vals (conf,_conts) =
   M.fold_right conf ~init:[] ~f:(fun ~key:_k ~data:v l -> v::l);;
           
-let one_step env stepped config =
-  let vs = get_vals config in
-  match_and_step env stepped vs config;;
+let rec step env config =
+  let sems = get_vals config in
+  let config = iterate_and_one_step env sems config in
+  config
+
+and iterate_and_one_step env sems config =
+  stepped := false ;
+  match sems with
+      [] -> if !stepped then step env config else config
+    | sem::sems' ->
+        let config = match_and_one_step env sem config in
+        iterate_and_one_step env sems' config;; 
 
 let rec print_list vs = match vs with
     [] -> ()
@@ -363,14 +561,6 @@ let () =
   let vs = get_vals (m,()) in
   print_list vs;;
 (*
-fun compute steps env (A.Proc(t,(w,p),A.Cut(P,pote,A,Q))::config) queue =
-    let val pot = R.evaluate pote
-    in
-      if not(p >= pot) then raise InsufficientPotential
-      else compute (steps+1) env config (A.Proc(t,(w,p-pot),Q)::A.Proc(t,(0,pot),P)::queue)
-    end
-  | compute steps env (A.Proc(t,(w,p),A.Spawn(P,Q))::config) queue = (* do not count spawn -> cut as step *)
-    compute steps env (A.Proc(t,(w,p),TypeCheck.syn_cut env (P,Q) NONE)::config) queue
   | compute steps env (A.Msg(t',(w',p'),M)::A.Proc(t,(w,p),A.Id)::config) queue =
     if interactsR M then
       if not(p = 0) then raise UnconsumedPotential
@@ -383,110 +573,6 @@ fun compute steps env (A.Proc(t,(w,p),A.Cut(P,pote,A,Q))::config) queue =
       else if not(t' >= t) then raise TimeMismatch
       else compute (steps+1) env config (A.Msg(t',(w+w',p+p'),M)::queue)
     else compute steps env (A.Msg(t',(w',p'),M)::config) (A.Proc(t,(w,p),A.Id)::queue)
-  (*
-  | compute steps env (A.Proc(t,(w,p),A.Id)::config) queue =
-    if not(p = 0) then raise UnconsumedPotential
-    else compute (steps+1) env config queue
-  *)
-  | compute steps env (A.Proc(t,wp,A.LabR(k,P))::config) queue = (* no-cost send *)
-    compute (steps+1) env config (A.Msg(t,(0,0),M.LabR(k))::A.Proc(t,wp,P)::queue)
-  | compute steps env (A.Msg(t,wp,M.LabR(k))::A.Proc(t',wp',A.CaseL(branches))::config) queue =
-    if t <> t' then raise TimeMismatch
-    else compute (steps+1) env config (A.Proc(t,plus wp wp',branch_check (A.lookup_branch branches k))::queue)
-  | compute steps env (A.Proc(t,wp,A.CaseR(branches))::A.Msg(t',wp',M.LabL(k))::config) queue =
-    if t <> t' then raise TimeMismatch
-    else compute (steps+1) env config (A.Proc(t,plus wp wp',branch_check (A.lookup_branch branches k))::queue)
-  | compute steps env (A.Proc(t,wp,A.LabL(k,Q))::config) queue = (* no-cost send *)
-    compute (steps+1) env config (A.Proc(t,wp,Q)::A.Msg(t,(0,0),M.LabL(k))::queue)
-  | compute steps env (A.Proc(t,(w,p),A.CloseR)::config) queue =
-    if not(p = 0) then raise UnconsumedPotential
-    else compute (steps+1) env config (A.Msg(t,(w,p),M.CloseR)::queue)
-  | compute steps env (A.Msg(t,wp,M.CloseR)::A.Proc(t',wp',A.WaitL(Q))::config) queue =
-    if t <> t' then raise TimeMismatch
-    else compute (steps+1) env config (A.Proc(t,plus wp wp',Q)::queue)
-  | compute steps env (A.Proc(t,wp,A.Delay(te',P))::config) queue =
-    let val t' = R.evaluate te'
-    in
-    compute (steps+1) env config (A.Proc(t+t',wp,P)::queue)
-    end
-  | compute steps env (A.Proc(s,wp,A.NowL(Q))::config) queue =
-    compute (steps+1) env config (A.Proc(s,wp,Q)::A.Msg(s,(0,0),M.NowL)::queue)
-  | compute steps env (A.Proc(s,wp',A.WhenR(P))::A.Msg(t,wp,M.NowL)::config) queue =
-    if not(s <= t) then raise TimeMismatch
-    else compute (steps+1) env config (A.Proc(t,plus wp wp',P)::queue)
-  | compute steps env (A.Proc(t,wp,A.NowR(P))::config) queue =
-    compute (steps+1) env config (A.Msg(t,(0,0),M.NowR)::A.Proc(t,wp,P)::queue)
-  | compute steps env (A.Msg(t,wp,M.NowR)::A.Proc(s,wp',A.WhenL(Q))::config) queue =
-    if not(s <= t) then raise TimeMismatch
-    else compute (steps+1) env config (A.Proc(t,plus wp wp',Q)::queue)
-  | compute steps env (A.Proc(t,(w, p), A.Work(pe',P))::config) queue =
-    let val p' = R.evaluate pe'
-    in
-      if not(p >= p') then raise InsufficientPotential
-      else compute (steps+1) env config (A.Proc(t,(w+p',p-p'),P)::queue)
-    end
-  | compute steps env (A.Proc(t,(w,p),A.PayR(pe',P))::config) queue =
-    let val p' = R.evaluate pe'
-    in
-      if not(p >= p') then raise InsufficientPotential
-      else compute (steps+1) env config (A.Msg(t,(0,p'),M.PayR(pe'))::A.Proc(t,(w,p-p'),P)::queue)
-    end
-  | compute steps env (A.Msg(t,wp,M.PayR(p1e))::A.Proc(t',wp',A.GetL(p2e,Q))::config) queue =
-    let val p1 = R.evaluate p1e
-        val p2 = R.evaluate p2e
-    in
-      if t <> t' then raise TimeMismatch
-      else if p1 <> p2 then raise PotentialMismatch
-      else compute (steps+1) env config (A.Proc(t',plus wp wp',Q)::queue)
-    end
-  | compute steps env (A.Proc(t,(w,p),A.PayL(pe',P))::config) queue =
-    let val p' = R.evaluate pe'
-    in
-      if not(p >= p') then raise InsufficientPotential
-      else compute (steps+1) env config (A.Proc(t,(w,p-p'),P)::A.Msg(t,(0,p'),M.PayL(pe'))::queue)
-    end
-  | compute steps env (A.Proc(t,wp,A.GetR(p1e,P))::A.Msg(t',wp',M.PayL(p2e))::config) queue =
-    let val p1 = R.evaluate p1e
-        val p2 = R.evaluate p2e
-    in
-      if t <> t' then raise TimeMismatch
-      else if p1 <> p2 then raise PotentialMismatch
-      else compute (steps+1) env config (A.Proc(t,plus wp wp',P)::queue)
-    end
-  | compute steps env (A.Proc(t,wp,A.AssertR(phi,Q))::config) queue =
-    if not(R.evaluate_prop phi) then raise AssertionFailure
-    else compute (steps+1) env config (A.Msg(t,(0,0),M.AssertR(phi))::A.Proc(t,wp,Q)::queue)
-  | compute steps env (A.Msg(t,(0,0),M.AssertR(phi))::A.Proc(t',wp',A.AssumeL(phi',Q))::config) queue =
-    if t <> t' then raise TimeMismatch
-    else if not(R.evaluate_prop phi') then raise AssumptionFailure
-    else compute (steps+1) env config (A.Proc(t',wp',Q)::queue)
-  | compute steps env (A.Proc(t,wp,A.AssertL(phi,P))::config) queue =
-    if not(R.evaluate_prop phi) then raise AssertionFailure
-    else compute (steps+1) env config (A.Proc(t,wp,P)::A.Msg(t,(0,0),M.AssertL(phi))::queue)
-  | compute steps env (A.Proc(t,wp,A.AssumeR(phi,P))::A.Msg(t',(0,0),M.AssertL(phi'))::config) queue =
-    if t <> t' then raise TimeMismatch
-    else if not(R.evaluate_prop phi) then raise AssumptionFailure
-    else compute (steps+1) env config (A.Proc(t,wp,P)::queue)
-
-  | compute steps env (A.Proc(t,wp,A.Imposs)::config) queue =
-    raise ImpossibleReached
-
-  | compute steps env (A.Proc(t,(w,p),A.ExpName(f,es))::config) queue =
-    (case (A.lookup_expdef env f, A.lookup_expdec env f)
-      of (SOME(vs,P), SOME(vs',con,(_,pot,_))) =>
-              let val sg' = zip_check f vs' es
-                  val pots = R.apply sg' pot
-                  val potv = R.evaluate pots
-                  val con' = R.apply_prop sg' con
-                  val sg = zip_check f vs es
-              in
-                  if not(p=potv) then raise PotentialMismatch
-                  else if not(R.evaluate_prop con') then raise ConstraintFailure
-                  else compute (steps+1) env config (A.Proc(t,(w,p),A.apply_exp sg P)::queue)
-              end
-       | (_,_) => ( ErrorMsg.error NONE ("process " ^ f ^ " undefined or undeclared")
-                  ; raise ErrorMsg.Error ))
-  | compute steps env (p::config) queue = compute steps env config (p::queue)
   | compute steps env nil queue =
     let val config = List.rev queue
     in
@@ -510,7 +596,6 @@ fun compute steps env (A.Proc(t,(w,p),A.Cut(P,pote,A,Q))::config) queue =
  *)
 (* wp = (work, potential) is unused and just blindly propagated
  * until we integrate this Fri Apr  6 08:45:49 2018 -fp *)
-fun plus (w,p) (w',p') = (w+w',p+p')
 
 fun interactsL msg = case msg of
     M.LabL _ => true | M.NowL => true | M.PayL _ => true | M.AssertL _ => true
@@ -583,46 +668,38 @@ fun is_final (P::(config as Q::config')) =
       Internal => raise ProgressError (* can take a step *)
     | _ => ())
   | is_final nil = raise ProgressError (* empty configuration *)
+*)
 
-fun zip_check f vs es =
-    (R.zip vs es)
-    handle ListPair.UnequalLengths => raise IncorrectIndicesLength
+let error = ErrorMsg.error_msg ErrorMsg.Runtime None;;
 
-fun branch_check (NONE) = raise MissingBranch
-  | branch_check (SOME(P)) = P
+let create_config sem =
+  let config = (M.empty (module C.String), M.empty (module C.String)) in
+  let config = add_sem sem config in
+  config;;
 
 (* exec env C = C'
  * C is a process configuration
  * env is the elaborated environment
  * C' is final, poised configuration
  *)
-fun exec env C =
-    (compute 0 env C nil)
-    handle TimeMismatch => ( ErrorMsg.error NONE "time mismatch during execution"
-                           ; raise SoftError )
-        |  InsufficientPotential => ( ErrorMsg.error NONE "insufficient potential during execution"
-                                    ; raise SoftError )
-        |  UnconsumedPotential => ( ErrorMsg.error NONE "unconsumed potential during execution"
-                                  ; raise SoftError )
-        |  PotentialMismatch => ( ErrorMsg.error NONE "potential mismatch during execution"
-                                    ; raise SoftError )
-        | AssertionFailure => ( ErrorMsg.error NONE "assertion failed during execution"
-                              ; raise SoftError )
-        | AssumptionFailure => ( ErrorMsg.error NONE "assumption failure during execution"
-                               ; raise SoftError )
-        | ImpossibleReached => ( ErrorMsg.error NONE "impossible branch reached during execution"
-                               ; raise SoftError )
-        | ConstraintFailure => ( ErrorMsg.error NONE "constraint failed during execution"
-                               ; raise SoftError )
-        | R.NotClosed => ( ErrorMsg.error NONE "open expression in potential during execution"
-                                    ; raise HardError )
-        | IncorrectIndicesLength => ( ErrorMsg.error NONE "index length mismatch during execution"
-                                    ; raise HardError )
-        | MissingBranch => ( ErrorMsg.error NONE "missing branch during execution"
-                           ; raise HardError )
-        | ProgressError => ( ErrorMsg.error NONE "final configuration inconsistent"
-                           ; raise HardError )
-        | MarkedExpCategory => ( ErrorMsg.error NONE "marked expression found at runtime"
-                           ; raise HardError )
-
-*)
+let exec env sem =
+  try step env (create_config sem)
+  with exn ->
+    match exn with
+        InsufficientPotential -> error "insufficient potential during execution"
+                                 ; raise RuntimeError
+      | UnconsumedPotential -> error "unconsumed potential during execution"
+                               ; raise RuntimeError
+      | PotentialMismatch -> error "potential mismatch during execution"
+                             ; raise RuntimeError
+      | MissingBranch -> error "missing branch during execution"
+                         ; raise RuntimeError
+      | ProgressError -> error "final configuration inconsistent"
+                         ; raise RuntimeError
+      | MarkedExpCategory -> error "marked expression found at runtime"
+                             ; raise RuntimeError
+      | ChannelMismatch -> error "channel name mismatch found at runtime"
+                           ; raise RuntimeError
+      | UndefinedProcess -> error "undefined process found at runtime"
+                            ; raise RuntimeError
+      | e -> raise e;;

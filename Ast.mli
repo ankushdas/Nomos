@@ -55,7 +55,7 @@ type decl =
   | TpDef of tpname * stype
   | TpEq of stype * stype
   | ExpDecDef of expname * (context * potential * chan_tp) * expression
-  | Exec of expname
+  | Exec of chan * expname
 type decl_ext = { declaration : decl; decl_extent : ext; }
 type environment = decl_ext list
 

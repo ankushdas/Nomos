@@ -2,7 +2,7 @@
 
 val anyErrors : bool ref
 val reset : unit -> unit
-type error_cat = Lex | Parse | Type | Pragma
+type error_cat = Lex | Parse | Type | Pragma | Runtime
 val error_msg :
   error_cat -> ((int * int) * (int * int) * string) option -> string -> unit
 val warn :

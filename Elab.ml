@@ -158,10 +158,13 @@ and elab_exps env dcls = match dcls with
                       else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
       let p' = A.strip_exts p' in (* always strip extents whether implicit or explicit syntax *)
       {A.declaration = A.ExpDecDef(f,(delta,pot,(x,a)),p'); A.decl_extent = ext}::(elab_exps' env dcls')
-  | ({A.declaration = A.Exec(f); A.decl_extent = ext} as dcl)::dcls' ->
+  | ({A.declaration = A.Exec(_c,f); A.decl_extent = ext} as dcl)::dcls' ->
       begin
-        match A.lookup_expdef env f with
-            Some _p -> dcl::elab_exps' env dcls'
+        match A.lookup_expdec env f with
+            Some (ctx,_pot,_zc) ->
+              if List.length ctx.A.ordered > 0
+              then error ext ("process " ^ f ^ " has a non-empty context, cannot be executed")
+              else dcl::elab_exps' env dcls'
           | None -> error ext ("process " ^ f ^ " undefined")
       end
   | ({A.declaration = A.Pragma(_p,_line); A.decl_extent = ext} as dcl)::_dcls' ->
