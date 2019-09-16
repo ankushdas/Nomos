@@ -32,7 +32,7 @@ proc two : . |- (l : listA) =
 
 exec c <- elem
 
-exec l <- two
+exec k <- two
 
 type bits1 = +{b0 : |{1}> bits1, b1 : |{1}> bits1, $ : |{1}> 1}
 

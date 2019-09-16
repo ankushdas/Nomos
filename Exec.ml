@@ -30,11 +30,11 @@ type sem =
 
 let pp_sem sem = match sem with
     Proc(c,t,(w,pot),p) ->
-      "proc(" ^ c ^ ", " ^ string_of_int t ^ "(" ^ string_of_int w ^
-      ", " ^ string_of_int pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
+      "proc(" ^ c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
   | Msg(c,t,(w,pot),m) ->
-      "msg(" ^ c ^ ", " ^ string_of_int t ^ "(" ^ string_of_int w ^
-      ", " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
+      "msg(" ^ c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
 (* map from offered channel to semantic object *)
 type map_string_sem = sem C.String.Map.t;;
@@ -50,7 +50,7 @@ let chan_num = ref 0;;
 let lfresh () =
   let n = !chan_num in
   let () = chan_num := n+1 in
-  "c" ^ (string_of_int n);;
+  "ch" ^ (string_of_int n);;
 
 let max(t,t') =
   if t > t' then t else t';;
@@ -535,14 +535,20 @@ let match_and_one_step env sem config =
 
 let get_vals (conf,_conts) =
   M.fold_right conf ~init:[] ~f:(fun ~key:_k ~data:v l -> v::l);;
-          
+
+let rec pp_sems sems =
+  match sems with
+      [] -> "---------------------------------------\n"
+    | sem::sems' -> pp_sem sem ^ "\n" ^ pp_sems sems';;
+
 let rec step env config =
   let sems = get_vals config in
+  let () = stepped := false in
+  let () = print_string (pp_sems sems) in
   let config = iterate_and_one_step env sems config in
   config
 
 and iterate_and_one_step env sems config =
-  stepped := false ;
   match sems with
       [] -> if !stepped then step env config else config
     | sem::sems' ->
