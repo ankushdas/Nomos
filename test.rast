@@ -18,6 +18,22 @@ proc append : (l1 : listA), (l2 : listA) |- (l : listA) =
   ( cons => l.cons ; x <- recv l1 ; send l x ; l <- append <- l1 l2
   | nil => wait l1 ; l <- l2)
 
+proc elem : . |- (c : A) = close c
+
+proc two : . |- (l : listA) =
+  c1 <- elem <- ;
+  c2 <- elem <- ;
+  l.cons ;
+  send l c1 ;
+  l.cons ;
+  send l c2 ;
+  l.nil ;
+  close l
+
+exec c <- elem
+
+exec l <- two
+
 type bits1 = +{b0 : |{1}> bits1, b1 : |{1}> bits1, $ : |{1}> 1}
 
 type bits0 = +{b0 : bits0, b1 : bits0, $ : 1}

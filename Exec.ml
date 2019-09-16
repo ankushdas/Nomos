@@ -549,6 +549,7 @@ and iterate_and_one_step env sems config =
         let config = match_and_one_step env sem config in
         iterate_and_one_step env sems' config;; 
 
+(*
 let rec print_list vs = match vs with
     [] -> ()
   | v::vs' -> print_string (v ^ "\n") ; print_list vs';;
@@ -560,6 +561,7 @@ let () =
   let m = M.add_exn m ~key:"b" ~data:"d" in
   let vs = get_vals (m,()) in
   print_list vs;;
+*)
 (*
   | compute steps env (A.Msg(t',(w',p'),M)::A.Proc(t,(w,p),A.Id)::config) queue =
     if interactsR M then

@@ -171,9 +171,10 @@ let rast_command =
           let () = F.reset () in
           let () = List.iter (process_option cmd_ext) [vlevel; work_cm; syntax] in
           let env = try load file
-                    with ErrorMsg.Error -> C.eprintf "%% file compilation failed!\n"; exit 1 
+                    with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1 
           in
-          let () = print_string ("% file compilation successful!\n") in
+          let () = print_string ("% compilation successful!\n") in
           try
-            run env env
-          with E.RuntimeError ->  C.eprintf "%% runtime failed!\n"; exit 1);;
+            let () = run env env in
+            print_string ("% runtime successful!\n")
+            with E.RuntimeError ->  C.eprintf "%% runtime failed!\n"; exit 1);;
