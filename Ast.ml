@@ -230,4 +230,12 @@ type msg =
   | MClose of chan                        (* close c *)
   | MPayP of chan * potential * chan      (* pay c {p} ; c <- c+ *)
   | MPayG of chan * potential * chan      (* pay c {p} ; c+ <- c *)
-  
+
+let msubst c' c m = match m with
+    MLabI(x,k,y) -> MLabI(sub c' c x, k, sub c' c y)
+  | MLabE(x,k,y) -> MLabE(sub c' c x, k, sub c' c y)
+  | MSendT(x,w,y) -> MSendT(sub c' c x, w, sub c' c y)
+  | MSendL(x,w,y) -> MSendL(sub c' c x, w, sub c' c y)
+  | MClose(x) -> MClose(sub c' c x)
+  | MPayP(x,pot,y) -> MPayP(sub c' c x, pot, sub c' c y)
+  | MPayG(x,pot,y) -> MPayG(sub c' c x, pot, sub c' c y);;

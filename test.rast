@@ -30,9 +30,12 @@ proc two : . |- (l : listA) =
   l.nil ;
   close l
 
-exec c <- elem
+proc four : . |- (l : listA) =
+  l1 <- two <- ;
+  l2 <- two <- ;
+  l <- append <- l1 l2
 
-exec k <- two
+exec l <- four
 
 type bits1 = +{b0 : |{1}> bits1, b1 : |{1}> bits1, $ : |{1}> 1}
 

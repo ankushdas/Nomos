@@ -82,3 +82,4 @@ type msg =
   | MPayP of chan * potential * chan
   | MPayG of chan * potential * chan
 
+val msubst : chan -> chan -> msg -> msg

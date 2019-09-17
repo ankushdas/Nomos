@@ -69,15 +69,15 @@ let find_sem c (conf,_conts) =
 
 type pol = Pos | Neg;;
 
-let find_msg c ((_conf,conts) as config) dual =
+let find_msg c (conf,conts) dual =
   match dual with
       Neg ->
         begin
           match M.find conts c with
               None -> None
-            | Some c' -> Some (find_sem c' config)
+            | Some c' -> M.find conf c'
         end
-    | Pos -> Some (find_sem c config);;
+    | Pos -> M.find conf c;;
 
 let remove_sem c (conf,conts) =
   (M.remove conf c, conts);;
@@ -95,12 +95,64 @@ let add_cont (c,c') (conf,conts) =
 let remove_cont c (conf,conts) =
   (conf, M.remove conts c);;
 
+let get_cont c (_conf,conts) =
+  match M.find conts c with
+      None -> raise ExecImpossible
+    | Some c' -> c';;
+
 let get_pot env f =
   match A.lookup_expdec env f with
       None -> raise UndefinedProcess
     | Some(_ctx,pot,_zc) -> pot;;
 
 let stepped = ref false;;
+
+let fwd ch config =
+  let s = find_sem ch config in
+  match s with
+      Proc(c1,t,(w,pot),A.Fwd(c2,d)) ->
+        if c1 <> c2
+        then raise ExecImpossible
+        else
+          begin
+            (* try to apply fwd+ rule *)
+            let msgp = find_msg d config Pos in
+            match msgp with
+                None ->
+                  begin
+                    (* try to apply fwd- rule *)
+                    let msgn = find_msg c1 config Neg in
+                    match msgn with
+                      | Some(Msg(_d,t',(w',pot'),(A.MLabI _ as m)))
+                      | Some(Msg(_d,t',(w',pot'),(A.MSendL _ as m)))
+                      | Some(Msg(_d,t',(w',pot'),(A.MPayG _ as m))) ->
+                          let config = remove_sem c1 config in
+                          let e = get_cont c1 config in
+                          let config = remove_sem e config in
+                          let msg = Msg(e,max(t,t'),(w+w',pot+pot'),A.msubst d c1 m) in
+                          let config = add_sem msg config in
+                          let config = remove_cont c1 config in
+                          let config = add_cont (d,e) config in
+                          let () = stepped := true in
+                          config
+                      | _s -> config
+                  end
+              | Some(Msg(_d,t',(w',pot'),(A.MLabI _ as m)))
+              | Some(Msg(_d,t',(w',pot'),(A.MSendT _ as m)))
+              | Some(Msg(_d,t',(w',pot'),(A.MClose _ as m)))
+              | Some(Msg(_d,t',(w',pot'),(A.MPayP _ as m))) ->
+                  let config = remove_sem c1 config in
+                  let config = remove_sem d config in
+                  let msg = Msg(d,max(t,t'),(w+w',pot+pot'),A.msubst d c1 m) in
+                  let config = add_sem msg config in
+                  let d' = get_cont d config in
+                  let config = remove_cont d config in
+                  let config = add_cont (c1,d') config in
+                  let () = stepped := true in
+                  config
+              | _s -> config
+          end
+    | _s -> raise ExecImpossible;;
 
 let spawn env ch config =
   let s = find_sem ch config in
@@ -145,7 +197,7 @@ let expand env ch config =
         if pot <> pot'
         then raise PotentialMismatch
         else
-          let proc = Proc(c,t,(w,pot),p) in
+          let proc = Proc(c,t,(w,pot),A.subst c x p) in
           let config = add_sem proc config in
           let () = stepped := true in
           config
@@ -179,7 +231,7 @@ let ichoice_R ch config =
           let msg = find_msg c config Pos in
           begin
             match msg with
-                Some(Msg(ceq, t', (w',pot'), A.MLabE(_ceq,l,c'))) ->
+                Some(Msg(ceq, t', (w',pot'), A.MLabI(_ceq,l,c'))) ->
                   if ceq <> c
                   then raise ChannelMismatch
                   else
@@ -483,9 +535,9 @@ let match_and_one_step env sem config =
       Proc(c,_t,_wp,p) ->
         begin
           match p with
-              A.Fwd(c',d') ->
+              A.Fwd _ ->
                 (* TODO: how to handle forward *)
-                config
+                fwd c config
             | A.Spawn _ ->
                 spawn env c config
             | A.ExpName _ ->

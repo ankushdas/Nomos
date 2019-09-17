@@ -217,13 +217,13 @@ let rec pp_exp_prefix exp = match exp with
   | A.Marked(marked_exp) -> pp_exp_prefix (Mark.data marked_exp);;
 
 let pp_msg m = match m with
-    A.MLabI(c,k,c') -> c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
-  | A.MLabE(c,k,c') -> c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
-  | A.MSendT(c,e,c') -> "send " ^ c ^ " " ^ e ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
-  | A.MSendL(c,e,c') -> "send " ^ c ^ " " ^ e ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
+    A.MLabI(c,k,c') -> "+ " ^ c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
+  | A.MLabE(c,k,c') -> "- " ^ c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
+  | A.MSendT(c,e,c') -> "+ " ^ "send " ^ c ^ " " ^ e ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
+  | A.MSendL(c,e,c') -> "- " ^ "send " ^ c ^ " " ^ e ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
   | A.MClose(c) -> "close " ^ c
-  | A.MPayP(c,pot,c') -> "pay " ^ c ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
-  | A.MPayG(c,pot,c') -> "pay " ^ c ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp_prefix (Fwd(c',c));;
+  | A.MPayP(c,pot,c') -> "+ " ^ "pay " ^ c ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
+  | A.MPayG(c,pot,c') -> "- " ^ "pay " ^ c ^ " " ^ pp_potpos pot ^ " ; " ^ pp_exp_prefix (Fwd(c',c));;
 
 
 (*
