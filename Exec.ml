@@ -43,7 +43,10 @@ type map_string_sem = sem C.String.Map.t;;
 type map_string_string = string C.String.Map.t;;
 
 (* configuration type *)
-type configuration = map_string_sem * map_string_string;;
+(* map from offered channel to semantic object *)
+(* map from channel to its continuation channel *)
+(* map from linear channel to its shared counterpart *)
+type configuration = map_string_sem * map_string_string * map_string_string;;
 
 let chan_num = ref 0;;
 
@@ -62,14 +65,14 @@ let rec find_branch l bs =
         else find_branch l bs'
     | [] -> raise MissingBranch;;
 
-let find_sem c (conf,_conts) =
+let find_sem c (conf,_conts,_shared) =
   match M.find conf c with
       None -> raise ExecImpossible
     | Some v -> v;;
 
 type pol = Pos | Neg;;
 
-let find_msg c (conf,conts) dual =
+let find_msg c (conf,conts,_shared) dual =
   match dual with
       Neg ->
         begin
@@ -79,23 +82,34 @@ let find_msg c (conf,conts) dual =
         end
     | Pos -> M.find conf c;;
 
-let remove_sem c (conf,conts) =
-  (M.remove conf c, conts);;
+let remove_sem c (conf,conts,shared) =
+  (M.remove conf c, conts, shared);;
 
-let add_sem sem (conf,conts) =
+let add_sem sem (conf,conts,shared) =
   match sem with
       Proc(c,_t,_wp,_p) ->
-        (M.add_exn conf ~key:c ~data:sem, conts)
+        (M.add_exn conf ~key:c ~data:sem, conts, shared)
     | Msg(c,_t,_wp,_p) ->
-        (M.add_exn conf ~key:c ~data:sem, conts);;
+        (M.add_exn conf ~key:c ~data:sem, conts, shared);;
 
-let add_cont (c,c') (conf,conts) =
-  (conf, M.add_exn conts ~key:c ~data:c');;
+let add_cont (c,c') (conf,conts,shared) =
+  (conf, M.add_exn conts ~key:c ~data:c', shared);;
 
-let remove_cont c (conf,conts) =
-  (conf, M.remove conts c);;
+let remove_cont c (conf,conts,shared) =
+  (conf, M.remove conts c,shared);;
 
-let get_cont c (_conf,conts) =
+let add_shared_map (c,c') (conf,conts,shared) =
+  (conf, conts, M.add_exn shared ~key:c ~data:c');;
+
+let get_shared_chan c (_conf,_conts,shared) =
+  match M.find shared c with
+      None -> raise ExecImpossible
+    | Some c' -> c';;
+
+let remove_shared_map c (conf,conts,shared) =
+  (conf, conts, M.remove shared c);;
+
+let get_cont c (_conf,conts,_shared) =
   match M.find conts c with
       None -> raise ExecImpossible
     | Some c' -> c';;
@@ -530,6 +544,67 @@ let getpot_R ch config =
           end
     | _s -> raise ExecImpossible;;
 
+let get_sems (conf,_conts,_shared) =
+  M.fold_right conf ~init:[] ~f:(fun ~key:_k ~data:v l -> v::l);;
+
+let rec find_procs ch sems =
+  match sems with
+      [] -> []
+    | Msg _::sems' -> find_procs ch sems'
+    | (Proc(_c,_t,_wp,A.Acquire(a,_x,_p)) as proc)::sems' ->
+        if a = ch
+        then proc::(find_procs ch sems')
+        else find_procs ch sems'
+    | Proc _::sems' -> find_procs ch sems';;
+
+let find_acquiring_procs ch config =
+  let sems = get_sems config in
+  find_procs ch sems;;
+
+let pick_random l =
+    List.nth_opt l (Random.int (List.length l));;
+
+let up ch config =
+  let s = find_sem ch config in
+  match s with
+      Proc(as1,t,wp,A.Accept(as2,x,p)) ->
+        begin
+          if as1 <> as2
+          then raise ChannelMismatch
+          else
+            let procs = find_acquiring_procs as1 config in
+            let proc_opt = pick_random procs in
+            match proc_opt with
+                None -> config
+              | Some proc ->
+                  match proc with
+                      Proc(c,t',wp',A.Acquire(aseq,x',q)) ->
+                        if aseq <> as1
+                        then raise ChannelMismatch
+                        else
+                          let al = lfresh () in
+                          let proc1 = Proc(al,max(t,t')+1,wp,A.subst al x p) in
+                          let proc2 = Proc(c,max(t,t')+1,wp',A.subst al x' q) in
+                          let config = remove_sem as1 config in
+                          let config = remove_sem c config in
+                          let config = add_sem proc1 config in
+                          let config = add_sem proc2 config in
+                          let config = add_shared_map (al,as1) config in
+                          config
+                    | _s -> raise ExecImpossible
+        end
+    | _s -> raise ExecImpossible;;
+
+let down ch config =
+  let s = find_sem ch config in
+  match s with
+      Proc(al1,t,(w,pot),A.Detach(al2,x,p)) ->
+        if al1 <> al2
+        then raise ChannelMismatch
+        else config
+    | _s -> raise ExecImpossible;;
+
+
 let match_and_one_step env sem config =
   match sem with
       Proc(c,_t,_wp,p) ->
@@ -577,16 +652,19 @@ let match_and_one_step env sem config =
                 if c = c'
                 then getpot_R c config
                 else paypot_R c config
+
+            | A.Accept _ ->
+                up c config
+            | A.Detach _ ->
+                down c config
+            
+            | A.Acquire _ -> config
+            | A.Release _ -> config
             
             | A.Marked _ ->
                 raise MarkedExpCategory
-            
-            | _ -> config
         end
     | Msg _ -> config;;
-
-let get_vals (conf,_conts) =
-  M.fold_right conf ~init:[] ~f:(fun ~key:_k ~data:v l -> v::l);;
 
 let rec pp_sems sems =
   match sems with
@@ -594,7 +672,7 @@ let rec pp_sems sems =
     | sem::sems' -> pp_sem sem ^ "\n" ^ pp_sems sems';;
 
 let rec step env config =
-  let sems = get_vals config in
+  let sems = get_sems config in
   let () = stepped := false in
   let () = print_string (pp_sems sems) in
   let config = iterate_and_one_step env sems config in
@@ -733,7 +811,7 @@ fun is_final (P::(config as Q::config')) =
 let error = ErrorMsg.error_msg ErrorMsg.Runtime None;;
 
 let create_config sem =
-  let config = (M.empty (module C.String), M.empty (module C.String)) in
+  let config = (M.empty (module C.String), M.empty (module C.String), M.empty (module C.String)) in
   let config = add_sem sem config in
   config;;
 
