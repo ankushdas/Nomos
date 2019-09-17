@@ -92,12 +92,6 @@ let add_sem sem (conf,conts,shared) =
     | Msg(c,_t,_wp,_p) ->
         (M.add_exn conf ~key:c ~data:sem, conts, shared);;
 
-let add_cont (c,c') (conf,conts,shared) =
-  (conf, M.add_exn conts ~key:c ~data:c', shared);;
-
-let remove_cont c (conf,conts,shared) =
-  (conf, M.remove conts c,shared);;
-
 let add_shared_map (c,c') (conf,conts,shared) =
   (conf, conts, M.add_exn shared ~key:c ~data:c');;
 
@@ -108,6 +102,19 @@ let get_shared_chan c (_conf,_conts,shared) =
 
 let remove_shared_map c (conf,conts,shared) =
   (conf, conts, M.remove shared c);;
+        
+let add_cont (c,c') (conf,conts,shared) =
+  match M.find shared c with
+      None -> (conf, M.add_exn conts ~key:c ~data:c', shared)
+    | Some cs ->
+        let config = (conf,conts,shared) in
+        let config = remove_shared_map c config in
+        let config = add_shared_map (c',cs) config in
+        let (conf,conts,shared) = config in
+        (conf, M.add_exn conts ~key:c ~data:c', shared);;
+
+let remove_cont c (conf,conts,shared) =
+  (conf, M.remove conts c,shared);;
 
 let get_cont c (_conf,conts,_shared) =
   match M.find conts c with
@@ -126,7 +133,7 @@ let fwd ch config =
   match s with
       Proc(c1,t,(w,pot),A.Fwd(c2,d)) ->
         if c1 <> c2
-        then raise ExecImpossible
+        then raise ChannelMismatch
         else
           begin
             (* try to apply fwd+ rule *)
@@ -411,7 +418,6 @@ let one_S ch config =
 
 let one_R ch config =
   let s = find_sem ch config in
-  let config = remove_sem ch config in
   match s with
       Proc(d,t,(w,pot),A.Wait(c,q)) ->
         if d = c
@@ -422,14 +428,15 @@ let one_R ch config =
             match msg with
                 Some(Msg(ceq, t', (w',pot'), A.MClose(_ceq))) ->
                   if ceq <> c
-                  then raise ExecImpossible
+                  then raise ChannelMismatch
                   else
                     let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), q) in
+                    let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
                     let () = stepped := true in
                     config
-              | _m -> raise ExecImpossible
+              | _m -> config
           end
     | _s -> raise ExecImpossible;;
 
@@ -550,12 +557,11 @@ let get_sems (conf,_conts,_shared) =
 let rec find_procs ch sems =
   match sems with
       [] -> []
-    | Msg _::sems' -> find_procs ch sems'
     | (Proc(_c,_t,_wp,A.Acquire(a,_x,_p)) as proc)::sems' ->
         if a = ch
         then proc::(find_procs ch sems')
         else find_procs ch sems'
-    | Proc _::sems' -> find_procs ch sems';;
+    | _sem::sems' -> find_procs ch sems';;
 
 let find_acquiring_procs ch config =
   let sems = get_sems config in
@@ -592,18 +598,54 @@ let up ch config =
                           let config = add_sem proc1 config in
                           let config = add_sem proc2 config in
                           let config = add_shared_map (al,as1) config in
+                          let () = stepped := true in
                           config
                     | _s -> raise ExecImpossible
         end
     | _s -> raise ExecImpossible;;
 
+let rec find_proc ch sems =
+  match sems with
+      [] -> None
+    | (Proc(_c,_t,_wp,A.Release(a,_x,_p)) as proc)::sems' ->
+        if a = ch
+        then Some proc
+        else find_proc ch sems'
+    | _sem::sems' -> find_proc ch sems';;
+
+let find_releasing_proc ch config =
+  let sems = get_sems config in
+  find_proc ch sems;;
+
 let down ch config =
   let s = find_sem ch config in
   match s with
-      Proc(al1,t,(w,pot),A.Detach(al2,x,p)) ->
-        if al1 <> al2
-        then raise ChannelMismatch
-        else config
+      Proc(al1,t,wp,A.Detach(al2,x,p)) ->
+        begin
+          if al1 <> al2
+          then raise ChannelMismatch
+          else
+            let proc = find_releasing_proc al1 config in
+            match proc with
+                None -> config
+              | Some proc ->
+                  match proc with
+                      Proc(c,t',wp',A.Release(aleq,x',q)) ->
+                        if aleq <> al1
+                        then raise ChannelMismatch
+                        else
+                          let ash = get_shared_chan al1 config in
+                          let proc1 = Proc(ash,max(t,t')+1,wp,A.subst ash x p) in
+                          let proc2 = Proc(c,max(t,t')+1,wp',A.subst ash x' q) in
+                          let config = remove_sem al1 config in
+                          let config = remove_sem c config in
+                          let config = add_sem proc1 config in
+                          let config = add_sem proc2 config in
+                          let config = remove_shared_map al1 config in
+                          let () = stepped := true in
+                          config
+                    | _s -> raise ExecImpossible
+        end
     | _s -> raise ExecImpossible;;
 
 
@@ -673,10 +715,27 @@ let rec pp_sems sems =
       [] -> "---------------------------------------\n"
     | sem::sems' -> pp_sem sem ^ "\n" ^ pp_sems sems';;
 
+let get_maps (_conf,_conts,shared) =
+  M.fold_right shared ~init:[] ~f:(fun ~key:k ~data:v l -> (k,v)::l);;
+
+let get_conts (_conf,conts,_shared) =
+  M.fold_right conts ~init:[] ~f:(fun ~key:k ~data:v l -> (k,v)::l);;
+
+let rec pp_maps maps =
+  match maps with
+      [] -> "=======================================\n"
+    | (c,c')::maps' -> c ^ " -> " ^ c' ^ "\n" ^ pp_maps maps';; 
+
+let rec pp_config config =
+  let sems = get_sems config in
+  let _maps = get_maps config in
+  let _conts = get_conts config in
+  pp_sems sems;;
+
 let rec step env config =
   let sems = get_sems config in
   let () = stepped := false in
-  let () = print_string (pp_sems sems) in
+  let () = print_string (pp_config config) in
   let config = iterate_and_one_step env sems config in
   config
 
