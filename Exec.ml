@@ -562,7 +562,9 @@ let find_acquiring_procs ch config =
   find_procs ch sems;;
 
 let pick_random l =
-    List.nth_opt l (Random.int (List.length l));;
+  match l with
+      [] -> None
+    | l -> Some(List.nth l (Random.int (List.length l)));;
 
 let up ch config =
   let s = find_sem ch config in
