@@ -20,3 +20,17 @@ proc eating : (lleft : lfork), (lright : lfork) |- (c : phil) =
   right <- release lright ;
   left <- release lleft ;
   c <- thinking <- left right
+
+proc main : . |- (d : 1) =
+  f1 <- fork_proc <- ;
+  f2 <- fork_proc <- ;
+  f3 <- fork_proc <- ;
+  p1 <- thinking <- f1 f1 ;
+  p2 <- thinking <- f2 f1 ;
+  p3 <- thinking <- f3 f1 ;
+  wait p1 ;
+  wait p2 ;
+  wait p3 ;
+  close d
+
+exec d <- main
