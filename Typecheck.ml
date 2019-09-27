@@ -225,6 +225,10 @@ let check_ltp c delta =
   let {A.shared = _sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
     checktp c ldelta;;
 
+let check_emp_lin delta =
+  let {A.shared = _sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
+  List.length ldelta = 0;;
+
 (* must check for existence first *)
 let rec findtp c delta = match delta with
       [] -> raise UnknownTypeError
@@ -707,6 +711,10 @@ and check_exp trace env delta pot exp zc ext = match exp with
         then error ext ("variable " ^ y ^ " is not fresh")
         else if not (checktp x [zc])
         then E.error_unknown_var_right (x,ext)
+        else if not (check_emp_lin delta)
+        then error ext ("independence principle violated: " ^
+                        "expected empty linear context, found: " ^
+                        PP.pp_lsctx env delta.linear)
         else
           let (z,c) = zc in
           match c with
@@ -743,6 +751,10 @@ and check_exp trace env delta pot exp zc ext = match exp with
         then error ext ("variable " ^ y ^ " is not fresh")
         else if not (checktp x [zc])
         then E.error_unknown_var_right (x,ext)
+        else if not (check_emp_lin delta)
+        then error ext ("independence principle violated: " ^
+                        "expected empty linear context, found: " ^
+                        PP.pp_lsctx env delta.linear)
         else
           let (z,c) = zc in
           match c with

@@ -655,7 +655,6 @@ let match_and_one_step env sem config =
         begin
           match p with
               A.Fwd _ ->
-                (* TODO: how to handle forward *)
                 fwd c config
             | A.Spawn _ ->
                 spawn env c config
