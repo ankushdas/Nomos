@@ -36,4 +36,4 @@ proc nd_choice : . |- (d : +{yes : 1, no : 1}) =
             wait f ;
             close d )
 
-exec d <- nd_choice
+exec nd_choice
