@@ -158,7 +158,7 @@ and elab_exps env dcls = match dcls with
                       else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
       let p' = A.strip_exts p' in (* always strip extents whether implicit or explicit syntax *)
       {A.declaration = A.ExpDecDef(f,(delta,pot,(x,a)),p'); A.decl_extent = ext}::(elab_exps' env dcls')
-  | ({A.declaration = A.Exec(_c,f); A.decl_extent = ext} as dcl)::dcls' ->
+  | ({A.declaration = A.Exec(f); A.decl_extent = ext} as dcl)::dcls' ->
       begin
         match A.lookup_expdec env f with
             Some (ctx,_pot,_zc) ->

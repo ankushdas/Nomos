@@ -102,12 +102,11 @@ let load file =
 
 let rec run env dcls =
   match dcls with
-      {A.declaration = A.Exec(c,f) ; A.decl_extent = _ext}::dcls' ->
+      {A.declaration = A.Exec(f) ; A.decl_extent = _ext}::dcls' ->
         let () = if !Flags.verbosity >= 1
-                 then print_string (PP.pp_decl env (A.Exec(c,f)) ^ "\n")
+                 then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
                  else () in
-        let pot = R.evaluate (E.get_pot env f) in
-        let _config = E.exec env (E.Proc(c,0,(0,pot),A.ExpName(c,f,[]))) in
+        let _config = E.exec env f in
         (* may raise Exec.RuntimeError *)
         run env dcls'
   | _dcl::dcls' -> run env dcls'

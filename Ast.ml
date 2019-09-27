@@ -88,7 +88,7 @@ type decl =
   | ExpDecDef of expname *
     (context * potential * chan_tp) *         (* proc f : Delta |{p}- c : C = expression *)
     expression
-  | Exec of chan * expname                           (* exec c <- f *)
+  | Exec of expname                           (* exec f *)
 
 type decl_ext =
   {

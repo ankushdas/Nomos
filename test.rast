@@ -35,7 +35,7 @@ proc four : . |- (l : listA) =
   l2 <- two <- ;
   l <- append <- l1 l2
 
-exec ch0 <- four
+exec four
 
 type bits1 = +{b0 : |{1}> bits1, b1 : |{1}> bits1, $ : |{1}> 1}
 

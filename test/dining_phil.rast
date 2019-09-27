@@ -33,4 +33,4 @@ proc main : . |- (d : 1) =
   wait p3 ;
   close d
 
-exec d <- main
+exec main

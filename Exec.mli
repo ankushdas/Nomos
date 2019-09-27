@@ -16,6 +16,6 @@ exception RuntimeError
 
 val exec :
   A.decl_ext list ->
-  sem ->
+  A.expname ->
   (A.chan, sem, C.String.comparator_witness) M.t * (A.chan, A.chan, C.String.comparator_witness) M.t * (A.chan, A.chan, C.String.comparator_witness) M.t
 

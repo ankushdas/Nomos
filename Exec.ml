@@ -880,7 +880,10 @@ let create_config sem =
  * env is the elaborated environment
  * C' is final, poised configuration
  *)
-let exec env sem =
+let exec env f =
+  let c = lfresh () in
+  let pot = R.evaluate (get_pot env f) in
+  let sem = Proc(c,0,(0,pot),A.ExpName(c,f,[])) in
   try step env (create_config sem)
   with exn ->
     match exn with
