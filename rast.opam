@@ -3,6 +3,8 @@ name: "rast"
 version: "0.0"
 maintainer: "ankushd@cs.cmu.edu"
 authors: ["Ankush Das, Frank Pfenning"]
+homepage: "https://github.com/ankushdas/Nomos"
+bug-reports: "https://github.com/ankushdas/Nomos/issues"
 license: "Apache-2.0"
 synopsis: "Resource-Aware Session Types Implementation"
 depends: [

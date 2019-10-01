@@ -725,7 +725,7 @@ let rec pp_maps maps =
       [] -> "=======================================\n"
     | (c,c')::maps' -> c ^ " -> " ^ c' ^ "\n" ^ pp_maps maps';; 
 
-let rec pp_config config =
+let pp_config config =
   let sems = get_sems config in
   let _maps = get_maps config in
   let _conts = get_conts config in
@@ -745,44 +745,6 @@ and iterate_and_one_step env sems config =
         let config = match_and_one_step env sem config in
         iterate_and_one_step env sems' config;; 
 
-(*
-let rec print_list vs = match vs with
-    [] -> ()
-  | v::vs' -> print_string (v ^ "\n") ; print_list vs';;
-
-let () =
-  let m = M.empty (module C.String) in
-  let m = M.add_exn m ~key:"a" ~data:"c" in
-  let m = M.add_exn m ~key:"c" ~data:"e" in
-  let m = M.add_exn m ~key:"b" ~data:"d" in
-  let vs = get_vals (m,()) in
-  print_list vs;;
-*)
-(*
-  | compute steps env (A.Msg(t',(w',p'),M)::A.Proc(t,(w,p),A.Id)::config) queue =
-    if interactsR M then
-      if not(p = 0) then raise UnconsumedPotential
-      else if not(t' >= t) then raise TimeMismatch
-      else compute (steps+1) env config (A.Msg(t',(w+w',p+p'),M)::queue)
-    else compute steps env (A.Proc(t,(w,p),A.Id)::config) (A.Msg(t',(w',p'),M)::queue)
-  | compute steps env (A.Proc(t,(w,p),A.Id)::A.Msg(t',(w',p'),M)::config) queue =
-    if interactsL M then
-      if not(p = 0) then raise UnconsumedPotential
-      else if not(t' >= t) then raise TimeMismatch
-      else compute (steps+1) env config (A.Msg(t',(w+w',p+p'),M)::queue)
-    else compute steps env (A.Msg(t',(w',p'),M)::config) (A.Proc(t,(w,p),A.Id)::queue)
-  | compute steps env nil queue =
-    let val config = List.rev queue
-    in
-      if steps = 0                    (* no steps taken; done *)
-      then
-        let val () = is_final config
-        in
-          config
-        end
-      else compute 0 env config nil
-    end
-*)
 (*
 
 (* compute steps env config queue = final_config

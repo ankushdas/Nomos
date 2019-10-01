@@ -1,6 +1,7 @@
 TODOS:
 ======
 
-- Implement semantics
+- Check if configuration is poised
+- More efficient printing of configuration
 - Add polymorphism
 - Integration with RaML
