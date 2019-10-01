@@ -48,6 +48,10 @@ type map_string_string = string C.String.Map.t;;
 (* map from linear channel to its shared counterpart *)
 type configuration = map_string_sem * map_string_string * map_string_string;;
 
+type stepped_config =
+  Changed of configuration
+| Unchanged of configuration;;
+
 let chan_num = ref 0;;
 
 let lfresh () =
@@ -126,7 +130,7 @@ let get_pot env f =
       None -> raise UndefinedProcess
     | Some(_ctx,pot,_zc) -> pot;;
 
-let stepped = ref false;;
+(*let stepped = ref false;;*)
 
 let fwd ch config =
   let s = find_sem ch config in
@@ -154,9 +158,8 @@ let fwd ch config =
                           let config = add_sem msg config in
                           let config = remove_cont c1 config in
                           let config = add_cont (d,e) config in
-                          let () = stepped := true in
-                          config
-                      | _s -> config
+                          Changed config
+                      | _s -> Unchanged config
                   end
               | Some(Msg(_d,t',(w',pot'),(A.MLabI _ as m)))
               | Some(Msg(_d,t',(w',pot'),(A.MSendT _ as m)))
@@ -169,9 +172,8 @@ let fwd ch config =
                   let d' = get_cont d config in
                   let config = remove_cont d config in
                   let config = add_cont (c1,d') config in
-                  let () = stepped := true in
-                  config
-              | _s -> config
+                  Changed config
+              | _s -> Unchanged config
           end
     | _s -> raise ExecImpossible;;
 
@@ -189,8 +191,7 @@ let spawn env ch config =
           let proc2 = Proc(d,t+1,(w,pot-pot'),A.subst c' x q) in
           let config = add_sem proc1 config in
           let config = add_sem proc2 config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let rec fst l = match l with
@@ -220,8 +221,7 @@ let expand env ch config =
         else
           let proc = Proc(c,t,(w,pot),A.subst c x p) in
           let config = add_sem proc config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let ichoice_S ch config =
@@ -238,8 +238,7 @@ let ichoice_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let ichoice_R ch config =
@@ -262,9 +261,8 @@ let ichoice_R ch config =
                     let config = remove_sem c config in
                     let config = add_sem proc config in
                     let config = remove_cont c config in
-                    let () = stepped := true in
-                    config
-              | _m -> config
+                    Changed config
+              | _m -> Unchanged config
           end
     | _s -> raise ExecImpossible;;
 
@@ -282,8 +280,7 @@ let echoice_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let echoice_R ch config =
@@ -306,11 +303,10 @@ let echoice_R ch config =
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
                     let config = remove_cont c2 config in
-                    let () = stepped := true in
-                    config
-              | _m -> config
+                    Changed config
+              | _m -> Unchanged config
           end
-    | _s -> config;;
+    | _s -> raise ExecImpossible;;
 
 let tensor_S ch config =
   let s = find_sem ch config in
@@ -326,8 +322,7 @@ let tensor_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let tensor_R ch config =
@@ -350,9 +345,8 @@ let tensor_R ch config =
                     let config = remove_sem c config in
                     let config = add_sem proc config in
                     let config = remove_cont c config in
-                    let () = stepped := true in
-                    config
-              | _m -> config
+                    Changed config
+              | _m -> Unchanged config
           end
     | _s -> raise ExecImpossible;;
         
@@ -370,8 +364,7 @@ let lolli_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let lolli_R ch config =
@@ -394,9 +387,8 @@ let lolli_R ch config =
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
                     let config = remove_cont c2 config in
-                    let () = stepped := true in
-                    config
-              | _m -> config
+                    Changed config
+              | _m -> Unchanged config
           end
     | _s -> raise ExecImpossible;;
 
@@ -412,8 +404,7 @@ let one_S ch config =
         else
           let msg = Msg(c1,t+1,(w,pot),A.MClose(c1)) in
           let config = add_sem msg config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let one_R ch config =
@@ -434,9 +425,8 @@ let one_R ch config =
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
-                    let () = stepped := true in
-                    config
-              | _m -> config
+                    Changed config
+              | _m -> Unchanged config
           end
     | _s -> raise ExecImpossible;;
 
@@ -451,8 +441,7 @@ let work ch config =
         else
           let proc = Proc(c,t+1,(w+k,pot-k),p) in
           let config = add_sem proc config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let paypot_S ch config =
@@ -472,8 +461,7 @@ let paypot_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let paypot_R ch config =
@@ -497,9 +485,8 @@ let paypot_R ch config =
                     let config = remove_sem c config in
                     let config = add_sem proc config in
                     let config = remove_cont c config in
-                    let () = stepped := true in
-                    config
-              | _m -> config
+                    Changed config
+              | _m -> Unchanged config
           end
     | _s -> raise ExecImpossible;;
         
@@ -520,8 +507,7 @@ let getpot_S ch config =
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
-          let () = stepped := true in
-          config
+          Changed config
     | _s -> raise ExecImpossible;;
 
 let getpot_R ch config =
@@ -545,9 +531,8 @@ let getpot_R ch config =
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
                     let config = remove_cont c2 config in
-                    let () = stepped := true in
-                    config
-              | _m -> config
+                    Changed config
+              | _m -> Unchanged config
           end
     | _s -> raise ExecImpossible;;
 
@@ -583,7 +568,7 @@ let up ch config =
             let procs = find_acquiring_procs as1 config in
             let proc_opt = pick_random procs in
             match proc_opt with
-                None -> config
+                None -> Unchanged config
               | Some proc ->
                   match proc with
                       Proc(c,t',wp',A.Acquire(aseq,x',q)) ->
@@ -598,8 +583,7 @@ let up ch config =
                           let config = add_sem proc1 config in
                           let config = add_sem proc2 config in
                           let config = add_shared_map (al,as1) config in
-                          let () = stepped := true in
-                          config
+                          Changed config
                     | _s -> raise ExecImpossible
         end
     | _s -> raise ExecImpossible;;
@@ -627,7 +611,7 @@ let down ch config =
           else
             let proc = find_releasing_proc al1 config in
             match proc with
-                None -> config
+                None -> Unchanged config
               | Some proc ->
                   match proc with
                       Proc(c,t',wp',A.Release(aleq,x',q)) ->
@@ -642,8 +626,7 @@ let down ch config =
                           let config = add_sem proc1 config in
                           let config = add_sem proc2 config in
                           let config = remove_shared_map al1 config in
-                          let () = stepped := true in
-                          config
+                          Changed config
                     | _s -> raise ExecImpossible
         end
     | _s -> raise ExecImpossible;;
@@ -701,13 +684,13 @@ let match_and_one_step env sem config =
             | A.Detach _ ->
                 down c config
             
-            | A.Acquire _ -> config
-            | A.Release _ -> config
+            | A.Acquire _ -> Unchanged config
+            | A.Release _ -> Unchanged config
             
             | A.Marked _ ->
                 raise MarkedExpCategory
         end
-    | Msg _ -> config;;
+    | Msg _ -> Unchanged config;;
 
 let rec pp_sems sems =
   match sems with
@@ -733,17 +716,18 @@ let pp_config config =
 
 let rec step env config =
   let sems = get_sems config in
-  let () = stepped := false in
   let () = print_string (pp_config config) in
-  let config = iterate_and_one_step env sems config in
+  let config = iterate_and_one_step env sems config false in
   config
 
-and iterate_and_one_step env sems config =
+and iterate_and_one_step env sems config stepped =
   match sems with
-      [] -> if !stepped then step env config else config
+      [] -> if stepped then step env config else config
     | sem::sems' ->
-        let config = match_and_one_step env sem config in
-        iterate_and_one_step env sems' config;; 
+        let stepped_config = match_and_one_step env sem config in
+        match stepped_config with
+            Changed config -> iterate_and_one_step env sems' config true
+          | Unchanged config -> iterate_and_one_step env sems' config stepped;;
 
 (*
 
