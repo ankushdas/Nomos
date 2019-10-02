@@ -21,15 +21,20 @@ The expressions currently supported by the parser are:
 - `match-with` expressions
 - the following binary operations: `+, -, *, /`
 - list declaration separated by commas (`[5,6,7]`) or as `x::xs` (`5::[6,7]`)
-- function application, under the constraint that it be declared as `app function_name arg_list` where `arg_list` consists of the arguments separated by spaces.
+- function application, under the constraint that it be declared as `app function_name arg`. Therefore to indicate the application of a curried function, you would have to nest multiple `app` constructions.
 For example, to apply a function `f` to arguments `4` and `5`, type `app app f 4 5`
 - binding variables and functions under the constraint that a function binding be declared as follows
-``let x = fun n -> n+1 in ``
+``
+let x = fun n -> n+1 in ...
+``
 - following Ocaml convention, negative integers are represented as `(-4)` (surrounded by parentheses)
 
 ## Troubleshooting
 If running the `make` command gives the error
-```Sys_error("../Nomos/OcamlParGen/main.native: No such file or directory").
+
+```
+Sys_error("../Nomos/OcamlParGen/main.native: No such file or directory").
 Compilation unsuccessful after building 0 targets (0 cached) in 00:00:00.
 ```
+
 please delete the `main.native` file and rerun the `make` command.
