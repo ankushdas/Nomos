@@ -26,10 +26,10 @@ editor:
 	ocamlfind ocamlc -thread -linkpkg -package core RastConfig.mli
 
 build:
-	@${DUNE} build rast.exe
+	@${DUNE} build src/rast.exe
 
 regression:
-	@${DUNE} build regression.exe
+	@${DUNE} build src/regression.exe
 
 clean:
 	@${DUNE} clean
