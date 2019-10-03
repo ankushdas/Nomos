@@ -72,6 +72,6 @@ let cost_model f flag exp = match flag with
   | Flags.RecvSend -> cost_send f (cost_recv f exp)
   | Flags.Send -> cost_send f exp;;
 
-let apply_cost_work exp = cost_model (fun k -> A.Work(R.Int(1),k)) (!Flags.work) exp;;
+let apply_cost_work exp = cost_model (fun k -> A.Work(A.Arith (R.Int 1),k)) (!Flags.work) exp;;
 
 (* structure Cost *)

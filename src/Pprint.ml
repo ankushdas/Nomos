@@ -73,8 +73,10 @@ let rec pp_tp_simple a = match a with
   | With(choice) -> "&{ " ^ pp_choice_simple choice ^ " }"
   | Tensor(a,b) -> pp_tp_simple a ^ " * " ^ pp_tp_simple b
   | Lolli(a,b) -> pp_tp_simple a ^ " -o " ^ pp_tp_simple b
-  | GetPot(pot,a) -> "<" ^ pp_potpos pot ^ "| " ^ pp_tp_simple a
-  | PayPot(pot,a) -> "|" ^ pp_potpos pot ^ "> " ^ pp_tp_simple a
+  | GetPot(A.Arith pot,a) -> "<" ^ pp_potpos pot ^ "| " ^ pp_tp_simple a
+  | GetPot(A.Star,a) -> "<*| " ^ pp_tp_simple a                           
+  | PayPot(A.Arith pot,a) -> "|" ^ pp_potpos pot ^ "> " ^ pp_tp_simple a
+  | PayPot(A.Star,a) -> "|*> " ^ pp_tp_simple a                           
   | Up(a) -> "/\\ " ^ pp_tp_simple a
   | Down(a) -> "\\/ " ^ pp_tp_simple a 
   | TpName(a) -> a
@@ -108,11 +110,19 @@ let rec pp_tp i a = match a with
       astr ^ " -o " ^ pp_tp (i+inc+4) b
   | A.One -> "1"
   | A.PayPot(pot,a) ->
-      let potstr = pp_potpos pot in
+      let potstr =
+        match pot with
+          | A.Arith p -> pp_potpos p
+          | A.Star -> "*"
+      in
       let inc = len potstr in
       "|" ^ potstr ^ "> " ^ pp_tp (i+inc+3) a
   | A.GetPot(pot,a) ->
-      let potstr = pp_potpos pot in
+      let potstr =
+        match pot with
+          | A.Arith p -> pp_potpos p
+          | A.Star -> "*"
+      in
       let inc = len potstr in
       "<" ^ potstr ^ "| " ^ pp_tp (i+inc+3) a
   | A.Up(a) ->

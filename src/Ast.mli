@@ -7,7 +7,14 @@ type tpname = string
 type expname = string
 type ext = Mark.ext option
 type chan = string
-type potential = R.arith
+
+type 'a polypot =
+  | Arith of R.arith (* p,q, potential for work *)
+  | Star of 'a (* potential to be inferred *)
+
+type void = |        
+type potential = void polypot
+type potstar = unit polypot
 
 type stype =
     Plus of choices
@@ -15,8 +22,8 @@ type stype =
   | Tensor of stype * stype
   | Lolli of stype * stype
   | One
-  | PayPot of potential * stype
-  | GetPot of potential * stype
+  | PayPot of potstar * stype
+  | GetPot of potstar * stype
   | TpName of tpname
   | Up of stype
   | Down of stype

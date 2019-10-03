@@ -8,7 +8,13 @@ type expname = string           (* f, for processes defined with f = P *)
 type ext = Mark.ext option      (* optional extent (source region info) *)
 type chan = string              (* channel names *)
 
-type potential = R.arith    (* p,q, potential for work *)
+type 'a polypot =
+  | Arith of R.arith (* p,q, potential for work *)
+  | Star of 'a (* potential to be inferred *)
+
+type void = |
+type potential = void polypot
+type potstar = unit polypot
 
 (* Types *)
 type stype =
@@ -17,8 +23,8 @@ type stype =
   | Tensor of stype * stype           (* A x B *)
   | Lolli of stype * stype            (* A -o B *)
   | One                               (* 1 *)
-  | PayPot of potential * stype       (* |> A  or  |{p}> A *)
-  | GetPot of potential * stype       (* <| A  or  <{p}| A *)
+  | PayPot of potstar * stype       (* |> A  or  |{p}> A *)
+  | GetPot of potstar * stype       (* <| A  or  <{p}| A *)
   | TpName of tpname                  (* v *)
   | Up of stype                       (* /\ A *)
   | Down of stype                     (* \/ A *)
