@@ -321,6 +321,7 @@ and p_type_prec st = match st with
 (* '>' | '|' | <idx> '|' *)
 (* follows '<' to parse diamond or left triangle *)
 and p_tpopr_ltri st = match first st with
+  | T.STAR -> st |> shift @> p_terminal T.BAR
   | T.BAR -> st |> shift
   | T.LBRACE -> st |> p_idx @> p_terminal T.BAR
   | t -> error_expected_list (here st, [T.BAR; T.LBRACE], t)
@@ -328,21 +329,24 @@ and p_tpopr_ltri st = match first st with
 (* '>' | <idx> '>' *)
 (* follows '|' to parse right triangle *)
 and p_tpopr_rtri st = match first st with
-    T.RANGLE -> st |> shift
+  | T.STAR -> st |> shift @> p_terminal T.RANGLE
+  | T.RANGLE -> st |> shift
   | T.LBRACE -> st |> p_idx @> p_terminal T.RANGLE
   | t -> error_expected_list (here st, [T.RANGLE; T.LBRACE], t)                           
 
 (* reduce <type> *)
 and r_type st = match st with
-    Tok(T.NAT(1),r) :: s -> s $ Tp(A.One, r)
+  | Tok(T.NAT(1),r) :: s -> s $ Tp(A.One, r)
   | Tok(T.RBRACE,r2) :: Alts(alts) :: Tok(T.LBRACE,_) :: Tok(T.PLUS,r1) :: s ->
     s $ Tp(A.Plus(alts), join r1 r2)
   | Tok(T.RBRACE,r2) :: Alts(alts) :: Tok(T.LBRACE,_) :: Tok(T.AMPERSAND,r1) :: s ->
     s $ Tp(A.With(alts), join r1 r2)
   | Tp(tp, r2) :: Tok(T.BAR,_) :: Tok(T.LANGLE,r1) :: s  -> s $ Tp(A.GetPot(R.Int(1),tp), join r1 r2)
   | Tp(tp, r2) :: Tok(T.BAR,_) :: Arith(p,_) :: Tok(T.LANGLE,r1) :: s -> s $ Tp(A.GetPot(p,tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.BAR,_) :: Tok(T.STAR,_) :: Tok(T.LANGLE,r1) :: s -> s $ Tp(A.GetPot(R.Int(1),tp), join r1 r2)
   | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot(R.Int(1),tp), join r1 r2)
   | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Arith(p,_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot(p,tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Tok(T.STAR,_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot(R.Int(1),tp), join r1 r2)
   | Tp(tp, r2) :: Tok(T.UP,r1) :: s -> s $ Tp(A.Up(tp), join r1 r2)
   | Tp(tp, r2) :: Tok(T.DOWN,r1) :: s -> s $ Tp(A.Down(tp), join r1 r2)
   | Tok(T.IDENT(id),r) :: s -> s $ Tp(A.TpName(id),r)
