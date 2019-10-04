@@ -660,7 +660,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
           let a = find_ltp x delta in
           match a with
               A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
-            | A.GetPot(A.Star,a') ->
+            | A.GetPot(A.Star,_a') ->
                 E.error_potstar ext
             | A.GetPot(A.Arith tpot,a') ->
                 if not (R.eq epot tpot)
