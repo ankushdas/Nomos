@@ -22,3 +22,5 @@ val error_label_mismatch :
   string * string * ((int * int) * (int * int) * string) option -> 'a
 val error_label_missing_branch :
   string * ((int * int) * (int * int) * string) option -> 'a
+val error_potstar :
+  ((int * int) * (int * int) * string) option -> 'a

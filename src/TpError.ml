@@ -31,4 +31,7 @@ let error_label_mismatch (l, l', ext) =
 let error_label_missing_branch (l, ext) =
   error ext ("label " ^ l ^ " does not appear among the branches");;
 
+let error_potstar ext =
+  error ext ("found unknown potential * while typechecking");;
+
 (* structure TpError *)

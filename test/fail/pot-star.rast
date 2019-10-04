@@ -1,5 +1,4 @@
-
-#test success
+#test error
 
 type ping  = +{ping : |*> pong}
 type pong  = &{pong : <*| ping}

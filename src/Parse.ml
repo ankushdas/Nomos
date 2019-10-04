@@ -227,13 +227,13 @@ and r_decl st_decl = match st_decl with
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.TURNSTILE,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,R.Int(0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith (R.Int 0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
     (* 'proc' <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Arith(pot,_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
 
     (* 'exec' <id> *)
   | Tok(T.IDENT(f),r2) :: Tok(T.EXEC,r1) :: s ->
@@ -465,11 +465,11 @@ and r_action st = match st with
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.RECV,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
       s $ Action((fun k -> m_exp(A.Recv(chan2,chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r2) :: Arith(pot,_) :: Tok(T.WORK,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Work(pot,k),r1)), join r1 r2)
+      s $ Action((fun k -> m_exp(A.Work(A.Arith pot,k),r1)), join r1 r2)
   | Tok(T.SEMICOLON,r3) :: Arith(pot,r2) :: Tok(T.IDENT(chan),_) :: Tok(T.PAY,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Pay(chan,pot,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Pay(chan,A.Arith pot,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Arith(pot,r2) :: Tok(T.IDENT(chan),_) :: Tok(T.GET,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Get(chan,pot,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Get(chan,A.Arith pot,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACQUIRE,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
       s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACCEPT,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
