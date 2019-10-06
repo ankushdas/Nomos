@@ -10,6 +10,7 @@ type stack_item =
     Tok of T.terminal * region
   | ArithInfix of prec * (R.arith * R.arith -> R.arith) * region
   | Arith of R.arith * region
+  | Star of region
   | Tp of A.stype * region
   | TpInfix of prec * (A.stype * A.stype -> A.stype) * region
   | Context of (A.chan * A.stype) list * region

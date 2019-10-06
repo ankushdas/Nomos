@@ -59,6 +59,7 @@ type stack_item =
     Tok of T.terminal * region   (* lexer token *)
   | ArithInfix of prec * (R.arith * R.arith -> R.arith) * region   (* arithmetic infix operator and constructor *)
   | Arith of R.arith * region                                      (* arithmetic expression *)
+  | Star of region                                                 (* star potential *)
   | Tp of A.stype * region                                         (* types *)
   | TpInfix of prec * (A.stype * A.stype -> A.stype) * region      (* infix tensor and lolli type operators *)
   | Context of (A.chan * A.stype) list * region                    (* context *)
@@ -204,7 +205,7 @@ and r_chan_tp st = match st with
 (* <turnstile> <id> : <type> *)
 and p_turnstile_id_tp st = match first st with
     T.TURNSTILE -> st |> shift @> p_id_tp
-  | T.BAR -> st |> shift @> p_idx @> p_terminal T.MINUS @> p_id_tp
+  | T.BAR -> st |> shift @> p_idx_or_star @> p_terminal T.MINUS @> p_id_tp
   | t -> error_expected_list (here st, [T.TURNSTILE; T.BAR], t)
 
 and p_exp_def st = match first st with
@@ -227,13 +228,13 @@ and r_decl st_decl = match st_decl with
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.TURNSTILE,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,R.Int(0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith (R.Int 0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
     (* 'proc' <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Arith(pot,_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
 
     (* 'exec' <id> *)
   | Tok(T.IDENT(f),r2) :: Tok(T.EXEC,r1) :: s ->
@@ -246,10 +247,14 @@ and r_decl st_decl = match st_decl with
     (* should be the only possibilities *)
   | _s -> raise UnknownReduceDeclError
 
-(* <idx> ::= '{' <arith> '}' *)
-and p_idx st = match first st with
-    T.LBRACE -> st |> shift @> p_arith @> p_terminal T.RBRACE @> reduce r_idx
+(* <idx> ::= '{' <arith> '}' or '{*}' *)
+and p_idx_or_star st = match first st with
+    T.LBRACE -> st |> shift @> p_arith_or_star @> p_terminal T.RBRACE @> reduce r_idx_or_star
   | t -> error_expected (here st, T.LBRACE, t)
+
+and p_arith_or_star st = match first st with
+    T.STAR -> st |> shift
+  | _t -> st |> p_arith
 
 (* <arith> *)
 and p_arith st = match first st with
@@ -285,8 +290,9 @@ and r_arith st = match st with
   (* arithmetic expressions are always preceded by '{' or '(' *)
 
 (* reduce '{' <arith> '}' *)
-and r_idx st = match st with
+and r_idx_or_star st = match st with
     Tok(T.RBRACE,r2) :: Arith(e, _) :: Tok(T.LBRACE,r1) :: s -> s $ Arith (e, join r1 r2)
+  | Tok(T.RBRACE,r2) :: Tok(T.STAR,_) :: Tok(T.LBRACE,r1) :: s -> s $ Star (join r1 r2)
   | _t -> raise UnknownReduceArithError
 
 (* <tp> *)
@@ -322,27 +328,29 @@ and p_type_prec st = match st with
 (* follows '<' to parse diamond or left triangle *)
 and p_tpopr_ltri st = match first st with
   | T.BAR -> st |> shift
-  | T.LBRACE -> st |> p_idx @> p_terminal T.BAR
+  | T.LBRACE -> st |> p_idx_or_star @> p_terminal T.BAR
   | t -> error_expected_list (here st, [T.BAR; T.LBRACE], t)
 
 (* '>' | <idx> '>' *)
 (* follows '|' to parse right triangle *)
 and p_tpopr_rtri st = match first st with
-    T.RANGLE -> st |> shift
-  | T.LBRACE -> st |> p_idx @> p_terminal T.RANGLE
+  | T.RANGLE -> st |> shift
+  | T.LBRACE -> st |> p_idx_or_star @> p_terminal T.RANGLE
   | t -> error_expected_list (here st, [T.RANGLE; T.LBRACE], t)                           
 
 (* reduce <type> *)
 and r_type st = match st with
-    Tok(T.NAT(1),r) :: s -> s $ Tp(A.One, r)
+  | Tok(T.NAT(1),r) :: s -> s $ Tp(A.One, r)
   | Tok(T.RBRACE,r2) :: Alts(alts) :: Tok(T.LBRACE,_) :: Tok(T.PLUS,r1) :: s ->
     s $ Tp(A.Plus(alts), join r1 r2)
   | Tok(T.RBRACE,r2) :: Alts(alts) :: Tok(T.LBRACE,_) :: Tok(T.AMPERSAND,r1) :: s ->
     s $ Tp(A.With(alts), join r1 r2)
-  | Tp(tp, r2) :: Tok(T.BAR,_) :: Tok(T.LANGLE,r1) :: s  -> s $ Tp(A.GetPot(R.Int(1),tp), join r1 r2)
-  | Tp(tp, r2) :: Tok(T.BAR,_) :: Arith(p,_) :: Tok(T.LANGLE,r1) :: s -> s $ Tp(A.GetPot(p,tp), join r1 r2)
-  | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot(R.Int(1),tp), join r1 r2)
-  | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Arith(p,_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot(p,tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.BAR,_) :: Tok(T.LANGLE,r1) :: s  -> s $ Tp(A.GetPot (A.Arith (R.Int 1),tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.BAR,_) :: Arith(p,_) :: Tok(T.LANGLE,r1) :: s -> s $ Tp(A.GetPot(A.Arith p,tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.BAR,_) :: Star(_) :: Tok(T.LANGLE,r1) :: s -> s $ Tp(A.GetPot(A.Star,tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot (Arith (R.Int 1),tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Arith(p,_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot(A.Arith p,tp), join r1 r2)
+  | Tp(tp, r2) :: Tok(T.RANGLE,_) :: Star(_) :: Tok(T.BAR,r1) :: s -> s $ Tp(A.PayPot(A.Star,tp), join r1 r2)
   | Tp(tp, r2) :: Tok(T.UP,r1) :: s -> s $ Tp(A.Up(tp), join r1 r2)
   | Tp(tp, r2) :: Tok(T.DOWN,r1) :: s -> s $ Tp(A.Down(tp), join r1 r2)
   | Tok(T.IDENT(id),r) :: s -> s $ Tp(A.TpName(id),r)
@@ -433,7 +441,7 @@ and r_arg st = match st with
 (* [<idx>] postfix of action, default is 1 *)
 and p_idx_opt st = match first st with
     T.SEMICOLON -> st |> push (Arith(R.Int(1), here st)) @> shift @> reduce r_action
-  | T.LBRACE -> st |> p_idx @> p_terminal T.SEMICOLON @> reduce r_action
+  | T.LBRACE -> st |> p_idx_or_star @> p_terminal T.SEMICOLON @> reduce r_action
   | t -> error_expected_list (here st, [T.SEMICOLON; T.LBRACE], t)
 
 (* reduce <exp>, where <exp> has no continuation (atomic expressions) *)
@@ -461,11 +469,17 @@ and r_action st = match st with
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.RECV,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
       s $ Action((fun k -> m_exp(A.Recv(chan2,chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r2) :: Arith(pot,_) :: Tok(T.WORK,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Work(pot,k),r1)), join r1 r2)
+      s $ Action((fun k -> m_exp(A.Work(A.Arith pot,k),r1)), join r1 r2)
+  | Tok(T.SEMICOLON,r2) :: Star(_) :: Tok(T.WORK,r1) :: s ->
+      s $ Action((fun k -> m_exp(A.Work(A.Star,k),r1)), join r1 r2)
   | Tok(T.SEMICOLON,r3) :: Arith(pot,r2) :: Tok(T.IDENT(chan),_) :: Tok(T.PAY,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Pay(chan,pot,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Pay(chan,A.Arith pot,k),join r1 r2)), join r1 r3)
+  | Tok(T.SEMICOLON,r3) :: Star(r2) :: Tok(T.IDENT(chan),_) :: Tok(T.PAY,r1) :: s ->
+      s $ Action((fun k -> m_exp(A.Pay(chan,A.Star,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Arith(pot,r2) :: Tok(T.IDENT(chan),_) :: Tok(T.GET,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Get(chan,pot,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Get(chan,A.Arith pot,k),join r1 r2)), join r1 r3)
+  | Tok(T.SEMICOLON,r3) :: Star(r2) :: Tok(T.IDENT(chan),_) :: Tok(T.GET,r1) :: s ->
+      s $ Action((fun k -> m_exp(A.Get(chan,A.Star,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACQUIRE,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
       s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACCEPT,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->

@@ -22,6 +22,8 @@ exception UndefinedProcess (* spawning an undefined process *)
 
 exception ExecImpossible (* should never happen at runtime *)
 
+exception StarPotential
+
 exception RuntimeError (* should never happen at runtime *)
 
 type sem =
@@ -61,6 +63,18 @@ let lfresh () =
 
 let max(t,t') =
   if t > t' then t else t';;
+
+let try_evaluate pot =
+  match pot with
+      A.Star -> raise StarPotential
+    | A.Arith pot -> R.evaluate pot;;
+
+let try_eq pot1 pot2 =
+  match pot1, pot2 with
+      A.Star, A.Star -> raise StarPotential
+    | A.Star, A.Arith _ -> raise StarPotential
+    | A.Arith _, A.Star -> raise StarPotential
+    | A.Arith pot1, A.Arith pot2 -> R.eq pot1 pot2;;
 
 let rec find_branch l bs =
   match bs with
@@ -183,7 +197,7 @@ let spawn env ch config =
   match s with
       Proc(d,t,(w,pot),A.Spawn(x,f,xs,q)) ->
         let c' = lfresh () in
-        let pot' = R.evaluate (get_pot env f) in
+        let pot' = try_evaluate (get_pot env f) in
         if pot < pot'
         then raise InsufficientPotential
         else
@@ -215,7 +229,7 @@ let expand env ch config =
   match s with
       Proc(c,t,(w,pot),A.ExpName(x,f,xs)) ->
         let p = expd_def env x f xs in
-        let pot' = R.evaluate (get_pot env f) in
+        let pot' = try_evaluate (get_pot env f) in
         if pot <> pot'
         then raise PotentialMismatch
         else
@@ -435,7 +449,7 @@ let work ch config =
   let config = remove_sem ch config in
   match s with
       Proc(c,t,(w,pot),A.Work(k,p)) ->
-        let k = R.evaluate k in
+        let k = try_evaluate k in
         if pot < k
         then raise InsufficientPotential
         else
@@ -451,11 +465,11 @@ let paypot_S ch config =
       Proc(c1,t,(w,pot),A.Pay(c2,epot,p)) ->
         if c1 <> c2
         then raise ChannelMismatch
-        else if pot < R.evaluate epot
+        else if pot < try_evaluate epot
         then raise InsufficientPotential
         else
           let c' = lfresh () in
-          let vpot = R.evaluate epot in
+          let vpot = try_evaluate epot in
           let msg = Msg(c1,t+1,(0,vpot),A.MPayP(c1,epot,c')) in
           let proc = Proc(c',t+1,(w,pot-vpot),A.subst c' c1 p) in
           let config = add_sem msg config in
@@ -477,7 +491,7 @@ let paypot_R ch config =
                 Some(Msg(ceq, t', (w',pot'), A.MPayP(_ceq,epot',c'))) ->
                   if ceq <> c
                   then raise ChannelMismatch
-                  else if not (R.eq epot epot')
+                  else if not (try_eq epot epot')
                   then raise PotentialMismatch
                   else
                     let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
@@ -497,11 +511,11 @@ let getpot_S ch config =
       Proc(d,t,(w,pot),A.Pay(c,epot,p)) ->
         if d = c
         then raise ChannelMismatch
-        else if pot < R.evaluate epot
+        else if pot < try_evaluate epot
         then raise InsufficientPotential
         else
           let c' = lfresh () in
-          let vpot = R.evaluate epot in
+          let vpot = try_evaluate epot in
           let msg = Msg(c',t+1,(0,vpot),A.MPayG(c,epot,c')) in
           let proc = Proc(d,t+1,(w,pot-vpot),A.subst c' c p) in
           let config = add_sem msg config in
@@ -523,7 +537,7 @@ let getpot_R ch config =
                 Some(Msg(c2', t', (w',pot'), A.MPayG(c2eq,epot',_c2'))) ->
                   if c2eq <> c2
                   then raise ChannelMismatch
-                  else if not (R.eq epot epot')
+                  else if not (try_eq epot epot')
                   then raise PotentialMismatch
                   else
                     let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
@@ -828,7 +842,7 @@ let create_config sem =
  *)
 let exec env f =
   let c = lfresh () in
-  let pot = R.evaluate (get_pot env f) in
+  let pot = try_evaluate (get_pot env f) in
   let sem = Proc(c,0,(0,pot),A.ExpName(c,f,[])) in
   try step env (create_config sem)
   with exn ->
@@ -849,4 +863,6 @@ let exec env f =
                            ; raise RuntimeError
       | UndefinedProcess -> error "undefined process found at runtime"
                             ; raise RuntimeError
+      | StarPotential -> error "potential * found at runtime"
+                         ; raise RuntimeError
       | e -> raise e;;

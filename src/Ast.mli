@@ -7,7 +7,10 @@ type tpname = string
 type expname = string
 type ext = Mark.ext option
 type chan = string
-type potential = R.arith
+
+type potential =
+  | Arith of R.arith
+  | Star
 
 type stype =
     Plus of choices

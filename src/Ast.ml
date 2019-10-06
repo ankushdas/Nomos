@@ -8,7 +8,9 @@ type expname = string           (* f, for processes defined with f = P *)
 type ext = Mark.ext option      (* optional extent (source region info) *)
 type chan = string              (* channel names *)
 
-type potential = R.arith    (* p,q, potential for work *)
+type potential =
+  | Arith of R.arith            (* p,q, potential for work *)
+  | Star                        (* potential to be inferred *)
 
 (* Types *)
 type stype =
