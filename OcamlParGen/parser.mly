@@ -1,26 +1,38 @@
 %token <int> INT
 %token <string> ID
+%token APP
 %token LPAREN RPAREN
 %token TRUE FALSE
 %token IF THEN ELSE
 %token LET IN
+%token COLON
+%token GOESTO
 %token EMPTYLIST LSQUARE RSQUARE CONS COMMA
 %token EQUALS
+%token INTEGER BOOLEAN LIST
 %token MATCH WITH BAR 
-%token APP FUN RIGHTARROW
+%token FUN RIGHTARROW
 %token PLUS MINUS TIMES DIV
 %token EOF
+%left RIGHTARROW
+%nonassoc LIST
 %nonassoc statement
-%left CONS
+%right CONS
 %left PLUS MINUS
 %left TIMES DIV
-%start <Ast.expr option> prog
+%start <Ast.program> prog
 %%
 
 prog : 
-    | e = expr EOF { Some e }
+    | e = expr COLON typ = typeVal EOF { Ast.Program (e, typ) }
     ;
 
+typeVal :
+    | INTEGER { Ast.Integer }
+    | BOOLEAN { Ast.Boolean }
+    | t1 =  typeVal RIGHTARROW t2 = typeVal { Ast.Arrow(t1, t2) }
+    | t1 = typeVal LIST { Ast.ListTP(t1) }
+    
 expr :
     | LPAREN MINUS i = INT RPAREN     { Int (-i) } 
     | LPAREN e = expr RPAREN { e }
@@ -37,14 +49,15 @@ expr :
     | l = lambdaExp     { l           }
     | o = op            { o           }
     ;
-    
+
 cond :
     | IF; ifE = expr; THEN; thenE = expr; ELSE; elseE = expr 
-                                          {  IfWithElse (ifE, thenE, elseE) } %prec statement
+                                          {  If (ifE, thenE, elseE) } 
+                                          %prec statement
     ;
 
 bind  :
-    |   x = ID; EQUALS; e = expr { Binding(x, e)  }
+    |   x = ID; COLON; t = typeVal; EQUALS; e = expr { Binding(x, e, t)  }
     ;
 
 letin :
@@ -72,21 +85,21 @@ op :
    ;
 
 matchExp :
-    | MATCH; x = expr; WITH; EMPTYLIST; RIGHTARROW; y = expr; BAR; a = ID; 
-      CONS; b = ID; RIGHTARROW; c = expr   { Ast.Match(x, y, a, b, c)  } %prec statement
+    | MATCH; x = expr; COLON; t = typeVal; WITH; EMPTYLIST; RIGHTARROW; y = expr; BAR; a = ID; 
+      CONS; b = ID; RIGHTARROW; c = expr   { Ast.Match((x,t), y, a, b, c)  } %prec statement
     ;  
 
 
 app :
-    |  APP; e1 = expr; e2 = expr { Ast.App(e1, e2)  } %prec statement
+    |  APP LPAREN e1 = expr COLON t1 = typeVal COMMA e2 = expr COLON t2 = typeVal RPAREN { Ast.App((e1, t1), (e2, t2))  }
     ;
 
 id_list:
-    | x = ID { Ast.Single(x) }
-    | x = ID; l = id_list { Ast.Curry(x, l) } 
+    | x = ID; COLON; t = typeVal { Ast.Single(x,t) }
+    | x = ID; COLON; t = typeVal; l = id_list { Ast.Curry((x,t), l) } 
     ;
 
 lambdaExp :
-    | FUN;  args = id_list; RIGHTARROW; body = expr 
+    | FUN;  args = id_list; GOESTO; body = expr 
                                         { Ast.Lambda(args, body)  } %prec statement
     ;
