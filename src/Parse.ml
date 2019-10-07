@@ -232,6 +232,12 @@ and r_decl st_decl = match st_decl with
   
     (* 'proc' <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
+    Tok(T.MINUS,_) :: Star(_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
+    Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Star,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+  
+    (* 'proc' <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
+  | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Arith(pot,_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
     s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
