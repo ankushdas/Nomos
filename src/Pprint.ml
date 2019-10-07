@@ -75,10 +75,8 @@ let rec pp_tp_simple a = match a with
   | With(choice) -> "&{ " ^ pp_choice_simple choice ^ " }"
   | Tensor(a,b) -> pp_tp_simple a ^ " * " ^ pp_tp_simple b
   | Lolli(a,b) -> pp_tp_simple a ^ " -o " ^ pp_tp_simple b
-  | GetPot(A.Arith pot,a) -> "<" ^ pp_potpos pot ^ "| " ^ pp_tp_simple a
-  | GetPot(A.Star,a) -> "<*| " ^ pp_tp_simple a                           
-  | PayPot(A.Arith pot,a) -> "|" ^ pp_potpos pot ^ "> " ^ pp_tp_simple a
-  | PayPot(A.Star,a) -> "|*> " ^ pp_tp_simple a                           
+  | GetPot(pot,a) -> "<" ^ pp_potpos pot ^ "| " ^ pp_tp_simple a
+  | PayPot(pot,a) -> "|" ^ pp_potpos pot ^ "> " ^ pp_tp_simple a
   | Up(a) -> "/\\ " ^ pp_tp_simple a
   | Down(a) -> "\\/ " ^ pp_tp_simple a 
   | TpName(a) -> a
@@ -112,19 +110,11 @@ let rec pp_tp i a = match a with
       astr ^ " -o " ^ pp_tp (i+inc+4) b
   | A.One -> "1"
   | A.PayPot(pot,a) ->
-      let potstr =
-        match pot with
-          | A.Arith p -> pp_potpos p
-          | A.Star -> "*"
-      in
+      let potstr = pp_potpos pot in
       let inc = len potstr in
       "|" ^ potstr ^ "> " ^ pp_tp (i+inc+3) a
   | A.GetPot(pot,a) ->
-      let potstr =
-        match pot with
-          | A.Arith p -> pp_potpos p
-          | A.Star -> "*"
-      in
+      let potstr = pp_potpos pot in
       let inc = len potstr in
       "<" ^ potstr ^ "| " ^ pp_tp (i+inc+3) a
   | A.Up(a) ->
@@ -187,22 +177,13 @@ let rec pp_exp env i exp = match exp with
   | A.Close(x) -> "close " ^ x
   | A.Wait(x,q) -> "wait " ^ x ^ " ;\n" ^ pp_exp_indent env i q
   | A.Work(pot, p) ->
-      let potstr = match pot with
-                      A.Star -> "{*}"
-                    | A.Arith pot -> pp_potpos pot
-      in
+      let potstr = pp_potpos pot in
       "work " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
   | A.Pay(x,pot,p) ->
-      let potstr = match pot with
-                      A.Star -> "{*}"
-                    | A.Arith pot -> pp_potpos pot
-      in
+      let potstr = pp_potpos pot in
       "pay " ^ x ^ " " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
   | A.Get(x,pot,q) ->
-      let potstr = match pot with
-                      A.Star -> "{*}"
-                    | A.Arith pot -> pp_potpos pot
-      in
+      let potstr = pp_potpos pot in
       "get " ^ x ^ " " ^ potstr ^ ";\n" ^ pp_exp_indent env i q
   | A.Acquire(x,y,p) -> y ^ " <- acquire " ^ x ^ " ;\n" ^ pp_exp_indent env i p
   | A.Accept(x,y,p) -> y ^ " <- accept " ^ x ^ " ;\n" ^ pp_exp_indent env i p
@@ -235,22 +216,13 @@ let rec pp_exp_prefix exp = match exp with
   | A.Close(x) -> "close " ^ x
   | A.Wait(x,_q) -> "wait " ^ x ^ " ; ..."
   | A.Work(pot, _p) ->
-      let potstr = match pot with
-                      A.Star -> "{*}"
-                    | A.Arith pot -> pp_potpos pot
-      in
+      let potstr = pp_potpos pot in 
       "work " ^ potstr ^ "; ..."
   | A.Pay(x,pot,_p) ->
-      let potstr = match pot with
-                      A.Star -> "{*}"
-                    | A.Arith pot -> pp_potpos pot
-      in
+      let potstr = pp_potpos pot in
       "pay " ^ x ^ " " ^ potstr ^ "; ..."
   | A.Get(x,pot,_q) ->
-      let potstr = match pot with
-                      A.Star -> "{*}"
-                    | A.Arith pot -> pp_potpos pot
-      in
+      let potstr = pp_potpos pot in
       "get " ^ x ^ " " ^ potstr ^ "; ..."
   | A.Acquire(x,y,_p) -> y ^ " <- acquire " ^ x ^ " ; ..."
   | A.Accept(x,y,_p) -> y ^ " <- accept " ^ x ^ " ; ..."
@@ -265,16 +237,10 @@ let pp_msg m = match m with
   | A.MSendL(c,e,c') -> "- " ^ "send " ^ c ^ " " ^ e ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
   | A.MClose(c) -> "close " ^ c
   | A.MPayP(c,pot,c') ->
-      let potstr = match pot with
-                      A.Star -> "{*}"
-                    | A.Arith pot -> pp_potpos pot
-      in
+      let potstr = pp_potpos pot in
       "+ " ^ "pay " ^ c ^ " " ^ potstr ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
   | A.MPayG(c,pot,c') ->
-      let potstr = match pot with
-                      A.Star -> "{*}"
-                    | A.Arith pot -> pp_potpos pot
-      in
+      let potstr = pp_potpos pot in
       "- " ^ "pay " ^ c ^ " " ^ potstr ^ " ; " ^ pp_exp_prefix (Fwd(c',c));;
 
 
@@ -317,10 +283,7 @@ let pp_decl env dcl = match dcl with
   | A.TpEq(A.TpName(v),A.TpName(v')) ->
     "eqtype " ^ v ^ " = " ^ v'
   | A.ExpDecDef(f,(delta,pot,(x,a)),p) ->
-    let potstr = match pot with
-                    A.Star -> "{*}"
-                  | A.Arith pot -> pp_pot pot
-    in
+    let potstr = pp_pot pot in
     "proc " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ potstr ^ "- "
     ^ pp_chan (x,a) ^ " = \n" ^
     (pp_exp_indent env 4 p)

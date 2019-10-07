@@ -233,7 +233,7 @@ let minus pot1 pot2 = match pot1, pot2 with
   | A.Arith _, A.Star -> A.Star
   | A.Arith p1, A.Arith p2 -> A.Arith (R.minus p1 p2);;
 
-let minus pot1 pot2 = match pot1, pot2 with
+let plus pot1 pot2 = match pot1, pot2 with
     A.Star, A.Star
   | A.Star, A.Arith _
   | A.Arith _, A.Star -> A.Star
@@ -412,7 +412,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
             None -> E.error_undeclared (f, ext)
           | Some (ctx,lpot,(_x',a')) ->
               if not (ge pot lpot)
-              then error ext ("insufficient potential to spawn: " ^ pp_lt pot lpot ext)
+              then error ext ("insufficient potential to spawn: " ^ pp_lt pot lpot)
               else
                 let ctx = join ctx in
                 let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
@@ -633,7 +633,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
         else if not (checktp x [zc])
         then E.error_unknown_var (x,ext)
         else if not (eq pot zero)
-        then error ext ("unconsumed potential: " ^ R.pp_uneq pot zero)
+        then error ext ("unconsumed potential: " ^ pp_uneq pot zero)
         else
           let (z,c) = zc in
           if not (eqtp env c A.One)
@@ -657,7 +657,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
         if not (ge pot pot')
         then error ext ("insufficient potential to work: " ^ pp_lt pot pot')
         else if not (ge pot' zero)
-        then error ext ("potential not positive: " ^ R.pp_lt pot' zero)
+        then error ext ("potential not positive: " ^ pp_lt pot' zero)
         else check_exp' trace env delta (minus pot pot') p zc ext
       end
   | A.Pay(x,epot,p) ->
@@ -673,9 +673,9 @@ and check_exp trace env delta pot exp zc ext = match exp with
               | A.PayPot(tpot,c') ->
                   if not (eq epot tpot)
                   then error ext ("potential mismatch: potential in type does not match " ^
-                                  "potential in expression: " ^ R.pp_uneq epot tpot)
+                                  "potential in expression: " ^ pp_uneq epot tpot)
                   else if not (ge pot tpot)
-                  then error ext ("insufficient potential to pay: " ^ R.pp_lt pot tpot)
+                  then error ext ("insufficient potential to pay: " ^ pp_lt pot tpot)
                   else check_exp' trace env delta (minus pot tpot) p (z,c') ext
               | A.Plus _ | A.With _
               | A.Tensor _ | A.Lolli _
@@ -713,7 +713,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
                   if not (eq epot tpot)
                   then error ext ("potential mismatch: potential in type does not match " ^
                                   "potential in expression: " ^ pp_uneq epot tpot)
-                  else check_exp' trace env delta (R.plus pot tpot) p (z,c') ext
+                  else check_exp' trace env delta (plus pot tpot) p (z,c') ext
               | A.Plus _ | A.With _
               | A.Tensor _ | A.Lolli _
               | A.One | A.PayPot _
