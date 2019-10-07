@@ -22,5 +22,5 @@ val checkexp :
   bool ->
   A.decl_ext list ->
   PP.A.context ->
-  PP.A.R.arith ->
+  PP.A.potential ->
   PP.A.expression -> string * PP.A.stype -> Mark.ext option -> unit

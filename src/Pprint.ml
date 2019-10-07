@@ -45,13 +45,15 @@ type opr = Or | And | Implies | Not | None
 
 (* pp_pot p = "{p}", "" if p = 0 *)
 let pp_pot e = match e with
-    R.Int(0) -> ""
-  | e -> "{" ^ R.pp_arith e ^ "}";;
+    A.Arith (R.Int 0) -> ""
+  | A.Star -> "{*}"
+  | A.Arith e -> "{" ^ R.pp_arith e ^ "}";;
 
 (* pp_pospos p = "{p}", "" if p = 1 *)
 let pp_potpos e = match e with
-    R.Int(1) -> ""
-  | e -> "{" ^ R.pp_arith e ^ "} ";;
+    A.Arith (R.Int 1) -> ""
+  | A.Star -> "{*}"
+  | A.Arith e -> "{" ^ R.pp_arith e ^ "} ";;
 
 (***********************)
 (* Externalizing types *)
