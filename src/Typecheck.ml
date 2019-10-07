@@ -116,6 +116,44 @@ let contractive tp = match tp with
 
 (* Structural equality *)
 
+let zero = A.Arith (R.Int 0);;
+
+let eq pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star
+  | A.Star, A.Arith _
+  | A.Arith _, A.Star -> true
+  | A.Arith p1, A.Arith p2 -> R.eq p1 p2;;
+
+let ge pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star
+  | A.Star, A.Arith _
+  | A.Arith _, A.Star -> true
+  | A.Arith p1, A.Arith p2 -> R.ge p1 p2;;
+
+let minus pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star
+  | A.Star, A.Arith _
+  | A.Arith _, A.Star -> A.Star
+  | A.Arith p1, A.Arith p2 -> A.Arith (R.minus p1 p2);;
+
+let plus pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star
+  | A.Star, A.Arith _
+  | A.Arith _, A.Star -> A.Star
+  | A.Arith p1, A.Arith p2 -> A.Arith (R.plus p1 p2);;
+
+let pp_uneq pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star -> "* != *"
+  | A.Arith p1, A.Star -> R.pp_arith p1 ^ " != *"
+  | A.Star, A.Arith p2 -> "* != " ^ R.pp_arith p2
+  | A.Arith p1, A.Arith p2 -> R.pp_uneq p1 p2;;
+
+let pp_lt pot1 pot2 = match pot1, pot2 with
+  A.Star, A.Star -> "* < *"
+| A.Arith p1, A.Star -> R.pp_arith p1 ^ " < *"
+| A.Star, A.Arith p2 -> "* < " ^ R.pp_arith p2
+| A.Arith p1, A.Arith p2 -> R.pp_uneq p1 p2;;
+
 let rec mem_env env a a' = match env with
     {A.declaration = A.TpEq(A.TpName(b),A.TpName(b')); decl_extent = _ext}::env' ->
       if b = a && b' = a' then true
@@ -150,18 +188,10 @@ and eq_tp env seen tp tp' = match tp, tp' with
       eq_tp' env seen s s' && eq_tp' env seen t t'
   | A.One, A.One -> true
 
-  | A.PayPot(A.Arith pot,a), A.PayPot(A.Arith pot',a') ->
-      R.eq pot pot' && eq_tp' env seen a a'
-  | A.PayPot(A.Star,_a), _ ->
-      false
-  | _, A.PayPot(A.Star,_a) ->
-      false
-  | A.GetPot(A.Star,_a), _ ->
-      false
-  | _, A.GetPot(A.Star,_a) ->
-      false
-  | A.GetPot(A.Arith pot,a), A.GetPot(A.Arith pot',a') -> 
-      R.eq pot pot' && eq_tp' env seen a a'
+  | A.PayPot(pot,a), A.PayPot(pot',a') ->
+      eq pot pot' && eq_tp' env seen a a'
+  | A.GetPot(pot,a), A.GetPot(pot',a') -> 
+      eq pot pot' && eq_tp' env seen a a'
   
   | A.Up(a), A.Up(a') ->
       eq_tp' env seen a a'
@@ -212,44 +242,6 @@ fun interactsR P = case P of
   | _ => false*)
 
 exception UnknownTypeError;;
-
-let zero = A.Arith (R.Int 0);;
-
-let eq pot1 pot2 = match pot1, pot2 with
-    A.Star, A.Star
-  | A.Star, A.Arith _
-  | A.Arith _, A.Star -> true
-  | A.Arith p1, A.Arith p2 -> R.eq p1 p2;;
-
-let ge pot1 pot2 = match pot1, pot2 with
-    A.Star, A.Star
-  | A.Star, A.Arith _
-  | A.Arith _, A.Star -> true
-  | A.Arith p1, A.Arith p2 -> R.ge p1 p2;;
-
-let minus pot1 pot2 = match pot1, pot2 with
-    A.Star, A.Star
-  | A.Star, A.Arith _
-  | A.Arith _, A.Star -> A.Star
-  | A.Arith p1, A.Arith p2 -> A.Arith (R.minus p1 p2);;
-
-let plus pot1 pot2 = match pot1, pot2 with
-    A.Star, A.Star
-  | A.Star, A.Arith _
-  | A.Arith _, A.Star -> A.Star
-  | A.Arith p1, A.Arith p2 -> A.Arith (R.plus p1 p2);;
-
-let pp_uneq pot1 pot2 = match pot1, pot2 with
-    A.Star, A.Star -> "* != *"
-  | A.Arith p1, A.Star -> R.pp_arith p1 ^ " != *"
-  | A.Star, A.Arith p2 -> "* != " ^ R.pp_arith p2
-  | A.Arith p1, A.Arith p2 -> R.pp_uneq p1 p2;;
-
-let pp_lt pot1 pot2 = match pot1, pot2 with
-  A.Star, A.Star -> "* < *"
-| A.Arith p1, A.Star -> R.pp_arith p1 ^ " < *"
-| A.Star, A.Arith p2 -> "* < " ^ R.pp_arith p2
-| A.Arith p1, A.Arith p2 -> R.pp_uneq p1 p2;;
 
 let chan_of (c, _tp) = c 
 let tp_of (_c, tp) = tp;;
