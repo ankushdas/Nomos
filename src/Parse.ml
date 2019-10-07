@@ -554,18 +554,19 @@ let parse filename =
                            ; raise ErrorMsg.Error )
 
 (* <pragma>*, ignoring remainder of token stream *)
-let rec parse_preamble_decls token_front =
+let rec parse_preamble_decl token_front =
     let st = p_decl ([], token_front) (* may raise ErrorMsg.Error *)
     in try
       match st with
-        ([Decl(dcl)], token_front) ->
-          begin
-            match dcl.A.declaration with
-              A.Pragma _ -> dcl :: parse_preamble_decls token_front
-            | A.TpDef _ | A.TpEq _ | A.ExpDecDef _ | A.Exec _ -> []
-          end
-      | _t -> raise ErrorMsg.Error
-    with ErrorMsg.Error -> [] (* turn error into nil *);;
+          ([Decl(dcl)], token_front) ->
+            begin
+              match dcl.A.declaration with
+                A.Pragma("#test", _line) -> Some dcl
+              | A.Pragma _
+              | A.TpDef _ | A.TpEq _ | A.ExpDecDef _ | A.Exec _ -> parse_preamble_decl token_front
+            end
+        | _t -> raise ErrorMsg.Error
+    with ErrorMsg.Error -> None;;
 
 (* parse preamble = pragmas *)
 let parse_preamble filename =
@@ -574,9 +575,9 @@ let parse_preamble filename =
       let n = in_channel_length instream in
       let s = Bytes.create n in
       let token_stream = Lex.makeLexer (really_input instream s 0 n ; Bytes.to_string s) in
-      let pragmas = parse_preamble_decls (M.force token_stream) in
+      let pragma = parse_preamble_decl (M.force token_stream) in
       let () = PS.popfile () in
-      pragmas)
+      pragma)
     (* may raise IO.Io _, must be handled by caller *)
 
 (* structure Parse *)
