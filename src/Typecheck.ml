@@ -21,7 +21,7 @@ let error = ErrorMsg.error ErrorMsg.Type;;
 *)
 
 let rec esync env seen tp c ext is_shared =
-  if !Flags.verbosity > 1
+  if !Flags.verbosity >= 3
   then print_string ("checking esync: \n" ^ PP.pp_tp env tp ^ "\n" ^ PP.pp_tp env c ^ "\n") ;
   match tp with
       A.Plus(choice) -> esync_choices env seen choice c ext is_shared
@@ -152,7 +152,7 @@ let pp_lt pot1 pot2 = match pot1, pot2 with
   A.Star, A.Star -> "* < *"
 | A.Arith p1, A.Star -> R.pp_arith p1 ^ " < *"
 | A.Star, A.Arith p2 -> "* < " ^ R.pp_arith p2
-| A.Arith p1, A.Arith p2 -> R.pp_uneq p1 p2;;
+| A.Arith p1, A.Arith p2 -> R.pp_lt p1 p2;;
 
 let rec mem_env env a a' = match env with
     {A.declaration = A.TpEq(A.TpName(b),A.TpName(b')); decl_extent = _ext}::env' ->
@@ -172,7 +172,7 @@ let rec mem_seen env seen a a' = match seen with
 
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
 let rec eq_tp' env seen a a' =
-  if !Flags.verbosity > 1
+  if !Flags.verbosity >= 3
   then print_string ("comparing " ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
   else ()
   ; eq_tp env seen a a'
@@ -709,7 +709,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
                   if not (eq epot tpot)
                   then error ext ("potential mismatch: potential in type does not match " ^
                                   "potential in expression: " ^ pp_uneq epot tpot)
-                  else check_exp' trace env delta (plus pot tpot) p (z,c') ext
+                  else check_exp' trace env delta (plus pot epot) p (z,c') ext
               | A.Plus _ | A.With _
               | A.Tensor _ | A.Lolli _
               | A.One | A.PayPot _
@@ -723,7 +723,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
                 if not (eq epot tpot)
                 then error ext ("potential mismatch: potential in type does not match " ^
                                 "potential in expression: " ^ pp_uneq epot tpot)
-                else check_exp' trace env (update_tp env x a' delta) (plus pot tpot) p zc ext
+                else check_exp' trace env (update_tp env x a' delta) (plus pot epot) p zc ext
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
             | A.One | A.GetPot _
