@@ -1,0 +1,38 @@
+#test success
+#options -work=send
+
+type A = 1
+
+type queue = &{ins : <{*}| A -o queue,
+               del : <{*}| +{none : 1,
+                             some : A * queue}}
+
+proc empty : . |{*}- (q : queue) =
+  case q (
+    ins =>
+      get q {*} ;
+      x <- recv q ;
+      e <- empty <- ;
+      q <- elem <- x e
+  | del =>
+      get q {*} ;
+      q.none ;
+      close q
+
+  )
+
+proc elem : (x : A), (t : queue) |{0}- (q : queue) =
+  case q (
+    ins =>
+      get q {*} ;
+      y <- recv q ;
+      t.ins ;
+      pay t {*} ;
+      send t y ;
+      q <- elem <- x t
+  | del =>
+      get q {*} ;
+      q.some ;
+      send q x ;
+      q <- t
+  )
