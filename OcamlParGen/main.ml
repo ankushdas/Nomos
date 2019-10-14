@@ -1,6 +1,6 @@
-(*let file = "test.txt"
-
-
+open Core
+open Lexer
+open Lexing
 
 let rec print_args (args : Ast.arglist) = 
         match args with
@@ -179,7 +179,7 @@ and contextToString ctx : string = (match ctx with
                                 []  -> ""
                             |   (x,t1)::rest -> let v : string = (contextToString rest) in
                                             Printf.sprintf "(%s : %s), %s" x (print_type t1) v)
-
+(*
 let process (line : string) =
   let linebuf = Lexing.from_string line in
   try
@@ -214,9 +214,6 @@ let () =
   *)
     let oc = open_in file in
 *)
-open Core
-open Lexer
-open Lexing
 
 
 let print_position outx lexbuf =
@@ -225,22 +222,30 @@ let print_position outx lexbuf =
     pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
 let parse_with_error lexbuf =
-  try Parser.prog Lexer.token lexbuf with
+  try Parser.file Lexer.token lexbuf with
   | SyntaxError msg ->
-     (fprintf stderr "%a: %s %s\n" print_position lexbuf msg; None)
+     (Printf.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg; None)
   | Parser.Error ->
-    fprintf stderr "%a: syntax error\n" print_position lexbuf;
-    exit (-1)
+     (Printf.printf "PARSING FAILURE: %a\n" print_position lexbuf; None)
+
+
+let rec process (l : Ast.program list) =
+        match l with
+                [] -> ()
+        | Ast.Program(expr, t)::es -> try
+                                      let a : bool = typecheck [] expr t in       
+                                      (if a then Printf.printf "SUCCESS\n" else Printf.printf "TYPECHECKING FAILURE\n"; process es)
+                                      with
+                                      | TypeError err -> (Printf.printf "TYPECHECKING FAILURE: %s\n" err; process es)
 
 (* part 1 *)
 let rec parse_and_print lexbuf =
   match parse_with_error lexbuf with
-  | Some value -> printf "hi"
+  | Some (Ast.PL l) -> (process l; Printf.printf "DONE\n")
   | None -> ()
 
 let () =
   let inx = In_channel.read_all "./test.ml" in
-  let _ = Printf.printf "%s" inx in
   let lexbuf = Lexing.from_string inx in
   parse_and_print lexbuf
 

@@ -21,15 +21,16 @@
 %right CONS
 %left PLUS MINUS
 %left TIMES DIV
-%start <Ast.program option> prog
+%start <Ast.programList option> file
 %%
 
 
-(*file :
-     | vl = separated_list(DOUBLESEMI, prog) { Ast.PL (vl) }
-*)
+file :
+     | vl = separated_list(DOUBLESEMI, prog) EOF { Some(Ast.PL vl) }
+     ;
+
 prog : 
-    | e = expr COLON typ = typeVal DOUBLESEMI { Some(Ast.Program (e, typ)) }
+    | e = expr COLON typ = typeVal { Ast.Program (e, typ) }
     ;
 
 typeVal :
@@ -105,6 +106,6 @@ id_list:
     ;
 
 lambdaExp :
-    | FUN;  args = id_list; GOESTO; body = expr 
+    | FUN;  args = id_list; RIGHTARROW; body = expr 
                                         { Ast.Lambda(args, body)  } %prec statement
     ;

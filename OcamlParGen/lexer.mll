@@ -18,7 +18,7 @@ let newline = '\r' | '\n' | "\r\n"
 
 rule token = parse
   | [ ' ' '\t' ]        { token lexbuf }
-  | newline             { EOF }
+  | newline             { next_line lexbuf; token lexbuf }
   | ['0'-'9']+  as i    { INT (int_of_string i) }
   | "let"               { LET }
   | "in"                { IN }
