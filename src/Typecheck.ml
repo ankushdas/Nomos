@@ -21,7 +21,7 @@ let error = ErrorMsg.error ErrorMsg.Type;;
 *)
 
 let rec esync env seen tp c ext is_shared =
-  if !Flags.verbosity > 1
+  if !Flags.verbosity >= 3
   then print_string ("checking esync: \n" ^ PP.pp_tp env tp ^ "\n" ^ PP.pp_tp env c ^ "\n") ;
   match tp with
       A.Plus(choice) -> esync_choices env seen choice c ext is_shared
@@ -70,8 +70,8 @@ let rec valid env pol tp ext = match pol, tp with
       if not (R.non_neg pot) (* allowing 0, for uniformity *)
       then error ext ("potential " ^ PP.pp_arith pot ^ " not positive")
       else valid env Pos a ext
-  | Pos, A.PayPot(A.Star,_a) ->
-      E.error_potstar ext
+  | Pos, A.PayPot(A.Star,a) ->
+      valid env Pos a ext
   | Neg, A.PayPot(_,_) -> error ext ("|> appears in a negative context")
   | Zero, A.PayPot(_,_) -> error ext ("|> appears in a neutral context")
 
@@ -81,8 +81,8 @@ let rec valid env pol tp ext = match pol, tp with
       if not (R.non_neg pot) (* allowing 0, for uniformity *)
       then error ext ("potential " ^ PP.pp_arith pot ^ " not positive")
       else valid env Neg a ext
-  | Neg, A.GetPot(A.Star,_a) ->
-      E.error_potstar ext
+  | Neg, A.GetPot(A.Star,a) ->
+      valid env Neg a ext
 
   | _, A.TpName(a) ->
     (* allow forward references since 'env' is the full environment *)
@@ -116,6 +116,44 @@ let contractive tp = match tp with
 
 (* Structural equality *)
 
+let zero = A.Arith (R.Int 0);;
+
+let eq pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star
+  | A.Star, A.Arith _
+  | A.Arith _, A.Star -> true
+  | A.Arith p1, A.Arith p2 -> R.eq p1 p2;;
+
+let ge pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star
+  | A.Star, A.Arith _
+  | A.Arith _, A.Star -> true
+  | A.Arith p1, A.Arith p2 -> R.ge p1 p2;;
+
+let minus pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star
+  | A.Star, A.Arith _
+  | A.Arith _, A.Star -> A.Star
+  | A.Arith p1, A.Arith p2 -> A.Arith (R.minus p1 p2);;
+
+let plus pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star
+  | A.Star, A.Arith _
+  | A.Arith _, A.Star -> A.Star
+  | A.Arith p1, A.Arith p2 -> A.Arith (R.plus p1 p2);;
+
+let pp_uneq pot1 pot2 = match pot1, pot2 with
+    A.Star, A.Star -> "* != *"
+  | A.Arith p1, A.Star -> R.pp_arith p1 ^ " != *"
+  | A.Star, A.Arith p2 -> "* != " ^ R.pp_arith p2
+  | A.Arith p1, A.Arith p2 -> R.pp_uneq p1 p2;;
+
+let pp_lt pot1 pot2 = match pot1, pot2 with
+  A.Star, A.Star -> "* < *"
+| A.Arith p1, A.Star -> R.pp_arith p1 ^ " < *"
+| A.Star, A.Arith p2 -> "* < " ^ R.pp_arith p2
+| A.Arith p1, A.Arith p2 -> R.pp_lt p1 p2;;
+
 let rec mem_env env a a' = match env with
     {A.declaration = A.TpEq(A.TpName(b),A.TpName(b')); decl_extent = _ext}::env' ->
       if b = a && b' = a' then true
@@ -134,7 +172,7 @@ let rec mem_seen env seen a a' = match seen with
 
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
 let rec eq_tp' env seen a a' =
-  if !Flags.verbosity > 1
+  if !Flags.verbosity >= 3
   then print_string ("comparing " ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
   else ()
   ; eq_tp env seen a a'
@@ -150,18 +188,10 @@ and eq_tp env seen tp tp' = match tp, tp' with
       eq_tp' env seen s s' && eq_tp' env seen t t'
   | A.One, A.One -> true
 
-  | A.PayPot(A.Arith pot,a), A.PayPot(A.Arith pot',a') ->
-      R.eq pot pot' && eq_tp' env seen a a'
-  | A.PayPot(A.Star,_a), _ ->
-      false
-  | _, A.PayPot(A.Star,_a) ->
-      false
-  | A.GetPot(A.Star,_a), _ ->
-      false
-  | _, A.GetPot(A.Star,_a) ->
-      false
-  | A.GetPot(A.Arith pot,a), A.GetPot(A.Arith pot',a') -> 
-      R.eq pot pot' && eq_tp' env seen a a'
+  | A.PayPot(pot,a), A.PayPot(pot',a') ->
+      eq pot pot' && eq_tp' env seen a a'
+  | A.GetPot(pot,a), A.GetPot(pot',a') -> 
+      eq pot pot' && eq_tp' env seen a a'
   
   | A.Up(a), A.Up(a') ->
       eq_tp' env seen a a'
@@ -212,8 +242,6 @@ fun interactsR P = case P of
   | _ => false*)
 
 exception UnknownTypeError;;
-
-let zero = R.Int(0);;
 
 let chan_of (c, _tp) = c 
 let tp_of (_c, tp) = tp;;
@@ -266,6 +294,16 @@ let remove_tp x delta =
   let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
   {A.shared = removetp x sdelta ; A.linear = removetp x ldelta ; A.ordered = removetp x odelta};;
 
+let add_chan env (x,a) delta =
+  let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
+  if A.is_shared env a
+  then {A.shared = (x,a)::sdelta ; A.linear = ldelta ; A.ordered = (x,a)::odelta}
+  else {A.shared = sdelta ; A.linear = (x,a)::ldelta ; A.ordered = (x,a)::odelta};;
+
+let update_tp env x t delta =
+  let delta = remove_tp x delta in
+  add_chan env (x,t) delta;;
+
 let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx with
     (_sc,st)::sig_ctx', c::ctx' ->
       begin
@@ -298,12 +336,6 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
 let join delta =
   let {A.shared = _sdelta ; A.linear = _ldelta ; A.ordered = odelta} = delta in
   odelta;;
-
-let add_chan env (x,a) delta =
-  let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
-  if A.is_shared env a
-  then {A.shared = (x,a)::sdelta ; A.linear = ldelta ; A.ordered = (x,a)::odelta}
-  else {A.shared = sdelta ; A.linear = (x,a)::ldelta ; A.ordered = (x,a)::odelta};;
 
 (* check_exp trace env ctx con A pot P C = () if A |{pot}- P : C
 * raises ErrorMsg.Error otherwise
@@ -362,8 +394,8 @@ and check_exp trace env delta pot exp zc ext = match exp with
             then error ext ("linear context " ^ PP.pp_lsctx env ldelta ^ " must have only one channel")
             else if y <> ty
             then E.error_unknown_var_ctx (y,ext)
-            else if not (R.eq pot zero)
-            then error ext ("unconsumed potential: " ^ R.pp_uneq pot zero)
+            else if not (eq pot zero)
+            then error ext ("unconsumed potential: " ^ pp_uneq pot zero)
             else if eqtp env a c
             then ()
             else error ext ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
@@ -374,25 +406,21 @@ and check_exp trace env delta pot exp zc ext = match exp with
       begin
         match A.lookup_expdec env f with
             None -> E.error_undeclared (f, ext)
-          | Some (_ctx,A.Star,_xa) ->
-              E.error_potstar ext
-          | Some (ctx,A.Arith lpot,(_x',a')) ->
-              if not (R.ge pot lpot)
-              then error ext ("insufficient potential to spawn: " ^ R.pp_lt pot lpot)
+          | Some (ctx,lpot,(_x',a')) ->
+              if not (ge pot lpot)
+              then error ext ("insufficient potential to spawn: " ^ pp_lt pot lpot)
               else
                 let ctx = join ctx in
                 let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
-                check_exp' trace env (add_chan env (x,a') delta') (R.minus pot lpot) q zc ext
+                check_exp' trace env (add_chan env (x,a') delta') (minus pot lpot) q zc ext
       end
   | A.ExpName(x,f,xs) ->
       begin
         match A.lookup_expdec env f with
           None -> E.error_undeclared (f, ext)
-        | Some (_ctx,A.Star,_xa) ->
-            E.error_potstar ext
-        | Some (ctx,A.Arith lpot,(_x',a')) ->
-            if not (R.eq pot lpot)
-            then error ext ("potential mismatch for tail call: " ^ R.pp_uneq pot lpot)
+        | Some (ctx,lpot,(_x',a')) ->
+            if not (eq pot lpot)
+            then error ext ("potential mismatch for tail call: " ^ pp_uneq pot lpot)
             else
               let (z,c) = zc in
               if x <> z
@@ -432,12 +460,12 @@ and check_exp trace env delta pot exp zc ext = match exp with
         else (* the type a of x must be external choice *)
           let a = find_ltp x delta in
           match a with
-              A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
+              A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
             | A.With(choices) ->
                 begin
                   match A.lookup_choice choices k with
                       None -> E.error_label_invalid env (k,a,x,ext)
-                    | Some ak -> check_exp' trace env (A.update_tp x ak delta) pot p zc ext
+                    | Some ak -> check_exp' trace env (update_tp env x ak delta) pot p zc ext
                 end
             | A.Plus _ | A.One
             | A.Tensor _ | A.Lolli _
@@ -466,7 +494,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
         else (* the type a of x must be internal choice *)
           let a = find_ltp x delta in
           match a with
-              A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
+              A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
             | A.Plus(choices) -> check_branchesL trace env delta x choices pot branches zc ext
             | A.With _ | A.One
             | A.Tensor _ | A.Lolli _
@@ -506,13 +534,13 @@ and check_exp trace env delta pot exp zc ext = match exp with
             else (* the type a of x must be lolli *)
               let d = find_ltp x delta in
               match d with
-                  A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
+                  A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
                 | A.Lolli(a,b) ->
                     if not (eqtp env a a')
                     then error ext ("type mismatch: type of " ^ w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
                                     ", found: " ^ PP.pp_tp_compact env a')
-                    else check_exp' trace env (A.update_tp x b (remove_tp w delta)) pot p zc ext
+                    else check_exp' trace env (update_tp env x b (remove_tp w delta)) pot p zc ext
                 | A.Plus _ | A.With _
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
@@ -546,13 +574,13 @@ and check_exp trace env delta pot exp zc ext = match exp with
             else (* the type a of x must be lolli *)
               let d = find_ltp x delta in
               match d with
-                  A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
+                  A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
                 | A.Lolli(a,b) ->
                     if not (eqtp env a a')
                     then error ext ("type mismatch: type of " ^ w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
                                     ", found: " ^ PP.pp_tp_compact env a')
-                    else check_exp' trace env (A.update_tp x b delta) pot p zc ext
+                    else check_exp' trace env (update_tp env x b delta) pot p zc ext
                 | A.Plus _ | A.With _
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
@@ -584,8 +612,8 @@ and check_exp trace env delta pot exp zc ext = match exp with
           else (* the type a of x must be tensor *)
             let d = find_ltp x delta in
             match d with
-                A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
-              | A.Tensor(a,b) -> check_exp' trace env (add_chan env (y,a) (A.update_tp x b delta)) pot p zc ext
+                A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
+              | A.Tensor(a,b) -> check_exp' trace env (add_chan env (y,a) (update_tp env x b delta)) pot p zc ext
               | A.Plus _ | A.With _
               | A.One | A.Lolli _
               | A.PayPot _ | A.GetPot _
@@ -600,8 +628,8 @@ and check_exp trace env delta pot exp zc ext = match exp with
         then error ext ("linear context " ^ PP.pp_lsctx env ldelta ^ " not empty")
         else if not (checktp x [zc])
         then E.error_unknown_var (x,ext)
-        else if not (R.eq pot zero)
-        then error ext ("unconsumed potential: " ^ R.pp_uneq pot zero)
+        else if not (eq pot zero)
+        then error ext ("unconsumed potential: " ^ pp_uneq pot zero)
         else
           let (z,c) = zc in
           if not (eqtp env c A.One)
@@ -620,19 +648,15 @@ and check_exp trace env delta pot exp zc ext = match exp with
                           " found: " ^ PP.pp_tp_compact env a)
           else check_exp' trace env (remove_tp x delta) pot p zc ext
       end
-  | A.Work(A.Star,_p) ->
-      E.error_potstar ext
-  | A.Work(A.Arith pot',p) ->
+  | A.Work(pot',p) ->
       begin
-        if not (R.ge pot pot')
-        then error ext ("insufficient potential to work: " ^ R.pp_lt pot pot')
-        else if not (R.ge pot' zero)
-        then error ext ("potential not positive: " ^ R.pp_lt pot' zero)
-        else check_exp' trace env delta (R.minus pot pot') p zc ext
+        if not (ge pot pot')
+        then error ext ("insufficient potential to work: " ^ pp_lt pot pot')
+        else if not (ge pot' zero)
+        then error ext ("potential not positive: " ^ pp_lt pot' zero)
+        else check_exp' trace env delta (minus pot pot') p zc ext
       end
-  | A.Pay(_x,A.Star,_p) ->
-      E.error_potstar ext
-  | A.Pay(x,A.Arith epot,p) ->
+  | A.Pay(x,epot,p) ->
       begin
         if not (check_ltp x delta)
         then
@@ -642,15 +666,13 @@ and check_exp trace env delta pot exp zc ext = match exp with
             let (z,c) = zc in
             match c with
                 A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext
-              | A.PayPot(A.Star,_c') ->
-                  E.error_potstar ext
-              | A.PayPot(A.Arith tpot,c') ->
-                  if not (R.eq epot tpot)
+              | A.PayPot(tpot,c') ->
+                  if not (eq epot tpot)
                   then error ext ("potential mismatch: potential in type does not match " ^
-                                  "potential in expression: " ^ R.pp_uneq epot tpot)
-                  else if not (R.ge pot tpot)
-                  then error ext ("insufficient potential to pay: " ^ R.pp_lt pot tpot)
-                  else check_exp' trace env delta (R.minus pot tpot) p (z,c') ext
+                                  "potential in expression: " ^ pp_uneq epot tpot)
+                  else if not (ge pot tpot)
+                  then error ext ("insufficient potential to pay: " ^ pp_lt pot tpot)
+                  else check_exp' trace env delta (minus pot tpot) p (z,c') ext
               | A.Plus _ | A.With _
               | A.Tensor _ | A.Lolli _
               | A.One | A.GetPot _
@@ -659,25 +681,21 @@ and check_exp trace env delta pot exp zc ext = match exp with
         else
           let a = find_ltp x delta in
           match a with
-              A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
-            | A.GetPot(A.Star,_a') ->
-                E.error_potstar ext
-            | A.GetPot(A.Arith tpot,a') ->
-                if not (R.eq epot tpot)
+              A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
+            | A.GetPot(tpot,a') ->
+                if not (eq epot tpot)
                 then error ext ("potential mismatch: potential in type does not match " ^
-                                "potential in expression: " ^ R.pp_uneq epot tpot)
-                else if not (R.ge pot tpot)
-                then error ext ("insufficient potential to pay: " ^ R.pp_lt pot tpot)
-                else check_exp' trace env (A.update_tp x a' delta) (R.minus pot tpot) p zc ext
+                                "potential in expression: " ^ pp_uneq epot tpot)
+                else if not (ge pot tpot)
+                then error ext ("insufficient potential to pay: " ^ pp_lt pot tpot)
+                else check_exp' trace env (update_tp env x a' delta) (minus pot tpot) p zc ext
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
             | A.One | A.PayPot _
             | A.Up _ | A.Down _ -> error ext ("invalid type of " ^ x ^
                                               ", expected getpot, found: " ^ PP.pp_tp_compact env a)
       end
-  | A.Get(_x,A.Star,_p) ->
-      E.error_potstar ext
-  | A.Get(x,A.Arith epot,p) ->
+  | A.Get(x,epot,p) ->
       begin
         if not (check_ltp x delta)
         then
@@ -687,13 +705,11 @@ and check_exp trace env delta pot exp zc ext = match exp with
             let (z,c) = zc in
             match c with
                 A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext
-              | A.GetPot(A.Star,_c') ->
-                  E.error_potstar ext
-              | A.GetPot(A.Arith tpot,c') ->
-                  if not (R.eq epot tpot)
+              | A.GetPot(tpot,c') ->
+                  if not (eq epot tpot)
                   then error ext ("potential mismatch: potential in type does not match " ^
-                                  "potential in expression: " ^ R.pp_uneq epot tpot)
-                  else check_exp' trace env delta (R.plus pot tpot) p (z,c') ext
+                                  "potential in expression: " ^ pp_uneq epot tpot)
+                  else check_exp' trace env delta (plus pot epot) p (z,c') ext
               | A.Plus _ | A.With _
               | A.Tensor _ | A.Lolli _
               | A.One | A.PayPot _
@@ -702,14 +718,12 @@ and check_exp trace env delta pot exp zc ext = match exp with
         else
           let a = find_ltp x delta in
           match a with
-              A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
-            | A.PayPot(A.Star,_a') ->
-                E.error_potstar ext
-            | A.PayPot(A.Arith tpot,a') ->
-                if not (R.eq epot tpot)
+              A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
+            | A.PayPot(tpot,a') ->
+                if not (eq epot tpot)
                 then error ext ("potential mismatch: potential in type does not match " ^
-                                "potential in expression: " ^ R.pp_uneq epot tpot)
-                else check_exp' trace env (A.update_tp x a' delta) (R.plus pot tpot) p zc ext
+                                "potential in expression: " ^ pp_uneq epot tpot)
+                else check_exp' trace env (update_tp env x a' delta) (plus pot epot) p zc ext
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
             | A.One | A.GetPot _
@@ -725,7 +739,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
         else
           let a = find_stp x delta in
           match a with
-              A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
+              A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
             | A.Up(a') -> check_exp' trace env (add_chan env (y,a') (remove_tp x delta)) pot p zc ext
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
@@ -765,7 +779,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
         else
           let a = find_ltp x delta in
           match a with
-              A.TpName(v) -> check_exp' trace env (A.update_tp x (A.expd_tp env v) delta) pot exp zc ext
+              A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
             | A.Down(a') -> check_exp' trace env (add_chan env (y,a') (remove_tp x delta)) pot p zc ext
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
@@ -819,7 +833,7 @@ and check_branchesL trace env delta x choices pot branches zc ext = match choice
       begin
         if trace then print_string ("| " ^ l1 ^ " => \n") else ()
         ; if l1 = l2 then () else E.error_label_mismatch (l1, l2, bext)
-        ; check_exp' trace env (A.update_tp x a delta) pot p zc ext
+        ; check_exp' trace env (update_tp env x a delta) pot p zc ext
         ; check_branchesL trace env delta x choices' pot branches' zc ext
       end
   | [], [] -> ()

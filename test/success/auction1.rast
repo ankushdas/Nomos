@@ -1,0 +1,61 @@
+#test success
+
+type address = /\ \/ address
+type bid = /\ \/ bid
+
+type auction = /\ +{running : &{bid : address -o bid -o \/auction},
+                    ended : &{withdraw : address -o bid * \/ auction}}
+
+type list = /\ +{cons : address * bid * \/ list, nil : \/ list}
+
+proc add : (st : list), (a : address), (b : bid) |- (sl : list) =
+  ll <- accept sl ;
+  ll.cons ;
+  send ll a ;
+  send ll b ;
+  sl <- detach ll ;
+  sl <- st
+
+proc run : (l : list) |- (sa : auction) =
+  la <- accept sa ;
+  la.running ;
+  case la (
+    bid =>
+      a <- recv la;
+      b <- recv la;
+      nl <- add <- l a b ;
+      sa <- detach la ;
+      sa <- run <- nl
+  )
+
+proc newbid : . |- (b : bid) =
+  b <- newbid <-
+
+proc remove : (sl : list) |- (t : bid * list) =
+  ll <- acquire sl ;
+  case ll (
+    cons =>
+      a <- recv ll ;
+      b <- recv ll ;
+      send t b ;
+      sl <- release ll ;
+      t <- sl
+  | nil =>
+      sl <- release ll ;
+      b <- newbid <- ;
+      send t b ;
+      t <- sl
+  )
+
+proc end : (sl : list) |- (sa : auction) =
+  la <- accept sa ;
+  la.ended ;
+  case la (
+    withdraw =>
+      a <- recv la ;
+      t <- remove <- sl ;
+      b <- recv t ;
+      send la b ;
+      sa <- detach la ;
+      sa <- end <- sl
+  )

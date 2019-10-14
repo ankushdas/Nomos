@@ -1,0 +1,32 @@
+#test success
+
+type A = 1
+
+type queue = &{ins : A -o queue,
+               del : +{none : 1,
+                       some : A * queue}}
+
+proc empty : . |- (q : queue) =
+  case q (
+    ins =>
+      x <- recv q ;
+      e <- empty <- ;
+      q <- elem <- x e
+  | del =>
+      q.none ;
+      close q
+
+  )
+
+proc elem : (x : A), (t : queue) |- (q : queue) =
+  case q (
+    ins =>
+      y <- recv q ;
+      t.ins ;
+      send t y ;
+      q <- elem <- x t
+  | del =>
+      q.some ;
+      send q x ;
+      q <- t
+  )

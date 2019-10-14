@@ -1,0 +1,50 @@
+#test success
+
+type bool = +{ true : 1, false : 1}
+type unit = +{ unit : 1 }
+
+type auction = /\+{running : &{abort : \/auction, bid : bool -o \/auction},
+                   ended : +{abort : 1, withdraw : bool} -o \/auction
+                  }
+
+proc running : . |- (a : auction) =
+    la <- accept a;
+    la.running;
+    case la (
+       abort => a <- detach la;
+                a <- running <-
+     | bid => b <- recv la;
+              case b (
+                true =>
+		  wait b;
+                  a <- detach la;
+                  a <- running <-
+	      | false =>
+                  wait b;
+                  a <- detach la;
+                  a <- running <-
+	      )
+    )
+
+proc ended : . |- (a :auction) =
+     la <- accept a;
+     la.ended;
+     x <- recv la;
+     case x (
+       abort =>
+         wait x;
+         a <- detach la;
+         a <- ended <-
+     | withdraw =>
+	 case x (
+	   true =>
+	     wait x;
+	     a <- detach la;
+	     a <- running <-
+	 | false =>
+	     wait x;
+	     a <- detach la;
+	     a <- ended <-
+	 )
+     )
+	     

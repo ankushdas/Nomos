@@ -31,19 +31,17 @@ let pp_outcome oc = match oc with
   | FileNotReadable -> "file not readable"
   | None -> "none";;
 
-let rec extract_outcome pragmas = 
-  match pragmas with
-  (* nothing specified, default to Success *)
-    [] -> Success
-  | {A.declaration = A.Pragma("#test", line); A.decl_extent = _ext}::_preamble ->
+exception Outcome of outcome * outcome;; (* expected, actual *)
+
+let extract_outcome (pragma : A.decl_ext option) = 
+  match pragma with
+    (* nothing specified, default to Success *)
+    None -> Success
+  | Some {A.declaration = A.Pragma("#test", line); A.decl_extent = _ext} ->
     (* ignore remaining preamble *)
     parse_outcome line
-  | {A.declaration = A.Pragma _; A.decl_extent = _ext}::preamble ->
-    extract_outcome preamble
     (* should only be pragmas allowed here *)
-  | _ -> raise RegressionImpossible;;
-
-exception Outcome of outcome * outcome;; (* expected, actual *)
+  | Some {A.declaration = _; A.decl_extent = _ext} -> Success;;
 
 let load_file expected filename =
   let _env = try RC.load filename
@@ -54,6 +52,10 @@ let load_file expected filename =
     (Outcome (_expected, _actual) as e) -> raise e
   | _e -> raise (Outcome (expected, UncaughtException));;
 
+let is_none (preamble : A.decl_ext option) = match preamble with
+    None -> true
+  | Some _ -> false;;
+
 let run_file filename =
   let () = Parsestate.reset () in
   let () = ErrorMsg.reset () in
@@ -61,7 +63,7 @@ let run_file filename =
   let () = Flags.verbosity := -1 in (* really quiet *)
   let preamble = try Parse.parse_preamble filename
                  with Sys_error _e -> raise (Outcome (None, FileNotReadable)) in
-  let () = if List.length preamble = 0 then print_string ("no pragma found!\n") in
+  let () = if is_none preamble then print_string ("no pragma found!\n") in
   let expected = try extract_outcome preamble
                  with ErrorMsg.Error -> raise (Outcome (None, IllegalTestFormat)) in
   try load_file expected filename

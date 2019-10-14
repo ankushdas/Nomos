@@ -23,4 +23,4 @@ type stack_item =
 type stack = stack_item list
 
 val parse : string -> A.decl_ext list
-val parse_preamble : string -> A.decl_ext list
+val parse_preamble : string -> A.decl_ext option

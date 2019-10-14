@@ -4,6 +4,7 @@ open Parser
 
 exception SyntaxError of string
 
+
 let next_line lexbuf =
   let pos = lexbuf.lex_curr_p in
   lexbuf.lex_curr_p <-
@@ -12,45 +13,45 @@ let next_line lexbuf =
     }
 }
 
-rule line = parse
-| ([^'\n']* '\n') as line
-    { Some line, true }
-| eof
-    { None, false }
-| ([^'\n']+ as line) eof
-    { Some (line ^ "\n"), false }
+let newline = '\r' | '\n' | "\r\n"
 
 
-and token = parse
-  | [ ' ' '\t' ] { token lexbuf }
-  | '\n'      { EOF }
-  | ['0'-'9']+  as i { INT (int_of_string i) }
-  | "let"   { LET }
-  | "in"    { IN }
-  | "true"  { TRUE }  
-  | "false" { FALSE }
-  | '+'     { PLUS  }
-  | '-'     { MINUS }
-  | '*'     { TIMES }
-  | '/'     { DIV   }
-  | '('     { LPAREN }
-  | ')'     { RPAREN }
-  | "["     { LSQUARE }
-  | "]"     { RSQUARE }
-  | "match" { MATCH }
-  | "app"   { APP }
-  | "fun"   { FUN   }
-  | "with"  { WITH  }
-  | "|"     { BAR  }
-  | "[]"    { EMPTYLIST }
-  | "->"    { RIGHTARROW }
-  | "::"    { CONS }
-  | ","    { COMMA } 
-  | "if"    { IF }
-  | "then"  { THEN }
-  | "else"  { ELSE }
-  | "="     { EQUALS }
+rule token = parse
+  | [ ' ' '\t' ]        { token lexbuf }
+  | newline             { next_line lexbuf; token lexbuf }
+  | ['0'-'9']+  as i    { INT (int_of_string i) }
+  | "let"               { LET }
+  | "in"                { IN }
+  | "true"              { TRUE }  
+  | "false"             { FALSE }
+  | '+'                 { PLUS  }
+  | '-'                 { MINUS }
+  | '*'                 { TIMES }
+  | '/'                 { DIV   }
+  | '('                 { LPAREN }
+  | ')'                 { RPAREN }
+  | "["                 { LSQUARE }
+  | "]"                 { RSQUARE }
+  | "match"             { MATCH }
+  | "app"               { APP }
+  | "fun"               { FUN   }
+  | "with"              { WITH  }
+  | "|"                 { BAR  }
+  | ";;"                { DOUBLESEMI }
+  | "[]"                { EMPTYLIST }
+  | "int"               { INTEGER   }
+  | "bool"              { BOOLEAN }
+  | "list"              { LIST   }
+  | ":"                 { COLON }
+  | "->"                { RIGHTARROW }
+  | "::"                { CONS }
+  | ","                 { COMMA }
+  | "=>"                { GOESTO }
+  | "if"                { IF }
+  | "then"              { THEN }
+  | "else"              { ELSE }
+  | "="                 { EQUALS }
   | ['a'-'z' 'A'-'Z' '_']+ as word { ID (word) }
+  | eof                 { EOF  }
   | _ { raise (SyntaxError ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
-
 

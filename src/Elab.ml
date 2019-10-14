@@ -51,7 +51,7 @@ let valid_delta env delta ext = valid_ctx env (delta.A.shared @ delta.A.linear) 
 
 let check_nonneg pot ext =
   match pot with
-      A.Star -> E.error_potstar ext
+      A.Star -> ()
     | A.Arith pot -> 
         if R.non_neg pot then ()
         else error ext ("process potential " ^ R.pp_arith pot ^ " not positive");;
@@ -150,10 +150,6 @@ and elab_exps env dcls = match dcls with
                     else ()
         end
       in
-      let pot = match pot with
-                    A.Star -> E.error_potstar ext
-                  | A.Arith p -> p
-      in
       let () = try TC.checkexp false env delta pot p' (x,a) ext (* type check *)
                 with ErrorMsg.Error ->
                       (* if verbosity >= 2, type-check again, this time with tracing *)
@@ -165,7 +161,7 @@ and elab_exps env dcls = match dcls with
                         end (* will re-raise ErrorMsg.Error *)
                       else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
       let p' = A.strip_exts p' in (* always strip extents whether implicit or explicit syntax *)
-      {A.declaration = A.ExpDecDef(f,(delta,A.Arith pot,(x,a)),p'); A.decl_extent = ext}::(elab_exps' env dcls')
+      {A.declaration = A.ExpDecDef(f,(delta,pot,(x,a)),p'); A.decl_extent = ext}::(elab_exps' env dcls')
   | ({A.declaration = A.Exec(f); A.decl_extent = ext} as dcl)::dcls' ->
       begin
         match A.lookup_expdec env f with

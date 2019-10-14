@@ -66,7 +66,6 @@ exception AstImpossible
 
 val lookup_tp : decl_ext list -> tpname -> stype option
 val expd_tp : decl_ext list -> tpname -> stype
-val update_tp : chan -> stype -> context -> context
 val lookup_expdec :
   decl_ext list -> expname -> (context * potential * chan_tp) option
 val lookup_expdef : decl_ext list -> expname -> expression option

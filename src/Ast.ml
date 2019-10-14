@@ -114,17 +114,6 @@ let expd_tp env v = match lookup_tp env v with
     Some a -> a
   | None -> raise AstImpossible;;
 
-let rec updatetp x t ctx = match ctx with
-    [] -> []
-  | (y,a)::ctx' ->
-    if x = y
-    then (x,t)::ctx'
-    else (y,a)::(updatetp x t ctx');;
-
-let update_tp x t delta =
-  let {shared = sdelta ; linear = ldelta ; ordered = odelta} = delta in
-  {shared = updatetp x t sdelta ; linear = updatetp x t ldelta ; ordered = updatetp x t odelta};;
-
 let rec lookup_expdec decls f = match decls with
     {declaration = ExpDecDef(f',(ctx, pot, zc),_p); decl_extent = _ext}::decls' ->
       if f = f' then Some (ctx,pot,zc) else lookup_expdec decls' f

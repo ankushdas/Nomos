@@ -230,6 +230,12 @@ and r_decl st_decl = match st_decl with
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
     s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith (R.Int 0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
+    (* 'proc' <id> : <context> '|{' '*' '}-' <id> : <type> = <exp> *)
+  | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
+    Tok(T.MINUS,_) :: Star(_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
+    Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Star,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+  
     (* 'proc' <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Arith(pot,_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
@@ -554,20 +560,19 @@ let parse filename =
                         ; raise ErrorMsg.Error )
 
 (* <pragma>*, ignoring remainder of token stream *)
-let rec parse_preamble_decls token_front =
-    let st = p_decl ([], token_front) in
-    try
+let rec parse_preamble_decl token_front =
+    let st = p_decl ([], token_front) (* may raise ErrorMsg.Error *)
+    in try
       match st with
-          ([], M.Cons((T.EOF, _r), _token_front)) -> []
-          (* whole file processed *)
-        | ([Decl(dcl)], token_front) ->
-          begin
-            match dcl.A.declaration with
-              A.Pragma _ -> dcl :: parse_preamble_decls token_front
-            | A.TpDef _ | A.TpEq _ | A.ExpDecDef _ | A.Exec _ -> []
-          end
-        | _t -> raise UnknownParseError
-    with ErrorMsg.Error -> let () = print_string "parse error\n" in [] (* turn error into nil *);;
+          ([Decl(dcl)], token_front) ->
+            begin
+              match dcl.A.declaration with
+                A.Pragma("#test", _line) -> Some dcl
+              | A.Pragma _
+              | A.TpDef _ | A.TpEq _ | A.ExpDecDef _ | A.Exec _ -> parse_preamble_decl token_front
+            end
+        | _t -> raise ErrorMsg.Error
+    with ErrorMsg.Error -> None;;
 
 (* parse preamble = pragmas *)
 let parse_preamble filename =
@@ -577,10 +582,10 @@ let parse_preamble filename =
       let n = in_channel_length instream in
       let s = Bytes.create n in
       let token_stream = Lex.makeLexer (really_input instream s 0 n ; Bytes.to_string s) in
-      let pragmas = parse_preamble_decls (M.force token_stream) in
+      let pragma = parse_preamble_decl (M.force token_stream) in
       let () = PS.popfile () in
-      pragmas)
+      pragma)
+    (* may raise IO.Io _, must be handled by caller *)
   with Sys_error e -> ( ErrorMsg.error_msg ErrorMsg.Parse None e
-                        ; raise ErrorMsg.Error )
-
+                       ; raise ErrorMsg.Error )
 (* structure Parse *)
