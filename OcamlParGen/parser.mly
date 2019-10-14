@@ -14,17 +14,22 @@
 %token FUN RIGHTARROW
 %token PLUS MINUS TIMES DIV
 %token EOF
-%left RIGHTARROW
+%token DOUBLESEMI
+%right RIGHTARROW
 %nonassoc LIST
 %nonassoc statement
 %right CONS
 %left PLUS MINUS
 %left TIMES DIV
-%start <Ast.program> prog
+%start <Ast.program option> prog
 %%
 
+
+(*file :
+     | vl = separated_list(DOUBLESEMI, prog) { Ast.PL (vl) }
+*)
 prog : 
-    | e = expr COLON typ = typeVal EOF { Ast.Program (e, typ) }
+    | e = expr COLON typ = typeVal DOUBLESEMI { Some(Ast.Program (e, typ)) }
     ;
 
 typeVal :
@@ -95,8 +100,8 @@ app :
     ;
 
 id_list:
-    | x = ID; COLON; t = typeVal { Ast.Single(x,t) }
-    | x = ID; COLON; t = typeVal; l = id_list { Ast.Curry((x,t), l) } 
+    | LPAREN; x = ID; COLON; t = typeVal RPAREN { Ast.Single(x,t) }
+    | LPAREN; x = ID; COLON; t = typeVal; RPAREN; l = id_list { Ast.Curry((x,t), l) } 
     ;
 
 lambdaExp :

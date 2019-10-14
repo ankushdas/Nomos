@@ -1,3 +1,7 @@
+(*let file = "test.txt"
+
+
+
 let rec print_args (args : Ast.arglist) = 
         match args with
                 | Single(x,t) -> x
@@ -10,7 +14,7 @@ let rec print_args (args : Ast.arglist) =
 let rec print_type (t : Ast.ocamlTP) = (match t with
                                         Integer -> "int"
                                      |  Boolean -> "bool"
-                                     |  Arrow(t1, t2) -> Printf.sprintf "(%s) -> (%s)" (print_type t1) (print_type t2)
+                                     |  Arrow(t1, t2) -> Printf.sprintf "%s -> (%s)" (print_type t1) (print_type t2)
                                      |  ListTP(t1) -> Printf.sprintf "(%s) list" (print_type t1))
 
 let rec print_list (l : Ast.expr list) = 
@@ -22,6 +26,8 @@ let rec print_list (l : Ast.expr list) =
                  Printf.sprintf "%s" a
                  else
                  Printf.sprintf "%s,%s" a b
+
+
 
 and print_ast (t : Ast.expr) = 
         match t with
@@ -75,9 +81,28 @@ and print_ast (t : Ast.expr) =
 type context = (string * Ast.ocamlTP) list
 exception TypeError of string
 
+let format_err (e : Ast.expr) (t : Ast.ocamlTP) = 
+        let a : string = print_ast(e) in
+        let b : string = print_type(t) in
+          Printf.sprintf "expression %s did not have type %s" a b
+
+let rec get_result_type (t : Ast.ocamlTP) = 
+        match t with
+                Ast.Arrow(t1, t2) -> get_result_type(t2)
+         |      _                 -> t
+
+
+let rec type_equals (t1 : Ast.ocamlTP) (t2 : Ast.ocamlTP) = 
+        match (t1, t2) with
+                (Ast.Integer, Ast.Integer) -> true
+        |       (Ast.Boolean, Ast.Boolean) -> true
+        |       (Ast.Arrow(x, y), Ast.Arrow(a, b)) -> (type_equals x a) && (type_equals y b)
+        |       (Ast.ListTP(a), Ast.ListTP(b)) -> type_equals a b
+        |       _                            -> false
+
 let rec getType (ctx : context) (x : string) =
         match ctx with
-                [] -> raise (TypeError "Unbound variable")
+                [] -> raise (TypeError (Printf.sprintf "Unbound variable %s" x))
            |    (y, tp)::xs -> if x = y then tp else getType xs x
 
 
@@ -86,33 +111,33 @@ let rec typecheck (ctx : context) (e : Ast.expr) (t : Ast.ocamlTP) : bool =
         If(e1, e2, e3) -> let t1 = typecheck ctx e1 Ast.Boolean in
                           let t2 = typecheck ctx e2 t in
                           let t3 = typecheck ctx e3 t in
-                          if t1 && t2 && t3 then true else raise (TypeError "if failed")
+                          if t1 && t2 && t3 then true else raise (TypeError (format_err e t))
 
         | LetIn (Ast.Binding(var, expr, typ), e) -> if (typecheck ctx expr typ) &&
                                               (typecheck ((var, typ)::ctx) e t)
                                               then true
-                                              else raise (TypeError "let in failed")
-        | Bool _ -> if t = Ast.Boolean then true else raise (TypeError "Bool failed")
-        | Int _  -> if t = Ast.Integer then true else raise (TypeError "Int failed")
-        | Var(x) -> if t = (getType ctx x) then true else raise (TypeError "Var failed")
+                                              else raise (TypeError (format_err e t))
+        | Bool _ -> if t = Ast.Boolean then true else raise (TypeError (format_err e t))
+        | Int _  -> if t = Ast.Integer then true else raise (TypeError (format_err e t))
+        | Var(x) -> if t = (getType ctx x) then true else raise (TypeError (format_err e t))
         | List (l) -> (match (t, l) with
                         (ListTP(t1), []) -> true
                      |  (ListTP(t1), e::es) -> if (typecheck ctx e t1) && (typecheck ctx (List(es)) t)
-                                               then true else raise (TypeError "List failed")
-                     |  _                   -> raise (TypeError "List failed"))
+                                               then true else raise (TypeError (format_err e t))
+                     |  _                   -> raise (TypeError (format_err e t)))
         | App ((e1, t1), (e2, t2)) -> (match t1 with
                                         Arrow (t3, t4) -> if (typecheck ctx e1 t1) &&
                                                              (typecheck ctx e2 t2) &&
-                                                             t2 = t3 && t4 = t
+                                                             (type_equals t2 t3) && (type_equals t4 t)
                                                           then
                                                              true
                                                           else
-                                                             raise (TypeError "function application failed")
-                                        | _            -> raise (TypeError "function application failed"))
+                                                             raise (TypeError (format_err e t))
+                                        | _            -> raise (TypeError (format_err e t)))
         | Cons (x, xs) -> (match t with
                           ListTP(t1) -> if (typecheck ctx x t1) && (typecheck ctx xs t)
-                                        then true else raise (TypeError "Cons failed")
-                       |  _          -> raise (TypeError "Cons failed"))
+                                        then true else raise (TypeError (format_err e t))
+                       |  _          -> raise (TypeError (format_err e t)))
         | Match ((e1,t1), e2, id1, id2, e3) -> (* Should add check for duplicate variables *)
                                                         (match t1 with
                                                         ListTP(t2) -> if (typecheck ctx e1 t1)
@@ -121,29 +146,29 @@ let rec typecheck (ctx : context) (e : Ast.expr) (t : Ast.ocamlTP) : bool =
                                                                 && (typecheck ((id1, t2)::(id2, t1)::ctx)
                                                                                    e3 t)
                                                                 then true
-                                                                else raise (TypeError "match failed")
-                                                        | _        -> raise (TypeError "match failed"))
+                                                                else raise (TypeError (format_err e t))
+                                                        | _        -> raise (TypeError (format_err e t)))
         | Lambda(l, e) -> (match t with
-                                        Arrow(t1, t2) -> let ctx' = addArglist l ctx in
-                                                         if (typecheck ctx' e t2)
+                                        Arrow(t1, t2) -> 
+                                                         let ctx' = addArglist l ctx in
+                                                         if (typecheck ctx' e (get_result_type t))
                                                          then true
-                                                         else raise (TypeError "lambda function failed")
-                                        | _        -> raise (TypeError "lamda function failed"))
+                                                         else raise (TypeError (format_err e t))
+                                        | _        -> raise (TypeError (format_err e t)))
         | Op (e1, _, e2) -> let a : bool = typecheck ctx e1 t in
                             let b : bool = typecheck ctx e2 t in
-                            if a && b && (t = Ast.Integer)
+                            if a && b && (type_equals t Ast.Integer)
                             then true
-                            else raise (TypeError "op failed")
-
+                            else raise (TypeError (format_err e t))
 
 and checkArglist (l : Ast.arglist) (t : Ast.ocamlTP) = 
         match l with
                 Ast.Single(_, t1) -> t1 = t
             |   Ast.Curry ((_, t1), rest) -> match t with
-                                                Arrow(t2, t3) -> if t1 = t2 && (checkArglist rest t3)
+                                                Arrow(t2, t3) -> if (type_equals t1 t2) && (checkArglist rest t3)
                                                 then true
-                                                else raise (TypeError "arglist check failed")
-                                                |  _  -> raise (TypeError "arglist check failed")
+                                                else false
+                                                |  _  -> false 
 and addArglist l ctx = match l with
                                 Ast.Single(x, t1) -> (x,t1)::ctx
                             |   Ast.Curry((x,t1), rest) -> (x,t1)::(addArglist rest ctx)
@@ -161,9 +186,9 @@ let process (line : string) =
   let Program(res,typ) = Parser.prog Lexer.token linebuf in
   let a : string = print_ast(res) in
   let _    = typecheck [] res typ in
-        Printf.printf "The expression is: %s \n Typechecking succeded!" a
+        Printf.printf "The expression is: %s \nTypechecking succeded!\n" a
   with
-  | TypeError err -> Printf.printf "Type error %s\n" err
+  | TypeError err -> Printf.printf "Type error: %s" err
   | Lexer.SyntaxError msg ->
       Printf.fprintf stderr "%s%!\n" msg
   | Parser.Error ->
@@ -184,4 +209,38 @@ let rec repeat channel =
     repeat channel
   
 let () =
+        (*
   repeat (Lexing.from_channel stdin)
+  *)
+    let oc = open_in file in
+*)
+open Core
+open Lexer
+open Lexing
+
+
+let print_position outx lexbuf =
+  let pos = lexbuf.lex_curr_p in
+  printf "%s:%d:%d" pos.pos_fname
+    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
+
+let parse_with_error lexbuf =
+  try Parser.prog Lexer.token lexbuf with
+  | SyntaxError msg ->
+     (fprintf stderr "%a: %s %s\n" print_position lexbuf msg; None)
+  | Parser.Error ->
+    fprintf stderr "%a: syntax error\n" print_position lexbuf;
+    exit (-1)
+
+(* part 1 *)
+let rec parse_and_print lexbuf =
+  match parse_with_error lexbuf with
+  | Some value -> printf "hi"
+  | None -> ()
+
+let () =
+  let inx = In_channel.read_all "./test.ml" in
+  let _ = Printf.printf "%s" inx in
+  let lexbuf = Lexing.from_string inx in
+  parse_and_print lexbuf
+

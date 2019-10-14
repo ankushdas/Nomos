@@ -15,18 +15,10 @@ let next_line lexbuf =
 
 let newline = '\r' | '\n' | "\r\n"
 
-rule line = parse
-| ([^'\n']* '\n') as line
-    { Some line, true }
-| eof
-    { None, false }
-| ([^'\n']+ as line) eof
-    { Some (line ^ "\n"), false }
 
-
-and token = parse
+rule token = parse
   | [ ' ' '\t' ]        { token lexbuf }
-  | '\n'                { EOF }
+  | newline             { EOF }
   | ['0'-'9']+  as i    { INT (int_of_string i) }
   | "let"               { LET }
   | "in"                { IN }
@@ -45,6 +37,7 @@ and token = parse
   | "fun"               { FUN   }
   | "with"              { WITH  }
   | "|"                 { BAR  }
+  | ";;"                { DOUBLESEMI }
   | "[]"                { EMPTYLIST }
   | "int"               { INTEGER   }
   | "bool"              { BOOLEAN }
@@ -59,5 +52,6 @@ and token = parse
   | "else"              { ELSE }
   | "="                 { EQUALS }
   | ['a'-'z' 'A'-'Z' '_']+ as word { ID (word) }
+  | eof                 { EOF  }
   | _ { raise (SyntaxError ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
 

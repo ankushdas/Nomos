@@ -20,4 +20,5 @@ type  expr =
         | Lambda of arglist * expr
         | Op of expr * string * expr
 and binding = Binding of (string * expr * ocamlTP)
-type program = Program of expr * ocamlTP 
+type program = Program of expr * ocamlTP
+type programList = PL of program list
