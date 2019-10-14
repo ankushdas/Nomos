@@ -551,24 +551,27 @@ let parse filename =
       let () = PS.popfile () in
       decls)
   with Sys_error e -> ( ErrorMsg.error_msg ErrorMsg.Parse None e
-                           ; raise ErrorMsg.Error )
+                        ; raise ErrorMsg.Error )
 
 (* <pragma>*, ignoring remainder of token stream *)
 let rec parse_preamble_decls token_front =
-    let st = p_decl ([], token_front) (* may raise ErrorMsg.Error *)
-    in try
+    let st = p_decl ([], token_front) in
+    try
       match st with
-        ([Decl(dcl)], token_front) ->
+          ([], M.Cons((T.EOF, _r), _token_front)) -> []
+          (* whole file processed *)
+        | ([Decl(dcl)], token_front) ->
           begin
             match dcl.A.declaration with
               A.Pragma _ -> dcl :: parse_preamble_decls token_front
             | A.TpDef _ | A.TpEq _ | A.ExpDecDef _ | A.Exec _ -> []
           end
-      | _t -> raise ErrorMsg.Error
-    with ErrorMsg.Error -> [] (* turn error into nil *);;
+        | _t -> raise UnknownParseError
+    with ErrorMsg.Error -> let () = print_string "parse error\n" in [] (* turn error into nil *);;
 
 (* parse preamble = pragmas *)
 let parse_preamble filename =
+  try
     SafeIO.withOpenIn filename (fun instream ->
       let () = PS.pushfile filename in
       let n = in_channel_length instream in
@@ -577,6 +580,7 @@ let parse_preamble filename =
       let pragmas = parse_preamble_decls (M.force token_stream) in
       let () = PS.popfile () in
       pragmas)
-    (* may raise IO.Io _, must be handled by caller *)
+  with Sys_error e -> ( ErrorMsg.error_msg ErrorMsg.Parse None e
+                        ; raise ErrorMsg.Error )
 
 (* structure Parse *)

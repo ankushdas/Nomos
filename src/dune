@@ -6,3 +6,11 @@
 (env
     (dev
       (flags (:standard -warn-error -A))))
+
+(library
+ (name            clplib)
+ (public_name     clplib)
+ (libraries       re lwt)
+ (c_names         clp_stubs)
+ (c_flags         (-I/clp/include))
+ (c_library_flags (-lblah)))

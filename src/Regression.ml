@@ -61,6 +61,7 @@ let run_file filename =
   let () = Flags.verbosity := -1 in (* really quiet *)
   let preamble = try Parse.parse_preamble filename
                  with Sys_error _e -> raise (Outcome (None, FileNotReadable)) in
+  let () = if List.length preamble = 0 then print_string ("no pragma found!\n") in
   let expected = try extract_outcome preamble
                  with ErrorMsg.Error -> raise (Outcome (None, IllegalTestFormat)) in
   try load_file expected filename
