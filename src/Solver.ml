@@ -32,8 +32,8 @@ sig
   exception E of string
   type var = VMap.Key.t
   val fresh_var : unit -> var
-  val add_constr_list : ?lower:float -> ?upper:float -> (var*float) list -> unit
-  val add_constr_array : ?lower:float -> ?upper:float -> (var*float) array -> unit
+  val add_constr_list : ?_lower:float -> ?_upper:float -> (var*float) list -> unit
+  val add_constr_array : ?_lower:float -> ?_upper:float -> (var*float) array -> unit
   val add_objective : var -> float -> unit
   val set_objective : float VMap.t  -> unit
   val reset_objective : unit -> unit
@@ -54,8 +54,8 @@ struct
   type var = unit
 
   let fresh_var () = ()
-  let add_constr_list ?lower ?upper _  = ()
-  let add_constr_array ?lower ?upper _  = ()
+  let add_constr_list ?_lower ?_upper _  = ()
+  let add_constr_array ?_lower ?_upper _  = ()
   let add_objective () _ = ()
   let set_objective _ = ()
   let reset_objective () = ()
@@ -191,7 +191,7 @@ struct
     add_constr_array  row_array ~lower ~upper
 
   let add_objective v q =
-    objective := Map.set !objective v q
+    objective := Map.set !objective ~key:v ~data:q
 
   let set_objective obj =
     objective := obj
@@ -203,8 +203,8 @@ struct
     solution := Clp.primal_column_solution !clp_state
 
   let copy_objective () =
-    let arr = Array.create (get_num_vars ()) 0.0 in
-    let () = Int.Map.iteri !objective (fun ~key ~data -> Array.set arr key data) in
+    let arr = Array.create ~len:(get_num_vars ()) 0.0 in
+    let () = Int.Map.iteri !objective ~f:(fun ~key ~data -> Array.set arr key data) in
     Clp.change_objective_coefficients !clp_state arr
 
   let first_solve () =

@@ -1,0 +1,6 @@
+(library
+ (name            clp)
+ (public_name     rast.clp)
+ (c_names         clp_stubs)
+ (c_flags         (-I/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp/include))
+ (c_library_flags (-L/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp/lib -lClp -lCoinUtils)))

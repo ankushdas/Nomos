@@ -1,7 +1,12 @@
 (executables
  (names rast regression)
- (libraries core)
+ (libraries core clp)
  (preprocess (pps ppx_let)))
+
+ (install
+ (section bin)
+ (package rast)
+ (files (main.exe as rast)))
 
 (env
     (dev
