@@ -141,25 +141,26 @@ and elab_exps env dcls = match dcls with
       let () =
         begin
           match !Flags.syntax with                    (* print reconstructed term *)
-                  Flags.Implicit ->
-                    ErrorMsg.error ErrorMsg.Pragma ext ("implicit syntax currently not supported")
-                | Flags.Explicit -> (* maybe only if there is a cost model... *)
-                    if !Flags.verbosity >= 2
-                    then print_string ("% with cost model " ^ pp_costs () ^ "\n"
-                                      ^ (PP.pp_decl env (A.ExpDecDef(f,(delta,pot,(x,a)),p'))) ^ "\n")
-                    else ()
+              Flags.Implicit ->
+                ErrorMsg.error ErrorMsg.Pragma ext ("implicit syntax currently not supported")
+            | Flags.Explicit -> (* maybe only if there is a cost model... *)
+                if !Flags.verbosity >= 2
+                then print_string ("% with cost model " ^ pp_costs () ^ "\n"
+                                  ^ (PP.pp_decl env (A.ExpDecDef(f,(delta,pot,(x,a)),p'))) ^ "\n")
+                else ()
         end
       in
       let () = try TC.checkexp false env delta pot p' (x,a) ext (* type check *)
-                with ErrorMsg.Error ->
-                      (* if verbosity >= 2, type-check again, this time with tracing *)
-                      if !Flags.verbosity >= 2
-                      then
-                        begin
-                          print_string ("% tracing type checking...\n")
-                          ; TC.checkexp true env delta pot p' (x,a) ext
-                        end (* will re-raise ErrorMsg.Error *)
-                      else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
+               with ErrorMsg.Error ->
+                  (* if verbosity >= 2, type-check again, this time with tracing *)
+                  if !Flags.verbosity >= 2
+                    then
+                      begin
+                        print_string ("% tracing type checking...\n")
+                        ; TC.checkexp true env delta pot p' (x,a) ext
+                      end (* will re-raise ErrorMsg.Error *)
+                  else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
+      let p' = TC.remove_stars p' in
       let p' = A.strip_exts p' in (* always strip extents whether implicit or explicit syntax *)
       {A.declaration = A.ExpDecDef(f,(delta,pot,(x,a)),p'); A.decl_extent = ext}::(elab_exps' env dcls')
   | ({A.declaration = A.Exec(f); A.decl_extent = ext} as dcl)::dcls' ->

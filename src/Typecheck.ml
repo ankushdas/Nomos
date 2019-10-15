@@ -845,4 +845,7 @@ and check_branchesL trace env delta x choices pot branches zc ext = match choice
 (* external interface *)
 let checkexp = check_exp';;
 
+let remove_stars p = p
+    
+
 (* structure TypeCheck *)
