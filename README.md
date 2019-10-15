@@ -32,16 +32,24 @@ $ make
 ```
 
 ### Executing
-The executable generated exists at `_build/default/rast.exe`. To typecheck a file, simply run
+The executable generated exists at `_build/default/src/rast.exe`. To typecheck a file, simply run
 ```
 $ ./_build/default/src/rast.exe <file-path>
 ```
 
 To test whether your build is successful, I have created a test file in the repository. Run it using
 ```
-$ ./_build/default/src/rast.exe test/testfile.rast
+$ ./_build/default/src/rast.exe test/success/testfile.rast
 ```
-It should produce the output "% file processing successful!".
+It should produce the output "% runtime successful!" at the end.
+
+### Regression Testing
+I have also created an executable at `_build/default/src/regression.exe`. This executes a set of files and generates a report by matching the expected and actual output.
+
+To test if all files work as expected, run the command
+```
+$ ./_build/default/src/regression.exe test/*/*.rast
+```
 
 ### Troubleshooting
 1. Sometimes, your `$ make` command may fail with the error "dune: command not found". In this case, try restarting your terminal and running `$ make` again.
