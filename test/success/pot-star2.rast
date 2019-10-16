@@ -1,0 +1,3 @@
+#test error
+
+type bits = +{b0 : |{*}> bits, b1 : |{*}> bits}
