@@ -7,7 +7,7 @@ all: build regression
 editor:
 	cd src; \
 	ocamlc Arith.mli; \
-	ocamlfind ocamlc -thread -linkpkg -package core Normalize.mli; \
+	ocamlc Normalize.mli; \
 	ocamlc Mark.mli; \
 	ocamlc ErrorMsg.mli; \
 	ocamlc Parsestate.mli; \
@@ -23,7 +23,7 @@ editor:
 	ocamlc Pprint.mli; \
 	ocamlc TpError.mli; \
 	ocamlc Typecheck.mli; \
-	ocamlc Infer.mli; \
+	ocamlfind ocamlc -thread -linkpkg -package core Infer.mli; \
 	ocamlc Elab.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core Exec.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core RastConfig.mli; \

@@ -8,10 +8,6 @@
 *)
 
 module R = Arith
-module S = Solver
-module ClpS = S.Clp (S.Clp_std_options)
-module C = Core
-module M = C.Map
  
 type normal = R.arith;;
 
