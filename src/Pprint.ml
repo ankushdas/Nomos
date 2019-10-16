@@ -25,7 +25,8 @@ let rec pp_arith_prec prec_left e = match e with
   | R.Sub(s,t) ->
       parens prec_left 1 (pp_arith_prec 0 s ^ "-" ^ pp_arith_prec 1 t)
   | R.Mult(s,t) ->
-    parens prec_left 2 (pp_arith_prec 1 s ^ "*" ^ pp_arith_prec 2 t);;
+    parens prec_left 2 (pp_arith_prec 1 s ^ "*" ^ pp_arith_prec 2 t)
+  | R.Var(v) -> v;;
 
 (* pp_arith e = "e" *)
 let pp_arith e = pp_arith_prec 0 e;;

@@ -118,8 +118,8 @@ let reg_command =
           let () = List.iter test_file files in
           let () = print_results () in
           if !total = !succeeded
-          then print_string ("Regression testing successful!\n")
-          else C.eprintf "Regression testing failed!\n"; exit 1);;
+          then print_string ("% Regression testing successful!\n")
+          else C.eprintf "%% Regression testing failed!\n"; exit 1);;
 
 let () =
   C.Command.run ~version:"1.0" ~build_info:"RWO" reg_command;;

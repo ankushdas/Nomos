@@ -5,6 +5,7 @@ type arith =
   | Add of arith * arith
   | Sub of arith * arith
   | Mult of arith * arith
+  | Var of string
 val evaluate : arith -> int
 val plus : arith -> arith -> arith
 val minus : arith -> arith -> arith

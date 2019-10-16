@@ -6,6 +6,7 @@ module PP = Pprint
 module F = Flags
 module C = Core
 module E = Exec
+module EL = Elab
  
 (************************)
 (* Command Line Options *)
@@ -85,15 +86,19 @@ let rec apply_pragmas dcls = match dcls with
 let load file =
   let () = reset () in                        (* internal lexer and parser state *)
   let decls = Parse.parse file in             (* may raise ErrorMsg.Error *)
-  let () = Elab.check_redecl [] decls in      (* may raise ErrorMsg.Error *)
+  let () = EL.check_redecl [] decls in      (* may raise ErrorMsg.Error *)
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
-  let decls' = Elab.commit_channels decls decls in
+  let decls' = EL.commit_channels decls decls in
   let decls'' = apply_pragmas decls' in       (* remove pragmas; may raise ErrorMsg.Error *)
   (* allow for mutually recursive definitions in the same file *)
-  match Elab.elab_decls decls'' decls'' with
-      Some env' -> env'
-    | None -> raise ErrorMsg.Error;;                    (* error during elaboration *)
+  let env = match EL.elab_decls decls'' decls'' with
+                Some env' -> env'
+              | None -> raise ErrorMsg.Error  (* error during elaboration *)
+  in
+  let env = EL.remove_stars env in
+  let () = print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl.A.declaration) ^ "\n") "" env) in
+  env;;
 
 
 (**********************)

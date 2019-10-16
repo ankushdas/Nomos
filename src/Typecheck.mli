@@ -24,5 +24,3 @@ val checkexp :
   PP.A.context ->
   PP.A.potential ->
   PP.A.expression -> string * PP.A.stype -> Mark.ext option -> unit
-val remove_stars :
-  A.expression -> A.expression

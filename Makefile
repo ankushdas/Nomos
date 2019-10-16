@@ -22,6 +22,7 @@ editor:
 	ocamlc Pprint.mli; \
 	ocamlc TpError.mli; \
 	ocamlc Typecheck.mli; \
+	ocamlc Infer.mli; \
 	ocamlc Elab.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core Exec.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core RastConfig.mli; \

@@ -19,6 +19,7 @@ module A = Ast
 module PP = Pprint
 module TC = Typecheck
 module E = TpError
+module I = Infer
 
 let error = ErrorMsg.error ErrorMsg.Type;;
  
@@ -160,7 +161,6 @@ and elab_exps env dcls = match dcls with
                         ; TC.checkexp true env delta pot p' (x,a) ext
                       end (* will re-raise ErrorMsg.Error *)
                   else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
-      let p' = TC.remove_stars p' in
       let p' = A.strip_exts p' in (* always strip extents whether implicit or explicit syntax *)
       {A.declaration = A.ExpDecDef(f,(delta,pot,(x,a)),p'); A.decl_extent = ext}::(elab_exps' env dcls')
   | ({A.declaration = A.Exec(f); A.decl_extent = ext} as dcl)::dcls' ->
@@ -223,6 +223,39 @@ let rec commit_channels env dcls = match dcls with
       let delta' = commit env delta.ordered delta.ordered in
       {A.declaration = A.ExpDecDef(f,(delta',pot,(x,a)),p); A.decl_extent = ext}::(commit_channels env dcls')
   | dcl::dcls' -> dcl::(commit_channels env dcls');;
- 
+
+(* Replace stars in potential annotations with variables *)
+let rec remove_stars_tps dcls = match dcls with
+    [] -> []
+  | {A.declaration = A.TpDef(v,a); A.decl_extent = ext}::dcls' ->
+      let a' = I.remove_stars_tp a in
+      {A.declaration = A.TpDef(v,a'); A.decl_extent = ext}::(remove_stars_tps dcls')
+  | ({A.declaration = A.Pragma _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_tps dcls')
+  | ({A.declaration = A.TpEq _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_tps dcls')
+  | ({A.declaration = A.ExpDecDef _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_tps dcls')
+  | ({A.declaration = A.Exec _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_tps dcls');;
+
+let rec remove_stars_exps dcls = match dcls with
+    [] -> []
+  | {A.declaration = A.ExpDecDef(f,(ctx,pot,(z,c)),p); A.decl_extent = ext}::dcls' ->
+    let remove_list = List.map (fun (x,a) -> (x, I.remove_stars_tp a)) in
+    let {A.shared = sdelta; A.linear = ldelta; A.ordered = odelta} = ctx in
+    let sdelta' = remove_list sdelta in
+    let ldelta' = remove_list ldelta in
+    let odelta' = remove_list odelta in
+    let ctx' = {A.shared = sdelta'; A.linear = ldelta'; A.ordered = odelta'} in
+    let pot' = I.remove_star pot in
+    let zc' = (z, I.remove_stars_tp c) in
+    let p' = I.remove_stars_exp p in
+    {A.declaration = A.ExpDecDef(f,(ctx',pot',zc'),p'); A.decl_extent = ext}::(remove_stars_exps dcls')
+  | ({A.declaration = A.Pragma _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_exps dcls')
+  | ({A.declaration = A.TpEq _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_exps dcls')
+  | ({A.declaration = A.TpDef _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_exps dcls')
+  | ({A.declaration = A.Exec _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_exps dcls');;
+
+let remove_stars env =
+  let env = remove_stars_tps env in
+  let env = remove_stars_exps env in
+  env;;
 (* structure Elab *)
  

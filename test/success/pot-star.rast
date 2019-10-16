@@ -5,5 +5,5 @@ type pong  = &{pong : <{*}| ping}
 
 proc p1 : (x : ping) |- (sink : 1) =
   case x
-  ( ping => get x {1}; x.pong; pay x {1}; sink <- p1 <- x
+  ( ping => get x {*}; x.pong; pay x {*}; sink <- p1 <- x
   )
