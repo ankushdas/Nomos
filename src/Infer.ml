@@ -67,18 +67,103 @@ and remove_stars_branches bs = match bs with
       {lab_exp = (l, remove_stars_exp p); exp_extent = ext}::
       (remove_stars_branches bs');;
 
+let index_map = ref (M.empty (module C.String));;
+
+let get_var v =
+  match M.find !index_map v with
+      None ->
+        let sv = ClpS.fresh_var () in
+        let () = ClpS.add_constr_list ~lower:0.0 [(sv, 1.0)] in
+        let () = index_map := M.add_exn !index_map ~key:v ~data:sv in
+        sv
+    | Some sv -> sv;;
+
+exception InferImpossible
+
+type entry =
+    Var of int * string
+  | Const of int;;
+
+let get_entry p = match p with
+    R.Mult(R.Int(n), R.Var(v)) -> Var(n, v)
+  | R.Mult(R.Int(n), R.Int(1)) -> Const(n)
+  | _p -> raise InferImpossible;;
+
+let rec get_expr_list e = match e with
+    R.Int(0) -> (0, [])
+  | R.Add(p,s) ->
+      begin
+        let e = get_entry p in
+        let (c, l) = get_expr_list s in
+        match e with
+            Var (n,v) -> (c, (n,v)::l)
+          | Const(n) -> (n+c, l)
+      end
+  | p ->
+      begin
+        let e = get_entry p in
+        match e with
+            Var(n,v) -> (0, [(n,v)])
+          | Const(n) -> (n, [])
+      end;;
+
+let constr_list l = List.map (fun (n, v) -> (get_var v, float_of_int n)) l;;
+
+let add_eq_constr n l =
+  if List.length l = 0 then ()
+  else
+    let cl = constr_list l in
+    let neg_n = float_of_int (-n) in
+    ClpS.add_constr_list ~lower:neg_n ~upper:neg_n cl;;
+
+let add_ge_constr n l =
+  if List.length l = 0 then ()
+  else
+    let cl = constr_list l in
+    let neg_n = float_of_int (-n) in
+    ClpS.add_constr_list ~lower:neg_n cl;;
+
 let eq e1 e2 =
   try (R.evaluate e1) = (R.evaluate e2)
   with R.NotClosed ->
-    let () = print_string (R.pp_arith e1 ^ " = " ^ R.pp_arith e2 ^ "\n") in
     let en = N.normalize (R.minus e1 e2) in
-    let () = print_string (R.pp_arith en ^ " = 0 \n") in
+    let (n, l) = get_expr_list en in
+    let () = add_eq_constr n l in
     true;;
 
 let ge e1 e2 =
   try (R.evaluate e1) >= (R.evaluate e2)
   with R.NotClosed ->
-    let () = print_string (R.pp_arith e1 ^ " >= " ^ R.pp_arith e2 ^ "\n") in
     let en = N.normalize (R.minus e1 e2) in
-    let () = print_string (R.pp_arith en ^ " >= 0 \n") in
+    let (n, l) = get_expr_list en in
+    let () = add_ge_constr n l in
     true;;
+
+let get_varlist () =
+  M.fold_right !index_map ~init:[] ~f:(fun ~key:k ~data:_v l -> k::l);;
+
+let get_solution () =
+  let vs = get_varlist () in
+  List.map (fun v -> (v, ClpS.get_solution (get_var v))) vs;;
+
+let rec print_solution sols =
+  match sols with
+      [] -> ()
+    | (v,n)::sols' ->
+        let () = print_string (v ^ " = " ^ string_of_float n ^ "\n") in
+        print_solution sols';;
+
+let reset () =
+  let () = index_map := M.empty (module C.String) in
+  ClpS.reset ();;
+
+let solve_and_print () =
+  let res = ClpS.first_solve () in
+  match res with
+      S.Feasible ->
+        let sols = get_solution () in
+        let () = print_solution sols in
+        true
+    | S.Infeasible ->
+        let () = print_string ("Infeasible LP!\n") in
+        raise ErrorMsg.Error;;

@@ -18,12 +18,9 @@
 
 open Core
 
-
 type result =
   | Feasible
   | Infeasible
-
-
 
 
 module type SOLVER =
@@ -31,6 +28,9 @@ sig
   module VMap : Map.S
   exception E of string
   type var = VMap.Key.t
+  type result =
+    | Feasible
+    | Infeasible
   val fresh_var : unit -> var
   val add_constr_list : ?_lower:float -> ?_upper:float -> (var*float) list -> unit
   val add_constr_array : ?_lower:float -> ?_upper:float -> (var*float) array -> unit
@@ -52,7 +52,9 @@ struct
   exception E of string
   module VMap = Unit.Map
   type var = unit
-
+  type result =
+    | Feasible
+    | Infeasible
   let fresh_var () = ()
   let add_constr_list ?_lower ?_upper _  = ()
   let add_constr_array ?_lower ?_upper _  = ()
@@ -65,7 +67,6 @@ struct
   let get_solution () = 0.0
   let get_num_constraints () = 0
   let get_num_vars () = 0
-
 end
 
 
