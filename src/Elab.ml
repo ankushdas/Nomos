@@ -238,9 +238,9 @@ let rec remove_stars_tps dcls = match dcls with
 
 let rec remove_stars_exps dcls = match dcls with
     [] -> []
-  | {A.declaration = A.ExpDecDef(f,(ctx,pot,(z,c)),p); A.decl_extent = ext}::dcls' ->
+  | {A.declaration = A.ExpDecDef(f,(delta,pot,(z,c)),p); A.decl_extent = ext}::dcls' ->
     let remove_list = List.map (fun (x,a) -> (x, I.remove_stars_tp a)) in
-    let {A.shared = sdelta; A.linear = ldelta; A.ordered = odelta} = ctx in
+    let {A.shared = sdelta; A.linear = ldelta; A.ordered = odelta} = delta in
     let sdelta' = remove_list sdelta in
     let ldelta' = remove_list ldelta in
     let odelta' = remove_list odelta in
@@ -268,6 +268,24 @@ let rec gen_constraints env dcls = match dcls with
   | {A.declaration = A.TpEq _; A.decl_extent = _ext}::dcls' -> gen_constraints env dcls'
   | {A.declaration = A.TpDef _; A.decl_extent = _ext}::dcls' -> gen_constraints env dcls'
   | {A.declaration = A.Exec _; A.decl_extent = _ext}::dcls' -> gen_constraints env dcls';;
+
+let rec substitute dcls sols = match dcls with
+    [] -> []
+  | {A.declaration = A.ExpDecDef(f,(delta,pot,(z,c)),p); A.decl_extent = ext}::dcls' ->
+      let subst_list = List.map (fun (x,a) -> (x, I.substitute_tp a sols)) in
+      let {A.shared = sdelta; A.linear = ldelta; A.ordered = odelta} = delta in
+      let sdelta' = subst_list sdelta in
+      let ldelta' = subst_list ldelta in
+      let odelta' = subst_list odelta in
+      let ctx' = {A.shared = sdelta'; A.linear = ldelta'; A.ordered = odelta'} in
+      let pot' = I.substitute pot sols in
+      let zc' = (z, I.substitute_tp c sols) in
+      let p' = I.substitute_exp p sols in
+      {A.declaration = A.ExpDecDef(f,(ctx',pot',zc'),p'); A.decl_extent = ext}::(substitute dcls' sols)
+  | {A.declaration = A.TpDef(v,a); A.decl_extent = ext}::dcls' ->
+      let a' = I.substitute_tp a sols in
+      {A.declaration = A.TpDef(v,a'); A.decl_extent = ext}::(substitute dcls' sols)
+  | dcl::dcls' -> dcl::(substitute dcls' sols);;
 
 
 (* structure Elab *)
