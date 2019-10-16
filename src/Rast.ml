@@ -1,7 +1,5 @@
 module RC = RastConfig
 module C = Core
-module S = Solver
-module ClpS = S.Clp (S.Clp_std_options)
 (*
 let q1 = ClpS.fresh_var ();;
 let q2 = ClpS.fresh_var ();;

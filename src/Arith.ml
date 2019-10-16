@@ -23,10 +23,6 @@ let minus e1 e2 = Sub(e1,e2);;
 let pos e = evaluate e > 0;;
 let non_neg e = evaluate e >= 0;;
 
-let eq e1 e2 = (evaluate e1) = (evaluate e2);;
-
-let ge e1 e2 = (evaluate e1) >= (evaluate e2);;
-
 let rec pp_arith e = match e with
   | Int(n) -> string_of_int n
   | Add(s,t) -> "(" ^ pp_arith s ^ "+" ^ pp_arith t ^ ")"

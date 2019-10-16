@@ -7,6 +7,7 @@ module R = Arith
 module A = Ast
 module PP = Pprint
 module E = TpError
+module I = Infer
 
 let error = ErrorMsg.error ErrorMsg.Type;;
 
@@ -122,13 +123,13 @@ let eq pot1 pot2 = match pot1, pot2 with
     A.Star, A.Star
   | A.Star, A.Arith _
   | A.Arith _, A.Star -> true
-  | A.Arith p1, A.Arith p2 -> R.eq p1 p2;;
+  | A.Arith p1, A.Arith p2 -> I.eq p1 p2;;
 
 let ge pot1 pot2 = match pot1, pot2 with
     A.Star, A.Star
   | A.Star, A.Arith _
   | A.Arith _, A.Star -> true
-  | A.Arith p1, A.Arith p2 -> R.ge p1 p2;;
+  | A.Arith p1, A.Arith p2 -> I.ge p1 p2;;
 
 let minus pot1 pot2 = match pot1, pot2 with
     A.Star, A.Star
@@ -686,9 +687,9 @@ and check_exp trace env delta pot exp zc ext = match exp with
                 if not (eq epot tpot)
                 then error ext ("potential mismatch: potential in type does not match " ^
                                 "potential in expression: " ^ pp_uneq epot tpot)
-                else if not (ge pot tpot)
-                then error ext ("insufficient potential to pay: " ^ pp_lt pot tpot)
-                else check_exp' trace env (update_tp env x a' delta) (minus pot tpot) p zc ext
+                else if not (ge pot epot)
+                then error ext ("insufficient potential to pay: " ^ pp_lt pot epot)
+                else check_exp' trace env (update_tp env x a' delta) (minus pot epot) p zc ext
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
             | A.One | A.PayPot _

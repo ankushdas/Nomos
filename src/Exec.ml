@@ -74,7 +74,7 @@ let try_eq pot1 pot2 =
       A.Star, A.Star -> raise StarPotential
     | A.Star, A.Arith _ -> raise StarPotential
     | A.Arith _, A.Star -> raise StarPotential
-    | A.Arith pot1, A.Arith pot2 -> R.eq pot1 pot2;;
+    | A.Arith pot1, A.Arith pot2 -> (R.evaluate pot1) = (R.evaluate pot2);;
 
 let rec find_branch l bs =
   match bs with

@@ -7,6 +7,7 @@ all: build regression
 editor:
 	cd src; \
 	ocamlc Arith.mli; \
+	ocamlfind ocamlc -thread -linkpkg -package core Normalize.mli; \
 	ocamlc Mark.mli; \
 	ocamlc ErrorMsg.mli; \
 	ocamlc Parsestate.mli; \
