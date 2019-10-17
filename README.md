@@ -37,7 +37,7 @@ $ cd ../../
 ```
 The next step is setting up the environment variable `CLP_PATH` to the directory where the Coin-Or LP solver is installed. Use the command below.
 ```
-$ export CLP_PATH=<absolute-path-to-`coin-Clp`-folder>
+$ export CLP_PATH=<absolute-path-to-'coin-Clp'-folder>
 ```
 
 ### Building
