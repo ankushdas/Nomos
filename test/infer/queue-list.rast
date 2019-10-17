@@ -1,0 +1,88 @@
+#test success
+#options -work=send
+
+type A = 1
+type listA1 = +{cons : |{*}> A * listA1,
+               nil : |{*}> 1}
+
+type listA2 = +{cons : |{*}> A * listA2,
+               nil : |{*}> 1}
+
+type queueA = &{ins : <{2}| A -o queueA,
+                del : <{*}| +{some : A * queueA,
+                              none : 1}}
+
+proc nil : . |{*}- (l : listA1) =
+  l.nil ;
+  pay l {*} ;
+  close l
+
+proc cons : (x : A), (t : listA1) |{*}- (l : listA1) =
+  l.cons ;
+  pay l {*} ;
+  send l x ;
+  l <- t
+
+type listA3 = +{cons : |{*}> A * listA3,
+                nil : |{*}> 1}
+
+proc cons2 : (x : A), (m : listA2) |{*}- (l : listA2) =
+  l.cons ;
+  pay l {*} ;
+  send l x ;
+  l <- m
+
+proc nil2 : . |{*}- (l : listA2) =
+  l.nil ;
+  pay l {*} ;
+  close l
+
+proc rev_help : (l : listA1), (m : listA2) |{*}- (r : listA3) =
+  case l (
+    cons => get l {*} ;
+            x <- recv l ;
+            m <- cons2 <- x m ;
+            r <- rev_help <- l m
+   | nil => get l {*} ;
+            wait l ;
+            r <- m
+  )
+
+proc rev : (l : listA1) |{*}- (r : listA2) =
+  m <- nil2 <- ;
+  r <- rev_help <- l m
+
+proc queue : (in : listA1), (out : listA2) |{*}- (s : queueA) =
+  case s (
+    ins => get s {*} ;
+           x <- recv s ;
+           in <- cons <- x in ;
+           work {*} ;
+           s <- queue <- in out
+  | del => get s {*} ;
+           case out (
+             cons => get out {*} ;
+                     x <- recv out ;
+                     s.some ;
+                     send s x ;
+                     work {*} ;
+                     s <- queue <- in out
+            | nil => get out {*} ;
+                     wait out ;
+                     out <- rev <- in ;
+                     case out (
+                       cons => get out {*} ;
+                               x <- recv out ;
+                               s.some ;
+                               send s x ;
+                               in <- nil <- ;
+                               work {*} ;
+                               s <- queue <- in out
+                      | nil => get out {*} ;
+                               wait out ;
+                               s.none ;
+                               work {*} ;
+                               close s
+                     )
+           )
+  )

@@ -1,0 +1,39 @@
+#test success
+#options -work=send
+
+type bits1 = +{b0 : |{*}> bits1, b1 : |{*}> bits1, $ : |{*}> 1}
+type bits0 = +{b0 : |{*}> bits0, b1 : |{*}> bits0, $ : |{*}> 1}
+
+proc copy : (x : bits1) |{*}- (y : bits0) =
+  case x
+  (
+    b0 => get x {*} ;
+          y.b0 ;
+          pay y {*} ;
+          y <- copy <- x
+  | b1 => get x {*} ;
+          y.b1 ;
+          pay y {*} ;
+          y <- copy <- x
+  |  $ => get x {*} ;
+          y.$ ;
+          pay y {*} ;
+          y <- x
+  )
+
+proc neg : (x : bits1) |{*}- (y : bits0) =
+  case x
+  (
+    b0 => get x {*} ;
+          y.b1 ;
+          pay y {*} ;
+          y <- copy <- x
+  | b1 => get x {*} ;
+          y.b0 ;
+          pay y {*} ;
+          y <- copy <- x
+  |  $ => get x {*} ;
+          y.$ ;
+          pay y {*} ;
+          y <- x
+  )

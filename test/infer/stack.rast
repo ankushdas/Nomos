@@ -1,0 +1,35 @@
+#test success
+#options -work=send
+
+type A = 1
+
+type stack = &{ins : <{*}| A -o stack,
+               del : <{*}| +{none : 1,
+                          some : A * stack}}
+
+proc empty : . |{*}- (s : stack) =
+  case s (
+    ins =>
+      get s {*} ;
+      x <- recv s ;
+      e <- empty <- ;
+      s <- elem <- x e
+  | del =>
+      get s {*} ;
+      s.none ;
+      close s
+  )
+
+proc elem : (x : A), (t : stack) |{*}- (s : stack) =
+  case s (
+    ins =>
+      get s {*} ;
+      y <- recv s ;
+      t' <- elem <- x t ;
+      s <- elem <- y t'
+  | del =>
+      get s {*} ;
+      s.some ;
+      send s x ;
+      s <- t
+  )
