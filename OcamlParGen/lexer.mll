@@ -46,7 +46,6 @@ rule token = parse
   | "->"                { RIGHTARROW }
   | "::"                { CONS }
   | ","                 { COMMA }
-  | "=>"                { GOESTO }
   | "if"                { IF }
   | "then"              { THEN }
   | "else"              { ELSE }

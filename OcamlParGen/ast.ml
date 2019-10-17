@@ -21,4 +21,13 @@ type  expr =
         | Op of expr * string * expr
 and binding = Binding of (string * expr * ocamlTP)
 type program = Program of expr * ocamlTP
+
+
+
+type value = IntV of int
+          | BoolV of bool
+          | ListV of value list
+          | LambdaV of context * arglist * expr
+and context = (string * value) list
+
 type programList = PL of program list
