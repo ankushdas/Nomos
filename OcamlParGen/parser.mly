@@ -6,7 +6,6 @@
 %token IF THEN ELSE
 %token LET IN
 %token COLON
-%token GOESTO
 %token EMPTYLIST LSQUARE RSQUARE CONS COMMA
 %token EQUALS
 %token INTEGER BOOLEAN LIST
@@ -85,8 +84,8 @@ cons:
 
 op :
    | x = expr; PLUS; y = expr   { Ast.Op(x, "+", y) } 
-   | x = expr; TIMES; y = expr  { Ast.Op(x, "-", y) } 
-   | x = expr; MINUS; y = expr  { Ast.Op(x, "*", y) } 
+   | x = expr; TIMES; y = expr  { Ast.Op(x, "*", y) } 
+   | x = expr; MINUS; y = expr  { Ast.Op(x, "-", y) } 
    | x = expr; DIV; y = expr    { Ast.Op(x, "/", y) } 
    ;
 

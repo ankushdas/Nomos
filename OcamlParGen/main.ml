@@ -150,7 +150,7 @@ let rec typecheck (ctx : context) (e : Ast.expr) (t : Ast.ocamlTP) : bool =
                                                         | _        -> raise (TypeError (format_err e t)))
         | Lambda(l, e) -> (match t with
                                         Arrow(t1, t2) -> 
-                                                         let ctx' = addArglist l ctx in
+                                                         let (len, ctx') = addArglist l ctx in
                                                          if (typecheck ctx' e (get_result_type t))
                                                          then true
                                                          else raise (TypeError (format_err e t))
@@ -170,8 +170,12 @@ and checkArglist (l : Ast.arglist) (t : Ast.ocamlTP) =
                                                 else false
                                                 |  _  -> false 
 and addArglist l ctx = match l with
-                                Ast.Single(x, t1) -> (x,t1)::ctx
-                            |   Ast.Curry((x,t1), rest) -> (x,t1)::(addArglist rest ctx)
+                                Ast.Single(x, t1) -> (1, (x,t1)::ctx)
+                            |   Ast.Curry((x,t1), rest) -> 
+                                            let
+                                                (len, ctx') = addArglist rest ctx
+                                            in
+                                                (len + 1, (x,t1)::ctx')
 
 
 
@@ -179,41 +183,109 @@ and contextToString ctx : string = (match ctx with
                                 []  -> ""
                             |   (x,t1)::rest -> let v : string = (contextToString rest) in
                                             Printf.sprintf "(%s : %s), %s" x (print_type t1) v)
-(*
-let process (line : string) =
-  let linebuf = Lexing.from_string line in
-  try
-  let Program(res,typ) = Parser.prog Lexer.token linebuf in
-  let a : string = print_ast(res) in
-  let _    = typecheck [] res typ in
-        Printf.printf "The expression is: %s \nTypechecking succeded!\n" a
-  with
-  | TypeError err -> Printf.printf "Type error: %s" err
-  | Lexer.SyntaxError msg ->
-      Printf.fprintf stderr "%s%!\n" msg
-  | Parser.Error ->
-      Printf.fprintf stderr "At offset %d: syntax error.\n%!" (Lexing.lexeme_start linebuf)
 
-let process (optional_line : string option) =
-  match optional_line with
-  | None ->
-      ()
-  | Some line ->
-      process line
 
-let rec repeat channel =
-  (* Attempt to read one line. *)
-  let optional_line, continue = Lexer.line channel in
-  process optional_line;
-  if continue then
-    repeat channel
-  
-let () =
-        (*
-  repeat (Lexing.from_channel stdin)
-  *)
-    let oc = open_in file in
-*)
+
+
+type valContext = (string * Ast.value) list
+
+
+let rec print_list_val (l : Ast.value list) = 
+        match l with
+        [] -> ""
+     |  x::xs -> let a : string = print_value(x)  in
+                 let b : string = print_list_val(xs) in
+                 if xs = [] then 
+                 Printf.sprintf "%s" a
+                 else
+                 Printf.sprintf "%s,%s" a b
+and print_value v = match v with 
+                          Ast.IntV(v1) -> Printf.sprintf "%d" v1 
+                        | Ast.BoolV(v1) -> Printf.sprintf "%b" v1
+                        | Ast.ListV(l) -> "[" ^ print_list_val l ^ "]"
+                        | Ast.LambdaV(_, args, v1) -> Printf.sprintf "fun %s -> %s" (print_args args) (print_ast v1)
+
+
+
+let rec lookupInContext (ctx : valContext) x = 
+        match ctx with
+                [] -> raise (Failure "Empty context")
+           | (y,v)::ys -> if x = y then v else lookupInContext ys x
+
+
+
+
+
+let rec evaluate (ctx : valContext) (e : Ast.expr) : Ast.value = 
+        match e with
+        If(e1, e2, e3) -> (let ifVal = evaluate ctx e1 in
+                          let thenVal = evaluate ctx e2 in
+                          let elseVal = evaluate ctx e3 in
+                          match ifVal with
+                            Ast.BoolV(true) -> thenVal
+                          | Ast.BoolV(false) -> elseVal
+                          | _                -> raise (Failure "Impossible"))
+
+        | Bool (v) ->  Ast.BoolV (v)
+        | Int (v)  ->  Ast.IntV(v)
+        | Var(x) -> lookupInContext ctx x 
+        
+        | LetIn (Ast.Binding(var, expr, _), e') -> let letVal = evaluate ctx expr in
+                                                   let expVal = evaluate ((var, letVal)::ctx) e' in
+                                                   expVal
+
+        | List (l) -> (match l with
+                         [] -> Ast.ListV([])
+                     |   (x::xs) -> let firstVal = evaluate ctx x in
+                                    let secondVal = evaluate ctx (Ast.List(xs)) in
+                                      match secondVal with
+                                          Ast.ListV(lst) -> Ast.ListV(firstVal::lst)
+                                        | _              -> raise (Failure "Impossible"))
+
+        | App ((e1, t1), (e2, t2)) -> (let funcVal = evaluate ctx e1 in
+                                      let argVal = evaluate ctx e2 in
+                                      match funcVal with
+                                        Ast.LambdaV(ctx', args, expr) -> evaluateFunc ctx' args expr argVal
+                                      | _                             -> raise (Failure "Impossible"))
+
+
+        | Cons (x, xs) -> (let firstVal = evaluate ctx x in
+                          let secondVal = evaluate ctx xs in 
+                                        match secondVal with
+                                          Ast.ListV(lst) -> Ast.ListV(firstVal::lst)
+                                        | _              -> raise (Failure "Impossible"))
+
+
+
+
+        | Match ((e1,t1), e2, id1, id2, e3) -> (let matchVal = evaluate ctx e1 in
+                                               match matchVal with
+                                                    Ast.ListV([]) -> evaluate ctx e2
+                                                | Ast.ListV(v::vs) -> evaluate ((id1, v)::(id2, Ast.ListV(vs))::ctx) e3
+                                                | _                -> raise (Failure "Impossible"))
+
+
+        | Lambda(l, e) -> Ast.LambdaV(ctx, l, e)
+        | Op (e1, op, e2) -> let firstArg = evaluate ctx e1 in
+                            let secondArg = evaluate ctx e2 in
+                            match (firstArg, secondArg) with
+                              (Ast.IntV(f), Ast.IntV(s)) ->
+                            (match op with
+                                "+" -> Ast.IntV(f + s)
+                              | "-" -> Ast.IntV(f - s)
+                              | "/" -> Ast.IntV(f / s)
+                              | "*" -> Ast.IntV(f * s)
+                              | _   -> raise (Failure "undefined operation"))
+                            | _   -> raise (Failure "impossible")
+
+and evaluateFunc ctx l e arg = match l with
+                                Ast.Single(x, _) -> evaluate ((x, arg)::ctx) e 
+                              | Ast.Curry((x,_), xs) -> Ast.LambdaV ((x, arg)::ctx, xs, e)
+
+
+
+
+
 
 
 let print_position outx lexbuf =
@@ -234,7 +306,8 @@ let rec process (l : Ast.program list) =
                 [] -> ()
         | Ast.Program(expr, t)::es -> try
                                       let a : bool = typecheck [] expr t in       
-                                      (if a then Printf.printf "SUCCESS\n" else Printf.printf "TYPECHECKING FAILURE\n"; process es)
+                                      (if a then let evalRes = evaluate [] expr in Printf.printf "%s\n" (print_value evalRes)
+                                      else Printf.printf "TYPECHECKING FAILURE\n"; process es)
                                       with
                                       | TypeError err -> (Printf.printf "TYPECHECKING FAILURE: %s\n" err; process es)
 
