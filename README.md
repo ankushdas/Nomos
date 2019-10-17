@@ -24,9 +24,24 @@ $ opam update
 $ opam pin add -y rast .    # only the first time you build
 $ opam upgrade              # after packages upgrade
 ```
+The next step is installing the [Coin-Or LP solver](https://projects.coin-or.org/Clp). Use the instructions below.
+```
+$ cd src/clp
+$ svn co https://projects.coin-or.org/svn/Clp/stable/1.16 coin-Clp
+$ cd coin-Clp
+$ ./configure -C
+$ make
+$ make test
+$ make install
+$ cd ../../
+```
+The next step is setting up the environment variable `CLP_PATH` to the directory where the Coin-Or LP solver is installed. Use the command below.
+```
+$ export CLP_PATH=<absolute-path-to-`coin-Clp`-folder>
+```
 
 ### Building
-Simply run the make command.
+Simply run the make command at the top-level.
 ```
 $ make
 ```
