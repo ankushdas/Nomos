@@ -1,0 +1,19 @@
+#test success
+#options -work=send
+
+type A = 1
+type listA1 = +{cons : |{*}> A * listA1, nil : |{*}> 1}
+type listA0 = +{cons : |{*}> A * listA0, nil : |{*}> 1}
+
+proc append : (l1 : listA1), (l2 : listA0) |{*}- (l : listA0) =
+  case l1 (
+    cons => get l1 {*} ;
+            x <- recv l1 ;
+            l.cons ;
+            pay l {*} ;
+            send l x ;
+            l <- append <- l1 l2
+  |  nil => get l1 {*} ;
+            wait l1 ;
+            l <- l2
+  )

@@ -1,0 +1,73 @@
+#test success
+#options -work=send
+
+type A = +{b0 : 1, b1 : 1}
+
+type listA1 = +{cons : |{*}> A * listA1,
+                nil : |{*}> 1}
+
+type listA2 = +{cons : |{*}> A * listA2,
+                nil : |{*}> 1}
+
+type listA3 = +{cons : |{*}> A * listA3,
+                nil : |{*}> 1}
+
+proc cons2 : (x : A), (m : listA2) |{*}- (l : listA2) =
+  l.cons ;
+  pay l {*} ;
+  send l x ;
+  l <- m
+
+proc nil2 : . |{*}- (l : listA2) =
+  l.nil ;
+  pay l {*} ;
+  close l
+
+proc rev_help : (l : listA1), (m : listA2) |{*}- (r : listA3) =
+  case l (
+    cons => get l {*} ;
+            x <- recv l ;
+            m <- cons2 <- x m ;
+            r <- rev_help <- l m
+   | nil => get l {*} ;
+            wait l ;
+            r <- m
+  )
+
+proc rev : (l : listA1) |{*}- (r : listA2) =
+  m <- nil2 <- ;
+  r <- rev_help <- l m
+
+proc three : (x1 : A), (x2 : A), (x3 : A) |{*}- (l : listA1) =
+  l.cons ;
+  pay l {*} ;
+  send l x1 ;
+  l.cons ;
+  pay l {*} ;
+  send l x2 ;
+  l.cons ;
+  pay l {*} ;
+  send l x3 ;
+  l.nil ;
+  pay l {*} ;
+  close l
+
+proc revthree : (x1 : A), (x2 : A), (x3 : A) |{*}- (r : listA2) =
+  l <- three <- x1 x2 x3 ;
+  r <- rev <- l
+
+proc b0 : . |{*}- (x : A) =
+  x.b0 ;
+  close x
+
+proc b1 : . |{*}- (x : A) =
+  x.b1 ;
+  close x
+
+proc main : . |{*}- (r : listA2) =
+  x1 <- b0 <- ;
+  x2 <- b1 <- ;
+  x3 <- b1 <- ;
+  r <- revthree <- x1 x2 x3
+
+exec main

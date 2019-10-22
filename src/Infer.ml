@@ -23,7 +23,7 @@ let remove_star pot = match pot with
   | A.Arith e -> A.Arith e;;
 
 let rec getval v sols = match sols with
-    [] -> raise InferImpossible
+    [] -> 0
   | (v',n)::sols' ->
       if v = v' then n
       else getval v sols';;

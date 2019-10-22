@@ -54,7 +54,7 @@ let pp_pot e = match e with
 let pp_potpos e = match e with
     A.Arith (R.Int 1) -> ""
   | A.Star -> "{*}"
-  | A.Arith e -> "{" ^ R.pp_arith e ^ "} ";;
+  | A.Arith e -> "{" ^ R.pp_arith e ^ "}";;
 
 (***********************)
 (* Externalizing types *)

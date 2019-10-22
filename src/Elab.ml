@@ -244,11 +244,11 @@ let rec remove_stars_exps dcls = match dcls with
     let sdelta' = remove_list sdelta in
     let ldelta' = remove_list ldelta in
     let odelta' = remove_list odelta in
-    let ctx' = {A.shared = sdelta'; A.linear = ldelta'; A.ordered = odelta'} in
+    let delta' = {A.shared = sdelta'; A.linear = ldelta'; A.ordered = odelta'} in
     let pot' = I.remove_star pot in
     let zc' = (z, I.remove_stars_tp c) in
     let p' = I.remove_stars_exp p in
-    {A.declaration = A.ExpDecDef(f,(ctx',pot',zc'),p'); A.decl_extent = ext}::(remove_stars_exps dcls')
+    {A.declaration = A.ExpDecDef(f,(delta',pot',zc'),p'); A.decl_extent = ext}::(remove_stars_exps dcls')
   | ({A.declaration = A.Pragma _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_exps dcls')
   | ({A.declaration = A.TpEq _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_exps dcls')
   | ({A.declaration = A.TpDef _; A.decl_extent = _ext} as dcl)::dcls' -> dcl::(remove_stars_exps dcls')

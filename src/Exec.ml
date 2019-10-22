@@ -181,7 +181,7 @@ let fwd ch config =
               | Some(Msg(_d,t',(w',pot'),(A.MPayP _ as m))) ->
                   let config = remove_sem c1 config in
                   let config = remove_sem d config in
-                  let msg = Msg(d,max(t,t'),(w+w',pot+pot'),A.msubst d c1 m) in
+                  let msg = Msg(c1,max(t,t'),(w+w',pot+pot'),A.msubst c1 d m) in
                   let config = add_sem msg config in
                   let d' = get_cont d config in
                   let config = remove_cont d config in
