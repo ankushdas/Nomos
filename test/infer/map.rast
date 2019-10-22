@@ -1,0 +1,34 @@
+#test success
+#options -work=send
+
+type A = 1
+type B = 1
+
+type mapper = &{next : A -o B * mapper,
+                done : 1}
+
+type listA0 = +{cons : |{0}> A * listA0,
+                nil : |{0}> 1}
+
+type listA1 = +{cons : |{*}> A * listA1,
+                nil : |{*}> 1}
+
+proc map : (l : listA1), (m : mapper) |{0}- (k : listA0) =
+  case l (
+    cons => get l {*} ;
+            x <- recv l ;
+            m.next ;
+            send m x ;
+            y <- recv m ;
+            k.cons ;
+            pay k {*} ;
+            send k y ;
+            k <- map <- l m
+  |  nil => get l {*} ;
+            wait l ;
+            m.done ;
+            wait m ;
+            k.nil ;
+            pay k {*} ;
+            close k
+  )
