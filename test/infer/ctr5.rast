@@ -1,0 +1,52 @@
+#test error
+#options -work=send
+
+% not sure if this should really fail...
+
+type bits = +{ b0 : bits, b1 : bits, e : 1 }
+type ctr = &{ inc : <{*}| ctr,
+              dec : <{*}| ctr,
+              val : <{*}| bits }
+
+proc end : . |{*}- (x : ctr) =
+  case x ( inc => get x {*} ;
+                  y <- end <- ;
+                  work {*} ;
+                  x <- bit1 <- y
+         | dec => get x {*} ;
+                  work {*} ;
+                  x <- end <-
+         | val => get x {*} ;
+                  x.e ;
+                  work {*} ;
+                  close x )
+
+proc bit0 : (y : ctr) |{*}- (x : ctr) =
+  case x ( inc => get x {*} ;
+                  work {*} ;
+                  x <- bit1 <- y
+         | dec => get x {*} ;
+                  y.dec ;
+                  pay y {*} ;
+                  work {*} ;
+                  x <- bit1 <- y
+         | val => get x {*} ;
+                  y.val ;
+                  pay y {*} ;
+                  work {*} ;
+                  x <- y )
+
+proc bit1 : (y : ctr) |{*}- (x : ctr) =
+  case x ( inc => get x {*} ;
+                  y.inc ;
+                  pay y {*} ;
+                  work {*} ;
+                  x <- bit0 <- y
+         | dec => get x {*} ;
+                  work {*} ;
+                  x <- bit0 <- y
+         | val => get x {*} ;
+                  y.val ;
+                  pay y {*} ;
+                  work {*} ;
+                  x <- y )
