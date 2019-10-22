@@ -39,6 +39,13 @@ rule token = parse
   | "|"                 { BAR  }
   | ";;"                { DOUBLESEMI }
   | "[]"                { EMPTYLIST }
+  | "<>"                { NEQ     }
+  | ">"                 { GREATER }
+  | "<"                 { LESS }
+  | ">="                { GREATEREQ }
+  | "<="                { LESSEQ }
+  | "&&"                { ANDALSO }
+  | "||"                { ORELSE }
   | "int"               { INTEGER   }
   | "bool"              { BOOLEAN }
   | "list"              { LIST   }

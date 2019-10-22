@@ -13,10 +13,14 @@
 %token FUN RIGHTARROW
 %token PLUS MINUS TIMES DIV
 %token EOF
+%token NEQ GREATER LESS GREATEREQ LESSEQ
+%token ANDALSO ORELSE
 %token DOUBLESEMI
 %right RIGHTARROW
 %nonassoc LIST
 %nonassoc statement
+%right ANDALSO ORELSE
+%left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
 %right CONS
 %left PLUS MINUS
 %left TIMES DIV
@@ -53,6 +57,8 @@ expr :
     | m = matchExp      { m           }
     | l = lambdaExp     { l           }
     | o = op            { o           }
+    | c = compOp        { c           }
+    | r = relOp         { r           }
     ;
 
 cond :
@@ -88,6 +94,23 @@ op :
    | x = expr; MINUS; y = expr  { Ast.Op(x, "-", y) } 
    | x = expr; DIV; y = expr    { Ast.Op(x, "/", y) } 
    ;
+
+
+compOp :
+   | x = expr; EQUALS; y = expr   { Ast.CompOp(x, "=", y) } 
+   | x = expr; NEQ; y = expr  { Ast.CompOp(x, "<>", y) } 
+   | x = expr; GREATER; y = expr  { Ast.CompOp(x, ">", y) } 
+   | x = expr; LESS; y = expr    { Ast.CompOp(x, "<", y) } 
+   | x = expr; GREATEREQ; y = expr  { Ast.CompOp(x, ">=", y) } 
+   | x = expr; LESSEQ; y = expr    { Ast.CompOp(x, "<=", y) } 
+   ;
+
+
+relOp :
+   | x = expr; ANDALSO; y = expr   { Ast.RelOp(x, "&&", y) } 
+   | x = expr; ORELSE; y = expr  { Ast.RelOp(x, "||", y) } 
+   ;
+
 
 matchExp :
     | MATCH; x = expr; COLON; t = typeVal; WITH; EMPTYLIST; RIGHTARROW; y = expr; BAR; a = ID; 

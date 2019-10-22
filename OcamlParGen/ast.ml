@@ -19,6 +19,8 @@ type  expr =
         | Match of (expr * ocamlTP) * expr * string * string * expr
         | Lambda of arglist * expr
         | Op of expr * string * expr
+        | CompOp of expr * string * expr
+        | RelOp of expr * string * expr
 and binding = Binding of (string * expr * ocamlTP)
 type program = Program of expr * ocamlTP
 

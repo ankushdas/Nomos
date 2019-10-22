@@ -55,6 +55,20 @@ and print_ast (t : Ast.expr) =
                                                         opr
                                                         a
                                                         b
+           
+           | Ast.CompOp(e1, opr, e2) -> let a : string = print_ast(e1) in
+                                    let b : string = print_ast(e2) in
+                                    Printf.sprintf "%s(%s, %s)"
+                                                        opr
+                                                        a
+                                                        b
+           | Ast.RelOp(e1, opr, e2) -> let a : string = print_ast(e1) in
+                                    let b : string = print_ast(e2) in
+                                    Printf.sprintf "%s(%s, %s)"
+                                                        opr
+                                                        a
+                                                        b
+
 
            | Cons(head, tail) -> let a : string = print_ast(head) in
                                  let b : string = print_ast(tail) in
@@ -77,6 +91,7 @@ and print_ast (t : Ast.expr) =
                                    Printf.sprintf "(%s)(%s)"
                                    i
                                    j
+         
  
 type context = (string * Ast.ocamlTP) list
 exception TypeError of string
@@ -155,11 +170,23 @@ let rec typecheck (ctx : context) (e : Ast.expr) (t : Ast.ocamlTP) : bool =
                                                          then true
                                                          else raise (TypeError (format_err e t))
                                         | _        -> raise (TypeError (format_err e t)))
-        | Op (e1, _, e2) -> let a : bool = typecheck ctx e1 t in
-                            let b : bool = typecheck ctx e2 t in
-                            if a && b && (type_equals t Ast.Integer)
-                            then true
-                            else raise (TypeError (format_err e t))
+        | Op (e1, op, e2) -> let a : bool = typecheck ctx e1 t in
+                             let b : bool = typecheck ctx e2 t in
+                             if a && b && (type_equals t Ast.Integer)
+                             then true
+                             else raise (TypeError (format_err e t))
+        | Ast.CompOp (e1, op, e2) ->
+                                 let a : bool = typecheck ctx e1 (Ast.Integer) in
+                                 let b : bool = typecheck ctx e2 (Ast.Integer) in
+                                 if a && b && (type_equals t Ast.Boolean)
+                                 then true
+                                 else raise (TypeError (format_err e t))
+
+        | Ast.RelOp (e1, op, e2) -> let a : bool = typecheck ctx e1 (Ast.Boolean) in
+                                 let b : bool = typecheck ctx e2 (Ast.Boolean) in
+                                 if a && b && (type_equals t Ast.Boolean)
+                                 then true
+                                 else raise (TypeError (format_err e t))
 
 and checkArglist (l : Ast.arglist) (t : Ast.ocamlTP) = 
         match l with
@@ -266,7 +293,7 @@ let rec evaluate (ctx : valContext) (e : Ast.expr) : Ast.value =
 
 
         | Lambda(l, e) -> Ast.LambdaV(ctx, l, e)
-        | Op (e1, op, e2) -> let firstArg = evaluate ctx e1 in
+        | Op (e1, op, e2) -> (let firstArg = evaluate ctx e1 in
                             let secondArg = evaluate ctx e2 in
                             match (firstArg, secondArg) with
                               (Ast.IntV(f), Ast.IntV(s)) ->
@@ -275,6 +302,28 @@ let rec evaluate (ctx : valContext) (e : Ast.expr) : Ast.value =
                               | "-" -> Ast.IntV(f - s)
                               | "/" -> Ast.IntV(f / s)
                               | "*" -> Ast.IntV(f * s)
+                              | _   -> raise (Failure "undefined operation"))
+                            | _   -> raise (Failure "impossible"))
+        | Ast.CompOp (e1, op, e2) -> (let firstArg = evaluate ctx e1 in
+                            let secondArg = evaluate ctx e2 in
+                            match (firstArg, secondArg) with
+                              (Ast.IntV(f), Ast.IntV(s)) ->
+                            (match op with
+                                ">"  ->  Ast.BoolV(f > s)
+                              | "<"  ->  Ast.BoolV(f < s)
+                              | ">=" ->  Ast.BoolV(f >= s)
+                              | "<=" ->  Ast.BoolV(f <= s)
+                              | "="  ->  Ast.BoolV(f = s)
+                              | "<>" ->  Ast.BoolV(f <> s)
+                              | _   -> raise (Failure "undefined operation"))
+                            | _   -> raise (Failure "impossible"))
+        | Ast.RelOp (e1, op, e2) -> let firstArg = evaluate ctx e1 in
+                            let secondArg = evaluate ctx e2 in
+                            match (firstArg, secondArg) with
+                              (Ast.BoolV(f), Ast.BoolV(s)) ->
+                            (match op with
+                                "&&"  ->  Ast.BoolV(f && s)
+                              | "||"  ->  Ast.BoolV(f || s)
                               | _   -> raise (Failure "undefined operation"))
                             | _   -> raise (Failure "impossible")
 
