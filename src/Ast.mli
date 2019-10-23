@@ -2,11 +2,17 @@
 
 module R = Arith
 
+type mode =
+    Shared
+  | Linear
+  | Transaction
+  | Pure
+  | Unknown
 type label = string
 type tpname = string
 type expname = string
 type ext = Mark.ext option
-type chan = string
+type chan = string * mode
 
 type potential =
   | Arith of R.arith

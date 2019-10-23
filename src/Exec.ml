@@ -32,10 +32,10 @@ type sem =
 
 let pp_sem sem = match sem with
     Proc(c,t,(w,pot),p) ->
-      "proc(" ^ c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      "proc(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
       ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
   | Msg(c,t,(w,pot),m) ->
-      "msg(" ^ c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      "msg(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
       ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
 (* map from offered channel to semantic object *)

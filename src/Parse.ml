@@ -163,6 +163,8 @@ exception UnknownReduceContextError
 let uncommit ctx =
   {A.shared = [] ; A.linear = [] ; A.ordered = ctx};;
 
+let unk s = (s, A.Unknown);;
+
 (* <decl> *)
 let rec p_decl st = match first st with
     T.TYPE -> st |> shift @> p_id @> p_eq_type @> reduce r_decl
@@ -199,7 +201,7 @@ and p_context2 st = match first st with
   | t -> error_expected_list (here st, [T.COMMA; T.TURNSTILE; T.BAR], t)
 
 and r_chan_tp st = match st with
-    Tok(T.RPAREN, r2) :: Tp(tp,_r2) :: Tok(T.COLON,_) :: Tok(T.IDENT(id), _r1) :: Tok(T.LPAREN, _) :: Context(ctx, r) :: s -> s $ Context(ctx @ [(id,tp)], join r r2)
+    Tok(T.RPAREN, r2) :: Tp(tp,_r2) :: Tok(T.COLON,_) :: Tok(T.IDENT(id), _r1) :: Tok(T.LPAREN, _) :: Context(ctx, r) :: s -> s $ Context(ctx @ [(unk id,tp)], join r r2)
   | _st -> raise UnknownReduceContextError
 
 (* <turnstile> <id> : <type> *)
@@ -228,19 +230,19 @@ and r_decl st_decl = match st_decl with
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.TURNSTILE,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith (R.Int 0),(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith (R.Int 0),(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
     (* 'proc' <id> : <context> '|{' '*' '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Star(_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Star,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Star,(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
     (* 'proc' <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Arith(pot,_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
     Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith pot,(c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith pot,(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
 
     (* 'exec' <id> *)
   | Tok(T.IDENT(f),r2) :: Tok(T.EXEC,r1) :: s ->
@@ -441,7 +443,7 @@ and p_id_list_opt_exp st = match first st with
   | _t -> st |> reduce r_exp_atomic @> p_exp
 
 and r_arg st = match st with
-    Tok(T.IDENT(id), r2) :: Args(args, r1) :: s -> s $ Args(args @ [id], join r1 r2)
+    Tok(T.IDENT(id), r2) :: Args(args, r1) :: s -> s $ Args(args @ [unk id], join r1 r2)
   | _st -> raise UnknownParseError
 
 (* [<idx>] postfix of action, default is 1 *)
@@ -453,12 +455,12 @@ and p_idx_opt st = match first st with
 (* reduce <exp>, where <exp> has no continuation (atomic expressions) *)
 and r_exp_atomic st = match st with
     Tok(T.RPAREN,r2) :: Branches(branches) :: Tok(T.LPAREN,_) :: Tok(T.IDENT(id),_) :: Tok(T.CASE,r1) :: s ->
-      s $ Exp(m_exp(A.Case(id,branches),join r1 r2),join r1 r2)
-  | Tok(T.IDENT(id),r2) :: Tok(T.CLOSE,r1) :: s -> s $ Exp(m_exp(A.Close(id),join r1 r2),join r1 r2)
+      s $ Exp(m_exp(A.Case(unk id,branches),join r1 r2),join r1 r2)
+  | Tok(T.IDENT(id),r2) :: Tok(T.CLOSE,r1) :: s -> s $ Exp(m_exp(A.Close(unk id),join r1 r2),join r1 r2)
   | Args(args,r2) :: Tok(T.LARROW,_) :: Tok(T.IDENT(id),_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan),r1) :: s ->
-      s $ Exp(m_exp(A.ExpName(chan,id,args),join r1 r2),join r1 r2)
+      s $ Exp(m_exp(A.ExpName(unk chan,id,args),join r1 r2),join r1 r2)
   | Tok(T.IDENT(id2),r2) :: Tok(T.LARROW,_) :: Tok(T.IDENT(id1),r1) :: s ->
-      s $ Exp(m_exp(A.Fwd(id1,id2),join r1 r2),join r1 r2)
+      s $ Exp(m_exp(A.Fwd(unk id1,unk id2),join r1 r2),join r1 r2)
   | Tok(T.RPAREN,r2) :: Exp(exp,_r) :: Tok(T.LPAREN,r1) :: s ->
       s $ Exp(exp,join r1 r2)
   (* should be the only atomic expressions *)
@@ -467,35 +469,35 @@ and r_exp_atomic st = match st with
 (* reduce action prefix of <exp> *)
 and r_action st = match st with
     Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(id),r2) :: Tok(T.PERIOD,_) :: Tok(T.IDENT(chan),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Lab(chan,id,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Lab(unk chan,id,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan),r2) :: Tok(T.WAIT,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Wait(chan,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Wait(unk chan,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.IDENT(chan1),_) :: Tok(T.SEND,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Send(chan1,chan2,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Send(unk chan1,unk chan2,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.RECV,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Recv(chan2,chan1,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Recv(unk chan2,unk chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r2) :: Arith(pot,_) :: Tok(T.WORK,r1) :: s ->
       s $ Action((fun k -> m_exp(A.Work(A.Arith pot,k),r1)), join r1 r2)
   | Tok(T.SEMICOLON,r2) :: Star(_) :: Tok(T.WORK,r1) :: s ->
       s $ Action((fun k -> m_exp(A.Work(A.Star,k),r1)), join r1 r2)
   | Tok(T.SEMICOLON,r3) :: Arith(pot,r2) :: Tok(T.IDENT(chan),_) :: Tok(T.PAY,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Pay(chan,A.Arith pot,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Pay(unk chan,A.Arith pot,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Star(r2) :: Tok(T.IDENT(chan),_) :: Tok(T.PAY,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Pay(chan,A.Star,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Pay(unk chan,A.Star,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Arith(pot,r2) :: Tok(T.IDENT(chan),_) :: Tok(T.GET,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Get(chan,A.Arith pot,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Get(unk chan,A.Arith pot,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Star(r2) :: Tok(T.IDENT(chan),_) :: Tok(T.GET,r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Get(chan,A.Star,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Get(unk chan,A.Star,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACQUIRE,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Acquire(chan2,chan1,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Acquire(unk chan2,unk chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.ACCEPT,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Accept(chan2,chan1,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Accept(unk chan2,unk chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.RELEASE,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Release(chan2,chan1,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Release(unk chan2,unk chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Tok(T.IDENT(chan2),r2) :: Tok(T.DETACH,_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan1),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Detach(chan2,chan1,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Detach(unk chan2,unk chan1,k),join r1 r2)), join r1 r3)
   | Tok(T.SEMICOLON,r3) :: Args(args,r2) :: Tok(T.LARROW,_) :: Tok(T.IDENT(id),_) :: Tok(T.LARROW,_) :: Tok(T.IDENT(chan),r1) :: s ->
-      s $ Action((fun k -> m_exp(A.Spawn(chan,id,args,k),join r1 r2)), join r1 r3)
+      s $ Action((fun k -> m_exp(A.Spawn(unk chan,id,args,k),join r1 r2)), join r1 r3)
   | _t -> raise UnknownParseError
 
 (* <branches> *)
