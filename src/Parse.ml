@@ -57,6 +57,7 @@ type prec = int
 (* stack items for shift/reduce parsing *)
 type stack_item =
     Tok of T.terminal * region                                     (* lexer token *)
+  | Mode of A.mode * region                                        (* process mode *)
   | ArithInfix of prec * (R.arith * R.arith -> R.arith) * region   (* arithmetic infix operator and constructor *)
   | Arith of R.arith * region                                      (* arithmetic expression *)
   | Star of region                                                 (* star potential *)
@@ -176,9 +177,9 @@ let rec p_decl st = match first st with
   | t -> parse_error (here st, "unexpected token " ^ pp_tok t ^ " at top level")
 
 and p_mode_opt st = match first st with
-    T.ASSET -> st |> shift
-  | T.CONTRACT -> st |> shift
-  | T.TRANSACTION -> st |> shift
+    T.ASSET -> st |> drop @> push (Mode(A.Pure, here st))
+  | T.CONTRACT -> st |> drop @> push (Mode(A.Shared, here st))
+  | T.TRANSACTION -> st |> drop @> push (Mode(A.Transaction, here st))
   | t -> error_expected_list (here st, [T.ASSET; T.CONTRACT; T.TRANSACTION], t)
 
 (* '=' <type> *)
@@ -232,22 +233,22 @@ and r_decl st_decl = match st_decl with
   |  Tok(T.IDENT(id2),r2) :: Tok(T.EQ,_r) :: Tok(T.IDENT(id1),_r1) :: Tok(T.EQTYPE,r1) :: s ->
     s $ Decl({declaration = A.TpEq(A.TpName(id1),A.TpName(id2)); decl_extent = PS.ext(join r1 r2)})
 
-    (* 'proc' <id> : <context> |- <id> : <type> = <exp> *)
+    (* 'proc' <mode> <id> : <context> |- <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.TURNSTILE,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
-    Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
+    Tok(T.IDENT(id),_) :: Mode(_m,_):: Tok(T.PROC,r1) :: s ->
     s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith (R.Int 0),(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
-    (* 'proc' <id> : <context> '|{' '*' '}-' <id> : <type> = <exp> *)
+    (* 'proc' <mode> <id> : <context> '|{' '*' '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Star(_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
-    Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
+    Tok(T.IDENT(id),_) :: Mode(_m,_) :: Tok(T.PROC,r1) :: s ->
     s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Star,(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
-    (* 'proc' <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
+    (* 'proc' <mode> <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Arith(pot,_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
-    Tok(T.IDENT(id),_) :: Tok(T.PROC,r1) :: s ->
+    Tok(T.IDENT(id),_) :: Mode(_m,_) :: Tok(T.PROC,r1) :: s ->
     s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith pot,(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
 
     (* 'exec' <id> *)

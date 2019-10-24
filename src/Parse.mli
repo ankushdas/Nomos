@@ -8,6 +8,7 @@ type region = int * int
 type prec = int
 type stack_item =
     Tok of T.terminal * region
+  | Mode of A.mode * region  
   | ArithInfix of prec * (R.arith * R.arith -> R.arith) * region
   | Arith of R.arith * region
   | Star of region
