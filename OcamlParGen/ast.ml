@@ -3,6 +3,7 @@ type ocamlTP =
         | Boolean
         | ListTP of ocamlTP
         | Arrow of ocamlTP * ocamlTP
+        | Var of string
 
 type arglist = Single of string * ocamlTP 
              | Curry of (string * ocamlTP) * arglist
@@ -21,7 +22,23 @@ type  expr =
         | Op of expr * string * expr
         | CompOp of expr * string * expr
         | RelOp of expr * string * expr
+(*and typedExpr = 
+        | IfT of typedExpr * typedExpr * typedExpr * ocamlTP
+        | LetInT of bindingT * typedExpr * ocamlTP
+        | BoolT of bool * ocamlTP
+        | IntT of int * ocamlTP
+        | VarT of string * ocamlTP
+        | ListT of expr list * ocamlTP
+        | AppT of typedExpr * typedExpr * ocamlTP
+        | ConsT of typedExpr * typedExpr * ocamlTP
+        | MatchT of typedExpr * typedExpr * string * string * typedExpr * ocamlTP
+        | LambdaT of arglist * typedExpr * ocamlTP
+        | OpT of typedExpr * string * typedExpr * ocamlTP
+        | CompOpT of typedExpr * string * typedExpr * ocamlTP
+        | RelOpT of typedExpr * string * typedExpr * ocamlTP*)
 and binding = Binding of (string * expr * ocamlTP)
+(*and bindingT = BindingT of (string * typedExpr)*)
+
 type program = Program of expr * ocamlTP
 
 
