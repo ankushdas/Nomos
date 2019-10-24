@@ -262,12 +262,18 @@ let name_of (c,_m) = c;;
 
 let eq_name (c1,_m1) (c2,_m2) = c1 = c2;;
 
-let eq_mode (_c1,m1) (_c2,m2) = m1 = m2;;
+let eq_mode (_c1,m1) (_c2,m2) = match m1, m2 with
+    A.Pure, A.Pure
+  | A.Linear, A.Linear
+  | A.Transaction, A.Transaction
+  | A.Shared, A.Shared
+  | A.Unknown, A.Unknown -> true
+  | _, _ -> false;;
 
-let eq_chan c1 c2 ext = 
+let eq_chan c1 c2 = 
   if eq_name c1 c2 && eq_mode c1 c2
   then true
-  else E.error_mode_mismatch (c1, c2, ext);;
+  else false;;
 
 let rec checktp c delta = match delta with
     [] -> false
@@ -302,7 +308,7 @@ let purelin delta =
 let rec findtp c delta ext = match delta with
       [] -> raise UnknownTypeError
     | (x,t)::delta' ->
-        if eq_chan x c ext then t
+        if eq_chan x c then t
         else findtp c delta' ext;;
 
 let find_stp c delta ext =

@@ -43,6 +43,9 @@ type terminal =
   | EQTYPE
   | PROC
   | EXEC
+  | ASSET
+  | CONTRACT
+  | TRANSACTION
   | IDENT of string
   | NAT of int
   | EOF

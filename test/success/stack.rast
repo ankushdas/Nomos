@@ -17,7 +17,7 @@ proc empty : . |- (s : stack) =
       close s
   )
 
-proc elem : (x : A), (t : stack) |{*}- (s : stack) =
+proc elem : (x : A), (t : stack) |- (s : stack) =
   case s (
     ins =>
       y <- recv s ;

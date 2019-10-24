@@ -56,7 +56,7 @@ type prec = int
 
 (* stack items for shift/reduce parsing *)
 type stack_item =
-    Tok of T.terminal * region   (* lexer token *)
+    Tok of T.terminal * region                                     (* lexer token *)
   | ArithInfix of prec * (R.arith * R.arith -> R.arith) * region   (* arithmetic infix operator and constructor *)
   | Arith of R.arith * region                                      (* arithmetic expression *)
   | Star of region                                                 (* star potential *)
@@ -169,11 +169,17 @@ let unk s = (s, A.Unknown);;
 let rec p_decl st = match first st with
     T.TYPE -> st |> shift @> p_id @> p_eq_type @> reduce r_decl
   | T.EQTYPE -> st |> shift @> p_eqtype @> reduce r_decl
-  | T.PROC -> st |> shift @> p_id @> p_exp_decl_def @> reduce r_decl
+  | T.PROC -> st |> shift @> p_mode_opt @> p_id @> p_exp_decl_def @> reduce r_decl
   | T.EXEC -> st |> shift @> p_id @> reduce r_decl
   | T.PRAGMA _ -> st |> shift @> reduce r_decl
   | T.EOF -> st
   | t -> parse_error (here st, "unexpected token " ^ pp_tok t ^ " at top level")
+
+and p_mode_opt st = match first st with
+    T.ASSET -> st |> shift
+  | T.CONTRACT -> st |> shift
+  | T.TRANSACTION -> st |> shift
+  | t -> error_expected_list (here st, [T.ASSET; T.CONTRACT; T.TRANSACTION], t)
 
 (* '=' <type> *)
 and p_eq_type st = match first st with

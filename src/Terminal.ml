@@ -13,6 +13,7 @@ type terminal =
        | ACQUIRE | ACCEPT | RELEASE | DETACH
        | TURNSTILE
        | TYPE | EQTYPE | PROC | EXEC
+       | ASSET | CONTRACT | TRANSACTION
        | IDENT of string | NAT of int
        | EOF | LEX_ERROR
        | PRAGMA of string * string;; (* pragma and rest of line *)
@@ -30,6 +31,7 @@ let toString t = match t with
   | RELEASE -> "release" | DETACH -> "detach"
   | TURNSTILE -> "|-"
   | TYPE -> "type" | EQTYPE -> "eqtype" | PROC -> "proc" | EXEC -> "exec"
+  | ASSET -> "asset" | CONTRACT -> "contract" | TRANSACTION -> "transaction"
   | IDENT(s) -> s | NAT(n) -> string_of_int n
   | EOF -> "<eof>" | LEX_ERROR -> "<lex error>"
   | PRAGMA(pragma,line) -> pragma ^ line;;
