@@ -38,17 +38,36 @@ let pp_sem sem = match sem with
       "msg(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
       ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
+module Chan =
+  struct
+    module T =
+      struct
+        type t = A.chan
+
+        let compare x y =
+          let (c1,_m1) = x in
+          let (c2,_m2) = y in
+          C.String.compare c1 c2
+        
+        let sexp_of_t (c,_m) = C.String.sexp_of_t c
+
+        let t_of_sexp s = (C.String.t_of_sexp s, A.Unknown)
+      end
+      include T
+      include C.Comparable.Make(T)
+  end
+
 (* map from offered channel to semantic object *)
-type map_string_sem = sem C.String.Map.t;;
+type map_chan_sem = sem Chan.Map.t;;
 
 (* map from channel to its continuation *)
-type map_string_string = string C.String.Map.t;;
+type map_chan_chan = A.chan Chan.Map.t;;
 
 (* configuration type *)
 (* map from offered channel to semantic object *)
 (* map from channel to its continuation channel *)
 (* map from linear channel to its shared counterpart *)
-type configuration = map_string_sem * map_string_string * map_string_string;;
+type configuration = map_chan_sem * map_chan_chan * map_chan_chan;;
 
 type stepped_config =
     Changed of configuration
@@ -831,7 +850,7 @@ fun is_final (P::(config as Q::config')) =
 let error = ErrorMsg.error_msg ErrorMsg.Runtime None;;
 
 let create_config sem =
-  let config = (M.empty (module C.String), M.empty (module C.String), M.empty (module C.String)) in
+  let config = (M.empty (module Chan), M.empty (module Chan), M.empty (module Chan)) in
   let config = add_sem sem config in
   config;;
 

@@ -152,7 +152,7 @@ let pp_ctx env delta = pp_lsctx env delta.A.shared ^ " ; " ^ pp_lsctx env delta.
 (* pp_tp_compact env delta pot a = "delta |{p}- C", on one line *)
 let pp_tpj_compact env delta pot (x,a) =
   pp_ctx env delta ^ " |" ^ pp_pot pot ^ "- (" ^
-  x ^ " : " ^ pp_tp_compact env a ^ ")";;
+  pp_chan x ^ " : " ^ pp_tp_compact env a ^ ")";;
 
 (***********************)
 (* Process expressions *)

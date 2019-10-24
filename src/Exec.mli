@@ -8,9 +8,29 @@ type sem =
     Proc of A.chan * int * (int * int) * A.expression
   | Msg of A.chan * int * (int * int) * A.msg
 
-type map_string_sem = sem C.String.Map.t;;
-type map_string_string = string C.String.Map.t;;
-type configuration = map_string_sem * map_string_string * map_string_string;;
+module Chan :
+  sig
+    module T :
+      sig
+        type t = A.chan
+        val compare : t -> t -> int
+        val sexp_of_t : t -> Base.Sexp.t
+        val t_of_sexp : Base.Sexp.t -> t
+      end
+    module Map :
+      sig
+        module Key :
+          sig
+            type t = A.chan
+            type comparator_witness = C.Comparable.Make(T).comparator_witness
+          end
+        type 'a t = (Key.t, 'a, Key.comparator_witness) M.t
+      end
+  end
+
+type map_chan_sem = sem Chan.Map.t;;
+type map_chan_chan = A.chan Chan.Map.t;;
+type configuration = map_chan_sem * map_chan_chan * map_chan_chan;;
 
 val pp_sem : sem -> string
 
