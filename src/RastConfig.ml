@@ -99,11 +99,15 @@ let load file =
               | None -> raise ErrorMsg.Error  (* error during elaboration *)
   in
   let env = EL.remove_stars env in
+  let env = EL.removeU env in
   let () = if !Flags.verbosity >= 2 then print_string ("========================================================\n") in
   let () = if !Flags.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl.A.declaration) ^ "\n") "" env) in
   let () = EL.gen_constraints env env in
+  let () = EL.gen_mode_constraints env env in
   let sols = I.solve_and_print () in
+  let msols = I.mode_solve_and_print () in
   let env = EL.substitute env sols in
+  let env = EL.mode_substitute env msols in
   let () = if !Flags.verbosity >= 1 then print_string ("========================================================\n") in
   let () = if !Flags.verbosity >= 1 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl.A.declaration) ^ "\n") "" env) in
   env;;

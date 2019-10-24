@@ -27,8 +27,8 @@ let rec esync env seen tp c ext is_shared =
   match tp with
       A.Plus(choice) -> esync_choices env seen choice c ext is_shared
     | A.With(choice) -> esync_choices env seen choice c ext is_shared
-    | A.Tensor(_a,b) -> esync env seen b c ext is_shared
-    | A.Lolli(_a,b) -> esync env seen b c ext is_shared
+    | A.Tensor(_a,b,_m) -> esync env seen b c ext is_shared
+    | A.Lolli(_a,b,_m) -> esync env seen b c ext is_shared
     | A.One -> if is_shared then error ext ("type not equi-synchronizing") else ()
     | A.PayPot(_pot,a) -> esync env seen a c ext is_shared
     | A.GetPot(_pot,a) -> esync env seen a c ext is_shared
@@ -60,8 +60,8 @@ let rec valid env pol tp ext = match pol, tp with
     _, A.Plus(choice) -> valid_choice env Pos choice ext
   | _, A.With(choice) -> valid_choice env Neg choice ext
 
-  | _, A.Tensor(s,t) -> valid env pol s ext ; valid env Pos t ext
-  | _, A.Lolli(s,t) -> valid env pol s ext ; valid env Neg t ext
+  | _, A.Tensor(s,t,_m) -> valid env pol s ext ; valid env Pos t ext
+  | _, A.Lolli(s,t,_m) -> valid env pol s ext ; valid env Neg t ext
   | _, A.One -> ()
 
   | _, A.Up(a) -> valid env pol a ext
@@ -171,6 +171,14 @@ let rec mem_seen env seen a a' = match seen with
       else mem_seen env seen' a a'
   | [] -> mem_env env a a'
 
+let eqmode m1 m2 = match m1, m2 with
+    A.Pure, A.Pure
+  | A.Linear, A.Linear
+  | A.Transaction, A.Transaction
+  | A.Shared, A.Shared
+  | A.Unknown, A.Unknown -> true
+  | _, _ -> false;;
+
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
 let rec eq_tp' env seen a a' =
   if !Flags.verbosity >= 3
@@ -183,10 +191,10 @@ and eq_tp env seen tp tp' = match tp, tp' with
       eq_choice env seen choice choice'
   | A.With(choice), A.With(choice') ->
       eq_choice env seen choice choice'
-  | A.Tensor(s,t), A.Tensor(s',t') ->
-      eq_tp' env seen s s' && eq_tp' env seen t t'
-  | A.Lolli(s,t), A.Lolli(s',t') ->
-      eq_tp' env seen s s' && eq_tp' env seen t t'
+  | A.Tensor(s,t,m), A.Tensor(s',t',m') ->
+      eqmode m m' && eq_tp' env seen s s' && eq_tp' env seen t t'
+  | A.Lolli(s,t,m), A.Lolli(s',t',m') ->
+      eqmode m m' && eq_tp' env seen s s' && eq_tp' env seen t t'
   | A.One, A.One -> true
 
   | A.PayPot(pot,a), A.PayPot(pot',a') ->
@@ -256,19 +264,21 @@ let mode_P (_c,m) = match m with
     A.Pure -> true
   | _ -> false;;
 
+let mode_lin (_c,m) = match m with
+    A.Shared -> false
+  | _ -> true;;
+
+let mode_spawn (_c,m) = match m with
+    A.Linear -> false
+  | _ -> true;;
+
 let chan_of (c, _tp) = c 
 let tp_of (_c, tp) = tp;;
 let name_of (c,_m) = c;;
 
 let eq_name (c1,_m1) (c2,_m2) = c1 = c2;;
 
-let eq_mode (_c1,m1) (_c2,m2) = match m1, m2 with
-    A.Pure, A.Pure
-  | A.Linear, A.Linear
-  | A.Transaction, A.Transaction
-  | A.Shared, A.Shared
-  | A.Unknown, A.Unknown -> true
-  | _, _ -> false;;
+let eq_mode (_c1,m1) (_c2,m2) = eqmode m1 m2;;
 
 let eq_chan c1 c2 = 
   if eq_name c1 c2 && eq_mode c1 c2
@@ -319,7 +329,7 @@ let find_stp c delta ext =
 
 let find_ltp c delta ext = 
   let {A.shared = _sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
-  if (mode_S c)
+  if not (mode_lin c)
   then E.error_mode_shared_comm (c, ext)
   else findtp c ldelta ext;;
 
@@ -459,7 +469,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
               then error ext ("insufficient potential to spawn: " ^ pp_lt pot lpot)
               else if not (eq_mode x x')
               then E.error_mode_mismatch (x, x', ext)
-              else if mode_L x
+              else if not (mode_spawn x)
               then error ext ("cannot spawn at mode L")
               else
                 let ctx = join ctx in
@@ -475,7 +485,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
             then error ext ("potential mismatch for tail call: " ^ pp_uneq pot lpot)
             else if not (eq_mode x x')
             then E.error_mode_mismatch (x, x', ext)
-            else if mode_L x
+            else if not (mode_spawn x)
             then error ext ("cannot spawn at mode L")
             else
               let (z,c) = zc in
@@ -503,7 +513,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
             let (z,c) = zc in
             if not (eq_mode x z)
             then E.error_mode_mismatch (x, z, ext)
-            else if (mode_S x)
+            else if not (mode_lin x)
             then E.error_mode_shared_comm (x, ext)
             else
             match c with
@@ -547,7 +557,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
             let (z,c) = zc in
             if not (eq_mode x z)
             then E.error_mode_mismatch (x, z, ext)
-            else if (mode_S x)
+            else if not (mode_lin x)
             then E.error_mode_shared_comm (x, ext)
             else
             match c with
@@ -587,12 +597,12 @@ and check_exp trace env delta pot exp zc ext = match exp with
                 let (z,c) = zc in
                 if not (eq_mode x z)
                 then E.error_mode_mismatch (x, z, ext)
-                else if (mode_S x)
+                else if not (mode_lin x)
                 then E.error_mode_shared_comm (x, ext)
                 else
                 match c with
                     A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext
-                  | A.Tensor(a,b) ->
+                  | A.Tensor(a,b,_m) ->
                       if not (eqtp env a a')
                       then error ext ("type mismatch: type of " ^ PP.pp_chan w ^
                                       ", expected: " ^ PP.pp_tp_compact env a ^
@@ -608,7 +618,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
               let d = find_ltp x delta ext in
               match d with
                   A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
-                | A.Lolli(a,b) ->
+                | A.Lolli(a,b,_m) ->
                     if not (eqtp env a a')
                     then error ext ("type mismatch: type of " ^ PP.pp_chan w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
@@ -632,12 +642,12 @@ and check_exp trace env delta pot exp zc ext = match exp with
                 let (z,c) = zc in
                 if not (eq_mode x z)
                 then E.error_mode_mismatch (x, z, ext)
-                else if (mode_S x)
+                else if not (mode_lin x)
                 then E.error_mode_shared_comm (x, ext)
                 else
                 match c with
                     A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext
-                  | A.Tensor(a,b) ->
+                  | A.Tensor(a,b,_m) ->
                       if not (eqtp env a a')
                       then error ext ("type mismatch: type of " ^ PP.pp_chan w ^
                                       ", expected: " ^ PP.pp_tp_compact env a ^
@@ -653,7 +663,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
               let d = find_ltp x delta ext in
               match d with
                   A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
-                | A.Lolli(a,b) ->
+                | A.Lolli(a,b,_m) ->
                     if not (eqtp env a a')
                     then error ext ("type mismatch: type of " ^ PP.pp_chan w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
@@ -680,12 +690,12 @@ and check_exp trace env delta pot exp zc ext = match exp with
               let (z,c) = zc in
               if not (eq_mode x z)
               then E.error_mode_mismatch (x, z, ext)
-              else if (mode_S x)
+              else if not (mode_lin x)
               then E.error_mode_shared_comm (x, ext)
               else
               match c with
                   A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext
-                | A.Lolli(a,b) -> check_exp' trace env (add_chan env (y,a) delta) pot p (z,b) ext
+                | A.Lolli(a,b,_m) -> check_exp' trace env (add_chan env (y,a) delta) pot p (z,b) ext
                 | A.Plus _ | A.With _
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
@@ -696,7 +706,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
             let d = find_ltp x delta ext in
             match d with
                 A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
-              | A.Tensor(a,b) -> check_exp' trace env (add_chan env (y,a) (update_tp env x b delta)) pot p zc ext
+              | A.Tensor(a,b,_m) -> check_exp' trace env (add_chan env (y,a) (update_tp env x b delta)) pot p zc ext
               | A.Plus _ | A.With _
               | A.One | A.Lolli _
               | A.PayPot _ | A.GetPot _
@@ -717,7 +727,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
           let (z,c) = zc in
           if not (eq_mode x z)
           then E.error_mode_mismatch (x, z, ext)
-          else if (mode_S x)
+          else if not (mode_lin x)
           then E.error_mode_shared_comm (x, ext)
           else
           if not (eqtp env c A.One)
@@ -754,7 +764,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
             let (z,c) = zc in
             if not (eq_mode x z)
             then E.error_mode_mismatch (x, z, ext)
-            else if (mode_S x)
+            else if not (mode_lin x)
             then E.error_mode_shared_comm (x, ext)
             else
             match c with
@@ -798,7 +808,7 @@ and check_exp trace env delta pot exp zc ext = match exp with
             let (z,c) = zc in
             if not (eq_mode x z)
             then E.error_mode_mismatch (x, z, ext)
-            else if (mode_S x)
+            else if not (mode_lin x)
             then E.error_mode_shared_comm (x, ext)
             else
             match c with

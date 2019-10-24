@@ -8,6 +8,7 @@ type mode =
   | Transaction
   | Pure
   | Unknown
+  | Var of string
 
 type label = string             (* l,k for internal and external choice *)
 type tpname = string            (* v, for types defined with v = A *)
@@ -23,8 +24,8 @@ type potential =
 type stype =
     Plus of choices                   (* +{...} *)
   | With of choices                   (* &{...} *)
-  | Tensor of stype * stype           (* A x B *)
-  | Lolli of stype * stype            (* A -o B *)
+  | Tensor of stype * stype * mode    (* A *[m] B *)
+  | Lolli of stype * stype * mode     (* A -o[m] B *)
   | One                               (* 1 *)
   | PayPot of potential * stype       (* |> A  or  |{p}> A *)
   | GetPot of potential * stype       (* <| A  or  <{p}| A *)
@@ -94,7 +95,7 @@ type decl =
     Pragma of string * string                 (* #options, #test *)
   | TpDef of tpname * stype                   (* type a = A *)
   | TpEq of stype * stype                     (* eqtype a = b *)
-  | ExpDecDef of expname *
+  | ExpDecDef of expname * mode *
     (context * potential * chan_tp) *         (* proc f : Delta |{p}- c : C = expression *)
     expression
   | Exec of expname                           (* exec f *)
@@ -122,13 +123,13 @@ let expd_tp env v = match lookup_tp env v with
   | None -> raise AstImpossible;;
 
 let rec lookup_expdec decls f = match decls with
-    {declaration = ExpDecDef(f',(ctx, pot, zc),_p); decl_extent = _ext}::decls' ->
+    {declaration = ExpDecDef(f',_m,(ctx, pot, zc),_p); decl_extent = _ext}::decls' ->
       if f = f' then Some (ctx,pot,zc) else lookup_expdec decls' f
   | _decl::decls' -> lookup_expdec decls' f
   | [] -> None;;
 
 let rec lookup_expdef decls f = match decls with
-    {declaration = ExpDecDef(f',_dec,p); decl_extent = _ext}::decls' ->
+    {declaration = ExpDecDef(f',_m,_dec,p); decl_extent = _ext}::decls' ->
       if f = f' then Some p else lookup_expdef decls' f
   | _decl::decls' -> lookup_expdef decls' f
   | [] -> None;;

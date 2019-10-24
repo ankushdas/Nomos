@@ -42,8 +42,8 @@ let substitute pot sols = match pot with
 let rec remove_stars_tp tp = match tp with
     A.Plus(choices) -> A.Plus(remove_stars_choices choices)
   | A.With(choices) -> A.With(remove_stars_choices choices)
-  | A.Tensor(a,b) -> A.Tensor(remove_stars_tp a, remove_stars_tp b)
-  | A.Lolli(a,b) -> A.Lolli(remove_stars_tp a, remove_stars_tp b)
+  | A.Tensor(a,b,m) -> A.Tensor(remove_stars_tp a, remove_stars_tp b,m)
+  | A.Lolli(a,b,m) -> A.Lolli(remove_stars_tp a, remove_stars_tp b,m)
   | A.One -> A.One
   | A.PayPot(pot,a) -> A.PayPot(remove_star pot, remove_stars_tp a)
   | A.GetPot(pot,a) -> A.GetPot(remove_star pot, remove_stars_tp a)
@@ -58,8 +58,8 @@ and remove_stars_choices choices = match choices with
 let rec substitute_tp tp sols = match tp with
     A.Plus(choices) -> A.Plus(substitute_choices choices sols)
   | A.With(choices) -> A.With(substitute_choices choices sols)
-  | A.Tensor(a,b) -> A.Tensor(substitute_tp a sols, substitute_tp b sols)
-  | A.Lolli(a,b) -> A.Lolli(substitute_tp a sols, substitute_tp b sols)
+  | A.Tensor(a,b,m) -> A.Tensor(substitute_tp a sols, substitute_tp b sols,m)
+  | A.Lolli(a,b,m) -> A.Lolli(substitute_tp a sols, substitute_tp b sols,m)
   | A.One -> A.One
   | A.PayPot(pot,a) -> A.PayPot(substitute pot sols, substitute_tp a sols)
   | A.GetPot(pot,a) -> A.GetPot(substitute pot sols, substitute_tp a sols)
@@ -132,6 +132,49 @@ and substitute_branches bs sols = match bs with
   | {lab_exp = (l,p); exp_extent = ext}::bs' ->
       {lab_exp = (l, substitute_exp p sols); exp_extent = ext}::
       (substitute_branches bs' sols);;
+
+(* removing U from modes *)
+let mnum = ref 0;;
+
+let mfresh () =
+  let m = "_m" ^ string_of_int !vnum in
+  let () = vnum := !vnum + 1 in
+  m;;
+
+let removeU (c,m) = match m with
+    A.Unknown -> (c, mfresh ())
+  | _m -> raise InferImpossible;;
+
+let rec removeU_exp exp = match exp with
+    A.Fwd(x,y) -> A.Fwd(removeU x, removeU y)
+  | A.Spawn(x,f,xs,q) -> A.Spawn(x,f,xs, remove_stars_exp q)
+  | A.ExpName(x,f,xs) -> A.ExpName(x,f,xs)
+  | A.Lab(x,k,p) -> A.Lab(x,k, remove_stars_exp p)
+  | A.Case(x,branches) -> A.Case(x, remove_stars_branches branches)
+  | A.Send(x,w,p) -> A.Send(x,w, remove_stars_exp p)
+  | A.Recv(x,y,p) -> A.Recv(x,y, remove_stars_exp p)
+  | A.Close(x) -> A.Close(x)
+  | A.Wait(x,q) -> A.Wait(x, remove_stars_exp q)
+  | A.Work(pot,p) ->
+      let pot' = remove_star pot in
+      A.Work(pot', remove_stars_exp p)
+  | A.Pay(x,pot,p) ->
+      let pot' = remove_star pot in
+      A.Pay(x, pot', remove_stars_exp p)
+  | A.Get(x,pot,p) ->
+      let pot' = remove_star pot in
+      A.Get(x, pot', remove_stars_exp p)
+  | A.Acquire(x,y,p) -> A.Acquire(x,y, remove_stars_exp p)
+  | A.Accept(x,y,p) -> A.Accept(x,y, remove_stars_exp p)
+  | A.Release(x,y,p) -> A.Release(x,y, remove_stars_exp p)
+  | A.Detach(x,y,p) -> A.Detach(x,y, remove_stars_exp p)
+  | A.Marked(marked_p) -> Marked(remove_stars_exp (Mark.data marked_p), Mark.ext marked_p)
+
+and remove_stars_branches bs = match bs with
+    [] -> []
+  | {lab_exp = (l,p); exp_extent = ext}::bs' ->
+      {lab_exp = (l, remove_stars_exp p); exp_extent = ext}::
+      (remove_stars_branches bs');;
 
 let index_map = ref (M.empty (module C.String));;
 

@@ -61,12 +61,20 @@ let rec spaces n =
 
 let len s = String.length s;;
 
+let pp_mode m = match m with
+    A.Unknown -> "U"
+  | A.Shared -> "S"
+  | A.Transaction -> "T"
+  | A.Linear -> "L"
+  | A.Pure -> "P"
+  | A.Var v -> v;;
+
 let rec pp_tp_simple a = match a with
     A.One -> "1"
   | Plus(choice) -> "+{ " ^ pp_choice_simple choice ^ " }"
   | With(choice) -> "&{ " ^ pp_choice_simple choice ^ " }"
-  | Tensor(a,b) -> pp_tp_simple a ^ " * " ^ pp_tp_simple b
-  | Lolli(a,b) -> pp_tp_simple a ^ " -o " ^ pp_tp_simple b
+  | Tensor(a,b,m) -> pp_tp_simple a ^ " *" ^ pp_mode m ^ " " ^ pp_tp_simple b
+  | Lolli(a,b,m) -> pp_tp_simple a ^ " -o" ^ pp_mode m ^ " " ^ pp_tp_simple b
   | GetPot(pot,a) -> "<" ^ pp_potpos pot ^ "| " ^ pp_tp_simple a
   | PayPot(pot,a) -> "|" ^ pp_potpos pot ^ "> " ^ pp_tp_simple a
   | Up(a) -> "/\\ " ^ pp_tp_simple a
@@ -79,14 +87,17 @@ and pp_choice_simple cs = match cs with
   | (l,a)::cs' ->
       l ^ " : " ^ pp_tp_simple a ^ ", " ^ pp_choice_simple cs';;
 
-let pp_mode m = match m with
-    A.Unknown -> "U"
-  | A.Shared -> "S"
-  | A.Transaction -> "T"
-  | A.Linear -> "L"
-  | A.Pure -> "P";;
+exception ImpossMode
 
-let pp_chan (c,m) = c ^ "<" ^ pp_mode m ^ ">";;
+let pp_mode_v m = match m with
+    A.Unknown -> raise ImpossMode
+  | A.Shared -> "shared"
+  | A.Transaction -> "transaction"
+  | A.Linear -> raise ImpossMode
+  | A.Pure -> "asset"
+  | A.Var _v -> raise ImpossMode;;
+
+let pp_chan (c,m) = c ^ "[" ^ pp_mode m ^ "]";;
 
 let pp_chan_tp (c,a) = "(" ^ pp_chan c ^ " : " ^ pp_tp_simple a ^ ")";;
 
@@ -101,14 +112,14 @@ let rec pp_channames chans = match chans with
 let rec pp_tp i a = match a with
     A.Plus(choice) -> "+{ " ^ pp_choice (i+3) choice ^ " }"
   | A.With(choice) -> "&{ " ^ pp_choice (i+3) choice ^ " }"
-  | A.Tensor(a,b) ->
+  | A.Tensor(a,b,m) ->
       let astr = pp_tp i a in
       let l = len astr in
-      astr ^ " * " ^ pp_tp (i+l+3) b
-  | A.Lolli(a,b) ->
+      astr ^ " *" ^ pp_mode m ^ " " ^ pp_tp (i+l+3) b
+  | A.Lolli(a,b,m) ->
       let astr = pp_tp i a in
       let inc = len astr in
-      astr ^ " -o " ^ pp_tp (i+inc+4) b
+      astr ^ " -o" ^ pp_mode m ^ " " ^ pp_tp (i+inc+4) b
   | A.One -> "1"
   | A.PayPot(pot,a) ->
       let potstr = pp_potpos pot in
@@ -283,9 +294,9 @@ let pp_decl env dcl = match dcl with
       pp_tp_after 0 ("type " ^ v ^ " = ") a
   | A.TpEq(A.TpName(v),A.TpName(v')) ->
     "eqtype " ^ v ^ " = " ^ v'
-  | A.ExpDecDef(f,(delta,pot,(x,a)),p) ->
+  | A.ExpDecDef(f,m,(delta,pot,(x,a)),p) ->
     let potstr = pp_pot pot in
-    "proc " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ potstr ^ "- "
+    "proc " ^ pp_mode_v m ^ " " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ potstr ^ "- "
     ^ pp_chan_tp (x,a) ^ " = \n" ^
     (pp_exp_indent env 4 p)
   | A.Exec(f) -> "exec " ^ f
