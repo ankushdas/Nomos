@@ -22,7 +22,7 @@ type  expr =
         | Op of expr * string * expr
         | CompOp of expr * string * expr
         | RelOp of expr * string * expr
-and typedExpr = 
+(*and typedExpr = 
         | IfT of typedExpr * typedExpr * typedExpr * ocamlTP
         | LetInT of bindingT * typedExpr * ocamlTP
         | BoolT of bool * ocamlTP
@@ -35,9 +35,10 @@ and typedExpr =
         | LambdaT of arglist * typedExpr * ocamlTP
         | OpT of typedExpr * string * typedExpr * ocamlTP
         | CompOpT of typedExpr * string * typedExpr * ocamlTP
-        | RelOpT of typedExpr * string * typedExpr * ocamlTP
+        | RelOpT of typedExpr * string * typedExpr * ocamlTP*)
 and binding = Binding of (string * expr * ocamlTP)
-and bindingT = BindingT of (string * typedExpr)
+(*and bindingT = BindingT of (string * typedExpr)*)
+
 type program = Program of expr * ocamlTP
 
 

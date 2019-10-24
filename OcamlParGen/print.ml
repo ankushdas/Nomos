@@ -107,3 +107,12 @@ and print_value v = match v with
                         | Ast.ListV(l) -> "[" ^ print_list_val l ^ "]"
                         | Ast.LambdaV(_, args, v1) -> Printf.sprintf "fun %s -> %s" (print_args args) (print_ast v1)
 
+
+
+let rec print_constraints (l : (Ast.ocamlTP * Ast.ocamlTP) list) = 
+                        match l with
+                                [] -> ""
+                        | (t1, t2)::xs -> Printf.sprintf "(%s, %s) \n %s"
+                                        (print_type(t1))
+                                        (print_type(t2))
+                                        (print_constraints(xs))

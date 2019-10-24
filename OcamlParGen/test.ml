@@ -1,3 +1,4 @@
+5 : int;;
 if true then false else true : bool;;
 if true then 5 else 6 : bool;;
 app((fun (m : int) -> m + 1) : int -> int, 5 : int) : int;;

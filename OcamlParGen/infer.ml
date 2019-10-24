@@ -1,92 +1,80 @@
-(*let rec getType (ctx : context) (x : string) =
+module T = Typecheck
+
+exception TypeError of string
+
+
+let rec getType (ctx : T.context) (x : string) =
         match ctx with
                 [] -> raise (TypeError (Printf.sprintf "Unbound variable %s" x))
            |    (y, tp)::xs -> if x = y then tp else getType xs x
+ 
 
-
-let rec unify_exp (ctx : context) (e : Ast.expr) (t : Ast.ocamlTP) : bool = 
-        match e with
-        If(e1, e2, e3) -> let t1 = typecheck ctx e1 Ast.Boolean in
-                          let t2 = typecheck ctx e2 t in
-                          let t3 = typecheck ctx e3 t in
-                          if t1 && t2 && t3 then true else raise (TypeError (format_err e t))
-
-        | LetIn (Ast.Binding(var, expr, typ), e) -> if (typecheck ctx expr typ) &&
-                                              (typecheck ((var, typ)::ctx) e t)
-                                              then true
-                                              else raise (TypeError (format_err e t))
-        | Bool _ -> if t = Ast.Boolean then true else raise (TypeError (format_err e t))
-        | Int _  -> if t = Ast.Integer then true else raise (TypeError (format_err e t))
-        | Var(x) -> if t = (getType ctx x) then true else raise (TypeError (format_err e t))
-        | List (l) -> (match (t, l) with
-                        (ListTP(t1), []) -> true
-                     |  (ListTP(t1), e::es) -> if (typecheck ctx e t1) && (typecheck ctx (List(es)) t)
-                                               then true else raise (TypeError (format_err e t))
-                     |  _                   -> raise (TypeError (format_err e t)))
-        | App ((e1, t1), (e2, t2)) -> (match t1 with
-                                        Arrow (t3, t4) -> if (typecheck ctx e1 t1) &&
-                                                             (typecheck ctx e2 t2) &&
-                                                             (type_equals t2 t3) && (type_equals t4 t)
-                                                          then
-                                                             true
-                                                          else
-                                                             raise (TypeError (format_err e t))
-                                        | _            -> raise (TypeError (format_err e t)))
-        | Cons (x, xs) -> (match t with
-                          ListTP(t1) -> if (typecheck ctx x t1) && (typecheck ctx xs t)
-                                        then true else raise (TypeError (format_err e t))
-                       |  _          -> raise (TypeError (format_err e t)))
-        | Match ((e1,t1), e2, id1, id2, e3) -> (* Should add check for duplicate variables *)
-                                                        (match t1 with
-                                                        ListTP(t2) -> if (typecheck ctx e1 t1)
-                                                                &&
-                                                                (typecheck ctx e2 t)
-                                                                && (typecheck ((id1, t2)::(id2, t1)::ctx)
-                                                                                   e3 t)
-                                                                then true
-                                                                else raise (TypeError (format_err e t))
-                                                        | _        -> raise (TypeError (format_err e t)))
-        | Lambda(l, e) -> (match t with
-                                        Arrow(t1, t2) -> 
-                                                         let (len, ctx') = addArglist l ctx in
-                                                         if (typecheck ctx' e (get_result_type t))
-                                                         then true
-                                                         else raise (TypeError (format_err e t))
-                                        | _        -> raise (TypeError (format_err e t)))
-        | Op (e1, op, e2) -> let a : bool = typecheck ctx e1 t in
-                             let b : bool = typecheck ctx e2 t in
-                             if a && b && (type_equals t Ast.Integer)
-                             then true
-                             else raise (TypeError (format_err e t))
-        | Ast.CompOp (e1, op, e2) ->
-                                 let a : bool = typecheck ctx e1 (Ast.Integer) in
-                                 let b : bool = typecheck ctx e2 (Ast.Integer) in
-                                 if a && b && (type_equals t Ast.Boolean)
-                                 then true
-                                 else raise (TypeError (format_err e t))
-
-        | Ast.RelOp (e1, op, e2) -> let a : bool = typecheck ctx e1 (Ast.Boolean) in
-                                 let b : bool = typecheck ctx e2 (Ast.Boolean) in
-                                 if a && b && (type_equals t Ast.Boolean)
-                                 then true
-                                 else raise (TypeError (format_err e t))
-
-and addArglist l ctx = match l with
-                                Ast.Single(x, t1) -> (1, (x,t1)::ctx)
-                            |   Ast.Curry((x,t1), rest) -> 
-                                            let
-                                                (len, ctx') = addArglist rest ctx
-                                            in
-                                                (len + 1, (x,t1)::ctx')
-*)
 let var = ref 0
 
-let fresh () : string = 
+let fresh () : Ast.ocamlTP = 
         let _ = var := !var + 1 in
         let res : int = !var in 
-        let a : string = Printf.sprintf "v%d" res in a
+        let a : string = Printf.sprintf "v%d" res in Var(a)
 
-let rec transform (e : Ast.expr) : Ast.typedExpr = 
+let reset () = (var := 0)
+
+        
+let rec unify_exp (ctx : T.context) (e : Ast.expr) (t : Ast.ocamlTP) : (Ast.ocamlTP * Ast.ocamlTP) list= 
+        match e with
+                If(e1, e2, e3) ->
+                        (unify_exp ctx e1 Ast.Boolean) @ (unify_exp ctx e2 t) @ (unify_exp ctx e3 t)
+        |       LetIn(Binding(x, e1, _), e2) -> let t1 = fresh () in
+                                                (unify_exp ctx e1 t1) @ (unify_exp ((x, t1)::ctx) e2 t)
+        |       Bool(_)  -> [(t, Ast.Boolean)]
+        |       Int(_)   -> [(t, Ast.Integer)]
+        |       Var(x)   -> let t1 = getType ctx x in [(t, t1)]
+        |       List(l)  -> (let t1 = fresh () in
+                                match l with
+                                        [] -> [(t, Ast.ListTP(t1))]
+                                |    x::xs -> (unify_exp ctx x t1) 
+                                                @ (unify_exp ctx (Ast.List(xs)) (Ast.ListTP(t1)))
+                                                @ [(t, Ast.ListTP(t1))])
+        |       App((e1, _), (e2, _)) -> let t1 = fresh () in
+                                         (unify_exp ctx e1 (Ast.Arrow(t1, t))) @ 
+                                         (unify_exp ctx e2 t1)
+        |       Cons(x, xs) -> let t1 = fresh () in  (unify_exp ctx x t1) @ 
+                                                     (unify_exp ctx xs (Ast.ListTP(t1))) @
+                                                     [(t, Ast.ListTP(t1))]
+        |       Match((e1, _), e2, x, xs, e3) -> let t1 = fresh () in
+                                (unify_exp ctx e1 (Ast.ListTP(t1))) @ (unify_exp ctx e2 t) @
+                                        (unify_exp ((x, t1)::(xs, Ast.ListTP(t1))::ctx) e3 t)
+        |       Lambda(args, e) -> (let t1 = fresh () in
+                                   let t2 = fresh () in
+                                        match args with
+                                        Ast.Single(x, _) -> (unify_exp ((x, t1)::ctx) e t2) @
+                                                                        [(t, Ast.Arrow(t1, t2))]
+                                        | Ast.Curry((x, _), xs) -> 
+                                                        (unify_exp ((x, t1)::ctx)
+                                                        (Ast.Lambda(xs, e)) t2) @
+                                                                [(t, Ast.Arrow(t1, t2))])
+        |       Op(e1, _, e2) -> (unify_exp ctx e1 Ast.Integer) @ (unify_exp ctx e2 Ast.Integer)
+                                 @ [(t, Ast.Integer)]
+        |       CompOp(e1, _, e2) -> (unify_exp ctx e1 Ast.Integer) @ (unify_exp ctx e2 Ast.Integer)
+                                 @ [(t, Ast.Boolean)]
+        |       RelOp(e1, _, e2) -> (unify_exp ctx e1 Ast.Boolean) @ (unify_exp ctx e2 Ast.Boolean)
+                                 @ [(t, Ast.Boolean)]
+                                        
+                                                                                        
+(*let inferType (e : Ast.expr) = 
+        let a = fresh () in
+        let l = unify_exp [] e a in
+        ()
+*)
+
+
+
+(*let rec unify_exp (ctx : context) (e : Ast.typedExpr)  = 
+        match e with
+                BoolT(_, t) -> [(t, Ast.Boolean)]
+        |       IntT(_, t) ->  [(t, Ast.Integer)]
+        |       
+*)
+(*let rec transform (e : Ast.expr) : Ast.typedExpr = 
         let a : Ast.ocamlTP = Var(fresh ()) in
         match e with
         If(e1, e2, e3) -> IfT(transform e1, transform e2, transform e3, a) 
@@ -98,10 +86,12 @@ let rec transform (e : Ast.expr) : Ast.typedExpr =
         | App ((e1, t1), (e2, t2)) -> AppT(transform e1, transform e2, a) 
         | Cons (x, xs) -> ConsT(transform x, transform xs, a) 
         | Match ((e1,t1), e2, id1, id2, e3) ->  MatchT(transform e1, transform e2, id1, id2, transform e3, a)
-        | Lambda(l, e) -> LambdaT(l, transform e, a) 
+        | Lambda(l, e) -> LambdaT(transformArgs l, transform e, a) 
         | Op (e1, op, e2) -> OpT(transform e1, op, transform e2, a) 
         | Ast.CompOp (e1, op, e2) -> CompOpT(transform e1, op, transform e2, a)
         | Ast.RelOp (e1, op, e2) -> RelOpT(transform e1, op, transform e2, a) 
-
-let inferType (e : Ast.expr) = 
-        let e' = transform e in ()
+and transformArgs l = let b : Ast.ocamlTP = Var(fresh ()) in
+                        match l with
+                                Ast.Single(x, _) -> Ast.Single(x, b)
+                        | Ast.Curry((x,t), xs) -> Ast.Curry((x,b), transformArgs xs)
+*)
