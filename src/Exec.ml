@@ -22,7 +22,7 @@ exception UndefinedProcess (* spawning an undefined process *)
 
 exception ExecImpossible (* should never happen at runtime *)
 
-exception StarPotential
+exception StarPotential (* star potential encountered at runtime *)
 
 exception RuntimeError (* should never happen at runtime *)
 
@@ -51,15 +51,15 @@ type map_string_string = string C.String.Map.t;;
 type configuration = map_string_sem * map_string_string * map_string_string;;
 
 type stepped_config =
-  Changed of configuration
-| Unchanged of configuration;;
+    Changed of configuration
+  | Unchanged of configuration;;
 
 let chan_num = ref 0;;
 
 let lfresh () =
   let n = !chan_num in
   let () = chan_num := n+1 in
-  "ch" ^ (string_of_int n);;
+  ("ch" ^ (string_of_int n), A.Unknown);;
 
 let max(t,t') =
   if t > t' then t else t';;
