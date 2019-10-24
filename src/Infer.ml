@@ -231,5 +231,5 @@ let solve_and_print () =
         let () = if !Flags.verbosity >= 2 then print_solution sols in
         sols
     | S.Infeasible ->
-        let () = print_string ("Infeasible LP!\n") in
+        let () = if !Flags.verbosity >= 1 then print_string ("Infeasible LP!\n") in
         raise ErrorMsg.Error;;

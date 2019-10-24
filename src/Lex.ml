@@ -143,6 +143,9 @@ let rec lex_code (pos, charstream) =
               | ("eqtype", n, cs) -> (T.EQTYPE, pos, pos+n, cs)
               | ("proc", n, cs) -> (T.PROC, pos, pos+n, cs)
               | ("exec", n, cs) -> (T.EXEC, pos, pos+n, cs)
+              | ("asset", n, cs) -> (T.ASSET, pos, pos+n, cs)
+              | ("contract", n, cs) -> (T.CONTRACT, pos, pos+n, cs)
+              | ("transaction", n, cs) -> (T.TRANSACTION, pos, pos+n, cs)
               | (ident, n, cs) -> (T.IDENT(ident), pos, pos+n, cs)
             end
           else error (pos, pos+1) ("illegal character: '" ^ Char.escaped c ^ "'")

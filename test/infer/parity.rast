@@ -1,0 +1,47 @@
+#test success
+#options -work=send
+
+type bool = +{b0 : 1, b1 : 1}
+
+type tree = &{parity : <{*}| bool}
+
+proc leaf : . |{*}- (t : tree) =
+  case t (
+    parity => get t {*} ;
+              t.b0 ;
+              close t
+  )
+
+proc node : (l : tree), (r : tree) |{*}- (t : tree) =
+  case t (
+    parity => get t {*} ;
+              l.parity ;
+              pay l {*} ;
+              r.parity ;
+              pay r {*} ;
+              t <- xor <- l r
+  )
+
+proc xor : (l : bool), (r : bool) |{*}- (t : bool) =
+  case l (
+    b0 => case r (
+            b0 => t.b0 ;
+                  wait l ;
+                  wait r ;
+                  close t
+          | b1 => t.b1 ;
+                  wait l ;
+                  wait r ;
+                  close t
+    )
+  | b1 => case r (
+            b0 => t.b1 ;
+                  wait l ;
+                  wait r ;
+                  close t
+          | b1 => t.b0 ;
+                  wait l ;
+                  wait r ;
+                  close t
+    )
+  )

@@ -2,11 +2,18 @@
 
 module R = Arith
 
+type mode =
+    Shared
+  | Linear
+  | Transaction
+  | Pure
+  | Unknown
+
 type label = string             (* l,k for internal and external choice *)
 type tpname = string            (* v, for types defined with v = A *)
 type expname = string           (* f, for processes defined with f = P *)
 type ext = Mark.ext option      (* optional extent (source region info) *)
-type chan = string              (* channel names *)
+type chan = string * mode       (* channel name with modes *)
 
 type potential =
   | Arith of R.arith            (* p,q, potential for work *)

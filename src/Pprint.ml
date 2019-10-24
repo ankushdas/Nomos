@@ -31,15 +31,6 @@ let rec pp_arith_prec prec_left e = match e with
 (* pp_arith e = "e" *)
 let pp_arith e = pp_arith_prec 0 e;;
 
-(****************)
-(* Propositions *)
-(****************)
-
-(* omit parenthesis for /\ and \/ and right-associative => *)
-(* precedence: ~ > /\,\/,=> *)
-
-type opr = Or | And | Implies | Not | None
-
 (*******************************)
 (* Types, and their components *)
 (*******************************)
@@ -88,12 +79,21 @@ and pp_choice_simple cs = match cs with
   | (l,a)::cs' ->
       l ^ " : " ^ pp_tp_simple a ^ ", " ^ pp_choice_simple cs';;
 
+let pp_mode m = match m with
+    A.Unknown -> "U"
+  | A.Shared -> "S"
+  | A.Transaction -> "T"
+  | A.Linear -> "L"
+  | A.Pure -> "P";;
+
+let pp_chan (c,m) = c ^ "<" ^ pp_mode m ^ ">";;
+
+let pp_chan_tp (c,a) = "(" ^ pp_chan c ^ " : " ^ pp_tp_simple a ^ ")";;
+
 let rec pp_channames chans = match chans with
     [] -> ""
-  | [c] -> c
-  | c::chans' -> c ^ " " ^ pp_channames chans';;
-
-let pp_chan (c,a) = "(" ^ c ^ " : " ^ pp_tp_simple a ^ ")";;
+  | [c] -> pp_chan c
+  | c::chans' -> pp_chan c ^ " " ^ pp_channames chans';;
 
 (* pp_tp i A = "A", where i is the indentation after a newline
  * A must be externalized, or internal name '%n' will be printed
@@ -144,15 +144,15 @@ let pp_tp_compact _env a = pp_tp_simple a;;
 
 let rec pp_lsctx env delta = match delta with
     [] -> "."
-  | [(x,a)] -> "(" ^ x ^ " : " ^ pp_tp_compact env a ^ ")"
-  | (x,a)::delta' -> "(" ^ x ^ " : " ^ pp_tp_compact env a ^ ")" ^ ", " ^ pp_lsctx env delta';;
+  | [(x,a)] -> "(" ^ pp_chan x ^ " : " ^ pp_tp_compact env a ^ ")"
+  | (x,a)::delta' -> "(" ^ pp_chan x ^ " : " ^ pp_tp_compact env a ^ ")" ^ ", " ^ pp_lsctx env delta';;
 
 let pp_ctx env delta = pp_lsctx env delta.A.shared ^ " ; " ^ pp_lsctx env delta.A.linear;;
 
 (* pp_tp_compact env delta pot a = "delta |{p}- C", on one line *)
 let pp_tpj_compact env delta pot (x,a) =
   pp_ctx env delta ^ " |" ^ pp_pot pot ^ "- (" ^
-  x ^ " : " ^ pp_tp_compact env a ^ ")";;
+  pp_chan x ^ " : " ^ pp_tp_compact env a ^ ")";;
 
 (***********************)
 (* Process expressions *)
@@ -166,30 +166,30 @@ let pp_tpj_compact env delta pot (x,a) =
  *)
 
 let rec pp_exp env i exp = match exp with
-    A.Fwd(x,y) -> x ^ " <- " ^ y
+    A.Fwd(x,y) -> pp_chan x ^ " <- " ^ pp_chan y
   | A.Spawn(x,f,xs,q) -> (* exp = x <- f <- xs ; q *)
-      x ^ " <- " ^ f ^ " <- " ^ pp_channames xs ^ " ;\n"
+      pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_channames xs ^ " ;\n"
       ^ pp_exp_indent env i q
-  | A.ExpName(x,f,xs) -> x ^ " <- " ^ f ^ " <- " ^ pp_channames xs
-  | A.Lab(x,k,p) -> x ^ "." ^ k ^ " ;\n" ^ pp_exp_indent env i p
-  | A.Case(x,bs) -> "case " ^ x ^ " ( " ^ pp_branches env (i+8+len x) bs ^ " )"
-  | A.Send(x,w,p) -> "send " ^ x ^ " " ^ w ^ " ;\n" ^ pp_exp_indent env i p
-  | A.Recv(x,y,p) -> y ^ " <- recv " ^ x ^ " ;\n" ^ pp_exp_indent env i p
-  | A.Close(x) -> "close " ^ x
-  | A.Wait(x,q) -> "wait " ^ x ^ " ;\n" ^ pp_exp_indent env i q
+  | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_channames xs
+  | A.Lab(x,k,p) -> pp_chan x ^ "." ^ k ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Case(x,bs) -> "case " ^ pp_chan x ^ " ( " ^ pp_branches env (i+8+len (pp_chan x)) bs ^ " )"
+  | A.Send(x,w,p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Recv(x,y,p) -> pp_chan y ^ " <- recv " ^ pp_chan x ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Close(x) -> "close " ^ pp_chan x
+  | A.Wait(x,q) -> "wait " ^ pp_chan x ^ " ;\n" ^ pp_exp_indent env i q
   | A.Work(pot, p) ->
       let potstr = pp_potpos pot in
       "work " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
   | A.Pay(x,pot,p) ->
       let potstr = pp_potpos pot in
-      "pay " ^ x ^ " " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
+      "pay " ^ pp_chan x ^ " " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
   | A.Get(x,pot,q) ->
       let potstr = pp_potpos pot in
-      "get " ^ x ^ " " ^ potstr ^ ";\n" ^ pp_exp_indent env i q
-  | A.Acquire(x,y,p) -> y ^ " <- acquire " ^ x ^ " ;\n" ^ pp_exp_indent env i p
-  | A.Accept(x,y,p) -> y ^ " <- accept " ^ x ^ " ;\n" ^ pp_exp_indent env i p
-  | A.Release(x,y,p) -> y ^ " <- release " ^ x ^ " ;\n" ^ pp_exp_indent env i p
-  | A.Detach(x,y,p) -> y ^ " <- detach " ^ x ^ " ;\n" ^ pp_exp_indent env i p
+      "get " ^ pp_chan x ^ " " ^ potstr ^ ";\n" ^ pp_exp_indent env i q
+  | A.Acquire(x,y,p) -> pp_chan y ^ " <- acquire " ^ pp_chan x ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Accept(x,y,p) -> pp_chan y ^ " <- accept " ^ pp_chan x ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Release(x,y,p) -> pp_chan y ^ " <- release " ^ pp_chan x ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Detach(x,y,p) -> pp_chan y ^ " <- detach " ^ pp_chan x ^ " ;\n" ^ pp_exp_indent env i p
   | A.Marked(marked_exp) -> pp_exp env i (Mark.data marked_exp)
 
 and pp_exp_indent env i p = spaces i ^ pp_exp env i p
@@ -206,43 +206,43 @@ and pp_branches env i bs = match bs with
 and pp_branches_indent env i bs = spaces (i-2) ^ "| " ^ pp_branches env i bs;;
 
 let rec pp_exp_prefix exp = match exp with
-    A.Fwd(x,y) -> x ^ " <- " ^ y
+    A.Fwd(x,y) -> pp_chan x ^ " <- " ^ pp_chan y
   | A.Spawn(x,f,xs,_q) -> (* exp = x <- f <- xs ; q *)
-      x ^ " <- " ^ f ^ " <- " ^ pp_channames xs ^ " ; ..."
-  | A.ExpName(x,f,xs) -> x ^ " <- " ^ f ^ " <- " ^ pp_channames xs
-  | A.Lab(x,k,_p) -> x ^ "." ^ k ^ " ; ..."
-  | A.Case(x,_bs) -> "case " ^ x ^ " ( ... )"
-  | A.Send(x,w,_p) -> "send " ^ x ^ " " ^ w ^ " ; ..."
-  | A.Recv(x,y,_p) -> y ^ " <- recv " ^ x ^ " ; ..."
-  | A.Close(x) -> "close " ^ x
-  | A.Wait(x,_q) -> "wait " ^ x ^ " ; ..."
+      pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_channames xs ^ " ; ..."
+  | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_channames xs
+  | A.Lab(x,k,_p) -> pp_chan x ^ "." ^ k ^ " ; ..."
+  | A.Case(x,_bs) -> "case " ^ pp_chan x ^ " ( ... )"
+  | A.Send(x,w,_p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ; ..."
+  | A.Recv(x,y,_p) -> pp_chan y ^ " <- recv " ^ pp_chan x ^ " ; ..."
+  | A.Close(x) -> "close " ^ pp_chan x
+  | A.Wait(x,_q) -> "wait " ^ pp_chan x ^ " ; ..."
   | A.Work(pot, _p) ->
       let potstr = pp_potpos pot in 
       "work " ^ potstr ^ "; ..."
   | A.Pay(x,pot,_p) ->
       let potstr = pp_potpos pot in
-      "pay " ^ x ^ " " ^ potstr ^ "; ..."
+      "pay " ^ pp_chan x ^ " " ^ potstr ^ "; ..."
   | A.Get(x,pot,_q) ->
       let potstr = pp_potpos pot in
-      "get " ^ x ^ " " ^ potstr ^ "; ..."
-  | A.Acquire(x,y,_p) -> y ^ " <- acquire " ^ x ^ " ; ..."
-  | A.Accept(x,y,_p) -> y ^ " <- accept " ^ x ^ " ; ..."
-  | A.Release(x,y,_p) -> y ^ " <- release " ^ x ^ " ; ..."
-  | A.Detach(x,y,_p) -> y ^ " <- detach " ^ x ^ " ; ..."
+      "get " ^ pp_chan x ^ " " ^ potstr ^ "; ..."
+  | A.Acquire(x,y,_p) -> pp_chan y ^ " <- acquire " ^ pp_chan x ^ " ; ..."
+  | A.Accept(x,y,_p) -> pp_chan y ^ " <- accept " ^ pp_chan x ^ " ; ..."
+  | A.Release(x,y,_p) -> pp_chan y ^ " <- release " ^ pp_chan x ^ " ; ..."
+  | A.Detach(x,y,_p) -> pp_chan y ^ " <- detach " ^ pp_chan x ^ " ; ..."
   | A.Marked(marked_exp) -> pp_exp_prefix (Mark.data marked_exp);;
 
 let pp_msg m = match m with
-    A.MLabI(c,k,c') -> "+ " ^ c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
-  | A.MLabE(c,k,c') -> "- " ^ c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
-  | A.MSendT(c,e,c') -> "+ " ^ "send " ^ c ^ " " ^ e ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
-  | A.MSendL(c,e,c') -> "- " ^ "send " ^ c ^ " " ^ e ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
-  | A.MClose(c) -> "close " ^ c
+    A.MLabI(c,k,c') -> "+ " ^ pp_chan c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
+  | A.MLabE(c,k,c') -> "- " ^ pp_chan c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
+  | A.MSendT(c,e,c') -> "+ " ^ "send " ^ pp_chan c ^ " " ^ pp_chan e ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
+  | A.MSendL(c,e,c') -> "- " ^ "send " ^ pp_chan c ^ " " ^ pp_chan e ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
+  | A.MClose(c) -> "close " ^ pp_chan c
   | A.MPayP(c,pot,c') ->
       let potstr = pp_potpos pot in
-      "+ " ^ "pay " ^ c ^ " " ^ potstr ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
+      "+ " ^ "pay " ^ pp_chan c ^ " " ^ potstr ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
   | A.MPayG(c,pot,c') ->
       let potstr = pp_potpos pot in
-      "- " ^ "pay " ^ c ^ " " ^ potstr ^ " ; " ^ pp_exp_prefix (Fwd(c',c));;
+      "- " ^ "pay " ^ pp_chan c ^ " " ^ potstr ^ " ; " ^ pp_exp_prefix (Fwd(c',c));;
 
 
 (*
@@ -286,7 +286,7 @@ let pp_decl env dcl = match dcl with
   | A.ExpDecDef(f,(delta,pot,(x,a)),p) ->
     let potstr = pp_pot pot in
     "proc " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ potstr ^ "- "
-    ^ pp_chan (x,a) ^ " = \n" ^
+    ^ pp_chan_tp (x,a) ^ " = \n" ^
     (pp_exp_indent env 4 p)
   | A.Exec(f) -> "exec " ^ f
   | A.Pragma(p,line) -> p ^ line

@@ -1,0 +1,30 @@
+ #test success
+ #options -work=send
+
+ type A = 1
+ type B = 1
+
+type folder = &{next : A -o B -o B * folder,
+                done : 1}
+
+type listA1 = +{cons : |{*}> A * listA1,
+                nil : |{*}> 1}
+
+type listA0 = +{cons : |{*}> A * listA0,
+                nil : |{*}> 1}
+
+proc fold : (l : listA1), (f : folder), (b : B) |{0}- (r : B) =
+  case l (
+    cons => get l {*} ;
+            x <- recv l ;
+            f.next ;
+            send f x ;
+            send f b ;
+            b <- recv f ;
+            r <- fold <- l f b
+  |  nil => get l {*} ;
+            wait l ;
+            f.done ;
+            wait f ;
+            r <- b
+  )
