@@ -8,6 +8,7 @@ type mode =
   | Transaction
   | Pure
   | Unknown
+  | Var of string
 type label = string
 type tpname = string
 type expname = string
@@ -21,8 +22,8 @@ type potential =
 type stype =
     Plus of choices
   | With of choices
-  | Tensor of stype * stype
-  | Lolli of stype * stype
+  | Tensor of stype * stype * mode
+  | Lolli of stype * stype * mode
   | One
   | PayPot of potential * stype
   | GetPot of potential * stype
@@ -63,7 +64,7 @@ type decl =
     Pragma of string * string
   | TpDef of tpname * stype
   | TpEq of stype * stype
-  | ExpDecDef of expname * (context * potential * chan_tp) * expression
+  | ExpDecDef of expname * mode *(context * potential * chan_tp) * expression
   | Exec of expname
 type decl_ext = { declaration : decl; decl_extent : ext; }
 type environment = decl_ext list

@@ -122,8 +122,9 @@ let shift st = match st with
 
 let reduce reduce_fun (s, ft) = (reduce_fun s, ft);;
 
+(* use sparingly *)
 let drop st = match st with
-    (s, M.Cons((_t, _r), ts')) -> (s, M.force ts')   (* use sparingly *)
+    (s, M.Cons((_t, _r), ts')) -> (s, M.force ts')
   | _t -> raise StackError;;
 
 let push item (s, ft) = (s $ item, ft);;
@@ -141,8 +142,8 @@ let padd (x,y) = R.Add(x,y);;
 let psub (x,y) = R.Sub(x,y);;
 let pmult (x,y) = R.Mult(x,y);;
 
-let ptensor (s,t) = A.Tensor(s,t);;
-let plolli (s,t) = A.Lolli(s,t);;
+let ptensor (s,t) = A.Tensor(s,t,A.Unknown);;
+let plolli (s,t) = A.Lolli(s,t,A.Unknown);;
 
 (***********)
 (* Parsing *)
@@ -236,20 +237,20 @@ and r_decl st_decl = match st_decl with
     (* 'proc' <mode> <id> : <context> |- <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.TURNSTILE,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
-    Tok(T.IDENT(id),_) :: Mode(_m,_):: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith (R.Int 0),(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    Tok(T.IDENT(id),_) :: Mode(m,_):: Tok(T.PROC,r1) :: s ->
+    s $ Decl({A.declaration = A.ExpDecDef(id,m,(uncommit ctx,A.Arith (R.Int 0),(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
     (* 'proc' <mode> <id> : <context> '|{' '*' '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Star(_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
-    Tok(T.IDENT(id),_) :: Mode(_m,_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Star,(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    Tok(T.IDENT(id),_) :: Mode(m,_) :: Tok(T.PROC,r1) :: s ->
+    s $ Decl({A.declaration = A.ExpDecDef(id,m,(uncommit ctx,A.Star,(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
   
     (* 'proc' <mode> <id> : <context> '|{' <arith> '}-' <id> : <type> = <exp> *)
   | Exp(p,r2) :: Tok(T.EQ,_) :: Tok(T.RPAREN,_) :: Tp(tp,_) :: Tok(T.COLON,_) :: Tok(T.IDENT(c),_) :: Tok(T.LPAREN,_) ::
     Tok(T.MINUS,_) :: Arith(pot,_) :: Tok(T.BAR,_) :: Context(ctx,_) :: Tok(T.COLON,_) ::
-    Tok(T.IDENT(id),_) :: Mode(_m,_) :: Tok(T.PROC,r1) :: s ->
-    s $ Decl({A.declaration = A.ExpDecDef(id,(uncommit ctx,A.Arith pot,(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
+    Tok(T.IDENT(id),_) :: Mode(m,_) :: Tok(T.PROC,r1) :: s ->
+    s $ Decl({A.declaration = A.ExpDecDef(id,m,(uncommit ctx,A.Arith pot,(unk c,tp)),p); decl_extent = PS.ext(join r1 r2)})
 
     (* 'exec' <id> *)
   | Tok(T.IDENT(f),r2) :: Tok(T.EXEC,r1) :: s ->
