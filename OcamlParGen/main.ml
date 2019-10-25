@@ -26,7 +26,7 @@ let parse_with_error lexbuf =
 let rec process (l : Ast.program list) =
         match l with
                 [] -> ()
-        | Ast.Program(expr, t)::es -> try
+        | Ast.Program(expr)::es -> try
                                       let _ = I.reset () in
                                       let temp = I.fresh () in
                                       let _ = Printf.printf "Expression: \n%s\n" (P.print_ast expr) in
@@ -40,14 +40,9 @@ let rec process (l : Ast.program list) =
                                       let _ = Printf.printf "Type: \n%s\n" (P.print_type t2) in
                                       let evalRes = E.evaluate [] expr in
                                       (Printf.printf "Value: \n%s\n\n" (P.print_value evalRes); process es)
-
-
-                                      (*let _ = Printf.printf "Substitution: \n%s\n\n" (U.print_sub s) in*)
-                                      (*let a : bool = TC.typecheck [] expr t in       
-                                      (if a then let evalRes = E.evaluate [] expr in Printf.printf "Value: \n%s\n\n" (P.print_value evalRes)
-                                      else Printf.printf "TYPECHECKING FAILURE\n"; process es)*)
                                       with
                                       | TC.TypeError err -> (Printf.printf "TYPECHECKING FAILURE: %s\n" err; process es)
+                                      | E.EvaluationError err -> (Printf.printf "EVALUATION FAILURE: %s\n" err; process es)
 
 (* part 1 *)
 let rec parse_and_print lexbuf =

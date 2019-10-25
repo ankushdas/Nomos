@@ -88,7 +88,7 @@ let rec find_res (s : substitution) =
        | (x,t)::xs -> if x = "v1" then find_res xs else (x,t)::(find_res xs)
 
 
-let () =
+(*let () =
         let a = unify [(VarT("v1"), Integer); (VarT("v1"), VarT("a"))] in
         let _ = Printf.printf "[%s]\n" (print_sub a) in
-        ()
+        ()*)

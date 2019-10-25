@@ -14,8 +14,7 @@ let next_line lexbuf =
 }
 
 let newline = '\r' | '\n' | "\r\n"
-
-
+let comment = "(*" ['a' - 'z' 'A' - 'Z']+ "*)"
 rule token = parse
   | [ ' ' '\t' ]        { token lexbuf }
   | newline             { next_line lexbuf; token lexbuf }
@@ -33,7 +32,6 @@ rule token = parse
   | "["                 { LSQUARE }
   | "]"                 { RSQUARE }
   | "match"             { MATCH }
-  | "app"               { APP }
   | "fun"               { FUN   }
   | "with"              { WITH  }
   | "|"                 { BAR  }
@@ -46,10 +44,6 @@ rule token = parse
   | "<="                { LESSEQ }
   | "&&"                { ANDALSO }
   | "||"                { ORELSE }
-  | "int"               { INTEGER   }
-  | "bool"              { BOOLEAN }
-  | "list"              { LIST   }
-  | ":"                 { COLON }
   | "->"                { RIGHTARROW }
   | "::"                { CONS }
   | ","                 { COMMA }

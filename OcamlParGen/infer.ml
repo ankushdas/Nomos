@@ -1,11 +1,8 @@
 module T = Typecheck
 
-exception TypeError of string
-
-
 let rec getType (ctx : T.context) (x : string) =
         match ctx with
-                [] -> raise (TypeError (Printf.sprintf "Unbound variable %s" x))
+                [] -> raise (T.TypeError (Printf.sprintf "Unbound variable %s" x))
            |    (y, tp)::xs -> if x = y then tp else getType xs x
  
 
@@ -23,7 +20,7 @@ let rec unify_exp (ctx : T.context) (e : Ast.expr) (t : Ast.ocamlTP) : (Ast.ocam
         match e with
                 If(e1, e2, e3) ->
                         (unify_exp ctx e1 Ast.Boolean) @ (unify_exp ctx e2 t) @ (unify_exp ctx e3 t)
-        |       LetIn(Binding(x, e1, _), e2) -> let t1 = fresh () in
+        |       LetIn(x, e1, e2) -> let t1 = fresh () in
                                                 (unify_exp ctx e1 t1) @ (unify_exp ((x, t1)::ctx) e2 t)
         |       Bool(_)  -> [(t, Ast.Boolean)]
         |       Int(_)   -> [(t, Ast.Integer)]
@@ -34,21 +31,25 @@ let rec unify_exp (ctx : T.context) (e : Ast.expr) (t : Ast.ocamlTP) : (Ast.ocam
                                 |    x::xs -> (unify_exp ctx x t1) 
                                                 @ (unify_exp ctx (Ast.List(xs)) (Ast.ListTP(t1)))
                                                 @ [(t, Ast.ListTP(t1))])
-        |       App((e1, _), (e2, _)) -> let t1 = fresh () in
-                                         (unify_exp ctx e1 (Ast.Arrow(t1, t))) @ 
-                                         (unify_exp ctx e2 t1)
+        |       App(l) -> (match l with
+                                 [] -> raise (T.TypeError "Impossible")
+                        |       [x] -> raise (T.TypeError "Impossible")
+                   |  x1::rest -> let resType = fresh () in
+                                       let (constraints, result) = unify_app ctx resType rest 
+                                       in constraints @ (unify_exp ctx x1 result) @ [(t, resType)])
+                        
         |       Cons(x, xs) -> let t1 = fresh () in  (unify_exp ctx x t1) @ 
                                                      (unify_exp ctx xs (Ast.ListTP(t1))) @
                                                      [(t, Ast.ListTP(t1))]
-        |       Match((e1, _), e2, x, xs, e3) -> let t1 = fresh () in
+        |       Match(e1, e2, x, xs, e3) -> let t1 = fresh () in
                                 (unify_exp ctx e1 (Ast.ListTP(t1))) @ (unify_exp ctx e2 t) @
                                         (unify_exp ((x, t1)::(xs, Ast.ListTP(t1))::ctx) e3 t)
         |       Lambda(args, e) -> (let t1 = fresh () in
                                    let t2 = fresh () in
                                         match args with
-                                        Ast.Single(x, _) -> (unify_exp ((x, t1)::ctx) e t2) @
+                                        Ast.Single(x) -> (unify_exp ((x, t1)::ctx) e t2) @
                                                                         [(t, Ast.Arrow(t1, t2))]
-                                        | Ast.Curry((x, _), xs) -> 
+                                        | Ast.Curry(x, xs) -> 
                                                         (unify_exp ((x, t1)::ctx)
                                                         (Ast.Lambda(xs, e)) t2) @
                                                                 [(t, Ast.Arrow(t1, t2))])
@@ -58,11 +59,11 @@ let rec unify_exp (ctx : T.context) (e : Ast.expr) (t : Ast.ocamlTP) : (Ast.ocam
                                  @ [(t, Ast.Boolean)]
         |       RelOp(e1, _, e2) -> (unify_exp ctx e1 Ast.Boolean) @ (unify_exp ctx e2 Ast.Boolean)
                                  @ [(t, Ast.Boolean)]
-                                        
-                                                                                        
-(*let inferType (e : Ast.expr) = 
-        let a = fresh () in
-        let l = unify_exp [] e a in
-        ()
-*)
-
+and unify_app ctx resType rest = 
+        match rest with
+                [] ->  raise (T.TypeError "Impossible")
+       |       [x] ->  let argVar = fresh () in (unify_exp ctx x argVar, Ast.Arrow(argVar, resType))
+       |     x::xs ->  let argVar = fresh () in 
+                       let (constraints, result) = unify_app ctx resType xs in
+                       (constraints @ (unify_exp ctx x argVar), Ast.Arrow(argVar, result))
+       
