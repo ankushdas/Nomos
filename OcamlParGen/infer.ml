@@ -14,7 +14,7 @@ let var = ref 0
 let fresh () : Ast.ocamlTP = 
         let _ = var := !var + 1 in
         let res : int = !var in 
-        let a : string = Printf.sprintf "v%d" res in Var(a)
+        let a : string = Printf.sprintf "v%d" res in VarT(a)
 
 let reset () = (var := 0)
 
@@ -66,32 +66,3 @@ let rec unify_exp (ctx : T.context) (e : Ast.expr) (t : Ast.ocamlTP) : (Ast.ocam
         ()
 *)
 
-
-
-(*let rec unify_exp (ctx : context) (e : Ast.typedExpr)  = 
-        match e with
-                BoolT(_, t) -> [(t, Ast.Boolean)]
-        |       IntT(_, t) ->  [(t, Ast.Integer)]
-        |       
-*)
-(*let rec transform (e : Ast.expr) : Ast.typedExpr = 
-        let a : Ast.ocamlTP = Var(fresh ()) in
-        match e with
-        If(e1, e2, e3) -> IfT(transform e1, transform e2, transform e3, a) 
-        | LetIn (Binding(x,e,t), e1) -> LetInT(BindingT(x, transform e), transform e1, a)
-        | Bool v -> BoolT(v, a)
-        | Int v  -> IntT(v, a)
-        | Var(x) -> VarT(x, a)
-        | List (l) -> ListT(l, a) 
-        | App ((e1, t1), (e2, t2)) -> AppT(transform e1, transform e2, a) 
-        | Cons (x, xs) -> ConsT(transform x, transform xs, a) 
-        | Match ((e1,t1), e2, id1, id2, e3) ->  MatchT(transform e1, transform e2, id1, id2, transform e3, a)
-        | Lambda(l, e) -> LambdaT(transformArgs l, transform e, a) 
-        | Op (e1, op, e2) -> OpT(transform e1, op, transform e2, a) 
-        | Ast.CompOp (e1, op, e2) -> CompOpT(transform e1, op, transform e2, a)
-        | Ast.RelOp (e1, op, e2) -> RelOpT(transform e1, op, transform e2, a) 
-and transformArgs l = let b : Ast.ocamlTP = Var(fresh ()) in
-                        match l with
-                                Ast.Single(x, _) -> Ast.Single(x, b)
-                        | Ast.Curry((x,t), xs) -> Ast.Curry((x,b), transformArgs xs)
-*)

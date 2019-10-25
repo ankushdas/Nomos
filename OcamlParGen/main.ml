@@ -31,13 +31,20 @@ let rec process (l : Ast.program list) =
                                       let temp = I.fresh () in
                                       let _ = Printf.printf "Expression: \n%s\n" (P.print_ast expr) in
                                       let l = I.unify_exp [] expr temp in
-                                      let _ = Printf.printf "Constraints: \n%s" 
-                                      (P.print_constraints l) in
-                                      let s = U.unify l in
-                                      let _ = Printf.printf "Substitution: \n%s\n\n" (U.print_sub s) in
-                                      process es
+                                      (*let _ = Printf.printf "Constraints: \n%s" 
+                                      (P.print_constraints l) in *)
+                                      let s = (U.unify l) in
+                                      let t1 = U.find_type s in
+                                      let res = U.find_res s in
+                                      let t2 = U.apply res t1 in
+                                      let _ = Printf.printf "Type: \n%s\n" (P.print_type t2) in
+                                      let evalRes = E.evaluate [] expr in
+                                      (Printf.printf "Value: \n%s\n\n" (P.print_value evalRes); process es)
+
+
+                                      (*let _ = Printf.printf "Substitution: \n%s\n\n" (U.print_sub s) in*)
                                       (*let a : bool = TC.typecheck [] expr t in       
-                                      (if a then let evalRes = E.evaluate [] expr in Printf.printf "%s\n" (P.print_value evalRes)
+                                      (if a then let evalRes = E.evaluate [] expr in Printf.printf "Value: \n%s\n\n" (P.print_value evalRes)
                                       else Printf.printf "TYPECHECKING FAILURE\n"; process es)*)
                                       with
                                       | TC.TypeError err -> (Printf.printf "TYPECHECKING FAILURE: %s\n" err; process es)

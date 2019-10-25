@@ -3,7 +3,7 @@ type ocamlTP =
         | Boolean
         | ListTP of ocamlTP
         | Arrow of ocamlTP * ocamlTP
-        | Var of string
+        | VarT of string
 
 type arglist = Single of string * ocamlTP 
              | Curry of (string * ocamlTP) * arglist

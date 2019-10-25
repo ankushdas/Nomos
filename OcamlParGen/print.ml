@@ -12,7 +12,7 @@ let rec print_type (t : Ast.ocamlTP) = (match t with
                                      |  Boolean -> "bool"
                                      |  Arrow(t1, t2) -> Printf.sprintf "%s -> (%s)" (print_type t1) (print_type t2)
                                      |  ListTP(t1) -> Printf.sprintf "(%s) list" (print_type t1)
-                                     |  Var(x) -> Printf.sprintf "%s" x)
+                                     |  VarT(x) -> Printf.sprintf "%s" x)
 
 let rec print_list (l : Ast.expr list) = 
         match l with
