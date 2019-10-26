@@ -1,4 +1,5 @@
 module T = Typecheck
+module P = Print
 
 let rec getType (ctx : T.context) (x : string) =
         match ctx with
@@ -15,7 +16,8 @@ let fresh () : Ast.ocamlTP =
 
 let reset () = (var := 0)
 
-        
+
+       
 let rec unify_exp (ctx : T.context) (e : Ast.expr) (t : Ast.ocamlTP) : (Ast.ocamlTP * Ast.ocamlTP) list= 
         match e with
                 If(e1, e2, e3) ->
@@ -38,21 +40,25 @@ let rec unify_exp (ctx : T.context) (e : Ast.expr) (t : Ast.ocamlTP) : (Ast.ocam
                                        let (constraints, result) = unify_app ctx resType rest 
                                        in constraints @ (unify_exp ctx x1 result) @ [(t, resType)])
                         
-        |       Cons(x, xs) -> let t1 = fresh () in  (unify_exp ctx x t1) @ 
+        |       Cons(x, xs) -> let t1 = fresh () in  
+                                                     let res = (unify_exp ctx x t1) @ 
                                                      (unify_exp ctx xs (Ast.ListTP(t1))) @
-                                                     [(t, Ast.ListTP(t1))]
+                                                     [(t, Ast.ListTP(t1))] in
+                                                    
+                                                     res
         |       Match(e1, e2, x, xs, e3) -> let t1 = fresh () in
-                                (unify_exp ctx e1 (Ast.ListTP(t1))) @ (unify_exp ctx e2 t) @
+                                        (unify_exp ctx e1 (Ast.ListTP(t1))) @ (unify_exp ctx e2 t) @
                                         (unify_exp ((x, t1)::(xs, Ast.ListTP(t1))::ctx) e3 t)
         |       Lambda(args, e) -> (let t1 = fresh () in
                                    let t2 = fresh () in
                                         match args with
                                         Ast.Single(x) -> (unify_exp ((x, t1)::ctx) e t2) @
                                                                         [(t, Ast.Arrow(t1, t2))]
-                                        | Ast.Curry(x, xs) -> 
+                                        | Ast.Curry(x, xs) ->
                                                         (unify_exp ((x, t1)::ctx)
                                                         (Ast.Lambda(xs, e)) t2) @
                                                                 [(t, Ast.Arrow(t1, t2))])
+
         |       Op(e1, _, e2) -> (unify_exp ctx e1 Ast.Integer) @ (unify_exp ctx e2 Ast.Integer)
                                  @ [(t, Ast.Integer)]
         |       CompOp(e1, _, e2) -> (unify_exp ctx e1 Ast.Integer) @ (unify_exp ctx e2 Ast.Integer)

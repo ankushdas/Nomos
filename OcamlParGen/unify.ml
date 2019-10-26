@@ -6,15 +6,6 @@ module P = Print
 type substitution = (string * Ast.ocamlTP) list
 
 
-let rec isClosed (t : Ast.ocamlTP) = 
-        match t with
-                Integer -> true
-        |       Boolean -> true
-        |       ListTP(t1) -> isClosed t1
-        |       Arrow(t1, t2) -> (isClosed t1) && (isClosed t2)
-        |       VarT(y) -> false
-                
-
 
 let rec occurs (x : string) (t : Ast.ocamlTP) = 
         match t with
@@ -23,12 +14,6 @@ let rec occurs (x : string) (t : Ast.ocamlTP) =
         |       ListTP(t1) -> occurs x t1
         |       Arrow(t1, t2) -> occurs x t1 || occurs x t2
         |       VarT(y) -> x = y
-
-let rec print_sub l = match l with
-                        [] -> ""
-                 | (s, t)::xs -> match xs with
-                                   |    _  -> Printf.sprintf "(%s = %s), %s" s (P.print_type t) (print_sub xs)
-
 
 let rec subst (s : Ast.ocamlTP) (x : string) (t : Ast.ocamlTP) = 
         match t with
@@ -43,11 +28,6 @@ let apply (s : substitution) (t : Ast.ocamlTP) : Ast.ocamlTP =
 
 
 
-(*let final (s : substitution) : substitution =
-        let concreteTypedVars = List.find_all (fun (x,y) -> isClosed y) s in
-        let _ = Printf.printf "Concrete: [%s]\n" (print_sub concreteTypedVars) in
-        List.map (fun (a, b) -> (a, apply concreteTypedVars b)) s
-*)
 
 let rec unify_one (s : Ast.ocamlTP) (t : Ast.ocamlTP) = 
         match (s,t) with
@@ -88,7 +68,3 @@ let rec find_res (s : substitution) =
        | (x,t)::xs -> if x = "v1" then find_res xs else (x,t)::(find_res xs)
 
 
-(*let () =
-        let a = unify [(VarT("v1"), Integer); (VarT("v1"), VarT("a"))] in
-        let _ = Printf.printf "[%s]\n" (print_sub a) in
-        ()*)

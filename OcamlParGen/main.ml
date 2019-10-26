@@ -31,8 +31,6 @@ let rec process (l : Ast.program list) =
                                       let temp = I.fresh () in
                                       let _ = Printf.printf "Expression: \n%s\n" (P.print_ast expr) in
                                       let l = I.unify_exp [] expr temp in
-                                      (*let _ = Printf.printf "Constraints: \n%s" 
-                                      (P.print_constraints l) in *)
                                       let s = (U.unify l) in
                                       let t1 = U.find_type s in
                                       let res = U.find_res s in

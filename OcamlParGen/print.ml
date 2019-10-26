@@ -112,4 +112,11 @@ let rec print_constraints (l : (Ast.ocamlTP * Ast.ocamlTP) list) =
                         | (t1, t2)::xs -> Printf.sprintf "(%s, %s) \n %s"
                                         (print_type(t1))
                                         (print_type(t2))
-                                        (print_constraints(xs))
+                                        (print_constraints xs)
+
+let rec print_sub l = match l with
+                        [] -> ""
+                 | (s, t)::xs -> match xs with
+                                   |    _  -> Printf.sprintf "(%s = %s), %s" s (print_type t) (print_sub xs)
+
+
