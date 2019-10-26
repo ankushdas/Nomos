@@ -163,13 +163,13 @@ let get_pot env f =
       None -> raise UndefinedProcess
     | Some(_ctx,pot,_zc) -> pot;;
 
-(*let stepped = ref false;;*)
+let uneq_name (c1,_m1) (c2,_m2) = not (c1 = c2);;
 
 let fwd ch config =
   let s = find_sem ch config in
   match s with
       Proc(c1,t,(w,pot),A.Fwd(c2,d)) ->
-        if c1 <> c2
+        if uneq_name c1 c2
         then raise ChannelMismatch
         else
           begin
@@ -262,7 +262,7 @@ let ichoice_S ch config =
   let config = remove_sem ch config in
   match s with
       Proc(c1,t,wp,A.Lab(c2,l,p)) ->
-        if c1 <> c2
+        if uneq_name c1 c2
         then raise ChannelMismatch
         else
           let c' = lfresh () in
@@ -285,7 +285,7 @@ let ichoice_R ch config =
           begin
             match msg with
                 Some(Msg(ceq, t', (w',pot'), A.MLabI(_ceq,l,c'))) ->
-                  if ceq <> c
+                  if uneq_name ceq c
                   then raise ChannelMismatch
                   else
                     let q = find_branch l bs in
@@ -320,14 +320,14 @@ let echoice_R ch config =
   let s = find_sem ch config in
   match s with
       Proc(c1,t,(w,pot),A.Case(c2,bs)) ->
-        if c1 <> c2
+        if uneq_name c1 c2
         then raise ChannelMismatch
         else
           let msg = find_msg c2 config Neg in
           begin
             match msg with
                 Some(Msg(c2', t', (w',pot'), A.MLabE(c2eq,l,_c2'))) ->
-                  if c2eq <> c2
+                  if uneq_name c2eq c2
                   then raise ChannelMismatch
                   else
                     let q = find_branch l bs in
@@ -346,7 +346,7 @@ let tensor_S ch config =
   let config = remove_sem ch config in
   match s with
       Proc(c1,t,wp,A.Send(c2,e,p)) ->
-        if c1 <> c2
+        if uneq_name c1 c2
         then raise ChannelMismatch
         else
           let c' = lfresh () in
@@ -369,7 +369,7 @@ let tensor_R ch config =
           begin
             match msg with
                 Some(Msg(ceq, t', (w',pot'), A.MSendT(_ceq,e,c'))) ->
-                  if ceq <> c
+                  if uneq_name ceq c
                   then raise ChannelMismatch
                   else
                     let q = A.subst e x q in
@@ -404,14 +404,14 @@ let lolli_R ch config =
   let s = find_sem ch config in
   match s with
       Proc(c1,t,(w,pot),A.Recv(c2,x,q)) ->
-        if c1 <> c2
+        if uneq_name c1 c2
         then raise ChannelMismatch
         else
           let msg = find_msg c2 config Neg in
           begin
             match msg with
                 Some(Msg(c2', t', (w',pot'), A.MSendL(c2eq,e,_c2'))) ->
-                  if c2eq <> c2
+                  if uneq_name c2eq c2
                   then raise ExecImpossible
                   else
                     let q = A.subst e x q in
@@ -430,7 +430,7 @@ let one_S ch config =
   let config = remove_sem ch config in
   match s with
       Proc(c1,t,(w,pot),A.Close(c2)) ->
-        if c1 <> c2
+        if uneq_name c1 c2
         then raise ChannelMismatch
         else if pot > 0
         then raise UnconsumedPotential
@@ -444,14 +444,14 @@ let one_R ch config =
   let s = find_sem ch config in
   match s with
       Proc(d,t,(w,pot),A.Wait(c,q)) ->
-        if d = c
+        if not (uneq_name d c)
         then raise ChannelMismatch
         else
           let msg = find_msg c config Pos in
           begin
             match msg with
                 Some(Msg(ceq, t', (w',pot'), A.MClose(_ceq))) ->
-                  if ceq <> c
+                  if uneq_name ceq c
                   then raise ChannelMismatch
                   else
                     let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), q) in
@@ -482,7 +482,7 @@ let paypot_S ch config =
   let config = remove_sem ch config in
   match s with
       Proc(c1,t,(w,pot),A.Pay(c2,epot,p)) ->
-        if c1 <> c2
+        if uneq_name c1 c2
         then raise ChannelMismatch
         else if pot < try_evaluate epot
         then raise InsufficientPotential
@@ -508,7 +508,7 @@ let paypot_R ch config =
           begin
             match msg with
                 Some(Msg(ceq, t', (w',pot'), A.MPayP(_ceq,epot',c'))) ->
-                  if ceq <> c
+                  if uneq_name ceq c
                   then raise ChannelMismatch
                   else if not (try_eq epot epot')
                   then raise PotentialMismatch
@@ -528,7 +528,7 @@ let getpot_S ch config =
   let config = remove_sem ch config in
   match s with
       Proc(d,t,(w,pot),A.Pay(c,epot,p)) ->
-        if d = c
+        if not (uneq_name d c)
         then raise ChannelMismatch
         else if pot < try_evaluate epot
         then raise InsufficientPotential
@@ -547,14 +547,14 @@ let getpot_R ch config =
   let s = find_sem ch config in
   match s with
       Proc(c1,t,(w,pot),A.Get(c2,epot,q)) ->
-        if c1 <> c2
+        if uneq_name c1 c2
         then raise ChannelMismatch
         else
           let msg = find_msg c2 config Neg in
           begin
             match msg with
                 Some(Msg(c2', t', (w',pot'), A.MPayG(c2eq,epot',_c2'))) ->
-                  if c2eq <> c2
+                  if uneq_name c2eq c2
                   then raise ChannelMismatch
                   else if not (try_eq epot epot')
                   then raise PotentialMismatch
@@ -595,7 +595,7 @@ let up ch config =
   match s with
       Proc(as1,t,wp,A.Accept(as2,x,p)) ->
         begin
-          if as1 <> as2
+          if uneq_name as1 as2
           then raise ChannelMismatch
           else
             let procs = find_acquiring_procs as1 config in
@@ -605,7 +605,7 @@ let up ch config =
               | Some proc ->
                   match proc with
                       Proc(c,t',wp',A.Acquire(aseq,x',q)) ->
-                        if aseq <> as1
+                        if uneq_name aseq as1
                         then raise ChannelMismatch
                         else
                           let al = lfresh () in
@@ -639,7 +639,7 @@ let down ch config =
   match s with
       Proc(al1,t,wp,A.Detach(al2,x,p)) ->
         begin
-          if al1 <> al2
+          if uneq_name al1 al2
           then raise ChannelMismatch
           else
             let proc = find_releasing_proc al1 config in
@@ -648,7 +648,7 @@ let down ch config =
               | Some proc ->
                   match proc with
                       Proc(c,t',wp',A.Release(aleq,x',q)) ->
-                        if aleq <> al1
+                        if uneq_name aleq al1
                         then raise ChannelMismatch
                         else
                           let ash = get_shared_chan al1 config in
