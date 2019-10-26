@@ -177,6 +177,7 @@ let eqmode m1 m2 = match m1, m2 with
   | A.Transaction, A.Transaction
   | A.Shared, A.Shared
   | A.Unknown, A.Unknown -> true
+  | A.Var v1, A.Var v2 -> I.m_eq v1 v2
   | _, _ -> false;;
 
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
@@ -233,44 +234,48 @@ let eqtp env tp tp' = eq_tp' env [] tp tp';;
 (*************************************)
 (* Type checking process expressions *)
 (*************************************)
-(*                            
-fun interactsL P = case P of
-    A.CaseL _ => true | A.LabL _ => true | A.WaitL _ => true
-  | A.WhenL _ => true | A.NowL _ => true
-  | A.GetL _ => true | A.PayL _ => true
-  | A.AssumeL _ => true | A.AssertL _ => true
-  | A.Marked(marked_exp) => interactsL (Mark.data marked_exp)
-  | _ => false
-
-fun interactsR P = case P of
-    A.CaseR _ => true | A.LabR _ => true | A.CloseR => true
-  | A.WhenR _ => true | A.NowR _ => true
-  | A.GetR _ => true | A.PayR _ => true
-  | A.AssumeR _ => true | A.AssertR _ => true
-  | A.Marked(marked_exp) => interactsR (Mark.data marked_exp)
-  | _ => false*)
 
 exception UnknownTypeError;;
 
 let mode_L (_c,m) = match m with
-    A.Linear -> true
+    A.Linear
+  | A.Unknown -> true
+  | A.Var v -> I.m_eq_const v A.Linear
   | _ -> false;;
 
 let mode_S (_c,m) = match m with
-    A.Shared -> true
+    A.Shared
+  | A.Unknown -> true
+  | A.Var v -> I.m_eq_const v A.Shared
   | _ -> false;;
 
 let mode_P (_c,m) = match m with
-    A.Pure -> true
+    A.Pure
+  | A.Unknown -> true
+  | A.Var v -> I.m_eq_const v A.Pure
+  | _ -> false;;
+
+let mode_T (_c,m) = match m with
+    A.Transaction
+  | A.Unknown -> true
+  | A.Var v -> I.m_eq_const v A.Transaction
   | _ -> false;;
 
 let mode_lin (_c,m) = match m with
-    A.Shared -> false
-  | _ -> true;;
+    A.Pure
+  | A.Linear
+  | A.Transaction
+  | A.Unknown -> true
+  | A.Var v -> I.m_lin v
+  | _ -> false;;
 
 let mode_spawn (_c,m) = match m with
-    A.Linear -> false
-  | _ -> true;;
+    A.Pure
+  | A.Shared
+  | A.Transaction
+  | A.Unknown -> true
+  | A.Var v -> I.m_spawn v
+  | _ -> false;;
 
 let chan_of (c, _tp) = c 
 let tp_of (_c, tp) = tp;;
@@ -336,7 +341,7 @@ let find_ltp c delta ext =
 let rec removetp x delta = match delta with
     [] -> []
   | (y,t)::delta' ->
-      if x = y
+      if eq_name x y
       then delta'
       else (y,t)::(removetp x delta');;
 
@@ -602,8 +607,11 @@ and check_exp trace env delta pot exp zc ext = match exp with
                 else
                 match c with
                     A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext
-                  | A.Tensor(a,b,_m) ->
-                      if not (eqtp env a a')
+                  | A.Tensor(a,b,m) ->
+                      let (_w,mw) = w in
+                      if not (eqmode m mw)
+                      then error ext ("mode mismatch, expected at tensor: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
+                      else if not (eqtp env a a')
                       then error ext ("type mismatch: type of " ^ PP.pp_chan w ^
                                       ", expected: " ^ PP.pp_tp_compact env a ^
                                       ", found: " ^ PP.pp_tp_compact env a')
@@ -618,8 +626,11 @@ and check_exp trace env delta pot exp zc ext = match exp with
               let d = find_ltp x delta ext in
               match d with
                   A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
-                | A.Lolli(a,b,_m) ->
-                    if not (eqtp env a a')
+                | A.Lolli(a,b,m) ->
+                    let (_w,mw) = w in
+                    if not (eqmode m mw)
+                    then error ext ("mode mismatch, expected at lolli: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
+                    else if not (eqtp env a a')
                     then error ext ("type mismatch: type of " ^ PP.pp_chan w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
                                     ", found: " ^ PP.pp_tp_compact env a')
@@ -647,8 +658,11 @@ and check_exp trace env delta pot exp zc ext = match exp with
                 else
                 match c with
                     A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext
-                  | A.Tensor(a,b,_m) ->
-                      if not (eqtp env a a')
+                  | A.Tensor(a,b,m) ->
+                      let (_w,mw) = w in
+                      if not (eqmode m mw)
+                      then error ext ("mode mismatch, expected at tensor: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
+                      else if not (eqtp env a a')
                       then error ext ("type mismatch: type of " ^ PP.pp_chan w ^
                                       ", expected: " ^ PP.pp_tp_compact env a ^
                                       ", found: " ^ PP.pp_tp_compact env a')
@@ -663,8 +677,11 @@ and check_exp trace env delta pot exp zc ext = match exp with
               let d = find_ltp x delta ext in
               match d with
                   A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
-                | A.Lolli(a,b,_m) ->
-                    if not (eqtp env a a')
+                | A.Lolli(a,b,m) ->
+                    let (_w,mw) = w in
+                    if not (eqmode m mw)
+                    then error ext ("mode mismatch, expected at lolli: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
+                    else if not (eqtp env a a')
                     then error ext ("type mismatch: type of " ^ PP.pp_chan w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
                                     ", found: " ^ PP.pp_tp_compact env a')
@@ -695,7 +712,11 @@ and check_exp trace env delta pot exp zc ext = match exp with
               else
               match c with
                   A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext
-                | A.Lolli(a,b,_m) -> check_exp' trace env (add_chan env (y,a) delta) pot p (z,b) ext
+                | A.Lolli(a,b,m) ->
+                    let (_y,my) = y in
+                    if not (eqmode m my)
+                    then error ext ("mode mismatch, expected at lolli: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan y)
+                    else check_exp' trace env (add_chan env (y,a) delta) pot p (z,b) ext
                 | A.Plus _ | A.With _
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
@@ -706,7 +727,11 @@ and check_exp trace env delta pot exp zc ext = match exp with
             let d = find_ltp x delta ext in
             match d with
                 A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext
-              | A.Tensor(a,b,_m) -> check_exp' trace env (add_chan env (y,a) (update_tp env x b delta)) pot p zc ext
+              | A.Tensor(a,b,m) ->
+                  let (_y,my) = y in
+                  if not (eqmode m my)
+                  then error ext ("mode mismatch, expected at tensor: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan y)
+                  else check_exp' trace env (add_chan env (y,a) (update_tp env x b delta)) pot p zc ext
               | A.Plus _ | A.With _
               | A.One | A.Lolli _
               | A.PayPot _ | A.GetPot _
@@ -974,5 +999,76 @@ and check_branchesL trace env delta x choices pot branches zc ext = match choice
 
 (* external interface *)
 let checkexp = check_exp';;
+
+let rec find_tp x sdelta ldelta = match sdelta, ldelta with
+    [], [] -> raise UnknownTypeError
+  | (y,_t1)::sdelta', (z,_t2)::ldelta' ->
+      if eq_name x y
+      then y
+      else if eq_name x z
+      then z
+      else find_tp x sdelta' ldelta'
+  | (y,_t)::sdelta', [] ->
+      if eq_name x y
+      then y
+      else find_tp x sdelta' []
+  | [], (z,_t)::ldelta' ->
+      if eq_name x z
+      then z
+      else find_tp x [] ldelta';;
+  
+let rec consistent_mode f sdelta ldelta odelta ext =
+  match odelta with
+      [] -> ()
+    | (x,_t)::odelta' ->
+        let y = find_tp x sdelta ldelta in
+        if not (eq_mode x y)
+        then E.error_mode_mismatch (x, y, ext)
+        else consistent_mode f sdelta ldelta odelta' ext;;
+
+let rec mode_P_list delta = match delta with
+    [] -> true
+  | (x,_t)::delta' -> if not (mode_P x) then false else mode_P_list delta';;
+
+let pure env f delta x ext =
+  let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
+  let () = consistent_mode f sdelta ldelta odelta ext in
+  if not (mode_P x)
+  then error ext ("asset process " ^ f ^ " has offered channel at mode " ^ PP.pp_chan x)
+  else if List.length sdelta > 0
+  then error ext ("asset process " ^ f ^ " has non-empty shared context: " ^ PP.pp_lsctx env sdelta)
+  else if not (mode_P_list ldelta)
+  then error ext ("asset process " ^ f ^ " has non-pure linear context: " ^ PP.pp_lsctx env ldelta)
+  else ();;
+
+let rec mode_S_list delta = match delta with
+    [] -> true
+  | (x,_t)::delta' -> if not (mode_S x) then false else mode_S_list delta';;
+
+let shared env f delta x ext =
+  let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
+  let () = consistent_mode f sdelta ldelta odelta ext in
+  if not (mode_S x)
+  then error ext ("shared process " ^ f ^ " has offered channel at mode " ^ PP.pp_chan x)
+  else if not (mode_S_list sdelta)
+  then error ext ("shared process " ^ f ^ " has non-shared context: " ^ PP.pp_lsctx env sdelta)
+  else if not (mode_P_list ldelta)
+  then error ext ("shared process " ^ f ^ " has non-pure linear context: " ^ PP.pp_lsctx env ldelta)
+  else ();;
+
+let rec mode_lin_list delta = match delta with
+    [] -> true
+  | (x,_t)::delta' -> if not (mode_lin x) then false else mode_lin_list delta';;
+
+let transaction env f delta x ext =
+  let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
+  let () = consistent_mode f sdelta ldelta odelta ext in
+  if not (mode_T x)
+  then error ext ("transaction process " ^ f ^ " has offered channel at mode " ^ PP.pp_chan x)
+  else if not (mode_S_list sdelta)
+  then error ext ("transaction process " ^ f ^ " has shared context not at shared mode: " ^ PP.pp_lsctx env sdelta)
+  else if not (mode_lin_list ldelta)
+  then error ext ("transaction process " ^ f ^ " has linear context not at linear mode: " ^ PP.pp_lsctx env ldelta)
+  else ();;
 
 (* structure TypeCheck *)

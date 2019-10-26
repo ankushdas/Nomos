@@ -17,6 +17,12 @@ val valid :
   polarity -> A.stype -> ((int * int) * (int * int) * string) option -> unit
 val contractive : A.stype -> bool
 val eqtp : A.decl_ext list -> A.stype -> A.stype -> bool
+val pure :
+  'a -> string -> A.context -> A.chan -> A.ext -> unit
+val shared :
+  'a -> string -> A.context -> A.chan -> A.ext -> unit
+val transaction :
+  'a -> string -> A.context -> A.chan -> A.ext -> unit
 exception UnknownTypeError
 val checkexp :
   bool ->

@@ -73,8 +73,8 @@ let rec pp_tp_simple a = match a with
     A.One -> "1"
   | Plus(choice) -> "+{ " ^ pp_choice_simple choice ^ " }"
   | With(choice) -> "&{ " ^ pp_choice_simple choice ^ " }"
-  | Tensor(a,b,m) -> pp_tp_simple a ^ " *" ^ pp_mode m ^ " " ^ pp_tp_simple b
-  | Lolli(a,b,m) -> pp_tp_simple a ^ " -o" ^ pp_mode m ^ " " ^ pp_tp_simple b
+  | Tensor(a,b,m) -> pp_tp_simple a ^ " *[" ^ pp_mode m ^ "] " ^ pp_tp_simple b
+  | Lolli(a,b,m) -> pp_tp_simple a ^ " -o[" ^ pp_mode m ^ "] " ^ pp_tp_simple b
   | GetPot(pot,a) -> "<" ^ pp_potpos pot ^ "| " ^ pp_tp_simple a
   | PayPot(pot,a) -> "|" ^ pp_potpos pot ^ "> " ^ pp_tp_simple a
   | Up(a) -> "/\\ " ^ pp_tp_simple a
@@ -115,11 +115,11 @@ let rec pp_tp i a = match a with
   | A.Tensor(a,b,m) ->
       let astr = pp_tp i a in
       let l = len astr in
-      astr ^ " *" ^ pp_mode m ^ " " ^ pp_tp (i+l+3) b
+      astr ^ " *[" ^ pp_mode m ^ "] " ^ pp_tp (i+l+3) b
   | A.Lolli(a,b,m) ->
       let astr = pp_tp i a in
       let inc = len astr in
-      astr ^ " -o" ^ pp_mode m ^ " " ^ pp_tp (i+inc+4) b
+      astr ^ " -o[" ^ pp_mode m ^ "] " ^ pp_tp (i+inc+4) b
   | A.One -> "1"
   | A.PayPot(pot,a) ->
       let potstr = pp_potpos pot in
