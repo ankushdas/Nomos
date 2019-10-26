@@ -28,7 +28,7 @@ let rec getType (ctx : context) (x : string) =
            |    (y, tp)::xs -> if x = y then tp else getType xs x
 
 
-let rec typecheck (ctx : context) (e : Ast.expr) (t : Ast.ocamlTP) : bool = 
+(*let rec typecheck (ctx : context) (e : Ast.expr) (t : Ast.ocamlTP) : bool = 
         match e with
         If(e1, e2, e3) -> let t1 = typecheck ctx e1 Ast.Boolean in
                           let t2 = typecheck ctx e2 t in
@@ -47,15 +47,10 @@ let rec typecheck (ctx : context) (e : Ast.expr) (t : Ast.ocamlTP) : bool =
                      |  (ListTP(t1), e::es) -> if (typecheck ctx e t1) && (typecheck ctx (List(es)) t)
                                                then true else raise (TypeError (format_err e t))
                      |  _                   -> raise (TypeError (format_err e t)))
-        | App ((e1, t1), (e2, t2)) -> (match t1 with
-                                        Arrow (t3, t4) -> if (typecheck ctx e1 t1) &&
-                                                             (typecheck ctx e2 t2) &&
-                                                             (type_equals t2 t3) && (type_equals t4 t)
-                                                          then
-                                                             true
-                                                          else
-                                                             raise (TypeError (format_err e t))
-                                        | _            -> raise (TypeError (format_err e t)))
+        | App (l) -> (match l with
+                        [] -> raise (TypeError "Impossible")
+                 |     [x] -> raise (TypeError "Impossible")
+            | (e1, t1)::es -> let t2 = get_peeled_type es t1 in type_equals t2 t) 
         | Cons (x, xs) -> (match t with
                           ListTP(t1) -> if (typecheck ctx x t1) && (typecheck ctx xs t)
                                         then true else raise (TypeError (format_err e t))
@@ -111,4 +106,9 @@ and addArglist l ctx = match l with
                                             in
                                                 (len + 1, (x,t1)::ctx')
 
-
+and get_peeled_type l t = match (l, t) with
+                                ([], _) -> raise (TypeError "Impossible")
+         |  ([(e1, t1)], Arrow(t2, t3)) -> if (type_equals t1 t2) then t3 else raise (TypeError "app rule failed")
+         |  ((e1, t1)::es, Arrow(t2, t3)) -> if (type_equals t1 t2) then get_peeled_type es t3 else raise (TypeError "app rule failed")
+         |                          _    -> raise (TypeError "Impossible")
+         *)

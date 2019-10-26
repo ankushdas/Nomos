@@ -1,14 +1,12 @@
 %token <int> INT
 %token <string> ID
-%token APP
+(*%token APP*)
 %token LPAREN RPAREN
 %token TRUE FALSE
 %token IF THEN ELSE
 %token LET IN
-%token COLON
 %token EMPTYLIST LSQUARE RSQUARE CONS COMMA
 %token EQUALS
-%token INTEGER BOOLEAN LIST
 %token MATCH WITH BAR 
 %token FUN RIGHTARROW
 %token PLUS MINUS TIMES DIV
@@ -16,8 +14,9 @@
 %token NEQ GREATER LESS GREATEREQ LESSEQ
 %token ANDALSO ORELSE
 %token DOUBLESEMI
-%right RIGHTARROW
-%nonassoc LIST
+(*%nonassoc ID
+(*%nonassoc TRUE FALSE ID INT*)
+%right RIGHTARROW*)
 %nonassoc statement
 %right ANDALSO ORELSE
 %left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
@@ -33,14 +32,14 @@ file :
      ;
 
 prog : 
-    | e = expr COLON typ = typeVal { Ast.Program (e, typ) }
+    | e = expr { Ast.Program (e) }
     ;
 
-typeVal :
+(*typeVal :
     | INTEGER { Ast.Integer }
     | BOOLEAN { Ast.Boolean }
     | t1 =  typeVal RIGHTARROW t2 = typeVal { Ast.Arrow(t1, t2) }
-    | t1 = typeVal LIST { Ast.ListTP(t1) }
+    | t1 = typeVal LIST { Ast.ListTP(t1) }*)
     
 expr :
     | LPAREN MINUS i = INT RPAREN     { Int (-i) } 
@@ -67,12 +66,9 @@ cond :
                                           %prec statement
     ;
 
-bind  :
-    |   x = ID; COLON; t = typeVal; EQUALS; e = expr { Binding(x, e, t)  }
-    ;
-
 letin :
-    | LET; b = bind; IN; inExp = expr { Ast.LetIn (b, inExp) } %prec statement
+    | LET; x = ID; EQUALS; e = expr; IN; inExp = expr { Ast.LetIn (x, e, inExp) } %prec statement
+    | LET; FUN; x = ID; args = id_list; EQUALS; e = expr; IN; inExp = expr { Ast.LetIn (x, Ast.Lambda(args, e), inExp) } %prec statement
     ;
 
 listVal : 
@@ -113,18 +109,27 @@ relOp :
 
 
 matchExp :
-    | MATCH; x = expr; COLON; t = typeVal; WITH; EMPTYLIST; RIGHTARROW; y = expr; BAR; a = ID; 
-      CONS; b = ID; RIGHTARROW; c = expr   { Ast.Match((x,t), y, a, b, c)  } %prec statement
+    | MATCH; x = expr; WITH; EMPTYLIST; RIGHTARROW; y = expr; BAR; a = ID; 
+      CONS; b = ID; RIGHTARROW; c = expr   { Ast.Match(x, y, a, b, c)  } %prec statement
     ;  
 
 
+arg :
+    | LPAREN e = expr RPAREN      { e          }    
+    | x = ID                      { Var x      }     
+    | TRUE                        { Bool true  }   
+    | FALSE                       { Bool false }   
+    | i = INT                     { Ast.Int i  }
+    ;
+
 app :
-    |  APP LPAREN e1 = expr COLON t1 = typeVal COMMA e2 = expr COLON t2 = typeVal RPAREN { Ast.App((e1, t1), (e2, t2))  }
+    | x = ID; l = nonempty_list(arg)   { Ast.App(Ast.Var(x)::l) }
+    | LPAREN e = expr RPAREN l = nonempty_list(arg) { Ast.App(e::l) }
     ;
 
 id_list:
-    | LPAREN; x = ID; COLON; t = typeVal RPAREN { Ast.Single(x,t) }
-    | LPAREN; x = ID; COLON; t = typeVal; RPAREN; l = id_list { Ast.Curry((x,t), l) } 
+    | x = ID;                   { Ast.Single(x) }
+    | x = ID;  l = id_list      { Ast.Curry(x, l) } 
     ;
 
 lambdaExp :

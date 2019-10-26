@@ -1,7 +1,7 @@
 let rec print_args (args : Ast.arglist) = 
         match args with
-                | Single(x,t) -> x
-                | Curry((x,t), rest) -> let a : string = print_args(rest) in
+                | Single(x) -> x
+                | Curry(x, rest) -> let a : string = print_args(rest) in
                                     Printf.sprintf "%s %s"
                                     x
                                     a
@@ -39,7 +39,7 @@ and print_ast (t : Ast.expr) =
            | Var(x)  -> Printf.sprintf "%s" x
            | Bool(b) -> Printf.sprintf "%B" b
            | Int(i)  -> Printf.sprintf "%d" i
-           | LetIn(Binding(x,e1,t), e2) -> let a : string = print_ast(e1) in
+           | LetIn(x, e1, e2) -> let a : string = print_ast(e1) in
                                            let b : string = print_ast(e2) in
                                          Printf.sprintf "let (x = %s) in (%s)"
                                                         a
@@ -72,7 +72,7 @@ and print_ast (t : Ast.expr) =
                                  Printf.sprintf "(%s) :: (%s)"
                                                 a
                                                 b
-           | Match((x,t),y,a,b,c) -> let i : string = print_ast(x) in
+           | Match(x,y,a,b,c) -> let i : string = print_ast(x) in
                                  let p : string = print_ast(y) in
                                  let q : string = print_ast(c) in
                                  Printf.sprintf "match (%s) with 
@@ -83,11 +83,8 @@ and print_ast (t : Ast.expr) =
                                    let q : string = print_ast(body)  in
                                    Printf.sprintf "fun (%s) -> (%s)"
                                    p q
-           | App ((expr1, t1), (expr2, t2)) -> let i : string = print_ast(expr1) in
-                                   let j : string = print_ast(expr2) in
-                                   Printf.sprintf "(%s)(%s)"
-                                   i
-                                   j
+           | App l -> let a : string = print_list(l) in
+                           Printf.sprintf "[%s]" a
 
 
 
