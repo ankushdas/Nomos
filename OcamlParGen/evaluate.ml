@@ -7,11 +7,29 @@ let rec lookupInContext (ctx : valContext) x =
            | (y,v)::ys -> if x = y then v else lookupInContext ys x
 
 
+let rec addValue (e : Ast.typed_expr) : Ast.valued_expr = 
+        let valVar = Ast.IntV(0) in
+        match e.structure with
+                If(e1, e2, e3) -> {structure = If(addValue e1, addValue e2, addValue e3); data = valVar}
+        |       LetIn(x, e1, e2) -> {structure = LetIn(x, addValue e1, addValue e2); data = valVar} 
+        |       Bool(x)  -> {structure = Bool(x); data = valVar}
+        |       Int(x)  -> {structure = Int(x); data = valVar}
+        |       Var(x)   -> {structure = Var(x); data = valVar}
+        |       List(l)  -> {structure = List(List.map addValue l); data = valVar} 
+        |       App(l) -> {structure = App(List.map addValue l); data = valVar} 
+                        
+        |       Cons(x, xs) -> {structure = Cons(addValue x, addValue xs); data = valVar}
+        |       Match(e1, e2, x, xs, e3) -> {structure = Match(addValue e1, addValue e2, x, xs, addValue e3); data = valVar} 
+        |       Lambda(args, e) -> {structure = Lambda(args, addValue e); data = valVar} 
+        |       Op(e1, o, e2) -> {structure = Op(addValue e1, o, addValue e2); data =  valVar}
+        |       CompOp(e1, o, e2) -> {structure = CompOp(addValue e1, o, addValue e2); data =  valVar} 
+        |       RelOp(e1, o, e2) -> {structure = RelOp(addValue e1, o, addValue e2); data = valVar} 
 
 
 
-let rec evaluate (ctx : valContext) (e : Ast.expr) : Ast.value = 
-        match e with
+
+let rec evaluate (ctx : valContext) (e : Ast.valued_expr) : Ast.value = 
+        match e.structure with
         If(e1, e2, e3) -> (let ifVal = evaluate ctx e1 in
                           let thenVal = evaluate ctx e2 in
                           let elseVal = evaluate ctx e3 in
@@ -31,7 +49,7 @@ let rec evaluate (ctx : valContext) (e : Ast.expr) : Ast.value =
         | List (l) -> (match l with
                          [] -> Ast.ListV([])
                      |   (x::xs) -> let firstVal = evaluate ctx x in
-                                    let secondVal = evaluate ctx (Ast.List(xs)) in
+                     let secondVal = evaluate ctx {structure = Ast.List(xs); data = Ast.IntV(0)} in
                                       match secondVal with
                                           Ast.ListV(lst) -> Ast.ListV(firstVal::lst)
                                         | _              -> raise (EvaluationError "Impossible"))

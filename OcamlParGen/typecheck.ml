@@ -3,9 +3,9 @@ module P = Print
 type context = (string * Ast.ocamlTP) list
 exception TypeError of string
 
-let format_err (e : Ast.expr) (t : Ast.ocamlTP) = 
-        let a : string = P.print_ast(e) in
-        let b : string = P.print_type(t) in
+let format_err (e : Ast.ocamlTP Ast.aug_expr) = 
+        let a : string = P.print_ast(e.structure) in
+        let b : string = P.print_type(e.data) in
           Printf.sprintf "expression %s did not have type %s" a b
 
 let rec get_result_type (t : Ast.ocamlTP) = 

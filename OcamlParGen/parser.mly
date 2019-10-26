@@ -1,6 +1,5 @@
 %token <int> INT
 %token <string> ID
-(*%token APP*)
 %token LPAREN RPAREN
 %token TRUE FALSE
 %token IF THEN ELSE
@@ -14,9 +13,6 @@
 %token NEQ GREATER LESS GREATEREQ LESSEQ
 %token ANDALSO ORELSE
 %token DOUBLESEMI
-(*%nonassoc ID
-(*%nonassoc TRUE FALSE ID INT*)
-%right RIGHTARROW*)
 %nonassoc statement
 %right ANDALSO ORELSE
 %left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
@@ -34,30 +30,24 @@ file :
 prog : 
     | e = expr { Ast.Program (e) }
     ;
-
-(*typeVal :
-    | INTEGER { Ast.Integer }
-    | BOOLEAN { Ast.Boolean }
-    | t1 =  typeVal RIGHTARROW t2 = typeVal { Ast.Arrow(t1, t2) }
-    | t1 = typeVal LIST { Ast.ListTP(t1) }*)
     
 expr :
-    | LPAREN MINUS i = INT RPAREN     { Int (-i) } 
-    | LPAREN e = expr RPAREN { e }
-    | TRUE              { Bool true  }
-    | FALSE             { Bool false }
-    | i = INT           { Int i  }
-    | x = ID            { Var x  }
-    | c = cond          { c           }
-    | l = letin         { l           }
-    | lst = listVal     { lst         }
-    | a = app           { a           }
-    | c = cons          { c           }
-    | m = matchExp      { m           }
-    | l = lambdaExp     { l           }
-    | o = op            { o           }
-    | c = compOp        { c           }
-    | r = relOp         { r           }
+    | LPAREN MINUS i = INT RPAREN     { {structure = Int (-i); data = ()} } 
+    | LPAREN e = expr RPAREN          { e }
+    | TRUE                            { {structure = Bool true; data = ()}  }
+    | FALSE                           { {structure = Bool false; data = ()} }
+    | i = INT                         { {structure = Int i; data = ()}  }
+    | x = ID                          { {structure = Var x; data = ()}  }
+    | c = cond                        { {structure = c; data = ()} }
+    | l = letin                       { {structure = l; data = ()} }
+    | lst = listVal                   { {structure = lst; data = ()} }
+    | a = app                         { {structure = a; data = ()} }
+    | c = cons                        { {structure = c; data = ()} }
+    | m = matchExp                    { {structure = m; data = ()} }
+    | l = lambdaExp                   { {structure = l; data = ()} }
+    | o = op                          { {structure = o; data = ()} }
+    | c = compOp                      { {structure = c; data = ()} }
+    | r = relOp                       { {structure = r; data = ()} }
     ;
 
 cond :
@@ -66,9 +56,13 @@ cond :
                                           %prec statement
     ;
 
+func :
+    | args = id_list; EQUALS; e = expr { {structure = Ast.Lambda(args, e); data = ()} }
+    ;
+
 letin :
     | LET; x = ID; EQUALS; e = expr; IN; inExp = expr { Ast.LetIn (x, e, inExp) } %prec statement
-    | LET; FUN; x = ID; args = id_list; EQUALS; e = expr; IN; inExp = expr { Ast.LetIn (x, Ast.Lambda(args, e), inExp) } %prec statement
+    | LET; FUN; x = ID; f = func; IN; inExp = expr { Ast.LetIn (x, f, inExp) } %prec statement
     ;
 
 listVal : 
@@ -116,14 +110,14 @@ matchExp :
 
 arg :
     | LPAREN e = expr RPAREN      { e          }    
-    | x = ID                      { Var x      }     
-    | TRUE                        { Bool true  }   
-    | FALSE                       { Bool false }   
-    | i = INT                     { Ast.Int i  }
+    | x = ID                      { {structure = Var x; data = ()} }     
+    | TRUE                        { {structure = Bool true; data = ()}  }   
+    | FALSE                       { {structure = Bool false; data = ()} }   
+    | i = INT                     { {Ast.structure = Int i; data = ()}  }
     ;
 
 app :
-    | x = ID; l = nonempty_list(arg)   { Ast.App(Ast.Var(x)::l) }
+    | x = ID; l = nonempty_list(arg)   { Ast.App({structure = Ast.Var(x); data = ()}::l) }
     | LPAREN e = expr RPAREN l = nonempty_list(arg) { Ast.App(e::l) }
     ;
 

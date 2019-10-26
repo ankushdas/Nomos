@@ -28,15 +28,16 @@ let rec process (l : Ast.program list) =
                 [] -> ()
         | Ast.Program(expr)::es -> try
                                       let _ = I.reset () in
-                                      let temp = I.fresh () in
-                                      let _ = Printf.printf "Expression: \n%s\n" (P.print_ast expr) in
-                                      let l = I.unify_exp [] expr temp in
+                                      let _ = Printf.printf "Expression: \n%s\n" (P.print_ast expr.structure) in
+                                      let untyped = I.addType expr in
+                                      let l = I.unify_exp [] untyped in
                                       let s = (U.unify l) in
                                       let t1 = U.find_type s in
                                       let res = U.find_res s in
                                       let t2 = U.apply res t1 in
+                                      let unvalued = E.addValue untyped in
                                       let _ = Printf.printf "Type: \n%s\n" (P.print_type t2) in
-                                      let evalRes = E.evaluate [] expr in
+                                      let evalRes = E.evaluate [] unvalued in
                                       (Printf.printf "Value: \n%s\n\n" (P.print_value evalRes); process es)
                                       with
                                       | TC.TypeError err -> (Printf.printf "TYPECHECKING FAILURE: %s\n" err; process es)
