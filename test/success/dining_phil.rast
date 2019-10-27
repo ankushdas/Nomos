@@ -6,22 +6,22 @@ type sfork = /\ lfork
 
 type phil = 1
 
-proc fork_proc : . |- (c : sfork) =
+proc contract fork_proc : . |- (c : sfork) =
   lc <- accept c ;
   c <- detach lc ;
   c <- fork_proc <-
 
-proc thinking : (left : sfork), (right : sfork) |- (c : phil) =
+proc transaction thinking : (left : sfork), (right : sfork) |- (c : phil) =
   lleft <- acquire left ;
   lright <- acquire right ;
   c <- eating <- lleft lright
 
-proc eating : (lleft : lfork), (lright : lfork) |- (c : phil) =
+proc transaction eating : (lleft : lfork), (lright : lfork) |- (c : phil) =
   right <- release lright ;
   left <- release lleft ;
   c <- thinking <- left right
 
-proc main : . |- (d : 1) =
+proc asset main : . |- (d : 1) =
   f1 <- fork_proc <- ;
   f2 <- fork_proc <- ;
   f3 <- fork_proc <- ;

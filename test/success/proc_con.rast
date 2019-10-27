@@ -1,19 +1,19 @@
 #test success
 
-type A = /\ \/ 1
+type A = 1
 
 type squeue = /\ &{enq : A -o \/ squeue,
                    deq : +{none : \/ squeue,
                            some : A * \/ squeue}}
 
-proc produce : (x : A), (q : squeue) |- (c : 1) =
+proc transaction produce : (x : A), (q : squeue) |- (c : 1) =
   lq <- acquire q ;
   lq.enq ;
   send lq x ;
   q <- release lq ;
   c <- produce <- x q
 
-proc consume : (q : squeue) |- (c : 1) =
+proc transaction consume : (q : squeue) |- (c : 1) =
   lq <- acquire q ;
   lq.deq ;
   case lq

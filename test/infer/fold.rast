@@ -13,7 +13,7 @@ type listA1 = +{cons : |{*}> A * listA1,
 type listA0 = +{cons : |{*}> A * listA0,
                 nil : |{*}> 1}
 
-proc fold : (l : listA1), (f : folder), (b : B) |{0}- (r : B) =
+proc asset fold : (l : listA1), (f : folder), (b : B) |{0}- (r : B) =
   case l (
     cons => get l {*} ;
             x <- recv l ;

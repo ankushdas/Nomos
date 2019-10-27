@@ -7,7 +7,7 @@ type squeue = /\ &{enq : A -o \/ squeue,
                            some : A * \/ squeue}}
 
 
-proc empty : . |- (q : squeue) =
+proc contract empty : . |- (q : squeue) =
   lq <- accept q ;
   case lq
   ( enq => x <- recv lq ;
@@ -18,7 +18,7 @@ proc empty : . |- (q : squeue) =
            q <- detach lq ;
            q <- empty <- )
 
-proc elem : (x : A), (t : squeue) |- (q : squeue) =
+proc contract elem : (x : A), (t : squeue) |- (q : squeue) =
   lq <- accept q ;
   case lq
   ( enq => y <- recv lq ;

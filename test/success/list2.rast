@@ -4,13 +4,13 @@ type A = 1
 
 type list2 = +{cons2 : A * A * list2, cons1 : A * 1, nil : 1}
 
-proc cons2 : (x : A), (y : A), (tl : list2) |- (l : list2) =
+proc asset cons2 : (x : A), (y : A), (tl : list2) |- (l : list2) =
   l.cons2;
   send l y;
   send l x;
   l <- tl
 
-proc cons1 : (x : A), (tl : list2) |- (l : list2) =
+proc asset cons1 : (x : A), (tl : list2) |- (l : list2) =
   case tl
   ( cons2 => y <- recv tl;
              z <- recv tl;

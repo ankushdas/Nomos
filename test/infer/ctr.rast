@@ -3,20 +3,20 @@
 
 type ctr = &{inc : <{*}| ctr}
 
-proc end : . |{*}- (c : ctr) =
+proc asset end : . |{*}- (c : ctr) =
   case c (
     inc => get c {*} ;
            e <- end <- ;
            c <- b1 <- e
   )
 
-proc b0 : (t : ctr) |{*}- (s : ctr) =
+proc asset b0 : (t : ctr) |{*}- (s : ctr) =
   case s (
     inc => get s {*} ;
            s <- b1 <- t
   )
 
-proc b1 : (t : ctr) |{*}- (s : ctr) =
+proc asset b1 : (t : ctr) |{*}- (s : ctr) =
   case s (
     inc => get s {*} ;
            t.inc ;

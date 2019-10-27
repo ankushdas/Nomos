@@ -9,22 +9,22 @@ type stackA = &{ins : <{2}| A -o stackA,
                 del : <{*}| +{some : A * stackA,
                               none : 1}}
 
-proc nil : . |{*}- (l : listA) =
+proc asset nil : . |{*}- (l : listA) =
   l.nil ;
   pay l {*} ;
   close l
 
-proc cons : (x : A), (t : listA) |{*}- (l : listA) =
+proc asset cons : (x : A), (t : listA) |{*}- (l : listA) =
   l.cons ;
   pay l {*} ;
   send l x ;
   l <- t
 
-proc stack_new : . |{*}- (s : stackA) =
+proc asset stack_new : . |{*}- (s : stackA) =
   l <- nil <- ;
   s <- stack <- l
 
-proc stack : (l : listA) |{*}- (s : stackA) =
+proc asset stack : (l : listA) |{*}- (s : stackA) =
   case s (
     ins => get s {*} ;
            x <- recv s ;

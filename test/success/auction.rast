@@ -7,7 +7,7 @@ type auction = /\+{running : &{abort : \/auction, bid : bool -o \/auction},
                    ended : +{abort : 1, withdraw : bool} -o \/auction
                   }
 
-proc running : . |- (a : auction) =
+proc contract running : . |- (a : auction) =
     la <- accept a;
     la.running;
     case la (
@@ -26,7 +26,7 @@ proc running : . |- (a : auction) =
 	      )
     )
 
-proc ended : . |- (a :auction) =
+proc contract ended : . |- (a :auction) =
      la <- accept a;
      la.ended;
      x <- recv la;

@@ -5,21 +5,21 @@ type bits = +{ b0 : bits, b1 : bits, e : 1 }
 type ctr = &{ inc : <{*}| ctr,
               val : bits }
 
-proc end : . |{*}- (x : ctr) =
+proc asset end : . |{*}- (x : ctr) =
   case x ( inc => get x {*} ;
                   y <- end <- ;
                   x <- bit1 <- y
          | val => x.e ;
                   close x )
 
-proc bit0 : (y : ctr) |{*}- (x : ctr) =
+proc asset bit0 : (y : ctr) |{*}- (x : ctr) =
   case x ( inc => get x {*} ;
                   work {*} ;
                   x <- bit1 <- y
          | val => y.val ;
                   x <- y )
 
-proc bit1 : (y : ctr) |{*}- (x : ctr) =
+proc asset bit1 : (y : ctr) |{*}- (x : ctr) =
   case x ( inc => get x {*} ;
                   y.inc ;
                   pay y {*} ;

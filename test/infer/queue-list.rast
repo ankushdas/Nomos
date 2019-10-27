@@ -12,12 +12,12 @@ type queueA = &{ins : <{2}| A -o queueA,
                 del : <{*}| +{some : A * queueA,
                               none : 1}}
 
-proc nil : . |{*}- (l : listA1) =
+proc asset nil : . |{*}- (l : listA1) =
   l.nil ;
   pay l {*} ;
   close l
 
-proc cons : (x : A), (t : listA1) |{*}- (l : listA1) =
+proc asset cons : (x : A), (t : listA1) |{*}- (l : listA1) =
   l.cons ;
   pay l {*} ;
   send l x ;
@@ -26,18 +26,18 @@ proc cons : (x : A), (t : listA1) |{*}- (l : listA1) =
 type listA3 = +{cons : |{*}> A * listA3,
                 nil : |{*}> 1}
 
-proc cons2 : (x : A), (m : listA2) |{*}- (l : listA2) =
+proc asset cons2 : (x : A), (m : listA2) |{*}- (l : listA2) =
   l.cons ;
   pay l {*} ;
   send l x ;
   l <- m
 
-proc nil2 : . |{*}- (l : listA2) =
+proc asset nil2 : . |{*}- (l : listA2) =
   l.nil ;
   pay l {*} ;
   close l
 
-proc rev_help : (l : listA1), (m : listA2) |{*}- (r : listA3) =
+proc asset rev_help : (l : listA1), (m : listA2) |{*}- (r : listA3) =
   case l (
     cons => get l {*} ;
             x <- recv l ;
@@ -48,11 +48,11 @@ proc rev_help : (l : listA1), (m : listA2) |{*}- (r : listA3) =
             r <- m
   )
 
-proc rev : (l : listA1) |{*}- (r : listA2) =
+proc asset rev : (l : listA1) |{*}- (r : listA2) =
   m <- nil2 <- ;
   r <- rev_help <- l m
 
-proc queue : (in : listA1), (out : listA2) |{*}- (s : queueA) =
+proc asset queue : (in : listA1), (out : listA2) |{*}- (s : queueA) =
   case s (
     ins => get s {*} ;
            x <- recv s ;

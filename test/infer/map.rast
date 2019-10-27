@@ -13,7 +13,7 @@ type listA0 = +{cons : |{0}> A * listA0,
 type listA1 = +{cons : |{*}> A * listA1,
                 nil : |{*}> 1}
 
-proc map : (l : listA1), (m : mapper) |{0}- (k : listA0) =
+proc asset map : (l : listA1), (m : mapper) |{0}- (k : listA0) =
   case l (
     cons => get l {*} ;
             x <- recv l ;

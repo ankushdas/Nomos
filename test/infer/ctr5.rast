@@ -8,7 +8,7 @@ type ctr = &{ inc : <{*}| ctr,
               dec : <{*}| ctr,
               val : <{*}| bits }
 
-proc end : . |{*}- (x : ctr) =
+proc asset end : . |{*}- (x : ctr) =
   case x ( inc => get x {*} ;
                   y <- end <- ;
                   work {*} ;
@@ -21,7 +21,7 @@ proc end : . |{*}- (x : ctr) =
                   work {*} ;
                   close x )
 
-proc bit0 : (y : ctr) |{*}- (x : ctr) =
+proc asset bit0 : (y : ctr) |{*}- (x : ctr) =
   case x ( inc => get x {*} ;
                   work {*} ;
                   x <- bit1 <- y
@@ -36,7 +36,7 @@ proc bit0 : (y : ctr) |{*}- (x : ctr) =
                   work {*} ;
                   x <- y )
 
-proc bit1 : (y : ctr) |{*}- (x : ctr) =
+proc asset bit1 : (y : ctr) |{*}- (x : ctr) =
   case x ( inc => get x {*} ;
                   y.inc ;
                   pay y {*} ;

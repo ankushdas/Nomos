@@ -5,18 +5,18 @@ type nat = +{ z : 1, s : nat }
 % (pos,neg) ~ pos - neg
 type int = nat * nat
 
-proc zero : . |- (x : nat) =
+proc asset zero : . |- (x : nat) =
   x.z ; close x
-proc succ : (x : nat) |- (y : nat) =
+proc asset succ : (x : nat) |- (y : nat) =
   y.s ; y <- x
 
-proc inc : (i : int) |- (k : int) =
+proc asset inc : (i : int) |- (k : int) =
   pos <- recv i ;
   pos1 <- succ <- pos ;
   send k pos1 ;
   k <- i
 
-proc dec : (i : int) |- (k : int) =
+proc asset dec : (i : int) |- (k : int) =
   pos <- recv i ;
   neg1 <- succ <- i ;
   send k pos ;
@@ -24,11 +24,11 @@ proc dec : (i : int) |- (k : int) =
 
 type sgnval = +{ pos : nat, neg : nat }
 
-proc int2sgnval : (i : int) |- (x : sgnval) =
+proc asset int2sgnval : (i : int) |- (x : sgnval) =
   pos <- recv i ;
   x <- nats2sgnval <- pos i
 
-proc nats2sgnval : (pos : nat), (neg : nat) |- (x : sgnval) =
+proc asset nats2sgnval : (pos : nat), (neg : nat) |- (x : sgnval) =
   case pos ( z => wait pos ;
                   case neg ( z => wait neg ;
                                   x.pos ; x <- zero <-

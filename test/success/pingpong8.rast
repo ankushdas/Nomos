@@ -2,18 +2,18 @@
 
 type ping  = +{ping : &{pong : ping}}
 
-proc pong : (x : ping) |- (sink : 1) =
+proc asset pong : (x : ping) |- (sink : 1) =
   case x
   ( ping => x.pong; sink <- pong <- x
   )
 
-proc ping : (sink : 1) |- (x : ping) =
+proc asset ping : (sink : 1) |- (x : ping) =
   x.ping;
   case x
   ( pong => x <- ping <- sink
   )
 
-proc pingpong : (sink : 1) |- (x : ping) =
+proc asset pingpong : (sink : 1) |- (x : ping) =
   x.ping;
   case x
   ( pong => x <- ping <- sink

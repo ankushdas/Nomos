@@ -5,14 +5,14 @@ type bool = +{b0 : 1, b1 : 1}
 
 type tree = &{parity : <{*}| bool}
 
-proc leaf : . |{*}- (t : tree) =
+proc asset leaf : . |{*}- (t : tree) =
   case t (
     parity => get t {*} ;
               t.b0 ;
               close t
   )
 
-proc node : (l : tree), (r : tree) |{*}- (t : tree) =
+proc asset node : (l : tree), (r : tree) |{*}- (t : tree) =
   case t (
     parity => get t {*} ;
               l.parity ;
@@ -22,7 +22,7 @@ proc node : (l : tree), (r : tree) |{*}- (t : tree) =
               t <- xor <- l r
   )
 
-proc xor : (l : bool), (r : bool) |{*}- (t : bool) =
+proc asset xor : (l : bool), (r : bool) |{*}- (t : bool) =
   case l (
     b0 => case r (
             b0 => t.b0 ;

@@ -3,7 +3,7 @@
 type ping  = +{ping : pong}
 type pong  = &{pong : ping}
 
-proc p1 : (x : ping) |- (sink : 1) =
+proc asset p1 : (x : ping) |- (sink : 1) =
   case x
   ( ping => x.pong; sink <- p1 <- x
   )
