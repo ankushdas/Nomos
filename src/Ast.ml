@@ -180,15 +180,12 @@ and strip_exts_branches bs = match bs with
   | {lab_exp = (l,p); exp_extent = ext}::bs' ->
       {lab_exp = (l,strip_exts p); exp_extent = ext}::strip_exts_branches bs';;
 
-let sub c' c x =
-  if x = c then c' else x;;
+let sub (c',mc') (c,_mc) (x,mx) =
+  if x = c then (c',mc') else (x, mx);;
 
 let rec subst_list c' c l = match l with
     [] -> []
-  | x::xs ->
-      if x = c
-      then c'::(subst_list c' c xs)
-      else x::(subst_list c' c xs);;
+  | x::xs -> (sub c' c x)::(subst_list c' c xs);;
 
 let rec subst c' c expr = match expr with
     Fwd(x,y) -> Fwd(sub c' c x, sub c' c y)

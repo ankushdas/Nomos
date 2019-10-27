@@ -278,7 +278,7 @@ let ichoice_R ch config =
   let s = find_sem ch config in
   match s with
       Proc(d,t,(w,pot),A.Case(c,bs)) ->
-        if d = c
+        if not (uneq_name d c)
         then raise ChannelMismatch
         else
           let msg = find_msg c config Pos in
@@ -304,7 +304,7 @@ let echoice_S ch config =
   let config = remove_sem ch config in
   match s with
       Proc(d,t,wp,A.Lab(c,l,p)) ->
-        if d = c
+        if not (uneq_name d c)
         then raise ChannelMismatch
         else
           let c' = lfresh () in
@@ -362,7 +362,7 @@ let tensor_R ch config =
   let s = find_sem ch config in
   match s with
       Proc(d,t,(w,pot),A.Recv(c,x,q)) ->
-        if d = c
+        if not (uneq_name d c)
         then raise ChannelMismatch
         else
           let msg = find_msg c config Pos in
@@ -388,7 +388,7 @@ let lolli_S ch config =
   let config = remove_sem ch config in
   match s with
       Proc(d,t,wp,A.Send(c,e,p)) ->
-        if d = c
+        if not (uneq_name d c)
         then raise ChannelMismatch
         else
           let c' = lfresh () in
@@ -501,7 +501,7 @@ let paypot_R ch config =
   let s = find_sem ch config in
   match s with
       Proc(d,t,(w,pot),A.Get(c,epot,q)) ->
-        if d = c
+        if not (uneq_name d c)
         then raise ChannelMismatch
         else
           let msg = find_msg c config Pos in
