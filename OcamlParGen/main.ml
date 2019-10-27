@@ -31,14 +31,16 @@ let rec process (l : Ast.program list) =
                                       let _ = Printf.printf "Expression: \n%s\n" (P.print_ast expr.structure) in
                                       let untyped = I.addType expr in
                                       let l = I.unify_exp [] untyped in
+                                      (*let _ = Printf.printf "%s" (P.print_constraints l) in*)
                                       let s = (U.unify l) in
                                       let t1 = U.find_type s in
+                                      let _ = (I.apply_sub s untyped) in
                                       let res = U.find_res s in
                                       let t2 = U.apply res t1 in
                                       let unvalued = E.addValue untyped in
                                       let _ = Printf.printf "Type: \n%s\n" (P.print_type t2) in
                                       let evalRes = E.evaluate [] unvalued in
-                                      (Printf.printf "Value: \n%s\n\n" (P.print_value evalRes); process es)
+                                      (Printf.printf "Value: \n%s\n\n" (P.print_value evalRes.data); process es)
                                       with
                                       | TC.TypeError err -> (Printf.printf "TYPECHECKING FAILURE: %s\n" err; process es)
                                       | E.EvaluationError err -> (Printf.printf "EVALUATION FAILURE: %s\n" err; process es)

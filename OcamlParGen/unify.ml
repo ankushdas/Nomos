@@ -57,7 +57,7 @@ and unify (l : (Ast.ocamlTP * Ast.ocamlTP) list) : substitution = match l with
 
 let rec find_type (s : substitution) = 
         match s with
-                [] -> raise (Failure "Impossible")
+                [] -> raise (T.TypeError "Impossible")
        | (x,t)::xs -> if x = "v1" then t else find_type xs
 
 
@@ -66,5 +66,4 @@ let rec find_res (s : substitution) =
         match s with
                 [] -> []
        | (x,t)::xs -> if x = "v1" then find_res xs else (x,t)::(find_res xs)
-
 
