@@ -1,7 +1,7 @@
 #test success
 
-type address = address
-type bid = bid
+type address = /\ \/ address
+type bid = /\ \/ bid
 
 type auction = /\ +{running : &{bid : address -o bid -o \/ auction},
                     ended : &{withdraw : address -o bid * \/ auction}}

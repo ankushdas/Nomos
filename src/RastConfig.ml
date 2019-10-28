@@ -88,7 +88,7 @@ let rec apply_pragmas dcls = match dcls with
 let load file =
   let () = reset () in                        (* internal lexer and parser state *)
   let decls = Parse.parse file in             (* may raise ErrorMsg.Error *)
-  let () = EL.check_redecl [] decls in      (* may raise ErrorMsg.Error *)
+  let () = EL.check_redecl [] decls in        (* may raise ErrorMsg.Error *)
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
   let decls' = EL.commit_channels decls decls in

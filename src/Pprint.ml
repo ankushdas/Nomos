@@ -89,9 +89,9 @@ and pp_choice_simple cs = match cs with
 
 exception ImpossMode
 
-let pp_mode_v m = match m with
+let pp_outer_mode m = match m with
     A.Unknown -> raise ImpossMode
-  | A.Shared -> "shared"
+  | A.Shared -> "contract"
   | A.Transaction -> "transaction"
   | A.Linear -> raise ImpossMode
   | A.Pure -> "asset"
@@ -296,7 +296,7 @@ let pp_decl env dcl = match dcl with
     "eqtype " ^ v ^ " = " ^ v'
   | A.ExpDecDef(f,m,(delta,pot,(x,a)),p) ->
     let potstr = pp_pot pot in
-    "proc " ^ pp_mode_v m ^ " " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ potstr ^ "- "
+    "proc " ^ pp_outer_mode m ^ " " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ potstr ^ "- "
     ^ pp_chan_tp (x,a) ^ " = \n" ^
     (pp_exp_indent env 4 p)
   | A.Exec(f) -> "exec " ^ f

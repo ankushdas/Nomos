@@ -2,10 +2,10 @@ module A = Ast
 module R = Arith
 module N = Normalize
 module S = Solver
-module ClpS = S.Clp (S.Clp_std_options)
 module C = Core
 module M = C.Map
 module PP = Pprint
+module ClpS = S.Clp (S.Clp_std_options);;
 
 exception InferImpossible;;
 
@@ -381,6 +381,7 @@ let rec print_mode_solution sols =
 
 let reset () =
   let () = potvar_map := M.empty (module C.String) in
+  let () = modevar_map := M.empty (module C.String) in
   ClpS.reset ();;
 
 let solve_and_print () =
