@@ -151,14 +151,14 @@ and elab_exps env dcls = match dcls with
                 else ()
         end
       in
-      let () = try TC.checkexp false env delta pot p' (x,a) ext (* approx. type check *)
+      let () = try TC.checkexp false env delta pot p' (x,a) ext m (* approx. type check *)
                with ErrorMsg.Error ->
                   (* if verbosity >= 2, type-check again, this time with tracing *)
                   if !Flags.verbosity >= 2
                     then
                       begin
                         print_string ("% tracing type checking...\n")
-                        ; TC.checkexp true env delta pot p' (x,a) ext
+                        ; TC.checkexp true env delta pot p' (x,a) ext m
                       end (* will re-raise ErrorMsg.Error *)
                   else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
       let p' = A.strip_exts p' in (* always strip extents whether implicit or explicit syntax *)
@@ -166,7 +166,7 @@ and elab_exps env dcls = match dcls with
   | ({A.declaration = A.Exec(f); A.decl_extent = ext} as dcl)::dcls' ->
       begin
         match A.lookup_expdec env f with
-            Some (ctx,_pot,_zc) ->
+            Some (ctx,_pot,_zc,_m) ->
               if List.length ctx.A.ordered > 0
               then error ext ("process " ^ f ^ " has a non-empty context, cannot be executed")
               else dcl::elab_exps' env dcls'
@@ -303,7 +303,7 @@ let rec gen_constraints env dcls = match dcls with
     [] -> ()
   | {A.declaration = A.ExpDecDef(f,m,(delta,pot,(x,a)),p); A.decl_extent = ext}::dcls' ->
       let () = well_formedness env f m delta x ext in
-      let () = TC.checkexp false env delta pot p (x,a) ext in
+      let () = TC.checkexp false env delta pot p (x,a) ext m in
       gen_constraints env dcls'
   | {A.declaration = A.Pragma _; A.decl_extent = _ext}::dcls' -> gen_constraints env dcls'
   | {A.declaration = A.TpEq _; A.decl_extent = _ext}::dcls' -> gen_constraints env dcls'

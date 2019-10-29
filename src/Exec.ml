@@ -161,7 +161,7 @@ let get_cont c (_conf,conts,_shared) =
 let get_pot env f =
   match A.lookup_expdec env f with
       None -> raise UndefinedProcess
-    | Some(_ctx,pot,_zc) -> pot;;
+    | Some(_ctx,pot,_zc,_m) -> pot;;
 
 let uneq_name (c1,_m1) (c2,_m2) = not (c1 = c2);;
 
@@ -237,7 +237,7 @@ let expd_def env x f xs =
     | Some(exp) ->
         match A.lookup_expdec env f with
             None -> raise ExecImpossible
-          | Some (ctx,_pot,(z,_c)) ->
+          | Some (ctx,_pot,(z,_c),_m) ->
               let exp = A.subst x z exp in
               let exp = A.subst_ctx xs (fst ctx.ordered) exp in
               exp;;

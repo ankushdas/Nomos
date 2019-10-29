@@ -72,9 +72,10 @@ and remove_stars_branches bs = match bs with
       {lab_exp = (l, remove_stars_exp p); exp_extent = ext}::
       (remove_stars_branches bs');;
 
-(******************************************************)
-(* Substituting actual values for potential variables *)
-(******************************************************)
+(********************************************)
+(* Substituting actual values for potential *)
+(*   variables as well as mode variables    *)
+(********************************************)
 
 let rec getpval v sols = match sols with
     [] -> 0
@@ -311,15 +312,15 @@ let m_eq v1 v2 =
     in true;;
 
 let modeval m = match m with
-    A.Pure -> 1.0
-  | A.Linear -> 0.0
+    A.Pure -> 0.0
+  | A.Linear -> 1.0
   | A.Transaction -> 2.0
   | A.Shared -> 3.0
   | _m -> raise InferImpossible;;
 
 let get_mode f = match f with
-    1.0 -> A.Pure
-  | 0.0 -> A.Linear
+    0.0 -> A.Pure
+  | 1.0 -> A.Linear
   | 2.0 -> A.Transaction
   | 3.0 -> A.Shared
   | _f -> raise InferImpossible;;
@@ -343,13 +344,6 @@ let m_lin v =
   let (min_val, max_val) = min_max A.Pure A.Linear A.Transaction in
   let sv = get_modevar v in
   let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Linear ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Transaction ^ "\n") in
-  let () = ClpS.add_constr_list ~lower:min_val ~upper:max_val [(sv, 1.0)] in
-  true;;
-
-let m_spawn v =
-  let (min_val, max_val) = min_max A.Pure A.Transaction A.Shared in
-  let sv = get_modevar v in
-  let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Transaction ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Shared ^ "\n") in
   let () = ClpS.add_constr_list ~lower:min_val ~upper:max_val [(sv, 1.0)] in
   true;;
 

@@ -123,8 +123,8 @@ let expd_tp env v = match lookup_tp env v with
   | None -> raise AstImpossible;;
 
 let rec lookup_expdec decls f = match decls with
-    {declaration = ExpDecDef(f',_m,(ctx, pot, zc),_p); decl_extent = _ext}::decls' ->
-      if f = f' then Some (ctx,pot,zc) else lookup_expdec decls' f
+    {declaration = ExpDecDef(f',m,(ctx, pot, zc),_p); decl_extent = _ext}::decls' ->
+      if f = f' then Some (ctx,pot,zc,m) else lookup_expdec decls' f
   | _decl::decls' -> lookup_expdec decls' f
   | [] -> None;;
 
