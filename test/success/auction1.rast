@@ -1,50 +1,41 @@
 #test success
 
-type address = /\ \/ address
-type bid = /\ \/ bid
+type bid = 1
 
-type auction = /\ +{running : &{bid : address -o bid -o \/ auction},
-                    ended : &{withdraw : address -o bid * \/ auction}}
+type auction = /\ +{running : &{bid : bid -o \/ auction},
+                    ended : &{withdraw : bid * \/ auction}}
 
-type list = /\ +{cons : address * bid * \/ list, nil : \/ list}
+type list = +{cons : bid * list, nil : list}
 
-proc contract add : (st : list), (a : address), (b : bid) |- (sl : list) =
-  ll <- accept sl ;
+proc asset add : (lt : list), (b : bid) |- (ll : list) =
   ll.cons ;
-  send ll a ;
   send ll b ;
-  sl <- detach ll ;
-  sl <- st
+  ll <- lt
 
 proc contract run : (l : list) |- (sa : auction) =
   la <- accept sa ;
   la.running ;
   case la (
     bid =>
-      a <- recv la;
       b <- recv la;
-      nl <- add <- l a b ;
+      nl <- add <- l b ;
       sa <- detach la ;
       sa <- run <- nl
   )
 
-proc contract newbid : . |- (b : bid) =
+proc asset newbid : . |- (b : bid) =
   b <- newbid <-
 
-proc contract remove : (sl : list) |- (t : bid * list) =
-  ll <- acquire sl ;
+proc asset remove : (ll : list) |- (t : bid * list) =
   case ll (
     cons =>
-      a <- recv ll ;
       b <- recv ll ;
       send t b ;
-      sl <- release ll ;
-      t <- sl
+      t <- ll
   | nil =>
-      sl <- release ll ;
       b <- newbid <- ;
       send t b ;
-      t <- sl
+      t <- ll
   )
 
 proc contract end : (sl : list) |- (sa : auction) =
@@ -52,10 +43,9 @@ proc contract end : (sl : list) |- (sa : auction) =
   la.ended ;
   case la (
     withdraw =>
-      a <- recv la ;
       t <- remove <- sl ;
       b <- recv t ;
       send la b ;
       sa <- detach la ;
-      sa <- end <- sl
+      sa <- end <- t
   )
