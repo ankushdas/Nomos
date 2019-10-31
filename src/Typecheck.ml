@@ -155,6 +155,74 @@ let pp_lt pot1 pot2 = match pot1, pot2 with
 | A.Star, A.Arith p2 -> "* < " ^ R.pp_arith p2
 | A.Arith p1, A.Arith p2 -> R.pp_lt p1 p2;;
 
+let mode_L (_c,m) = match m with
+    A.Linear
+  | A.Unknown -> true
+  | A.Var v -> I.m_eq_const v A.Linear
+  | _ -> false;;
+
+let mode_S (_c,m) = match m with
+    A.Shared
+  | A.Unknown -> true
+  | A.Var v -> I.m_eq_const v A.Shared
+  | _ -> false;;
+
+let mode_P (_c,m) = match m with
+    A.Pure
+  | A.Unknown -> true
+  | A.Var v -> I.m_eq_const v A.Pure
+  | _ -> false;;
+
+let mode_T (_c,m) = match m with
+    A.Transaction
+  | A.Unknown -> true
+  | A.Var v -> I.m_eq_const v A.Transaction
+  | _ -> false;;
+
+let mode_lin (_c,m) = match m with
+    A.Pure
+  | A.Linear
+  | A.Transaction
+  | A.Unknown -> true
+  | A.Var v -> I.m_lin v
+  | _ -> false;;
+
+let eqmode m1 m2 = match m1, m2 with
+    A.Pure, A.Pure
+  | A.Linear, A.Linear
+  | A.Transaction, A.Transaction
+  | A.Shared, A.Shared
+  | A.Unknown, _
+  | _, A.Unknown -> true
+  | A.Var v1, A.Var v2 -> I.m_eq v1 v2
+  | A.Var v, _ -> I.m_eq_const v m2
+  | _, A.Var v -> I.m_eq_const v m1
+  | _, _ -> false;;
+
+let mode_spawn m1 m2 = match m1, m2 with
+    A.Pure, A.Pure
+  | A.Pure, A.Shared
+  | A.Pure, A.Linear
+  | A.Pure, A.Transaction
+  | A.Shared, A.Shared
+  | A.Shared, A.Linear
+  | A.Shared, A.Transaction
+  | A.Transaction, A.Transaction -> true
+  | _, _ -> false;;
+
+let mode_recv m1 m2 = match m1, m2 with
+    A.Unknown, _ -> true
+  | A.Pure, A.Pure -> true
+  | A.Var v, A.Pure -> I.m_eq_const v A.Pure
+  | _, A.Pure -> false
+  | A.Pure, A.Shared
+  | A.Shared, A.Shared -> true
+  | A.Var v, A.Shared -> I.m_eq_pair v A.Pure A.Shared
+  | _, A.Shared -> false
+  | _, A.Linear -> true
+  | _, A.Transaction -> true
+  | _, _ -> false;;
+
 let rec mem_env env a a' = match env with
     {A.declaration = A.TpEq(A.TpName(b),A.TpName(b')); decl_extent = _ext}::env' ->
       if b = a && b' = a' then true
@@ -170,18 +238,6 @@ let rec mem_seen env seen a a' = match seen with
       then true
       else mem_seen env seen' a a'
   | [] -> mem_env env a a'
-
-let eqmode m1 m2 = match m1, m2 with
-    A.Pure, A.Pure
-  | A.Linear, A.Linear
-  | A.Transaction, A.Transaction
-  | A.Shared, A.Shared
-  | A.Unknown, _
-  | _, A.Unknown -> true
-  | A.Var v1, A.Var v2 -> I.m_eq v1 v2
-  | A.Var v, _ -> I.m_eq_const v m2
-  | _, A.Var v -> I.m_eq_const v m1
-  | _, _ -> false;;
 
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
 let rec eq_tp' env seen a a' =
@@ -239,38 +295,6 @@ let eqtp env tp tp' = eq_tp' env [] tp tp';;
 (*************************************)
 
 exception UnknownTypeError;;
-
-let mode_L (_c,m) = match m with
-    A.Linear
-  | A.Unknown -> true
-  | A.Var v -> I.m_eq_const v A.Linear
-  | _ -> false;;
-
-let mode_S (_c,m) = match m with
-    A.Shared
-  | A.Unknown -> true
-  | A.Var v -> I.m_eq_const v A.Shared
-  | _ -> false;;
-
-let mode_P (_c,m) = match m with
-    A.Pure
-  | A.Unknown -> true
-  | A.Var v -> I.m_eq_const v A.Pure
-  | _ -> false;;
-
-let mode_T (_c,m) = match m with
-    A.Transaction
-  | A.Unknown -> true
-  | A.Var v -> I.m_eq_const v A.Transaction
-  | _ -> false;;
-
-let mode_lin (_c,m) = match m with
-    A.Pure
-  | A.Linear
-  | A.Transaction
-  | A.Unknown -> true
-  | A.Var v -> I.m_lin v
-  | _ -> false;;
 
 let chan_of (c, _tp) = c 
 let tp_of (_c, tp) = tp;;
@@ -406,7 +430,7 @@ let join delta =
 let rec check_exp' trace env delta pot p zc ext mode =
   begin
     if trace
-    then print_string ("[" ^ PP.pp_mode mode ^ "]" ^  PP.pp_exp_prefix p ^ " : "
+    then print_string ("[" ^ PP.pp_mode mode ^ "] : " ^  PP.pp_exp_prefix p ^ " : "
                           ^ PP.pp_tpj_compact env delta pot zc ^ "\n")
     else ()
   end
@@ -472,6 +496,8 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
               then E.error_mode_mismatch (x, x', ext)
               else if not (eqmode mx mdef)
               then error ext ("mode mismatch: expected " ^ PP.pp_mode mdef ^ " at declaration, found: " ^ PP.pp_chan x)
+              else if not (mode_spawn mdef mode)
+              then error ext ("cannot spawn at mode " ^ PP.pp_mode mdef ^ " when current mode is " ^ PP.pp_mode mode)
               else
                 let ctx = join ctx in
                 let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
@@ -489,6 +515,8 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
             then E.error_mode_mismatch (x, x', ext)
             else if not (eqmode mx mdef)
             then error ext ("mode mismatch: expected " ^ PP.pp_mode mdef ^ " at declaration, found: " ^ PP.pp_chan x)
+            else if not (mode_spawn mdef mode)
+            then error ext ("cannot tail call at mode " ^ PP.pp_mode mdef ^ " when current mode is " ^ PP.pp_mode mode)
             else
               let (z,c) = zc in
               if not (eq_name x z)
@@ -713,7 +741,9 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
                     let (_y,my) = y in
                     if not (eqmode m my)
                     then error ext ("mode mismatch, expected at lolli: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan y)
-                    else check_exp' trace env (add_chan env (y,a) delta) pot p (z,b) ext m
+                    else if not (mode_recv m mode)
+                    then error ext ("cannot receive at mode " ^ PP.pp_mode m ^ " when current mode is " ^ PP.pp_mode mode)
+                    else check_exp' trace env (add_chan env (y,a) delta) pot p (z,b) ext mode
                 | A.Plus _ | A.With _
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
@@ -728,7 +758,9 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
                   let (_y,my) = y in
                   if not (eqmode m my)
                   then error ext ("mode mismatch, expected at tensor: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan y)
-                  else check_exp' trace env (add_chan env (y,a) (update_tp env x b delta)) pot p zc ext m
+                  else if not (mode_recv m mode)
+                  then error ext ("cannot receive at mode " ^ PP.pp_mode m ^ " when current mode is " ^ PP.pp_mode mode)
+                  else check_exp' trace env (add_chan env (y,a) (update_tp env x b delta)) pot p zc ext mode
               | A.Plus _ | A.With _
               | A.One | A.Lolli _
               | A.PayPot _ | A.GetPot _

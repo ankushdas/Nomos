@@ -87,6 +87,9 @@ let rec apply_pragmas dcls = match dcls with
 
 let load file =
   let () = reset () in                        (* internal lexer and parser state *)
+  (*
+  let () = I.reset () in                      (* resets the LP solver *)
+  *)
   let decls = Parse.parse file in             (* may raise ErrorMsg.Error *)
   let () = EL.check_redecl [] decls in        (* may raise ErrorMsg.Error *)
   (* pragmas apply only to type-checker and execution *)

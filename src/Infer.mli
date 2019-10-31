@@ -18,3 +18,4 @@ val reset : unit -> unit
 val m_eq : string -> string -> bool
 val m_eq_const : string -> A.mode -> bool
 val m_lin : string -> bool
+val m_eq_pair : string -> A.mode -> A.mode -> bool

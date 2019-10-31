@@ -84,23 +84,23 @@ let rec elab_tps env dcls = match dcls with
                else () in
       let () = if TC.contractive a then ()
                else error ext ("type " ^ PP.pp_tp env a ^ " not contractive") in
-      let () = TC.valid env TC.Zero a ext in
+      (*let () = TC.valid env TC.Zero a ext in*)
       let () = TC.esync_tp env (A.TpName(v)) ext in
       dcl::(elab_tps env dcls')
   | ({A.declaration = A.TpEq((A.TpName(_v) as a), (A.TpName(_v') as a')); A.decl_extent = ext} as dcl)::dcls' ->
       let () = if !Flags.verbosity >= 1
               then print_string (postponed dcl.declaration ^ PP.pp_decl env dcl.declaration ^ "\n")
               else () in
-      let () = TC.valid env TC.Zero a ext in
-      let () = TC.valid env TC.Zero a' ext in
+      (*let () = TC.valid env TC.Zero a ext in
+      let () = TC.valid env TC.Zero a' ext in*)
       let () = TC.esync_tp env a ext in
       let () = TC.esync_tp env a' ext in
       dcl::(elab_tps env dcls')
   | ({A.declaration = A.ExpDecDef(_f,_m,(delta,pot,(x,a)),_p); A.decl_extent = ext} as dcl)::dcls' ->
       (* do not print process declaration so they are printed close to their use *)
       let () = if dups ((x,a)::delta.linear) then error ext ("duplicate variable in process declaration") else () in
-      let () = valid_delta env delta ext in
-      let () = TC.valid env TC.Zero a ext in
+      (*let () = valid_delta env delta ext in*)
+      (*let () = TC.valid env TC.Zero a ext in*)
       let () = TC.esync_tp env a ext in
       let () = check_nonneg pot ext in
       dcl::(elab_tps env dcls')

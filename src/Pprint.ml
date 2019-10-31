@@ -114,12 +114,16 @@ let rec pp_tp i a = match a with
   | A.With(choice) -> "&{ " ^ pp_choice (i+3) choice ^ " }"
   | A.Tensor(a,b,m) ->
       let astr = pp_tp i a in
-      let l = len astr in
-      astr ^ " *[" ^ pp_mode m ^ "] " ^ pp_tp (i+l+3) b
+      let inc = len astr in
+      let s = " *[" ^ pp_mode m ^ "] " in
+      let l = len s in
+      astr ^ s ^ pp_tp (i+inc+l) b
   | A.Lolli(a,b,m) ->
       let astr = pp_tp i a in
       let inc = len astr in
-      astr ^ " -o[" ^ pp_mode m ^ "] " ^ pp_tp (i+inc+4) b
+      let s = " -o[" ^ pp_mode m ^ "] " in
+      let l = len s in
+      astr ^ s ^ pp_tp (i+inc+l) b
   | A.One -> "1"
   | A.PayPot(pot,a) ->
       let potstr = pp_potpos pot in

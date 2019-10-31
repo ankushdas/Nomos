@@ -312,24 +312,34 @@ let m_eq v1 v2 =
     in true;;
 
 let modeval m = match m with
-    A.Pure -> 0.0
-  | A.Linear -> 1.0
-  | A.Transaction -> 2.0
-  | A.Shared -> 3.0
+    A.Shared -> 0.0
+  | A.Pure -> 1.0
+  | A.Linear -> 2.0
+  | A.Transaction -> 3.0
   | _m -> raise InferImpossible;;
 
 let get_mode f = match f with
-    0.0 -> A.Pure
-  | 1.0 -> A.Linear
-  | 2.0 -> A.Transaction
-  | 3.0 -> A.Shared
+    0.0 -> A.Shared
+  | 1.0 -> A.Pure
+  | 2.0 -> A.Linear
+  | 3.0 -> A.Transaction
   | _f -> raise InferImpossible;;
 
 let m_eq_const v m =
-  let c = (modeval m) in
+  let c = modeval m in
   let sv = get_modevar v in
   let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode m ^ "\n") in
   let () = ClpS.add_constr_list ~lower:c ~upper:c [(sv, 1.0)] in
+  true;;
+
+let m_eq_pair v m1 m2 =
+  let c1 = modeval m1 in
+  let c2 = modeval m2 in
+  let min_val = min c1 c2 in
+  let max_val = max c1 c2 in
+  let sv = get_modevar v in
+  let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Shared ^ "\n") in
+  let () = ClpS.add_constr_list ~lower:min_val ~upper:max_val [(sv, 1.0)] in
   true;;
 
 let min_max m1 m2 m3 =
