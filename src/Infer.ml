@@ -386,7 +386,10 @@ let rec print_mode_solution sols =
 let reset () =
   let () = potvar_map := M.empty (module C.String) in
   let () = modevar_map := M.empty (module C.String) in
-  ClpS.reset ();;
+  let () = mnum := 0 in
+  let () = vnum := 0 in
+  let () = ClpS.reset () in
+  ();;
 
 let solve_and_print () =
   let res = ClpS.first_solve () in
