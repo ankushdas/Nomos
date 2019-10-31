@@ -1,0 +1,56 @@
+#test success
+#options -work=send
+
+type bid = 1
+
+type auction = /\ <{*}| +{running : &{bid : bid -o |{*}> \/ auction},
+                          ended : &{withdraw : bid * |{*}> \/ auction}}
+
+type list = +{cons : bid * list, nil : list}
+
+proc asset add : (lt : list), (b : bid) |{*}- (ll : list) =
+  ll.cons ;
+  send ll b ;
+  ll <- lt
+
+proc contract run : (l : list) |{*}- (sa : auction) =
+  la <- accept sa ;
+  get la {*} ;
+  la.running ;
+  case la (
+    bid =>
+      b <- recv la;
+      nl <- add <- l b ;
+      pay la {*} ;
+      sa <- detach la ;
+      sa <- run <- nl
+  )
+
+proc asset newbid : . |{*}- (b : bid) =
+  b <- newbid <-
+
+proc asset remove : (ll : list) |{*}- (t : bid * list) =
+  case ll (
+    cons =>
+      b <- recv ll ;
+      send t b ;
+      t <- ll
+  | nil =>
+      b <- newbid <- ;
+      send t b ;
+      t <- ll
+  )
+
+proc contract end : (sl : list) |{*}- (sa : auction) =
+  la <- accept sa ;
+  get la {*} ;
+  la.ended ;
+  case la (
+    withdraw =>
+      t <- remove <- sl ;
+      b <- recv t ;
+      send la b ;
+      pay la {*} ;
+      sa <- detach la ;
+      sa <- end <- t
+  )

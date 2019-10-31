@@ -1,4 +1,5 @@
 #test success
+#options -work=send
 
 type lfork = \/ sfork
 
@@ -21,7 +22,7 @@ proc transaction eating : (lleft : lfork), (lright : lfork) |- (c : phil) =
   left <- release lleft ;
   c <- thinking <- left right
 
-proc transaction main : . |- (d : 1) =
+proc transaction main : . |{*}- (d : 1) =
   f1 <- fork_proc <- ;
   f2 <- fork_proc <- ;
   f3 <- fork_proc <- ;

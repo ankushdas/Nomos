@@ -1,0 +1,51 @@
+#test success
+
+type details = 1
+type money = 1
+
+type insurance = /\ &{claim : details -o +{true : money * \/ insurance,
+                                           false : \/ insurance}}
+
+type verifier = /\ details -o +{true : \/ verifier,
+                                false : \/ verifier}
+
+type database = &{query : details -o +{true : database,
+                                     false : database}}
+
+proc contract verify : (da : database) |- (sv : verifier) =
+  lv <- accept sv ;
+  d <- recv lv ;
+  da.query ;
+  send da d ;
+  case da (
+    true => lv.true ;
+            sv <- detach lv ;
+            sv <- verify <- da
+  | false => lv.false ;
+             sv <- detach lv ;
+             sv <- verify <- da
+  )
+
+type bank = &{withdraw : money * bank}
+
+proc contract refund : (sv : verifier), (b : bank) |- (si : insurance) =
+  li <- accept si ;
+  case li (
+    claim => d <- recv li ;
+             lv <- acquire sv ;
+             send lv d ;
+             case lv (
+               true => li.true ;
+                       b.withdraw ;
+                       m <- recv b ;
+                       send li m ;
+                       sv <- release lv ;
+                       si <- detach li ;
+                       si <- refund <- sv b
+             | false => li.false ;
+                        sv <- release lv ;
+                        si <- detach li ;
+                        si <- refund <- sv b
+             )
+  )
+  
