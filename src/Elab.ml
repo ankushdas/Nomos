@@ -41,6 +41,7 @@ let rec dups delta = match delta with
   | [] -> false
   | (x,_t)::ctx' -> List.exists (fun (v,_t) -> v = x) ctx' || dups ctx';;
 
+(*
 let rec valid_ctx env ctx ext = match ctx with
     [] -> ()
   | (_x,t)::ctx' ->
@@ -49,6 +50,7 @@ let rec valid_ctx env ctx ext = match ctx with
       valid_ctx env ctx' ext;;
 
 let valid_delta env delta ext = valid_ctx env (delta.A.shared @ delta.A.linear) ext;;
+*)
 
 let check_nonneg pot ext =
   match pot with
