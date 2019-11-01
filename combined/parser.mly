@@ -38,12 +38,12 @@ prog :
     ;
     
 expr :
-    | LPAREN MINUS i = INT RPAREN     { {func_structure = Int (-i); func_data = ()} } 
+    | LPAREN MINUS i = INT RPAREN     { {func_structure = Ast.Int (-i); func_data = ()} } 
     | LPAREN e = expr RPAREN          { e }
-    | TRUE                            { {func_structure = Bool true; func_data = ()}  }
-    | FALSE                           { {func_structure = Bool false; func_data = ()} }
-    | i = INT                         { {func_structure = Int i; func_data = ()}  }
-    | x = ID                          { {func_structure = Var x; func_data = ()}  }
+    | TRUE                            { {func_structure = Ast.Bool(true); func_data = ()}  }
+    | FALSE                           { {func_structure = Ast.Bool(false); func_data = ()} }
+    | i = INT                         { {func_structure = Ast.Int(i); func_data = ()}  }
+    | x = ID                          { {func_structure = Ast.Var(x); func_data = ()}  }
     | c = cond                        { {func_structure = c; func_data = ()} }
     | l = letin                       { {func_structure = l; func_data = ()} }
     | lst = listVal                   { {func_structure = lst; func_data = ()} }
@@ -94,18 +94,18 @@ op :
 
 
 compOp :
-   | x = expr; EQUALS; y = expr   { Ast.CompOp(x, Eq, y) } 
-   | x = expr; NEQ; y = expr  { Ast.CompOp(x, Neq, y) } 
-   | x = expr; GREATER; y = expr  { Ast.CompOp(x, Gt, y) } 
-   | x = expr; LESS; y = expr    { Ast.CompOp(x, Lt, y) } 
-   | x = expr; GREATEREQ; y = expr  { Ast.CompOp(x, Geq, y) } 
-   | x = expr; LESSEQ; y = expr    { Ast.CompOp(x, Leq, y) } 
+   | x = expr; EQUALS; y = expr         { Ast.CompOp(x, Eq, y) } 
+   | x = expr; NEQ; y = expr            { Ast.CompOp(x, Neq, y) } 
+   | x = expr; GREATER; y = expr        { Ast.CompOp(x, Gt, y) } 
+   | x = expr; LESS; y = expr           { Ast.CompOp(x, Lt, y) } 
+   | x = expr; GREATEREQ; y = expr      { Ast.CompOp(x, Geq, y) } 
+   | x = expr; LESSEQ; y = expr         { Ast.CompOp(x, Leq, y) } 
    ;
 
 
 relOp :
-   | x = expr; ANDALSO; y = expr   { Ast.RelOp(x, And, y) } 
-   | x = expr; ORELSE; y = expr  { Ast.RelOp(x, Or, y) } 
+   | x = expr; ANDALSO; y = expr    { Ast.RelOp(x, And, y) } 
+   | x = expr; ORELSE; y = expr     { Ast.RelOp(x, Or, y) } 
    ;
 
 
@@ -117,10 +117,10 @@ matchExp :
 
 arg :
     | LPAREN e = expr RPAREN      { e          }    
-    | x = ID                      { {func_structure = Var x; func_data = ()} }     
-    | TRUE                        { {func_structure = Bool true; func_data = ()}  }   
-    | FALSE                       { {func_structure = Bool false; func_data = ()} }   
-    | i = INT                     { {Ast.func_structure = Int i; func_data = ()}  }
+    | x = ID                      { {func_structure = Var(x); func_data = ()} }     
+    | TRUE                        { {func_structure = Bool(true); func_data = ()}  }   
+    | FALSE                       { {func_structure = Bool(false); func_data = ()} }   
+    | i = INT                     { {Ast.func_structure = Int(i); func_data = ()}  }
     ;
 
 app :
@@ -145,16 +145,16 @@ m :
 
 
 mid:
-    | str = m; x = ID { (str, x, A.Unknown) }
+    | str = m; x = ID { (str, x, Ast.Unknown) }
     ;
 
 linid:
-    | DOLLAR; x = ID  { (Ast.Dollar, x, A.Unknown) }
+    | DOLLAR; x = ID  { (Ast.Dollar, x, Ast.Unknown) }
     ;
 
 
 sharedid:
-    | HASH; x = ID  { (Ast.Hash, x, A.Unknown) }
+    | HASH; x = ID  { (Ast.Hash, x, Ast.Unknown) }
     ;
 
 branches :
@@ -208,6 +208,6 @@ st:
     |  y = ID; EQUALS; RECV; x = linid; SEMI; p = st
     { {st_structure = Ast.RecvF(x, y, p); st_data = ()} }
     |  LET; x = ID; EQUALS; e = expr; SEMI; p = st
-    { {st_structure = Ast.Let(x, e, p); st_data = ()} }
+    { {Ast.st_structure = Ast.Let(x, e, p); st_data = ()} }
     ;
 
