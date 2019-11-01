@@ -21,7 +21,11 @@ type mode =
   | Unknown
   | Var of string;;
 
-type chan = string * mode       (* channel name with modes *)
+type str =
+    Hash
+  | Dollar;;
+
+type chan = str * string * mode       (* channel name with modes *)
 
 type potential =
   | Arith of R.arith            (* p,q, potential for work *)
