@@ -19,12 +19,14 @@
 %token HASH DOLLAR
 %token LARROW SEMI RRARROW
 %token RECV SEND CASE DOT CLOSE WAIT WORK PAY GET ACQUIRE ACCEPT RELEASE DETACH
-%nonassoc statement
+%nonassoc ID
 %right ANDALSO ORELSE
 %left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
 %right CONS
 %left PLUS MINUS
 %left TIMES DIV
+%nonassoc HASH DOLLAR
+%nonassoc statement
 %start <Ast.programList option> file
 %%
 
@@ -33,12 +35,15 @@ file :
      | vl = separated_list(DOUBLESEMI, prog) EOF { Some(Ast.PL vl) }
      ;
 
+
 prog : 
     | e = expr { Ast.Program (e) }
     ;
-    
+
+
 expr :
-    | LPAREN MINUS i = INT RPAREN     { {func_structure = Ast.Int (-i); func_data = ()} } 
+
+    | LPAREN MINUS i = INT RPAREN     { {Ast.func_structure = Ast.Int (-i); func_data = ()} } 
     | LPAREN e = expr RPAREN          { e }
     | TRUE                            { {func_structure = Ast.Bool(true); func_data = ()}  }
     | FALSE                           { {func_structure = Ast.Bool(false); func_data = ()} }
@@ -53,9 +58,10 @@ expr :
     | l = lambdaExp                   { {func_structure = l; func_data = ()} }
     | o = op                          { {func_structure = o; func_data = ()} }
     | c = compOp                      { {func_structure = c; func_data = ()} }
-    | r = relOp                       { {func_structure = r; func_data = ()} }
+    | r = relOp                       { {Ast.func_structure = r; Ast.func_data = ()} }
     | LBRACE; s = st; RBRACE          { {func_structure = Ast.Command(s); func_data = ()} } 
     ;
+
 
 cond :
     | IF; ifE = expr; THEN; thenE = expr; ELSE; elseE = expr 
@@ -104,8 +110,8 @@ compOp :
 
 
 relOp :
-   | x = expr; ANDALSO; y = expr    { Ast.RelOp(x, And, y) } 
-   | x = expr; ORELSE; y = expr     { Ast.RelOp(x, Or, y) } 
+   | x = expr; ANDALSO; y = expr    { Ast.RelOp(x, Ast.And, y) } 
+   | x = expr; ORELSE; y = expr     { Ast.RelOp(x, Ast.Or, y) } 
    ;
 
 
@@ -170,44 +176,28 @@ potential :
     | LPAREN; TIMES; RPAREN   { Ast.Star }
     ;
 
-st:
-    |  x = mid; LARROW; f = ID; LARROW; xs = list(mid); SEMI; p = st 
-    { {st_structure = Ast.Spawn(x, f, xs, p); st_data = ()} }
-    |  x = mid; LARROW; f = ID; LARROW; xs = list(mid)
-    { {st_structure = Ast.ExpName(x, f, xs); st_data = ()} }
-    |  x = mid; LARROW; y = mid 
-    { {st_structure = Ast.Fwd(x, y); st_data = ()} }
-    |  SEND; x = linid; w = mid; SEMI; p = st
-    { {st_structure = Ast.Send(x, w, p); st_data = ()} }
-    |  y = mid; LARROW; RECV; x = linid; SEMI; p = st
-    { {st_structure = Ast.Recv(x, y, p); st_data = ()} }
-    |  x = linid; DOT; k = ID; SEMI; p = st
-    { {st_structure = Ast.Lab(x, k, p); st_data = ()} }
-    |  CASE; x = linid; LPAREN; b = branches 
-    { {st_structure = Ast.Case(x, b); st_data = ()} }
-    |  CLOSE; x = linid 
-    { {st_structure = Ast.Close(x); st_data = ()} }
-    |  WAIT; x = linid; p = st 
-    { {st_structure = Ast.Wait(x, p); st_data = ()} }
-    |  WORK; pot = potential; SEMI; p = st
-    { {st_structure = Ast.Work(pot, p); st_data = ()} }
-    |  PAY; x = linid; pot = potential; SEMI; p = st
-    { {st_structure = Ast.Pay(x, pot, p); st_data = ()} }
-    |  GET; x = linid; pot = potential; SEMI; p = st
-    { {st_structure = Ast.Get(x, pot, p); st_data = ()} }
-    |  y = linid; LARROW; ACQUIRE; x = sharedid; SEMI; p = st
-    { {st_structure = Ast.Acquire(x,y,p); st_data = ()} }
-    |  y = linid; LARROW; ACCEPT; x = sharedid; SEMI; p = st
-    { {st_structure = Ast.Accept(x,y,p); st_data = ()} }
-    |  y = sharedid; LARROW; RELEASE; x = linid; SEMI; p = st
-    { {st_structure = Ast.Release(x,y,p); st_data = ()} }
-    |  y = sharedid; LARROW; DETACH; x = linid; SEMI; p = st
-    { {st_structure = Ast.Detach(x,y,p); st_data = ()} }
-    |  SEND; x = linid; LPAREN; e = expr; RPAREN; SEMI; p = st
-    { {st_structure = Ast.SendF(x, e, p); st_data = ()} }
-    |  y = ID; EQUALS; RECV; x = linid; SEMI; p = st
-    { {st_structure = Ast.RecvF(x, y, p); st_data = ()} }
-    |  LET; x = ID; EQUALS; e = expr; SEMI; p = st
-    { {Ast.st_structure = Ast.Let(x, e, p); st_data = ()} }
+st_struct:
+    |  x = mid; LARROW; f = ID; LARROW; xs = list(mid); SEMI; p = st { Ast.Spawn(x, f, xs, p) }
+    |  x = mid; LARROW; f = ID; LARROW; xs = list(mid)               { Ast.ExpName(x, f, xs) }
+    |  x = mid; LARROW; y = mid                                      { Ast.Fwd(x,y) }
+    |  SEND; x = linid; w = mid; SEMI; p = st                        { Ast.Send(x,w,p) }
+    |  y = mid; LARROW; RECV; x = linid; SEMI; p = st                { Ast.Recv(x,y,p) }
+    |  x = linid; DOT; k = ID; SEMI; p = st                          { Ast.Lab(x,k,p)  }
+    |  CASE; x = linid; LPAREN; b = branches                         { Ast.Case(x,b) }
+    |  CLOSE; x = linid                                              { Ast.Close(x)  } 
+    |  WAIT; x = linid; p = st                                       { Ast.Wait(x,p) } 
+    |  WORK; pot = potential; SEMI; p = st                           { Ast.Work(pot, p) }
+    |  PAY; x = linid; pot = potential; SEMI; p = st                 { Ast.Pay(x, pot, p) }
+    |  GET; x = linid; pot = potential; SEMI; p = st                 { Ast.Get(x, pot, p) }
+    |  y = linid; LARROW; ACQUIRE; x = sharedid; SEMI; p = st        { Ast.Acquire(x,y,p) }
+    |  y = linid; LARROW; ACCEPT; x = sharedid; SEMI; p = st         { Ast.Accept(x,y,p) }
+    |  y = sharedid; LARROW; RELEASE; x = linid; SEMI; p = st        { Ast.Release(x,y,p) }
+    |  y = sharedid; LARROW; DETACH; x = linid; SEMI; p = st         { Ast.Detach(x,y,p)  }
+    |  SEND; x = linid; LPAREN; e = expr; RPAREN; SEMI; p = st       { Ast.SendF(x,e,p)   }
+    |  y = ID; EQUALS; RECV; x = linid; SEMI; p = st                 { Ast.RecvF(x,y,p)   }
+    |  LET; x = ID; EQUALS; e = expr; SEMI; p = st                   { Ast.Let(x,e,p)  }
     ;
 
+st :
+    | s = st_struct { {st_structure = s; st_data = () } }
+    ;

@@ -3,12 +3,7 @@ open Lexer
 open Lexing
 
 
-module P = Print
-module TC = Typecheck
-module E = Evaluate
-module I = Infer
 module A = Ast
-module U = Unify
 
 let print_position outx lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -25,7 +20,7 @@ let parse_with_error lexbuf =
 (* part 1 *)
 let rec parse_and_print lexbuf =
   match parse_with_error lexbuf with
-  | Some (Ast.PL l) -> (process l; Printf.printf "DONE\n")
+  | Some (Ast.PL(l)) -> Printf.printf "DONE\n"
   | None -> ()
 
 let () =

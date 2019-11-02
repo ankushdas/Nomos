@@ -129,8 +129,8 @@ and 'a st_expr =
 
   (* arrow and product *)
   | RecvF of chan * string * 'a st_aug_expr                 (* y <- recv x ; P *)
-  | SendF of chan * 'a func_expr * 'a st_aug_expr           (* send x (M) ; P *)
-  | Let of string * 'a func_expr * 'a st_aug_expr           (* let x = M ; P *)
+  | SendF of chan * 'a func_aug_expr * 'a st_aug_expr           (* send x (M) ; P *)
+  | Let of string * 'a func_aug_expr * 'a st_aug_expr           (* let x = M ; P *)
 and 'a branch = label * 'a st_aug_expr
 
 and 'a branches = 'a branch list;;                          (* (l1 => P1 | ... | ln => Pn) *)
