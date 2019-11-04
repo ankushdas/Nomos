@@ -16,6 +16,19 @@ let next_line lexbuf =
 let newline = '\r' | '\n' | "\r\n"
 let comment = "(*" ['a' - 'z' 'A' - 'Z']+ "*)"
 rule token = parse
+  (* declarations *)
+  | "type"              { TYPE }
+  | "proc"              { PROC }
+  | "asset"             { ASSET }
+  | "contract"          { CONTRACT }
+  | "transaction"       { TRANSACTION }
+  | "|-"                { TURNSTILE }
+  | "exec"              { EXEC }
+  (* types *)
+  | "-o"                { LOLLI }
+  | "&"                 { AMPERSAND }
+  | "/\\"               { UP }
+  | "\\/"               { DOWN }
   (* functional *)
   | [ ' ' '\t' ]        { token lexbuf }
   | newline             { next_line lexbuf; token lexbuf }

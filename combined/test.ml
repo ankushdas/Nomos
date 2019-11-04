@@ -8,4 +8,9 @@ let m = {close $x } in m;;
 5 + { pay $y (7); close $y };;
 { get $x (5); close $z };;
 { send $x (5+8); $x <- $y };;
-{ let x = 5; $x <- $y }
+{ let x = 5; $x <- $y };;
+{ $y <- acquire #x ; $x <- #y};;
+{ $y <- release $x ; $x <- f <- #y $x};;
+{ $y <- accept #x ; $x <- f <- ; $x <- $y};;
+{ $y <- detach $x ; $x <- f <- ; $x <- $x};;
+{ x = recv $x ; $x <- f <- }

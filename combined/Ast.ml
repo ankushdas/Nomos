@@ -136,8 +136,24 @@ and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list;;                          (* (l1 => P1 | ... | ln => Pn) *)
 
 
-type untyped_expr = unit func_aug_expr
+type parsed_expr = unit func_aug_expr
 type typed_expr = func_tp func_aug_expr
+
+type argument =
+  | Functional of string * func_tp
+  | STyped of chan * stype
+
+type context = argument list
+type chan_tp = chan * stype
+
+type decl =
+  | TpDef of tpname * stype                   (* type a = A *)
+  | ExpDecDef of expname * mode *
+    (context * potential * chan_tp) *         (* proc 'mode' f : Delta |{p}- c : C = expression *)
+    parsed_expr
+  | Exec of expname                           (* exec f *)
+
+type program = decl list
 
 type value =
   | IntV of int
@@ -148,5 +164,3 @@ type value =
 and value_context = (string * value) list
 and valued_expr = value func_aug_expr
 
-type program = Program of untyped_expr
-type programList = PL of program list

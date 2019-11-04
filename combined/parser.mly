@@ -14,32 +14,49 @@
 %token NEQ GREATER LESS GREATEREQ LESSEQ
 %token ANDALSO ORELSE
 %token DOUBLESEMI
+%token TYPE PROC ASSET CONTRACT TRANSACTION TURNSTILE EXEC
 (* session type layer *)
+%token LOLLI AMPERSAND UP DOWN
 %token LBRACE RBRACE
 %token HASH DOLLAR
 %token LARROW SEMI RRARROW
 %token RECV SEND CASE DOT CLOSE WAIT WORK PAY GET ACQUIRE ACCEPT RELEASE DETACH
-%nonassoc ID
 %right ANDALSO ORELSE
 %left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
 %right CONS
 %left PLUS MINUS
 %left TIMES DIV
-%nonassoc HASH DOLLAR
 %nonassoc statement
 %start <Ast.programList option> file
 %%
 
 
 file :
-     | vl = separated_list(DOUBLESEMI, prog) EOF { Some(Ast.PL vl) }
+     | vl = list(decl) EOF { Some(Ast.PL vl) }
      ;
 
-
-prog : 
-    | e = expr { Ast.Program (e) }
+mode :
+    | ASSET         { Ast.Pure }
+    | CONTRACT      { Ast.Shared }
+    | TRANSACTION   { Ast.Transaction }
     ;
 
+context_opt :
+    | DOT                                   { [] }
+    | l = separated_list(COMMA, argument)   { l }
+    ;
+
+argument :
+    | LPAREN; a = mid; COLON; t = stype     { Ast.STyped(a, t) }
+    | LPAREN; a = ID; COLON; ft = ftype     { Ast.Functional(a, ft) }
+    ;
+
+decl : 
+    | TYPE; x = ID; EQUALS; t = stype   { Ast.TpDef (x,t) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; c = mid; COLON; t = stype; EQUALS; e = expr    { Ast.ExpDecDef(f, m, (ctx, Ast.Arith(Ast.Int(0)), (c,t)), e) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; BAR; pot = potential; MINUS; c = mid; COLON; t = stype; EQUALS; e = expr    { Ast.ExpDecDef(f, m, (ctx, pot, (c,t)), e) }
+    | EXEC; f = ID                      { Ast.Exec(f) }
+    ;
 
 expr :
 
@@ -84,7 +101,7 @@ listVal :
       ;
 
 list_fields :
-    | vl = separated_list(COMMA, expr) { vl }
+    | vl = separated_list(SEMI, expr) { vl }
     ;
 
 cons:
@@ -182,17 +199,17 @@ st_struct:
     |  x = mid; LARROW; y = mid                                      { Ast.Fwd(x,y) }
     |  SEND; x = linid; w = mid; SEMI; p = st                        { Ast.Send(x,w,p) }
     |  y = mid; LARROW; RECV; x = linid; SEMI; p = st                { Ast.Recv(x,y,p) }
-    |  x = linid; DOT; k = ID; SEMI; p = st                          { Ast.Lab(x,k,p)  }
+    |  x = mid; DOT; k = ID; SEMI; p = st                            { Ast.Lab(x,k,p)  }
     |  CASE; x = linid; LPAREN; b = branches                         { Ast.Case(x,b) }
     |  CLOSE; x = linid                                              { Ast.Close(x)  } 
     |  WAIT; x = linid; p = st                                       { Ast.Wait(x,p) } 
     |  WORK; pot = potential; SEMI; p = st                           { Ast.Work(pot, p) }
     |  PAY; x = linid; pot = potential; SEMI; p = st                 { Ast.Pay(x, pot, p) }
     |  GET; x = linid; pot = potential; SEMI; p = st                 { Ast.Get(x, pot, p) }
-    |  y = linid; LARROW; ACQUIRE; x = sharedid; SEMI; p = st        { Ast.Acquire(x,y,p) }
-    |  y = linid; LARROW; ACCEPT; x = sharedid; SEMI; p = st         { Ast.Accept(x,y,p) }
-    |  y = sharedid; LARROW; RELEASE; x = linid; SEMI; p = st        { Ast.Release(x,y,p) }
-    |  y = sharedid; LARROW; DETACH; x = linid; SEMI; p = st         { Ast.Detach(x,y,p)  }
+    |  y = mid; LARROW; ACQUIRE; x = sharedid; SEMI; p = st          { Ast.Acquire(x,y,p) }
+    |  y = mid; LARROW; ACCEPT; x = sharedid; SEMI; p = st           { Ast.Accept(x,y,p) }
+    |  y = mid; LARROW; RELEASE; x = linid; SEMI; p = st             { Ast.Release(x,y,p) }
+    |  y = mid; LARROW; DETACH; x = linid; SEMI; p = st              { Ast.Detach(x,y,p)  }
     |  SEND; x = linid; LPAREN; e = expr; RPAREN; SEMI; p = st       { Ast.SendF(x,e,p)   }
     |  y = ID; EQUALS; RECV; x = linid; SEMI; p = st                 { Ast.RecvF(x,y,p)   }
     |  LET; x = ID; EQUALS; e = expr; SEMI; p = st                   { Ast.Let(x,e,p)  }
