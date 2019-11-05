@@ -1,0 +1,50 @@
+proc asset p : (x : bool), (y : int) |- ($c : 1) = true
+
+proc asset q : . |- (#c : 1) = false
+
+type x = 1 -o 1
+
+type bits = +{b0 : bits, b1 : bits, e : 1}
+type ctr = &{inc : ctr, val : bits}
+type listA = +{cons : A * listA, nil : 1}
+type queue = &{ins : A -o queue,
+               del : +{none : 1,
+                       some : A * queue}}
+
+type coin = 1
+type lcoin = +{cons : coin * lcoin, nil : 1}
+
+type money = &{value : int ^ money,
+               add : money -o money,
+               subtract : int -> +{sufficient : money * money,
+                                   insufficient : money},
+               coins : lcoin}
+
+proc asset wallet : (n : int), ($l : lcoin) |- ($m : money) =
+  {
+    case $m (
+      value => send $m (n);
+               $m <- wallet <- n $l
+    | add => $m1 <- recv $m ;
+             $m1.value ;
+             v = recv $m1 ;
+             $m1.coins ;
+             $k <- append <- $l $m1 ;
+             let n1 = n+v ;
+             $m <- wallet <- n1 $k
+    | subtract => n1 = recv $m ;
+                  if (n1 > n)
+                  then
+                    $m.insufficient ;
+                    $m <- wallet <- n $l
+                  else
+                    $m.sufficient ;
+                    $l1 <- remove <- n1 $l ;
+                    $k <- recv $l1 ;
+                    $m1 <- wallet <- n1 $k ;
+                    send $m $m1 ;
+                    let n2 = n - n1 ;
+                    $m <- wallet <- n2 $l1
+    | coins => $m <- $l
+    )
+  }

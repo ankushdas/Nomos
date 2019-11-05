@@ -47,16 +47,18 @@ context_opt :
     ;
 
 label_stype :
-    | l = ID; t = stype         { (l,t) }
+    | l = ID; COLON; t = stype         { (l,t) }
     ;
 
 sp_stype:
     | x = ID                    { Ast.TpName(x) }
+    | INT                       { Ast.One }
     | LPAREN; s = stype; RPAREN { s             }
     ;
 
 sp_ftype:
-    | x = ID                        { Ast.FTpName(x)    }
+    | INTEGER                       { Ast.Integer }
+    | BOOLEAN                       { Ast.Boolean }  
     | LPAREN; f = ftype; RPAREN     { f }
     ;
 
@@ -73,23 +75,25 @@ stype :
     | a = sp_ftype; RIGHTARROW; t = stype                                       { Ast.FArrow(a,t) }
     | a = sp_ftype; PRODUCT; t = stype                                          { Ast.FProduct(a,t) }
     | x = ID                                                                    { Ast.TpName(x) }
+    | LPAREN; s = stype; RPAREN                                                 { s }
     ;
 
 ftype :
     | INTEGER                                               { Ast.Integer }
     | BOOLEAN                                               { Ast.Boolean }
-    | t = sp_ftype; LIST; pot = potential                   { Ast.ListTP(t,pot) }
+    | a = sp_ftype; LIST; pot = potential                   { Ast.ListTP(a,pot) }
     | a = sp_ftype; RIGHTARROW; b = ftype                   { Ast.Arrow(a,b) }
+    | LPAREN; a = ftype; RPAREN                             { a }
     ;
 
 argument :
-    | LPAREN; a = mid; COLON; t = stype     { Ast.STyped(a, t) }
-    | LPAREN; a = ID; COLON; ft = ftype     { Ast.Functional(a, ft) }
+    | LPAREN; a = mid; COLON; t = stype; RPAREN     { Ast.STyped(a, t) }
+    | LPAREN; a = ID; COLON; ft = ftype; RPAREN     { Ast.Functional(a, ft) }
     ;
 
 decl : 
     | TYPE; x = ID; EQUALS; t = stype   { Ast.TpDef (x,t) }
-    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; c = mid; COLON; t = stype; EQUALS; e = expr    { Ast.ExpDecDef(f, m, (ctx, Ast.Arith(Arith.Int(0)), (c,t)), e) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr    { Ast.ExpDecDef(f, m, (ctx, Ast.Arith(Arith.Int(0)), (c,t)), e) }
     | PROC; m = mode; f = ID; COLON; ctx = context_opt; BAR; pot = potential; MINUS; c = mid; COLON; t = stype; EQUALS; e = expr    { Ast.ExpDecDef(f, m, (ctx, pot, (c,t)), e) }
     | EXEC; f = ID                      { Ast.Exec(f) }
     ;
@@ -229,9 +233,14 @@ potential :
     | LPAREN; TIMES; RPAREN   { Ast.Star }
     ;
 
+app_arg :
+    | x = mid           { Ast.STArg(x) }
+    | x = ID            { Ast.FArg(x) }
+    ;
+
 st_struct:
-    |  x = mid; LARROW; f = ID; LARROW; xs = list(mid); SEMI; p = st { Ast.Spawn(x, f, xs, p) }
-    |  x = mid; LARROW; f = ID; LARROW; xs = list(mid)               { Ast.ExpName(x, f, xs) }
+    |  x = mid; LARROW; f = ID; LARROW; xs = list(app_arg); SEMI; p = st { Ast.Spawn(x, f, xs, p) }
+    |  x = mid; LARROW; f = ID; LARROW; xs = list(app_arg)               { Ast.ExpName(x, f, xs) }
     |  x = mid; LARROW; y = mid                                      { Ast.Fwd(x,y) }
     |  SEND; x = linid; w = mid; SEMI; p = st                        { Ast.Send(x,w,p) }
     |  y = mid; LARROW; RECV; x = linid; SEMI; p = st                { Ast.Recv(x,y,p) }
@@ -249,6 +258,7 @@ st_struct:
     |  SEND; x = linid; LPAREN; e = expr; RPAREN; SEMI; p = st       { Ast.SendF(x,e,p)   }
     |  y = ID; EQUALS; RECV; x = linid; SEMI; p = st                 { Ast.RecvF(x,y,p)   }
     |  LET; x = ID; EQUALS; e = expr; SEMI; p = st                   { Ast.Let(x,e,p)  }
+    |  IF; ifE = expr; THEN; thenE = st; ELSE; elseE = st            { Ast.IfS (ifE, thenE, elseE) }
     ;
 
 st :

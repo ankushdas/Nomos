@@ -98,7 +98,7 @@ rule token = parse
   | "detach"            { DETACH }
 
   (* identifier *)
-  | ['a'-'z' 'A'-'Z' '_']+ as word { ID (word) }
+  | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']* as word { ID (word) }
   | eof                 { EOF }
   | _ { raise (SyntaxError ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
 

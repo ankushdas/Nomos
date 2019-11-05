@@ -19,11 +19,13 @@ let parse_with_error lexbuf =
 
 (* part 1 *)
 let rec parse_and_print lexbuf =
-  let _ = parse_with_error lexbuf in
-  print_string ("DONE\n")
+  let l = parse_with_error lexbuf in
+  if List.length l = 0
+  then print_string("empty file\n")
+  else print_string ("parsing completed\n")
 
 let () =
-  let inx = In_channel.read_all "./test.ml" in
+  let inx = In_channel.read_all "./test.nom" in
   let lexbuf = Lexing.from_string inx in
   parse_and_print lexbuf
 

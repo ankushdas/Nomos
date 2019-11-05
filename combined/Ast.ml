@@ -17,7 +17,6 @@ type func_tp =
   | Boolean
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
-  | FTpName of tpname 
   | VarT of string;;
 
 type mode =
@@ -72,6 +71,9 @@ type rel_operator =
   | And
   | Or;;
 
+type arg =
+    STArg of chan
+  | FArg of string;;
 
 type 'a func_aug_expr =
   {
@@ -102,8 +104,8 @@ and 'a st_expr =
   (* judgmental constructs *)
   | Fwd of chan * chan                                      (* x <- y *)
   | Spawn of chan * expname *
-    chan list * 'a st_aug_expr                              (* x <- f <- [y] ; Q *)
-  | ExpName of chan * expname * chan list                   (* x <- f <- [y] *)
+    arg list * 'a st_aug_expr                              (* x <- f <- [y] ; Q *)
+  | ExpName of chan * expname * arg list                   (* x <- f <- [y] *)
 
   (* choice +{...} or &{...} *)
   | Lab of chan * label * 'a st_aug_expr                    (* x.k ; P *)
@@ -136,6 +138,7 @@ and 'a st_expr =
   | RecvF of chan * string * 'a st_aug_expr                 (* y <- recv x ; P *)
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr           (* send x (M) ; P *)
   | Let of string * 'a func_aug_expr * 'a st_aug_expr           (* let x = M ; P *)
+  | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr   (* if e then P else Q *)
 and 'a branch = label * 'a st_aug_expr
 
 and 'a branches = 'a branch list;;                          (* (l1 => P1 | ... | ln => Pn) *)
