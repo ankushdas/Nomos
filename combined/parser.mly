@@ -56,30 +56,30 @@ sp_stype:
     ;
 
 sp_ftype:
-    | x = ID                    { Ast.FTpName(x)    }
-    | LPAREN; f = ftype; RPAREN { f             }
+    | x = ID                        { Ast.FTpName(x)    }
+    | LPAREN; f = ftype; RPAREN     { f }
     ;
 
 stype :
     | PLUS; LBRACE; choices = separated_list(COMMA, label_stype); RBRACE        { Ast.Plus(choices) }
     | AMPERSAND; LBRACE; choices = separated_list(COMMA, label_stype); RBRACE   { Ast.With(choices) }
     | s = sp_stype; TIMES; t = stype                                            { Ast.Tensor(s,t,Ast.Unknown) }
-    | s = sp_stype; LOLLI; t = stype                                             { Ast.Lolli(s,t,Ast.Unknown) }
+    | s = sp_stype; LOLLI; t = stype                                            { Ast.Lolli(s,t,Ast.Unknown) }
     | INT                                                                       { Ast.One }
     | BAR; pot = potential; GREATER; t = stype                                  { Ast.PayPot(pot,t) }
     | LESS; pot = potential; BAR; t = stype                                     { Ast.GetPot(pot,t) }
     | UP; t = stype                                                             { Ast.Up(t) }
     | DOWN; t = stype                                                           { Ast.Down(t) }
-    | a = sp_ftype; RIGHTARROW; t = stype                                          { Ast.FArrow(a,t) }
-    | a = sp_ftype; PRODUCT; t = stype                                             { Ast.FProduct(a,t) }
+    | a = sp_ftype; RIGHTARROW; t = stype                                       { Ast.FArrow(a,t) }
+    | a = sp_ftype; PRODUCT; t = stype                                          { Ast.FProduct(a,t) }
     | x = ID                                                                    { Ast.TpName(x) }
     ;
 
 ftype :
     | INTEGER                                               { Ast.Integer }
     | BOOLEAN                                               { Ast.Boolean }
-    | t = sp_ftype; LIST; pot = potential      { Ast.ListTP(t,pot) }
-    | a = sp_ftype; RIGHTARROW; b = ftype      { Ast.Arrow(a,b) }
+    | t = sp_ftype; LIST; pot = potential                   { Ast.ListTP(t,pot) }
+    | a = sp_ftype; RIGHTARROW; b = ftype                   { Ast.Arrow(a,b) }
     ;
 
 argument :
