@@ -19,7 +19,7 @@ let parse_with_error lexbuf =
 
 (* part 1 *)
 let rec parse_and_print lexbuf =
-  let l = parse_with_error lexbuf in
+  let _ = parse_with_error lexbuf in
   print_string ("DONE\n")
 
 let () =

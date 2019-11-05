@@ -26,7 +26,6 @@
 %right CONS
 %left PLUS MINUS
 %left TIMES DIV
-%right LOLLI PRODUCT RIGHTARROW
 %nonassoc statement
 %start <Ast.program> file
 %%
@@ -51,26 +50,36 @@ label_stype :
     | l = ID; t = stype         { (l,t) }
     ;
 
+sp_stype:
+    | x = ID                    { Ast.TpName(x) }
+    | LPAREN; s = stype; RPAREN { s             }
+    ;
+
+sp_ftype:
+    | x = ID                    { Ast.FTpName(x)    }
+    | LPAREN; f = ftype; RPAREN { f             }
+    ;
+
 stype :
     | PLUS; LBRACE; choices = separated_list(COMMA, label_stype); RBRACE        { Ast.Plus(choices) }
     | AMPERSAND; LBRACE; choices = separated_list(COMMA, label_stype); RBRACE   { Ast.With(choices) }
-    | LPAREN; s = stype; RPAREN; TIMES; t = stype                                               { Ast.Tensor(s,t,Ast.Unknown) }
-    | LPAREN; s = stype; RPAREN; LOLLI; t = stype                                               { Ast.Lolli(s,t,Ast.Unknown) }
+    | s = sp_stype; TIMES; t = stype                                            { Ast.Tensor(s,t,Ast.Unknown) }
+    | s = sp_stype; LOLLI; t = stype                                             { Ast.Lolli(s,t,Ast.Unknown) }
     | INT                                                                       { Ast.One }
     | BAR; pot = potential; GREATER; t = stype                                  { Ast.PayPot(pot,t) }
     | LESS; pot = potential; BAR; t = stype                                     { Ast.GetPot(pot,t) }
     | UP; t = stype                                                             { Ast.Up(t) }
     | DOWN; t = stype                                                           { Ast.Down(t) }
-    | LPAREN; a = ftype; RPAREN; RIGHTARROW; t = stype                                          { Ast.FArrow(a,t) }
-    | LPAREN; a = ftype; RPAREN; PRODUCT; t = stype                                             { Ast.FProduct(a,t) }
+    | a = sp_ftype; RIGHTARROW; t = stype                                          { Ast.FArrow(a,t) }
+    | a = sp_ftype; PRODUCT; t = stype                                             { Ast.FProduct(a,t) }
     | x = ID                                                                    { Ast.TpName(x) }
     ;
 
 ftype :
     | INTEGER                                               { Ast.Integer }
     | BOOLEAN                                               { Ast.Boolean }
-    | LPAREN; t = ftype; RPAREN; LIST; pot = potential      { Ast.ListTP(t,pot) }
-    | LPAREN; a = ftype; RPAREN; RIGHTARROW; b = ftype      { Ast.Arrow(a,b) }
+    | t = sp_ftype; LIST; pot = potential      { Ast.ListTP(t,pot) }
+    | a = sp_ftype; RIGHTARROW; b = ftype      { Ast.Arrow(a,b) }
     ;
 
 argument :

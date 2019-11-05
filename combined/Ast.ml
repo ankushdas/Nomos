@@ -5,17 +5,20 @@ type potential =
   | Star                        (* potential to be inferred *)
 
 (* Functional Types *)
-type func_tp =
-  | Integer
-  | Boolean
-  | ListTP of func_tp * potential
-  | Arrow of func_tp * func_tp
-  | VarT of string;;
 
 (* Session Types *)
 type label = string             (* l,k for internal and external choice *)
 type tpname = string            (* v, for types defined with v = A *)
 type expname = string           (* f, for processes defined with f = P *)
+
+
+type func_tp =
+  | Integer
+  | Boolean
+  | ListTP of func_tp * potential
+  | Arrow of func_tp * func_tp
+  | FTpName of tpname 
+  | VarT of string;;
 
 type mode =
     Shared
