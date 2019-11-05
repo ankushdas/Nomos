@@ -13,15 +13,14 @@ let print_position outx lexbuf =
 let parse_with_error lexbuf =
   try Parser.file Lexer.token lexbuf with
   | SyntaxError msg ->
-     (Printf.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg; None)
+     (Printf.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg; [])
   | Parser.Error ->
-     (Printf.printf "PARSING FAILURE: %a\n" print_position lexbuf; None)
+     (Printf.printf "PARSING FAILURE: %a\n" print_position lexbuf; [])
 
 (* part 1 *)
 let rec parse_and_print lexbuf =
-  match parse_with_error lexbuf with
-  | Some (Ast.PL(l)) -> Printf.printf "DONE\n"
-  | None -> ()
+  let l = parse_with_error lexbuf in
+  print_string ("DONE\n")
 
 let () =
   let inx = In_channel.read_all "./test.ml" in

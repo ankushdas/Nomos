@@ -1,6 +1,7 @@
 (* functional layer *)
 %token <int> INT
 %token <string> ID
+%token INTEGER BOOLEAN LIST
 %token LPAREN RPAREN
 %token TRUE FALSE
 %token IF THEN ELSE
@@ -13,10 +14,9 @@
 %token EOF
 %token NEQ GREATER LESS GREATEREQ LESSEQ
 %token ANDALSO ORELSE
-%token DOUBLESEMI
-%token TYPE PROC ASSET CONTRACT TRANSACTION TURNSTILE EXEC
+%token TYPE PROC ASSET CONTRACT TRANSACTION TURNSTILE EXEC COLON
 (* session type layer *)
-%token LOLLI AMPERSAND UP DOWN
+%token LOLLI AMPERSAND UP DOWN PRODUCT
 %token LBRACE RBRACE
 %token HASH DOLLAR
 %token LARROW SEMI RRARROW
@@ -26,13 +26,14 @@
 %right CONS
 %left PLUS MINUS
 %left TIMES DIV
+%right LOLLI PRODUCT RIGHTARROW
 %nonassoc statement
-%start <Ast.programList option> file
+%start <Ast.program> file
 %%
 
 
 file :
-     | vl = list(decl) EOF { Some(Ast.PL vl) }
+     | vl = list(decl) EOF { vl }
      ;
 
 mode :
@@ -46,6 +47,32 @@ context_opt :
     | l = separated_list(COMMA, argument)   { l }
     ;
 
+label_stype :
+    | l = ID; t = stype         { (l,t) }
+    ;
+
+stype :
+    | PLUS; LBRACE; choices = separated_list(COMMA, label_stype); RBRACE        { Ast.Plus(choices) }
+    | AMPERSAND; LBRACE; choices = separated_list(COMMA, label_stype); RBRACE   { Ast.With(choices) }
+    | LPAREN; s = stype; RPAREN; TIMES; t = stype                                               { Ast.Tensor(s,t,Ast.Unknown) }
+    | LPAREN; s = stype; RPAREN; LOLLI; t = stype                                               { Ast.Lolli(s,t,Ast.Unknown) }
+    | INT                                                                       { Ast.One }
+    | BAR; pot = potential; GREATER; t = stype                                  { Ast.PayPot(pot,t) }
+    | LESS; pot = potential; BAR; t = stype                                     { Ast.GetPot(pot,t) }
+    | UP; t = stype                                                             { Ast.Up(t) }
+    | DOWN; t = stype                                                           { Ast.Down(t) }
+    | LPAREN; a = ftype; RPAREN; RIGHTARROW; t = stype                                          { Ast.FArrow(a,t) }
+    | LPAREN; a = ftype; RPAREN; PRODUCT; t = stype                                             { Ast.FProduct(a,t) }
+    | x = ID                                                                    { Ast.TpName(x) }
+    ;
+
+ftype :
+    | INTEGER                                               { Ast.Integer }
+    | BOOLEAN                                               { Ast.Boolean }
+    | LPAREN; t = ftype; RPAREN; LIST; pot = potential      { Ast.ListTP(t,pot) }
+    | LPAREN; a = ftype; RPAREN; RIGHTARROW; b = ftype      { Ast.Arrow(a,b) }
+    ;
+
 argument :
     | LPAREN; a = mid; COLON; t = stype     { Ast.STyped(a, t) }
     | LPAREN; a = ID; COLON; ft = ftype     { Ast.Functional(a, ft) }
@@ -53,7 +80,7 @@ argument :
 
 decl : 
     | TYPE; x = ID; EQUALS; t = stype   { Ast.TpDef (x,t) }
-    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; c = mid; COLON; t = stype; EQUALS; e = expr    { Ast.ExpDecDef(f, m, (ctx, Ast.Arith(Ast.Int(0)), (c,t)), e) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; c = mid; COLON; t = stype; EQUALS; e = expr    { Ast.ExpDecDef(f, m, (ctx, Ast.Arith(Arith.Int(0)), (c,t)), e) }
     | PROC; m = mode; f = ID; COLON; ctx = context_opt; BAR; pot = potential; MINUS; c = mid; COLON; t = stype; EQUALS; e = expr    { Ast.ExpDecDef(f, m, (ctx, pot, (c,t)), e) }
     | EXEC; f = ID                      { Ast.Exec(f) }
     ;

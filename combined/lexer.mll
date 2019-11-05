@@ -24,11 +24,17 @@ rule token = parse
   | "transaction"       { TRANSACTION }
   | "|-"                { TURNSTILE }
   | "exec"              { EXEC }
-  (* types *)
+  | ":"                 { COLON }
+  (* session types *)
   | "-o"                { LOLLI }
   | "&"                 { AMPERSAND }
   | "/\\"               { UP }
   | "\\/"               { DOWN }
+  | "^"                 { PRODUCT }
+  (* functional types *)
+  | "int"               { INTEGER }
+  | "bool"              { BOOLEAN }
+  | "list"              { LIST }
   (* functional *)
   | [ ' ' '\t' ]        { token lexbuf }
   | newline             { next_line lexbuf; token lexbuf }
@@ -49,7 +55,6 @@ rule token = parse
   | "fun"               { FUN   }
   | "with"              { WITH  }
   | "|"                 { BAR  }
-  | ";;"                { DOUBLESEMI }
   | "[]"                { EMPTYLIST }
   | "<>"                { NEQ     }
   | ">"                 { GREATER }

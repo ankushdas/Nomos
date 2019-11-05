@@ -1,10 +1,14 @@
 module R = Arith
 
+type potential =
+  | Arith of R.arith            (* p,q, potential for work *)
+  | Star                        (* potential to be inferred *)
+
 (* Functional Types *)
 type func_tp =
   | Integer
   | Boolean
-  | ListTP of func_tp
+  | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string;;
 
@@ -27,10 +31,6 @@ type str =
 
 type chan = str * string * mode       (* channel name with modes *)
 
-type potential =
-  | Arith of R.arith            (* p,q, potential for work *)
-  | Star                        (* potential to be inferred *)
-
 type stype =
     Plus of choices                   (* +{...} *)
   | With of choices                   (* &{...} *)
@@ -42,6 +42,8 @@ type stype =
   | TpName of tpname                  (* v *)
   | Up of stype                       (* /\ A *)
   | Down of stype                     (* \/ A *)
+  | FArrow of func_tp * stype         (* t -> A *)
+  | FProduct of func_tp * stype       (* t ^ A *)
 
 and choices = (label * stype) list
 
