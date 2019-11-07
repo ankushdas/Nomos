@@ -1,0 +1,15 @@
+(executable
+ (name nomos)
+ (libraries core)
+ (preprocess (pps ppx_let)))
+
+(menhir
+  (modules Parser)
+  (flags --explain)
+  (infer true))
+
+(ocamllex Lexer)
+
+(env
+    (dev
+      (flags (:standard -warn-error -A))))

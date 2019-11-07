@@ -5,7 +5,7 @@ open Lexing
 
 module A = Ast
 
-let print_position outx lexbuf =
+let print_position _outx lexbuf =
   let pos = lexbuf.lex_curr_p in
   printf "%s:%d:%d" pos.pos_fname
     pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
@@ -18,7 +18,7 @@ let parse_with_error lexbuf =
      (Printf.printf "PARSING FAILURE: %a\n" print_position lexbuf; [])
 
 (* part 1 *)
-let rec parse_and_print lexbuf =
+let parse_and_print lexbuf =
   let l = parse_with_error lexbuf in
   if List.length l = 0
   then print_string("empty file\n")

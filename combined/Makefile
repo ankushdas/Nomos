@@ -1,16 +1,29 @@
-.PHONY: all clean test
+# .PHONY: all clean test
 
-MENHIR          := menhir
+# MENHIR          := menhir
 
-MENHIRFLAGS     := --infer --explain
+# MENHIRFLAGS     := --infer --explain
 
-OCAMLBUILD      := ocamlbuild -use-ocamlfind -tag thread -quiet -pkg core -use-menhir -menhir "$(MENHIR) $(MENHIRFLAGS)"
+# OCAMLBUILD      := ocamlbuild -use-ocamlfind -tag thread -quiet -pkg core -use-menhir -menhir "$(MENHIR) $(MENHIRFLAGS)"
 
-MAIN            := main
+# MAIN            := main
 
-all:
-	$(OCAMLBUILD) $(MAIN).native
+# all:
+# 	$(OCAMLBUILD) $(MAIN).native
+
+# clean:
+# 	rm -f *~ .*~
+# 	$(OCAMLBUILD) -clean
+
+DUNE=dune
+
+.PHONY: all build clean
+
+all: build
+
+build:
+	@${DUNE} build nomos.exe
 
 clean:
-	rm -f *~ .*~
-	$(OCAMLBUILD) -clean
+	@${DUNE} clean
+
