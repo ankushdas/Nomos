@@ -390,7 +390,7 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
             end
       end
-  | (A.Functional (sv,st))::sig_ctx', (A.FArg v)::ctx' ->
+  | (A.Functional (_sv,st))::sig_ctx', (A.FArg v)::ctx' ->
       begin
         if not (check_ftp v delta)
         then error ("unknown or duplicate variable: " ^ v)
@@ -423,6 +423,7 @@ let join delta =
 * interactions.  This is done so tracing (if enabled) or error
 * message are more intelligible.
 *)
+
 let rec check_exp' trace env delta pot p zc ext mode =
   begin
     if trace
@@ -534,27 +535,28 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
         if not (check_ltp x delta)
         then
           if not (checktp x [zc])
-          then E.error_unknown_var (x,ext)
+          then E.error_unknown_var (x)
           else (* the type c of z must be internal choice *)
             let (z,c) = zc in
             if not (eq_mode x z)
-            then E.error_mode_mismatch (x, z, ext)
+            then E.error_mode_mismatch (x, z)
             else if not (mode_lin x)
-            then E.error_mode_shared_comm (x, ext)
+            then E.error_mode_shared_comm (x)
             else
             match c with
                 A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
               | A.Plus(choices) ->
                   begin
                     match A.lookup_choice choices k with
-                        None -> E.error_label_invalid env (k,c,z,ext)
-                      | Some ck -> check_exp' trace env delta pot p (z,ck) ext mode
+                        None -> E.error_label_invalid env (k,c,z)
+                      | Some ck -> check_exp' trace env delta pot p.A.st_structure (z,ck) ext mode
                   end
               | A.With _ | A.One
               | A.Tensor _ | A.Lolli _
               | A.PayPot _ | A.GetPot _
-              | A.Up _ | A.Down _ ->
-                error ext ("invalid type of " ^ PP.pp_chan z ^
+              | A.Up _ | A.Down _
+              | A.FArrow _ | A.FProduct _  ->
+                error ("invalid type of " ^ PP.pp_chan z ^
                            ", expected internal choice, found: " ^ PP.pp_tp_compact env c)
         else (* the type a of x must be external choice *)
           let a = find_ltp x delta ext in
@@ -660,7 +662,7 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
                 | A.Up _ | A.Down _ ->
-                  error ext ("invalid type of " ^ PP.pp_chan x ^
+                  error ("invalid type of " ^ PP.pp_chan x ^
                              ", expected lolli, found: " ^ PP.pp_tp_compact env d)
           end
         else
