@@ -91,7 +91,7 @@ and 'a func_expr =
   | Bool of bool
   | Int of int
   | Var of string
-  | List of 'a func_aug_expr list
+  | ListE of 'a func_aug_expr list
   | App of 'a func_aug_expr list
   | Cons of 'a func_aug_expr * 'a func_aug_expr
   | Match of 'a func_aug_expr * 'a func_aug_expr * string * string * 'a func_aug_expr
@@ -104,8 +104,8 @@ and 'a st_expr =
   (* judgmental constructs *)
   | Fwd of chan * chan                                      (* x <- y *)
   | Spawn of chan * expname *
-    arg list * 'a st_aug_expr                              (* x <- f <- [y] ; Q *)
-  | ExpName of chan * expname * arg list                   (* x <- f <- [y] *)
+    arg list * 'a st_aug_expr                               (* x <- f <- [y] ; Q *)
+  | ExpName of chan * expname * arg list                    (* x <- f <- [y] *)
 
   (* choice +{...} or &{...} *)
   | Lab of chan * label * 'a st_aug_expr                    (* x.k ; P *)
@@ -135,7 +135,7 @@ and 'a st_expr =
   | Detach of chan * chan * 'a st_aug_expr                  (* y <- detach x *)
 
   (* arrow and product *)
-  | RecvF of chan * string * 'a st_aug_expr                 (* y <- recv x ; P *)
+  | RecvF of chan * string * 'a st_aug_expr                     (* y <- recv x ; P *)
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr           (* send x (M) ; P *)
   | Let of string * 'a func_aug_expr * 'a st_aug_expr           (* let x = M ; P *)
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr   (* if e then P else Q *)
@@ -151,8 +151,13 @@ type argument =
   | Functional of string * func_tp
   | STyped of chan * stype
 
-type context = argument list
 type chan_tp = chan * stype
+type context =
+  {
+    shared: chan_tp list;
+    linear: chan_tp list;
+    ordered: argument list
+  }
 
 type decl =
   | TpDef of tpname * stype                   (* type a = A *)
@@ -172,3 +177,13 @@ type value =
 and value_context = (string * value) list
 and valued_expr = value func_aug_expr
 
+type msg =
+    MLabI of chan * label * chan          (* c.k ; c <- c+ *)
+  | MLabE of chan * label * chan          (* c.k ; c+ <- c *)
+  | MSendT of chan * chan * chan          (* send c d ; c <- c+ *)
+  | MSendL of chan * chan * chan          (* send c d ; c+ <- c *)
+  | MClose of chan                        (* close c *)
+  | MPayP of chan * potential * chan      (* pay c {p} ; c <- c+ *)
+  | MPayG of chan * potential * chan      (* pay c {p} ; c+ <- c *)
+  | MSendP of chan * valued_expr * chan   (* send c M ; c <- c+ *)
+  | MSendA of chan * valued_expr * chan   (* send c M ; c+ <- c *)

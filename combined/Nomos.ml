@@ -2,8 +2,8 @@ open Core
 open Lexer
 open Lexing
 
-
 module A = Ast
+module PP = Pprint
 
 let print_position _outx lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -19,10 +19,8 @@ let parse_with_error lexbuf =
 
 (* part 1 *)
 let parse_and_print lexbuf =
-  let l = parse_with_error lexbuf in
-  if List.length l = 0
-  then print_string("empty file\n")
-  else print_string ("parsing completed\n")
+  let env = parse_with_error lexbuf in
+  print_string (PP.pp_program env env);; 
 
 let () =
   let inx = In_channel.read_all "./test.nom" in
