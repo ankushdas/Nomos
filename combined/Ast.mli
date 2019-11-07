@@ -104,3 +104,11 @@ type msg =
   | MPayG of chan * potential * chan
   | MSendP of chan * valued_expr * chan
   | MSendA of chan * valued_expr * chan
+exception AstImpossible
+val lookup_tp : decl list -> tpname -> stype option
+val expd_tp : decl list -> tpname -> stype
+val lookup_expdec :
+  decl list -> expname -> (context * potential * chan_tp * mode) option
+val lookup_expdef : decl list -> expname -> parsed_expr option
+val lookup_choice : ('a * 'b) list -> 'a -> 'b option
+val is_shared : decl list -> stype -> bool

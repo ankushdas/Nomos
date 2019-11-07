@@ -29,7 +29,7 @@ let rec esync env seen tp c ext is_shared =
     | A.With(choice) -> esync_choices env seen choice c ext is_shared
     | A.Tensor(_a,b,_m) -> esync env seen b c ext is_shared
     | A.Lolli(_a,b,_m) -> esync env seen b c ext is_shared
-    | A.One -> if is_shared then error ext ("type not equi-synchronizing") else ()
+    | A.One -> if is_shared then error ("type not equi-synchronizing") else ()
     | A.PayPot(_pot,a) -> esync env seen a c ext is_shared
     | A.GetPot(_pot,a) -> esync env seen a c ext is_shared
     | A.TpName(v) ->
@@ -38,63 +38,14 @@ let rec esync env seen tp c ext is_shared =
         else esync env (v::seen) (A.expd_tp env v) c ext is_shared
     | A.Up(a) -> esync env seen a c ext true
     | A.Down(a) -> esync env seen a c ext false
-  
-  and esync_choices env seen cs c ext is_shared = match cs with
-      (_l,a)::as' -> esync env seen a c ext is_shared ; esync_choices env seen as' c ext is_shared
-    | [] -> ();;
+    | A.FArrow(_t,a) -> esync env seen a c ext is_shared
+    | A.FProduct(_t,a) -> esync env seen a c ext is_shared
+
+and esync_choices env seen cs c ext is_shared = match cs with
+    (_l,a)::as' -> esync env seen a c ext is_shared ; esync_choices env seen as' c ext is_shared
+  | [] -> ();;
 
 let esync_tp env tp ext = esync env [] tp tp ext false;;
-
-(* Occurrences of |> and <| are restricted to
-* positive and negative positions in a type, respectively
-*)
-type polarity = Pos | Neg | Zero;;
-
-(* valid env ctx con polarity A ext = ()
-* raises ErrorMsg.Error if not a valid type
-* env must be the full environment which checking any
-* type to allow mutually recursive definitions
-* Type A must be an actual type (not '.' = A.Dot)
-*)
-let rec valid env pol tp ext = match pol, tp with
-    _, A.Plus(choice) -> valid_choice env Pos choice ext
-  | _, A.With(choice) -> valid_choice env Neg choice ext
-
-  | _, A.Tensor(s,t,_m) -> valid env pol s ext ; valid env Pos t ext
-  | _, A.Lolli(s,t,_m) -> valid env pol s ext ; valid env Neg t ext
-  | _, A.One -> ()
-
-  | _, A.Up(a) -> valid env pol a ext
-  | _, A.Down(a) -> valid env pol a ext
-
-  | Pos, A.PayPot(A.Arith pot,a) ->
-      if not (R.non_neg pot) (* allowing 0, for uniformity *)
-      then error ext ("potential " ^ PP.pp_arith pot ^ " not positive")
-      else valid env Pos a ext
-  | Pos, A.PayPot(A.Star,a) ->
-      valid env Pos a ext
-  | Neg, A.PayPot(_,_) -> error ext ("|> appears in a negative context")
-  | Zero, A.PayPot(_,_) -> error ext ("|> appears in a neutral context")
-
-  | Pos, A.GetPot(_,_a) -> error ext ("<| appears in a positive context")
-  | Zero, A.GetPot(_,_a) -> error ext ("<| appears in a neutral context")
-  | Neg, A.GetPot(A.Arith pot,a) ->
-      if not (R.non_neg pot) (* allowing 0, for uniformity *)
-      then error ext ("potential " ^ PP.pp_arith pot ^ " not positive")
-      else valid env Neg a ext
-  | Neg, A.GetPot(A.Star,a) ->
-      valid env Neg a ext
-
-  | _, A.TpName(a) ->
-    (* allow forward references since 'env' is the full environment *)
-    match A.lookup_tp env a with
-        None -> error ext ("type name " ^ a ^ " undefined")
-      | Some (_) -> ()
-and valid_choice env pol cs ext = match cs with
-    [] -> ()
-  | (_l,al)::choices ->
-    valid env pol al ext
-    ; valid_choice env pol choices ext;;
 
 (***********************)
 (* Properties of types *)
@@ -106,7 +57,8 @@ let contractive tp = match tp with
   | A.Tensor _ | A.Lolli _
   | A.One
   | A.PayPot _ | A.GetPot _
-  | A.Up _ | A.Down _ -> true;;
+  | A.Up _ | A.Down _
+  | A.FArrow _ | A.FProduct _ -> true;;
 
 (*****************)
 (* Type equality *)
@@ -155,31 +107,31 @@ let pp_lt pot1 pot2 = match pot1, pot2 with
 | A.Star, A.Arith p2 -> "* < " ^ R.pp_arith p2
 | A.Arith p1, A.Arith p2 -> R.pp_lt p1 p2;;
 
-let mode_L (_c,m) = match m with
+let mode_L (_s,_c,m) = match m with
     A.Linear
   | A.Unknown -> true
   | A.Var v -> I.m_eq_const v A.Linear
   | _ -> false;;
 
-let mode_S (_c,m) = match m with
+let mode_S (_s,_c,m) = match m with
     A.Shared
   | A.Unknown -> true
   | A.Var v -> I.m_eq_const v A.Shared
   | _ -> false;;
 
-let mode_P (_c,m) = match m with
+let mode_P (_s,_c,m) = match m with
     A.Pure
   | A.Unknown -> true
   | A.Var v -> I.m_eq_const v A.Pure
   | _ -> false;;
 
-let mode_T (_c,m) = match m with
+let mode_T (_s,_c,m) = match m with
     A.Transaction
   | A.Unknown -> true
   | A.Var v -> I.m_eq_const v A.Transaction
   | _ -> false;;
 
-let mode_lin (_c,m) = match m with
+let mode_lin (_s,_c,m) = match m with
     A.Pure
   | A.Linear
   | A.Transaction
@@ -223,21 +175,13 @@ let mode_recv m1 m2 = match m1, m2 with
   | _, A.Transaction -> true
   | _, _ -> false;;
 
-let rec mem_env env a a' = match env with
-    {A.declaration = A.TpEq(A.TpName(b),A.TpName(b')); decl_extent = _ext}::env' ->
-      if b = a && b' = a' then true
-    else if b = a' && b' = a then true   (* flip! *)
-    else mem_env env' a a'
-  | _decl::env' -> mem_env env' a a'
-  | [] -> false
-
 let rec mem_seen env seen a a' = match seen with
     (b,b')::seen' ->
       if b = a && b' = a' then true
       else if b = a' && b' = a
       then true
       else mem_seen env seen' a a'
-  | [] -> mem_env env a a'
+  | [] -> false;;
 
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
 let rec eq_tp' env seen a a' =
@@ -290,6 +234,14 @@ and eq_name_name env seen a a' =
 
 let eqtp env tp tp' = eq_tp' env [] tp tp';;
 
+let rec eq_ftp tp tp' = match tp, tp' with
+    A.Integer, A.Integer -> true
+  | A.Boolean, A.Boolean -> true
+  | A.ListTP(t,pot), A.ListTP(t',pot') -> eq_ftp t t' && eq pot pot'
+  | A.Arrow(t1,t2), A.Arrow(t1',t2') -> eq_ftp t1 t1' && eq_ftp t2 t2'
+  | A.VarT v, A.VarT v' -> v = v'
+  | _, _ -> false;;
+
 (*************************************)
 (* Type checking process expressions *)
 (*************************************)
@@ -300,20 +252,31 @@ let chan_of (c, _tp) = c
 let tp_of (_c, tp) = tp;;
 let name_of (c,_m) = c;;
 
-let eq_name (c1,_m1) (c2,_m2) = c1 = c2;;
+let eq_str (s1,_c1,_m1) (s2,_c2,_m2) = s1 = s2;;
 
-let eq_mode (_c1,m1) (_c2,m2) = eqmode m1 m2;;
+let eq_name (_s1,c1,_m1) (_s2,c2,_m2) = c1 = c2;;
+
+let eq_mode (_s1,_c1,m1) (_s2,_c2,m2) = eqmode m1 m2;;
 
 let eq_chan c1 c2 = 
-  if eq_name c1 c2 && eq_mode c1 c2
-  then true
-  else false;;
+  eq_str c1 c2 && eq_name c1 c2 && eq_mode c1 c2;;
 
 let rec checktp c delta = match delta with
     [] -> false
   | (x,_t)::delta' ->
       if eq_name x c then true
       else checktp c delta';;
+
+let rec checkftp v odelta = match odelta with
+    [] -> false
+  | (A.STyped _)::odelta' -> checkftp v odelta'
+  | (A.Functional (w,_t))::odelta' ->
+      if w = v then true
+      else checkftp v odelta';;
+
+let check_ftp v delta =
+  let {A.shared = _sdelta ; A.linear = _ldelta ; A.ordered = odelta} = delta in
+  checkftp v odelta;;
 
 let check_tp c delta =
   let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
@@ -340,21 +303,33 @@ let purelin delta =
 
 (* must check for existence first *)
 let rec findtp c delta ext = match delta with
-      [] -> raise UnknownTypeError
-    | (x,t)::delta' ->
-        if eq_chan x c then t
-        else findtp c delta' ext;;
+    [] -> raise UnknownTypeError
+  | (x,t)::delta' ->
+      if eq_chan x c then t
+      else findtp c delta' ext;;
+
+let rec findftp v delta ext = match delta with
+    [] -> raise UnknownTypeError
+  | (A.Functional (w,t))::delta' ->
+      if v = w then t
+      else findftp v delta' ext
+  | (A.STyped _)::delta' ->
+      findftp v delta' ext;;
+
+let rec find_ftp v delta ext =
+  let {A.shared = _sdelta ; A.linear = _ldelta ; A.ordered = odelta} = delta in
+  findftp v odelta ext;;
 
 let find_stp c delta ext =
   let {A.shared = sdelta ; A.linear = _ldelta ; A.ordered = _odelta} = delta in
   if not (mode_S c)
-  then error ext ("mode of channel " ^ PP.pp_chan c ^ " not S")
+  then error ("mode of channel " ^ PP.pp_chan c ^ " not S")
   else findtp c sdelta ext;;
 
 let find_ltp c delta ext = 
   let {A.shared = _sdelta ; A.linear = ldelta ; A.ordered = _odelta} = delta in
   if not (mode_lin c)
-  then E.error_mode_shared_comm (c, ext)
+  then E.error_mode_shared_comm c
   else findtp c ldelta ext;;
 
 let rec removetp x delta = match delta with
@@ -364,27 +339,37 @@ let rec removetp x delta = match delta with
       then delta'
       else (y,t)::(removetp x delta');;
 
+let rec removeotp x odelta = match odelta with
+    [] -> []
+  | a::odelta' ->
+      match a with
+          A.Functional(v,t) -> (A.Functional(v,t))::(removeotp x odelta')
+        | A.STyped (y,t) ->
+            if eq_name x y
+            then odelta'
+            else (A.STyped(y,t))::(removeotp x odelta');;
+
 let remove_tp x delta =
   let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
-  {A.shared = removetp x sdelta ; A.linear = removetp x ldelta ; A.ordered = removetp x odelta};;
+  {A.shared = removetp x sdelta ; A.linear = removetp x ldelta ; A.ordered = removeotp x odelta};;
 
 let add_chan env (x,a) delta =
   let {A.shared = sdelta ; A.linear = ldelta ; A.ordered = odelta} = delta in
   if A.is_shared env a
-  then {A.shared = (x,a)::sdelta ; A.linear = ldelta ; A.ordered = (x,a)::odelta}
-  else {A.shared = sdelta ; A.linear = (x,a)::ldelta ; A.ordered = (x,a)::odelta};;
+  then {A.shared = (x,a)::sdelta ; A.linear = ldelta ; A.ordered = (A.STyped (x,a))::odelta}
+  else {A.shared = sdelta ; A.linear = (x,a)::ldelta ; A.ordered = (A.STyped (x,a))::odelta};;
 
 let update_tp env x t delta =
   let delta = remove_tp x delta in
   add_chan env (x,t) delta;;
 
 let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx with
-    (sc,st)::sig_ctx', c::ctx' ->
+    (A.STyped (sc,st))::sig_ctx', (A.STArg c)::ctx' ->
       begin
         if not (check_tp c delta)
-        then error ext ("unknown or duplicate variable: " ^ PP.pp_chan c)
+        then error ("unknown or duplicate variable: " ^ PP.pp_chan c)
         else if not (eq_mode sc c)
-        then E.error_mode_mismatch (sc, c, ext)
+        then E.error_mode_mismatch (sc, c)
         else
           let {A.shared = sdelta ; A.linear = _ldelta ; A.ordered = _odelta} = delta in
           if checktp c sdelta
@@ -393,7 +378,7 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
               let t = find_stp c delta ext in
               if eqtp env st t
               then match_ctx env sig_ctx' ctx' delta sig_len len ext
-              else error ext ("shared type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
+              else error ("shared type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
             end
           else
@@ -401,12 +386,23 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
               let t = find_ltp c delta ext in
               if eqtp env st t
               then match_ctx env sig_ctx' ctx' (remove_tp c delta) sig_len len ext
-              else error ext ("linear type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
+              else error ("linear type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
             end
       end
+  | (A.Functional (sv,st))::sig_ctx', (A.FArg v)::ctx' ->
+      begin
+        if not (check_ftp v delta)
+        then error ("unknown or duplicate variable: " ^ v)
+        else
+          let t = find_ftp v delta ext in
+          if eq_ftp st t
+          then match_ctx env sig_ctx' ctx' delta sig_len len ext
+          else error ("functional type mismatch: type of " ^ v ^ " : " ^ PP.pp_ftp_simple t ^
+                      " does not match type in declaration: " ^ PP.pp_ftp_simple st)
+      end
   | [], [] -> delta
-  | _, _ -> error ext ("process defined with " ^ string_of_int sig_len ^ 
+  | _, _ -> error ("process defined with " ^ string_of_int sig_len ^ 
             " arguments but called with " ^ string_of_int len ^ " arguments");;
 
 let join delta =
@@ -445,11 +441,11 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
         let tx = chan_of zc in
         let () =
           if not (eq_name x tx)
-          then E.error_unknown_var_right (x,ext)
+          then E.error_unknown_var_right (x)
           else if not (eq_mode x tx)
-          then E.error_mode_mismatch (x, tx, ext)
+          then E.error_mode_mismatch (x, tx)
           else if not (eq_mode x y)
-          then error ext ("mode mismatch: " ^ PP.pp_chan x ^ " != " ^ PP.pp_chan y)
+          then error ("mode mismatch: " ^ PP.pp_chan x ^ " != " ^ PP.pp_chan y)
           else ()
         in
         let c = tp_of zc in
@@ -457,80 +453,80 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
         then
           begin
             if List.length sdelta = 0
-            then error ext ("shared context empty while offered channel is shared")
+            then error ("shared context empty while offered channel is shared")
             else if not (checktp y sdelta)
-            then E.error_unknown_var_ctx (y,ext)
+            then E.error_unknown_var_ctx (y)
             else
               let a = find_stp y delta ext in
               if eqtp env a c
               then ()
-              else error ext ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
+              else error ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
               PP.pp_tp_compact env c)
           end
         else
           begin
             let (ty, a) = List.hd ldelta in
             if List.length ldelta <> 1
-            then error ext ("linear context " ^ PP.pp_lsctx env ldelta ^ " must have only one channel")
+            then error ("linear context " ^ PP.pp_lsctx env ldelta ^ " must have only one channel")
             else if not (eq_name y ty)
-            then E.error_unknown_var_ctx (y,ext)
+            then E.error_unknown_var_ctx (y)
             else if not (eq_mode y ty)
-            then E.error_mode_mismatch (y, ty, ext)
+            then E.error_mode_mismatch (y, ty)
             else if not (eq pot zero)
-            then error ext ("unconsumed potential: " ^ pp_uneq pot zero)
+            then error ("unconsumed potential: " ^ pp_uneq pot zero)
             else if eqtp env a c
             then ()
-            else error ext ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
-                      PP.pp_tp_compact env c)
+            else error ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
+                       PP.pp_tp_compact env c)
           end
       end
   | A.Spawn(x,f,xs,q) ->
       begin
         match A.lookup_expdec env f with
-            None -> E.error_undeclared (f, ext)
+            None -> E.error_undeclared (f)
           | Some (ctx,lpot,(x',a'),mdef) ->
-              let (_x,mx) = x in
+              let (_s,_x,mx) = x in
               if not (ge pot lpot)
-              then error ext ("insufficient potential to spawn: " ^ pp_lt pot lpot)
+              then error ("insufficient potential to spawn: " ^ pp_lt pot lpot)
               else if not (eq_mode x x')
-              then E.error_mode_mismatch (x, x', ext)
+              then E.error_mode_mismatch (x, x')
               else if not (eqmode mx mdef)
-              then error ext ("mode mismatch: expected " ^ PP.pp_mode mdef ^ " at declaration, found: " ^ PP.pp_chan x)
+              then error ("mode mismatch: expected " ^ PP.pp_mode mdef ^ " at declaration, found: " ^ PP.pp_chan x)
               else if not (mode_spawn mdef mode)
-              then error ext ("cannot spawn at mode " ^ PP.pp_mode mdef ^ " when current mode is " ^ PP.pp_mode mode)
+              then error ("cannot spawn at mode " ^ PP.pp_mode mdef ^ " when current mode is " ^ PP.pp_mode mode)
               else
                 let ctx = join ctx in
                 let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
-                check_exp' trace env (add_chan env (x,a') delta') (minus pot lpot) q zc ext mode
+                check_exp' trace env (add_chan env (x,a') delta') (minus pot lpot) q.A.st_structure zc ext mode
       end
   | A.ExpName(x,f,xs) ->
       begin
         match A.lookup_expdec env f with
-          None -> E.error_undeclared (f, ext)
+          None -> E.error_undeclared (f)
         | Some (ctx,lpot,(x',a'),mdef) ->
-            let (_x,mx) = x in
+            let (_s,_x,mx) = x in
             if not (eq pot lpot)
-            then error ext ("potential mismatch for tail call: " ^ pp_uneq pot lpot)
+            then error ("potential mismatch for tail call: " ^ pp_uneq pot lpot)
             else if not (eq_mode x x')
-            then E.error_mode_mismatch (x, x', ext)
+            then E.error_mode_mismatch (x, x')
             else if not (eqmode mx mdef)
-            then error ext ("mode mismatch: expected " ^ PP.pp_mode mdef ^ " at declaration, found: " ^ PP.pp_chan x)
+            then error ("mode mismatch: expected " ^ PP.pp_mode mdef ^ " at declaration, found: " ^ PP.pp_chan x)
             else if not (mode_spawn mdef mode)
-            then error ext ("cannot tail call at mode " ^ PP.pp_mode mdef ^ " when current mode is " ^ PP.pp_mode mode)
+            then error ("cannot tail call at mode " ^ PP.pp_mode mdef ^ " when current mode is " ^ PP.pp_mode mode)
             else
               let (z,c) = zc in
               if not (eq_name x z)
-              then E.error_unknown_var_right (x,ext)
+              then E.error_unknown_var_right (x)
               else if not (eq_mode x z)
-              then E.error_mode_mismatch (x, z, ext)
+              then E.error_mode_mismatch (x, z)
               else if not (eqtp env a' c)
-              then error ext ("type mismatch on right, expected: " ^ PP.pp_tp_compact env a' ^
+              then error ("type mismatch on right, expected: " ^ PP.pp_tp_compact env a' ^
                               ", found: " ^ PP.pp_tp_compact env c)
               else
                 let ctx = join ctx in
                 let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) ext in
                 if List.length delta'.linear <> 0
-                then error ext ("unconsumed channel(s) from linear context: " ^ PP.pp_lsctx env delta'.linear)
+                then error ("unconsumed channel(s) from linear context: " ^ PP.pp_lsctx env delta'.linear)
                 else ()
       end
   | A.Lab(x,k,p) ->

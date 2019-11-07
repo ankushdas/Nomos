@@ -48,3 +48,50 @@ proc asset wallet : (n : int), ($l : lcoin) |- ($m : money) =
     | coins => $m <- $l
     )
   }
+
+type auction = /\ <{11}| +{running : &{bid : int -> money -o |{1}> \/ auction,
+                                       cancel : |{8}> \/ auction},
+                           ended : &{collect : int -> +{won : lot * |{3}> \/ auction,
+                                                       lost : money * \/ auction},
+                                     cancel : |{8}> \/ auction}}
+
+type bid = &{addr : int ^ bid, val : money}
+type bids = +{cons : bid * bids, nil : 1}
+
+proc contract run : ($b : bids), ($l : lot) |- (#sa : auction) =
+{
+  $la <- accept #sa ;
+  $la.running ;
+  case $la (
+    bid => r = recv $la ;
+           $m <- recv $la ;
+           #sa <- detach $la ;
+           $newb <- addbid <- r $b $m ;
+           $sa <- run <- $newb $l
+  | cancel => #sa <- detach $la ;
+              #sa <- run <- $b $l
+  )
+}
+
+proc contract end_lot : (w : int), ($b : bids), ($l : lot) |- (#sa : auction) =
+{
+  $la <- accept #sa ;
+  $la.ended ;
+  case $la (
+    collect => r = recv $la ;
+               if w = r
+               then
+                  $la.won ;
+                  send $la $l ;
+                  #sa <- detach $la ;
+                  #sa <- end_nolot <- w $b
+               else
+                  $la.lost ;
+                  $newb <- remove <- r $b ;
+                  $m <- recv $newb ;
+                  #sa <- detach $la ;
+                  #sa <- end_lot <- w $b $l
+  | cancel => #sa <- detach $la ;
+              #sa <- end_lot <- w $b $l
+  )
+}
