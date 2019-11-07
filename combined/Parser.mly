@@ -150,8 +150,8 @@ cons:
 
 op :
    | x = expr; PLUS; y = expr   { Ast.Op(x, Add, y) } 
-   | x = expr; TIMES; y = expr  { Ast.Op(x, Sub, y) } 
-   | x = expr; MINUS; y = expr  { Ast.Op(x, Mult, y) } 
+   | x = expr; TIMES; y = expr  { Ast.Op(x, Mult, y) } 
+   | x = expr; MINUS; y = expr  { Ast.Op(x, Sub, y) } 
    | x = expr; DIV; y = expr    { Ast.Op(x, Div, y) } 
    ;
 
