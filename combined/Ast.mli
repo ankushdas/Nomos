@@ -9,7 +9,7 @@ type func_tp =
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string
-type mode = Shared | Linear | Transaction | Pure | Unknown | Var of string
+type mode = Shared | Linear | Transaction | Pure | Unknown | MVar of string
 type str = Hash | Dollar
 type chan = str * string * mode
 type stype =

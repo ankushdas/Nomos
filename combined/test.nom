@@ -23,7 +23,7 @@ type money = &{value : int ^ money,
 proc asset wallet : (n : int), ($l : lcoin) |- ($m : money) =
   {
     case $m (
-      value => send $m (n);
+      value => send $m n;
                $m <- wallet <- n $l
     | add => $m1 <- recv $m ;
              $m1.value ;
@@ -89,6 +89,7 @@ proc contract end_lot : (w : int), ($b : bids), ($l : lot) |- (#sa : auction) =
                   $la.lost ;
                   $newb <- remove <- r $b ;
                   $m <- recv $newb ;
+                  send $la $m ;
                   #sa <- detach $la ;
                   #sa <- end_lot <- w $b $l
   | cancel => #sa <- detach $la ;

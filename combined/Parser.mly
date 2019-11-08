@@ -99,7 +99,6 @@ decl :
     ;
 
 expr :
-
     | LPAREN MINUS i = INT RPAREN     { {Ast.func_structure = Ast.Int (-i); func_data = ()} } 
     | LPAREN e = expr RPAREN          { e }
     | TRUE                            { {func_structure = Ast.Bool(true); func_data = ()}  }
@@ -179,7 +178,7 @@ matchExp :
 
 
 arg :
-    | LPAREN e = expr RPAREN      { e          }    
+    | LPAREN e = expr RPAREN      { e }    
     | x = ID                      { {func_structure = Var(x); func_data = ()} }     
     | TRUE                        { {func_structure = Bool(true); func_data = ()}  }   
     | FALSE                       { {func_structure = Bool(false); func_data = ()} }   
@@ -188,7 +187,7 @@ arg :
 
 app :
     | x = ID; l = nonempty_list(arg)   { Ast.App({func_structure = Ast.Var(x); func_data = ()}::l) }
-    | LPAREN e = expr RPAREN l = nonempty_list(arg) { Ast.App(e::l) }
+    | LPAREN; e = expr; RPAREN; l = nonempty_list(arg) { Ast.App(e::l) }
     ;
 
 id_list:
@@ -255,7 +254,7 @@ st_struct:
     |  y = mid; LARROW; ACCEPT; x = sharedid; SEMI; p = st           { Ast.Accept(x,y,p) }
     |  y = mid; LARROW; RELEASE; x = linid; SEMI; p = st             { Ast.Release(x,y,p) }
     |  y = mid; LARROW; DETACH; x = linid; SEMI; p = st              { Ast.Detach(x,y,p)  }
-    |  SEND; x = linid; LPAREN; e = expr; RPAREN; SEMI; p = st       { Ast.SendF(x,e,p)   }
+    |  SEND; x = linid; e = arg; SEMI; p = st       { Ast.SendF(x,e,p)   }
     |  y = ID; EQUALS; RECV; x = linid; SEMI; p = st                 { Ast.RecvF(x,y,p)   }
     |  LET; x = ID; EQUALS; e = expr; SEMI; p = st                   { Ast.Let(x,e,p)  }
     |  IF; ifE = expr; THEN; thenE = st; ELSE; elseE = st            { Ast.IfS (ifE, thenE, elseE) }

@@ -25,7 +25,7 @@ type mode =
   | Transaction
   | Pure
   | Unknown
-  | Var of string;;
+  | MVar of string;;
 
 type str =
     Hash

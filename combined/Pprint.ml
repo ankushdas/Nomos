@@ -85,7 +85,7 @@ let pp_mode m = match m with
   | A.Transaction -> "T"
   | A.Linear -> "L"
   | A.Pure -> "P"
-  | A.Var v -> v;;
+  | A.MVar v -> v;;
 
 let rec pp_ftp_simple t = match t with
     A.Integer -> "int"
@@ -122,7 +122,7 @@ let pp_outer_mode m = match m with
   | A.Transaction -> "transaction"
   | A.Linear -> raise ImpossMode
   | A.Pure -> "asset"
-  | A.Var _v -> raise ImpossMode;;
+  | A.MVar _v -> raise ImpossMode;;
 
 let pp_structure s = match s with
     A.Hash -> "#"
