@@ -9,6 +9,8 @@ module E = Exec
 module EL = Elab
 module I = Infer
 module TC = Typecheck
+open Lexer
+open Lexing
  
 (************************)
 (* Command Line Options *)
@@ -20,7 +22,26 @@ type option =
   | Verbose of int
   | Invalid of string;;
 
-let process_option ext op = match op with
+let print_position _outx lexbuf =
+  let pos = lexbuf.lex_curr_p in
+  printf "%s:%d:%d" pos.pos_fname
+    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
+
+(* try lexing and parsing *)
+let parse_with_error lexbuf =
+  try Parser.file Lexer.token lexbuf with
+  | SyntaxError msg ->
+      (Printf.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg; [])
+  | Parser.Error ->
+      (Printf.printf "PARSING FAILURE: %a\n" print_position lexbuf; [])
+
+(* use the parser created by Menhir and return the list of declarations *)
+let parse lexbuf =
+  let env = parse_with_error lexbuf in
+  env;; 
+  
+
+let process_option _ext op = match op with
     Work(s) ->
       begin
         match F.parseCost s with
@@ -48,7 +69,9 @@ let load file =
   (*
   let () = I.reset () in                      (* resets the LP solver *)
   *)
-  let decls = Parse.parse file in             (* may raise ErrorMsg.Error *)
+  let inx = In_channel.read_all file in       (* read file *)
+  let lexbuf = Lexing.from_string inx in      (* lex file *)
+  let decls = parse lexbuf in                 (* parse file *)
   let () = EL.check_redecl [] decls in        (* may raise ErrorMsg.Error *)
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
