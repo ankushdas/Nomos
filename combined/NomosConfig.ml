@@ -34,56 +34,14 @@ let process_option ext op = match op with
           | Some syn -> F.syntax := syn
       end
   | Verbose(level) -> F.verbosity := level
-  | Invalid(s) -> ErrorMsg.error ErrorMsg.Pragma ext ("unrecognized option: " ^ s ^ "\n");;
+  | Invalid(s) -> ErrorMsg.error ErrorMsg.Pragma ("unrecognized option: " ^ s ^ "\n");;
 
 (*********************************)
 (* Loading and Elaborating Files *)
 (*********************************)
  
 let reset () =
-  Parsestate.reset ()
-  ; ErrorMsg.reset ();;
-
-let start_match s1 s2 =
-  let n2 = String.length s2 in
-  let s = String.sub s1 0 n2 in
-  (s = s2);;
-
-let get_option arg =
-  let s = String.length arg in
-  if start_match arg "-syntax="
-  then
-    let n = String.length "-syntax=" in
-    Syntax(String.sub arg n (s - n))
-  else if start_match arg "-work="
-  then
-    let n = String.length "-work=" in
-    Work(String.sub arg n (s - n))
-  else if start_match arg "-verbosity="
-  then
-    let n = String.length "-verbosity=" in
-    Verbose(int_of_string (String.sub arg n (s - n)))
-  else Invalid(arg);;
-
-let apply_options ext line =
-  let args = String.split_on_char ' ' line in
-  let options = List.map get_option (List.tl args) in
-  List.iter (process_option ext) options;;
-
-let rec apply_pragmas dcls = match dcls with
-    {A.declaration = A.Pragma("#options",line); A.decl_extent = ext}::dcls' ->
-      if !F.verbosity >= 1
-      then print_string ("#options" ^ line ^ "\n")
-      else ()
-      ; apply_options ext line
-      ; apply_pragmas dcls'
-  | {A.declaration = A.Pragma("#test",_line); A.decl_extent = _ext}::dcls' ->
-    (* ignore #test pragma *)
-      apply_pragmas dcls'
-  | {A.declaration = A.Pragma(pragma,_line); A.decl_extent = ext}::_dcls' ->
-      ErrorMsg.error_msg ErrorMsg.Pragma ext ("unrecognized pragma: " ^ pragma)
-      ; raise ErrorMsg.Error
-  | dcls' -> dcls';;
+  ErrorMsg.reset ();;
 
 let load file =
   let () = reset () in                        (* internal lexer and parser state *)
@@ -131,7 +89,7 @@ let rec run env dcls =
 
 let cmd_ext = None;;
 
-let rast_file =
+let nomos_file =
   C.Command.Arg_type.create
     (fun filename ->
       match C.Sys.is_file filename with
@@ -141,17 +99,17 @@ let rast_file =
               exit 1
             end
         | `Yes ->
-            if Filename.check_suffix filename ".rast"
+            if Filename.check_suffix filename ".nom"
             then filename
             else
               begin
-                C.eprintf "'%s' does not have rast extension.\n%!" filename;
+                C.eprintf "'%s' does not have nom extension.\n%!" filename;
                 exit 1
               end);;
 
 let rast_command =
   C.Command.basic
-    ~summary:"Typechecking Rast files"
+    ~summary:"Typechecking Nomos files"
     ~readme:(fun () -> "More detailed information")
     C.Command.Let_syntax.(
       let%map_open
@@ -161,7 +119,7 @@ let rast_command =
           ~doc:"work-cost-model: none, recv, send, recvsend, free"
         and syntax_flag = flag "-s" (optional string)
           ~doc:"syntax: implicit, explicit"
-        and file = anon("filename" %: rast_file) in
+        and file = anon("filename" %: nomos_file) in
         fun () ->
           let vlevel =
             begin
@@ -190,7 +148,6 @@ let rast_command =
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1 
           in
           let () = print_string ("% compilation successful!\n") in
-          try
-            let () = run env env in
-            print_string ("% runtime successful!\n")
-            with E.RuntimeError ->  C.eprintf "%% runtime failed!\n"; exit 1);;
+          
+          let () = run env env in
+          print_string ("% runtime successful!\n"));;
