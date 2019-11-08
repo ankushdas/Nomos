@@ -58,15 +58,6 @@ let check_nonneg pot _ext =
         if R.non_neg pot then ()
         else error ("process potential " ^ R.pp_arith pot ^ " not positive");;
 
-let rec commit env ctx octx = match ctx with
-    [] -> {A.shared = [] ; A.linear = [] ; A.ordered = octx}
-  | A.Functional _::ctx' -> commit env ctx' octx
-  | A.STyped (c,t)::ctx' ->
-      let {A.shared = s; A.linear = l; A.ordered = o} = commit env ctx' octx in
-        if A.is_shared env t
-        then {A.shared = (c,t)::s ; A.linear = l ; A.ordered = o}
-        else {A.shared = s ; A.linear = (c,t)::l ; A.ordered = o};;
-
 (***************************)
 (* Elaboration, First Pass *)
 (***************************)
@@ -197,6 +188,18 @@ let rec check_redecl env dcls = match dcls with
   | (A.Exec _)::dcls' -> check_redecl env dcls';;
 
 (* separates channels into shared and linear *)
+
+let rec commit env ctx octx = match ctx with
+    [] -> {A.shared = [] ; A.linear = [] ; A.ordered = octx}
+  | A.Functional _::ctx' -> commit env ctx' octx
+  | A.STyped (c,t)::ctx' ->
+      let {A.shared = s; A.linear = l; A.ordered = o} = commit env ctx' octx in
+        try
+          if A.is_shared env t
+          then {A.shared = (c,t)::s ; A.linear = l ; A.ordered = o}
+          else {A.shared = s ; A.linear = (c,t)::l ; A.ordered = o}
+        with A.UndeclaredTp -> error ("type " ^ PP.pp_tp_compact env t ^ " undeclared");;
+
 let rec commit_channels env dcls = match dcls with
     [] -> []
   | A.ExpDecDef(f,m,(delta,pot,(x,a)),p)::dcls' ->

@@ -57,6 +57,7 @@ type auction = /\ <{11}| +{running : &{bid : int -> money -o |{1}> \/ auction,
 
 type bid = &{addr : int ^ bid, val : money}
 type bids = +{cons : bid * bids, nil : 1}
+type lot = 1
 
 proc contract run : ($b : bids), ($l : lot) |- (#sa : auction) =
 {

@@ -1,6 +1,6 @@
 (executable
  (name nomos)
- (libraries core)
+ (libraries core clp)
  (preprocess (pps ppx_let)))
 
 (menhir

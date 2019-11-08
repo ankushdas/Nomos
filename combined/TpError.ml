@@ -31,7 +31,7 @@ let error_label_mismatch (l, l') =
 let error_label_missing_branch (l) =
   error ("label " ^ l ^ " does not appear among the branches");;
 
-let error_potstar =
+let error_potstar () =
   error ("found unknown potential * while typechecking");;
 
 let error_mode_mismatch ((s1,v1,m1), (s2,v2,m2)) =

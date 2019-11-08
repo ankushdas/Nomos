@@ -220,9 +220,16 @@ let rec lookup_choice cs k = match cs with
       else lookup_choice choices' k
   | [] -> None;;
 
+exception UndeclaredTp
+
 let rec is_shared env tp = match tp with
     Up _ -> true
-  | TpName(v) -> is_shared env (expd_tp env v)
+  | TpName(v) ->
+      begin
+        match lookup_tp env v with
+            None -> raise UndeclaredTp
+          | Some a -> is_shared env a
+      end
   | Plus _ | With _
   | Tensor _ | Lolli _
   | One

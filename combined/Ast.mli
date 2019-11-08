@@ -111,4 +111,5 @@ val lookup_expdec :
   decl list -> expname -> (context * potential * chan_tp * mode) option
 val lookup_expdef : decl list -> expname -> parsed_expr option
 val lookup_choice : ('a * 'b) list -> 'a -> 'b option
+exception UndeclaredTp
 val is_shared : decl list -> stype -> bool

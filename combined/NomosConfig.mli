@@ -3,6 +3,6 @@
 module A = Ast
 module C = Core
 
-val rast_file : string C.Command.Arg_type.t
+val nomos_file : string C.Command.Arg_type.t
 val load : string -> A.decl list
-val rast_command : C.Command.t
+val nomos_command : C.Command.t
