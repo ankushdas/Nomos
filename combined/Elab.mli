@@ -29,7 +29,7 @@ val well_formedness :
   'a ->
   string ->
   A.mode -> TC.A.context -> TC.PP.A.str * string * TC.PP.A.mode -> 'b -> unit
-val gen_constraints : 'a -> A.decl list -> 'b -> unit
+val gen_constraints : A.decl list -> A.decl list -> 'a -> unit
 val substitute :
   A.decl list ->
   (string * int) list -> (string * I.A.mode) list -> A.decl list

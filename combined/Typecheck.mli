@@ -71,34 +71,70 @@ val match_ctx :
   A.decl list ->
   A.argument list -> A.arg list -> A.context -> int -> int -> 'a -> A.context
 val join : A.context -> A.argument list
+val lookup_var : string -> A.argument list -> A.func_tp option
+val lookup_ftp : string -> A.context -> A.func_tp
+val min_potential : A.potential -> A.potential -> A.potential
+val min_tp : A.func_tp -> A.func_tp -> A.func_tp
+val min_delta : A.argument list -> A.argument list -> A.argument list
+val min_pot :
+  A.context * A.potential ->
+  A.context * A.potential -> A.context * A.potential
+val removevar : string -> A.argument list -> A.argument list
+val remove_var : string -> A.context -> A.context
+val consume_pot : A.func_tp -> A.func_tp
+val consumevar : string -> A.argument list -> A.argument list
+val consume : string -> A.context -> A.context
+val consify : 'a A.func_aug_expr list -> 'a A.func_expr
+exception SplitError
+val split_last : 'a list -> 'a list * 'a
+val check_fexp_simple' :
+  bool ->
+  A.decl list ->
+  A.context ->
+  A.potential ->
+  'a PP.A.func_expr ->
+  PP.A.func_tp -> 'b -> PP.A.mode -> bool -> A.context * A.potential
+val synth_fexp_simple' :
+  bool ->
+  A.decl list ->
+  A.context ->
+  A.potential ->
+  'a PP.A.func_expr ->
+  'b -> PP.A.mode -> bool -> A.context * A.potential * A.func_tp
 val check_fexp_simple :
   bool ->
   A.decl list ->
-  PP.A.context ->
-  PP.A.potential ->
-  'a A.func_expr ->
-  A.func_tp -> 'b -> PP.A.mode -> PP.A.context * PP.A.potential
+  A.context ->
+  A.potential ->
+  'a PP.A.func_expr ->
+  PP.A.func_tp -> 'b -> PP.A.mode -> bool -> A.context * A.potential
 val synth_fexp_simple :
+  bool ->
+  A.decl list ->
+  A.context ->
+  A.potential ->
+  'a PP.A.func_expr ->
+  'b -> PP.A.mode -> bool -> A.context * A.potential * A.func_tp
+val checkfexp :
   bool ->
   A.decl list ->
   PP.A.context ->
   PP.A.potential ->
-  'a A.func_expr ->
-  'b -> PP.A.mode -> PP.A.context * PP.A.potential * A.func_tp
-val checkfexp : 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> unit
+  'a A.func_aug_expr ->
+  (PP.A.str * string * PP.A.mode) * PP.A.stype -> 'b -> PP.A.mode -> unit
 val check_exp' :
   bool ->
   A.decl list ->
   PP.A.context ->
   PP.A.potential ->
-  'a PP.A.st_expr ->
+  'a A.st_expr ->
   (PP.A.str * string * PP.A.mode) * PP.A.stype -> 'b -> PP.A.mode -> unit
 val check_exp :
   bool ->
   A.decl list ->
   PP.A.context ->
   PP.A.potential ->
-  'a PP.A.st_expr ->
+  'a A.st_expr ->
   (PP.A.str * string * PP.A.mode) * PP.A.stype -> 'b -> PP.A.mode -> unit
 val check_branchesR :
   bool ->
@@ -121,7 +157,7 @@ val checkexp :
   A.decl list ->
   PP.A.context ->
   PP.A.potential ->
-  'a PP.A.st_expr ->
+  'a A.st_expr ->
   (PP.A.str * string * PP.A.mode) * PP.A.stype -> 'b -> PP.A.mode -> unit
 val find_tp :
   'a * 'b * 'c ->

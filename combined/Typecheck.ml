@@ -175,6 +175,15 @@ let mode_recv m1 m2 = match m1, m2 with
   | _, A.Transaction -> true
   | _, _ -> false;;
 
+
+let rec eq_ftp tp tp' = match tp, tp' with
+    A.Integer, A.Integer -> true
+  | A.Boolean, A.Boolean -> true
+  | A.ListTP(t,pot), A.ListTP(t',pot') -> eq_ftp t t' && eq pot pot'
+  | A.Arrow(t1,t2), A.Arrow(t1',t2') -> eq_ftp t1 t1' && eq_ftp t2 t2'
+  | A.VarT v, A.VarT v' -> v = v'
+  | _, _ -> false;;
+
 let rec mem_seen env seen a a' = match seen with
     (b,b')::seen' ->
       if b = a && b' = a' then true
@@ -210,6 +219,11 @@ and eq_tp env seen tp tp' = match tp, tp' with
       eq_tp' env seen a a'
   | A.Down(a), A.Down(a') ->
       eq_tp' env seen a a'
+  
+  | A.FArrow(t,a), A.FArrow(t',a') ->
+      eq_ftp t t' && eq_tp' env seen a a'
+  | A.FProduct(t,a), A.FProduct(t',a') ->
+      eq_ftp t t' && eq_tp' env seen a a'
 
   | A.TpName(a), A.TpName(a') ->
       eq_name_name env seen a a' (* coinductive type equality *)
@@ -233,14 +247,6 @@ and eq_name_name env seen a a' =
   else eq_tp' env ((a,a')::seen) (A.expd_tp env a) (A.expd_tp env a');;
 
 let eqtp env tp tp' = eq_tp' env [] tp tp';;
-
-let rec eq_ftp tp tp' = match tp, tp' with
-    A.Integer, A.Integer -> true
-  | A.Boolean, A.Boolean -> true
-  | A.ListTP(t,pot), A.ListTP(t',pot') -> eq_ftp t t' && eq pot pot'
-  | A.Arrow(t1,t2), A.Arrow(t1',t2') -> eq_ftp t1 t1' && eq_ftp t2 t2'
-  | A.VarT v, A.VarT v' -> v = v'
-  | _, _ -> false;;
 
 (*************************************)
 (* Type checking process expressions *)
@@ -316,7 +322,7 @@ let rec findftp v delta ext = match delta with
   | (A.STyped _)::delta' ->
       findftp v delta' ext;;
 
-let rec find_ftp v delta ext =
+let find_ftp v delta ext =
   let {A.shared = _sdelta ; A.linear = _ldelta ; A.ordered = odelta} = delta in
   findftp v odelta ext;;
 
@@ -425,13 +431,10 @@ let lookup_ftp x delta =
       None -> error ("unknown variable " ^ x)
     | Some t -> t;;
 
-let min_potential pot pot' = match pot, pot' with
-    A.Star, _ -> A.Star
-  | _, A.Star -> A.Star
-  | A.Arith _p, A.Arith _p' ->
-      if not (ge pot pot')
-      then pot
-      else pot';;
+let min_potential pot pot' =
+  if not (eq pot pot')
+  then raise UnknownTypeError
+  else pot;;
 
 let rec min_tp t t' = match t, t' with
     A.Integer, A.Integer -> A.Integer
@@ -450,11 +453,51 @@ let rec min_delta odelta1 odelta2 = match odelta1 with
       end
   | [] -> [];;
 
-let rec min_pot (delta1, pot1) (delta2, pot2) =
+let min_pot (delta1, pot1) (delta2, pot2) =
   let {A.shared = sdelta1 ; A.linear = ldelta1 ; A.ordered = odelta1} = delta1 in
   let {A.shared = _sdelta2 ; A.linear = _ldelta2 ; A.ordered = odelta2} = delta2 in
   ({A.shared = sdelta1; A.linear = ldelta1; A.ordered = min_delta odelta1 odelta2}, min_potential pot1 pot2);;
 
+let rec removevar x odelta = match odelta with
+    [] -> []
+  | A.Functional (y,t)::odelta' -> if x = y then odelta' else (A.Functional (y,t))::(removevar x odelta')
+  | A.STyped(c,a)::odelta' -> (A.STyped (c,a))::(removevar x odelta');;
+
+let remove_var x delta =
+  {A.shared = delta.A.shared; A.linear = delta.A.linear; A.ordered = removevar x delta.A.ordered};;
+
+let rec consume_pot tp = match tp with
+    A.Integer | A.Boolean | A.VarT _ -> tp
+  | A.ListTP(t,_pot) -> A.ListTP(consume_pot t, A.Arith (R.Int(0)))
+  | A.Arrow(t1,t2) -> A.Arrow(consume_pot t1, consume_pot t2);;
+
+let rec consumevar x odelta = match odelta with
+    [] -> []
+  | A.STyped(c,a)::odelta' -> (A.STyped(c,a))::(consumevar x odelta')
+  | A.Functional(y,t)::odelta' ->
+      if x = y
+      then (A.Functional(y,consume_pot t))::odelta'
+      else (A.Functional(y,t))::odelta';;
+
+let consume x delta =
+  {A.shared = delta.A.shared; A.linear = delta.A.linear; A.ordered = consumevar x delta.A.ordered};;
+
+let rec consify l = match l with
+    [] -> A.ListE([])
+  | e::es ->
+      let d = e.A.func_data in
+      A.Cons(e, {A.func_data = d; A.func_structure = consify es});;
+
+exception SplitError
+
+let split_last l =
+  if List.length l <= 1
+  then raise SplitError
+  else
+    let revl = List.rev l in
+    match revl with
+        [] -> raise UnknownTypeError
+      | e::es -> (List.rev es, e);;
 
 (* check_exp trace env ctx con A pot P C = () if A |{pot}- P : C
 * raises ErrorMsg.Error otherwise
@@ -507,7 +550,11 @@ and check_fexp_simple trace env delta pot e tp ext mode isSend = match e with
   | A.Var(x) -> 
       begin
         let t1 = lookup_ftp x delta in
-        if (eq_ftp tp t1) then (if isSend then consume x delta else delta, pot) else error ("Type mismatch: " ^ PP.pp_ftp_simple t1 ^ " <> " ^ PP.pp_ftp_simple tp)
+        if (eq_ftp tp t1)
+        then
+          let delta' = if isSend then consume x delta else delta in
+          (delta', pot)
+        else error ("type mismatch of " ^ PP.pp_fexp env 0 e ^ " : " ^ PP.pp_ftp_simple t1 ^ " <> " ^ PP.pp_ftp_simple tp)
       end
   | A.ListE(l) -> 
       begin
@@ -516,7 +563,7 @@ and check_fexp_simple trace env delta pot e tp ext mode isSend = match e with
       end
   | A.Op(e1, _, e2) ->
       begin
-        if not(eq_ftp tp A.Integer) then error ("Expected int found " ^ (PP.pp_ftp_simple tp)) 
+        if not(eq_ftp tp A.Integer) then error ("type mismatch of " ^ PP.pp_fexp env 0 e ^ ", expected int, found: " ^ (PP.pp_ftp_simple tp)) 
         else
           let (delta1, pot1) = check_fexp_simple' trace env delta pot e1.A.func_structure A.Integer ext mode isSend in
           let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2.A.func_structure A.Integer ext mode isSend in
@@ -524,7 +571,7 @@ and check_fexp_simple trace env delta pot e tp ext mode isSend = match e with
       end
   | A.CompOp(e1, _, e2) ->
       begin
-        if not(eq_ftp tp A.Boolean) then error ("Expected boolean found " ^ (PP.pp_ftp_simple tp)) 
+        if not(eq_ftp tp A.Boolean) then error ("type mismatch of " ^ PP.pp_fexp env 0 e ^ ", expected boolean, found: " ^ (PP.pp_ftp_simple tp)) 
         else
           let (delta1, pot1) = check_fexp_simple' trace env delta pot e1.A.func_structure A.Integer ext mode isSend in
           let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2.A.func_structure A.Integer ext mode isSend in
@@ -532,7 +579,7 @@ and check_fexp_simple trace env delta pot e tp ext mode isSend = match e with
       end
   | A.RelOp(e1, _, e2) ->
       begin
-        if not(eq_ftp tp A.Boolean) then error ("Expected boolean found " ^ (PP.pp_ftp_simple tp)) 
+        if not(eq_ftp tp A.Boolean) then error ("type mismatch of " ^ PP.pp_fexp env 0 e ^ ", expected boolean, found: " ^ (PP.pp_ftp_simple tp)) 
         else
           let (delta1, pot1) = check_fexp_simple' trace env delta pot e1.A.func_structure A.Boolean ext mode isSend in
           let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2.A.func_structure A.Boolean ext mode isSend in
@@ -544,41 +591,47 @@ and check_fexp_simple trace env delta pot e tp ext mode isSend = match e with
           A.ListTP(t', pot') -> 
           let (delta1, pot1) = check_fexp_simple' trace env delta pot e1.A.func_structure t' ext mode isSend in
           let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2.A.func_structure tp ext mode isSend in
-          if not(ge pot2 pot') then error ("Insufficient potential" ^ pp_lt pot2 pot')
+          if not(ge pot2 pot') then error ("insufficient potential for cons: " ^ PP.pp_fexp env 0 e ^ " : " ^ pp_lt pot2 pot')
           else (delta2, minus pot2 pot')
-        | _ -> error ("Expected list found " ^ PP.pp_ftp_simple tp)
+        | _ -> error ("type mismatch of " ^ PP.pp_fexp env 0 e ^ ", expected list, found: " ^ PP.pp_ftp_simple tp)
       end
   | A.Match(e1, e2, x, xs, e3) -> 
       begin
         let (delta1, pot1, t) = synth_fexp_simple' trace env delta pot e1.A.func_structure ext mode isSend in
         match t with
-          A.ListTP(t', pot') -> 
-          let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2.A.func_structure tp ext mode isSend in
-          let (delta3, pot3) = check_fexp_simple' trace env (add_var (x, t') (add_var (xs, t) delta2)) (plus pot2 pot') e3.A.func_structure tp ext mode isSend in
-          (remove_var x (remove_var xs delta3), pot3)
-          | _ -> error ("Expected list found " ^ PP.pp_ftp_simple t)
+            A.ListTP(t', pot') -> 
+              let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2.A.func_structure tp ext mode isSend in
+              let (delta3, pot3) = check_fexp_simple' trace env (add_var (x, t') (add_var (xs, t) delta2)) (plus pot2 pot') e3.A.func_structure tp ext mode isSend in
+              (remove_var x (remove_var xs delta3), pot3)
+          | _ -> error ("type mismatch of " ^ PP.pp_fexp env 0 e1.A.func_structure ^ ", expected list, found: " ^ PP.pp_ftp_simple t)
       end
-  | A.Lambda(args, e) ->
+  | A.Lambda(args, e') ->
       begin
         match tp, args with
             A.Arrow(t1, t2), A.Single(x) -> 
-              let (delta1, pot1) = check_fexp_simple' trace env (add_var (x, t1) delta) pot e.A.func_structure t2 ext mode isSend in
+              let (delta1, pot1) = check_fexp_simple' trace env (add_var (x, t1) delta) pot e'.A.func_structure t2 ext mode isSend in
               (delta1, pot1) 
-          | A.Arrow(t1, t2), A.Curry(x, xs) -> check_fexp_simple' trace env (add_var (x, t1) delta) pot (A.Lambda(xs, e)) t2 ext mode isSend 
-          | _  -> error ("Expected a function type but got " ^ PP.pp_ftp_simple tp)
+          | A.Arrow(t1, t2), A.Curry(x, xs) -> check_fexp_simple' trace env (add_var (x, t1) delta) pot (A.Lambda(xs, e')) t2 ext mode isSend 
+          | _  -> error ("type mismatch of " ^ PP.pp_fexp env 0 e ^ ", expected arrow, found: " ^ PP.pp_ftp_simple tp)
       end  
   | A.App(l) ->
       begin
         let (l', en) = split_last l in
-        let (delta1, pot1, t) = synth_fexp_simple' trace env delta pot l' ext mode isSend in
+        let (delta1, pot1, t) =
+          begin
+            if List.length l' = 1
+            then synth_fexp_simple' trace env delta pot (A.App(l')) ext mode isSend
+            else synth_fexp_simple' trace env delta pot ((List.hd l').A.func_structure) ext mode isSend
+          end
+        in
         match t with
             A.Arrow(t1,t2) ->
               if not (eq_ftp t2 tp)
-              then error ("type mismatch of " ^ PP.pp_fexp env 0 e ^ ", expected: " ^ PP.pp_ftp_simple tp ^ "found: " ^ PP.pp_ftp_simple t2)
+              then error ("type mismatch of " ^ PP.pp_fexp env 0 e ^ ", expected: " ^ PP.pp_ftp_simple tp ^ ", found: " ^ PP.pp_ftp_simple t2)
               else
-                let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 en t1 ext mode isSend in
+                let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 en.A.func_structure t1 ext mode isSend in
                 (delta2, pot2)
-          | _t -> error ("type mismatch of " ^ PP.pp_fexp env 0 l' ^", expected arrow, found: " ^ PP.pp_ftp_simple t)
+          | _t -> error ("type mismatch of " ^ PP.pp_fexp env 0 (A.App(l')) ^ ", expected arrow, found: " ^ PP.pp_ftp_simple t)
       end
   | A.Command _ -> raise UnknownTypeError
 
@@ -586,7 +639,7 @@ and synth_fexp_simple trace env delta pot e ext mode isSend = (delta, pot, A.Int
 
 and checkfexp trace env delta pot e zc ext mode = match e.A.func_structure with
     A.Command(p) -> check_exp' trace env delta pot p.A.st_structure zc ext mode
-  | _ -> raise UnknownTypeError
+  | _ -> error ("only command allowed at outermost declaration")
 
 and check_exp' trace env delta pot p zc ext mode =
   begin
@@ -1191,7 +1244,7 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
             match c with
                 A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
               | A.FProduct(t,b) ->
-                  let (delta', pot') = check_fexp_simple trace env delta pot e.A.func_structure t ext mode in
+                  let (delta', pot') = check_fexp_simple trace env delta pot e.A.func_structure t ext mode true in
                   check_exp' trace env delta' pot' p.A.st_structure (z,b) ext mode
               | A.Plus _ | A.With _
               | A.One | A.Lolli _ | A.Tensor _
@@ -1205,7 +1258,7 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
           match d with
               A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
             | A.FArrow(t,b) ->
-                let (delta', pot') = check_fexp_simple trace env delta pot e.A.func_structure t ext mode in
+                let (delta', pot') = check_fexp_simple trace env delta pot e.A.func_structure t ext mode true in
                 check_exp' trace env (update_tp env x b delta') pot' p.A.st_structure zc ext mode
             | A.Plus _ | A.With _
             | A.One | A.Tensor _ | A.Lolli _
@@ -1258,12 +1311,12 @@ and check_exp trace env delta pot exp zc ext mode = match exp with
       end
   | A.Let(x,e,p) ->
       begin
-        let (delta', pot', t) = synth_fexp_simple trace env delta pot e.A.func_structure ext mode in
+        let (delta', pot', t) = synth_fexp_simple trace env delta pot e.A.func_structure ext mode false in
         check_exp' trace env (add_var (x,t) delta') pot' p.A.st_structure zc ext mode
       end
   | A.IfS(e,p1,p2) ->
       begin
-        let (delta', pot') = check_fexp_simple trace env delta pot e.A.func_structure A.Boolean ext mode in
+        let (delta', pot') = check_fexp_simple trace env delta pot e.A.func_structure A.Boolean ext mode false in
         check_exp' trace env delta' pot' p1.A.st_structure zc ext mode;
         check_exp' trace env delta' pot' p2.A.st_structure zc ext mode
       end
