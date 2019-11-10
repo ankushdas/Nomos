@@ -246,7 +246,7 @@ st_struct:
     |  x = mid; DOT; k = ID; SEMI; p = st                            { Ast.Lab(x,k,p)  }
     |  CASE; x = linid; LPAREN; b = branches                         { Ast.Case(x,b) }
     |  CLOSE; x = linid                                              { Ast.Close(x)  } 
-    |  WAIT; x = linid; p = st                                       { Ast.Wait(x,p) } 
+    |  WAIT; x = linid; SEMI; p = st                                 { Ast.Wait(x,p) } 
     |  WORK; pot = potential; SEMI; p = st                           { Ast.Work(pot, p) }
     |  PAY; x = linid; pot = potential; SEMI; p = st                 { Ast.Pay(x, pot, p) }
     |  GET; x = linid; pot = potential; SEMI; p = st                 { Ast.Get(x, pot, p) }

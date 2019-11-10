@@ -619,7 +619,7 @@ and check_fexp_simple trace env delta pot e tp ext mode isSend = match e with
         let (l', en) = split_last l in
         let (delta1, pot1, t) =
           begin
-            if List.length l' = 1
+            if List.length l' > 1
             then synth_fexp_simple' trace env delta pot (A.App(l')) ext mode isSend
             else synth_fexp_simple' trace env delta pot ((List.hd l').A.func_structure) ext mode isSend
           end
@@ -635,7 +635,79 @@ and check_fexp_simple trace env delta pot e tp ext mode isSend = match e with
       end
   | A.Command _ -> raise UnknownTypeError
 
-and synth_fexp_simple trace env delta pot e ext mode isSend = (delta, pot, A.Integer)
+and synth_fexp_simple trace env delta pot e ext mode isSend = match e with
+    A.If(e1,e2,e3) ->
+      begin
+        let (delta1, pot1) = check_fexp_simple' trace env delta pot e1.A.func_structure A.Boolean ext mode isSend in
+        let (delta2, pot2, t) = synth_fexp_simple' trace env delta1 pot1 e2.A.func_structure ext mode isSend in
+        let (delta3, pot3) = check_fexp_simple' trace env delta1 pot1 e3.A.func_structure t ext mode isSend in
+        let (odelta, opot) = min_pot (delta2, pot2) (delta3, pot3) in
+        (odelta, opot, t)
+      end
+  | A.LetIn _ -> error ("cannot synthesize type of " ^ PP.pp_fexp env 0 e)
+  | Bool _ -> (delta, pot, A.Boolean)
+  | Int _ -> (delta, pot, A.Integer)
+  | Var(x) ->
+      begin
+        let t = lookup_ftp x delta in
+        let delta' = if isSend then consume x delta else delta in
+        (delta', pot, t)
+      end
+  | ListE(l) ->
+      begin
+        if List.length l = 0
+        then error ("cannot synthesize type of empty list: " ^ PP.pp_fexp env 0 e)
+        else
+          let cons_exp = consify l in
+          synth_fexp_simple' trace env delta pot cons_exp ext mode isSend
+      end
+  | Cons(e1,e2) ->
+      begin
+        let (delta2, pot2, tplist) = synth_fexp_simple' trace env delta pot e2.A.func_structure ext mode isSend in
+        match tplist with
+            A.ListTP(tp,_pot) ->
+              let (delta1, pot1) = check_fexp_simple' trace env delta2 pot2 e1.A.func_structure tp ext mode isSend in
+              (delta1, pot1, tplist)
+          | _t -> error ("type of " ^ PP.pp_fexp env 0 e2.A.func_structure ^ " not a list") 
+      end
+  | Match _ -> error ("cannot synthesize type of " ^ PP.pp_fexp env 0 e)
+  | Lambda _ -> error ("cannot synthesize type of " ^ PP.pp_fexp env 0 e)
+  | A.Op(e1, _, e2) ->
+      begin
+        let (delta1, pot1) = check_fexp_simple' trace env delta pot e1.A.func_structure A.Integer ext mode isSend in
+        let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2.A.func_structure A.Integer ext mode isSend in
+        (delta2, pot2, A.Integer)
+      end
+  | A.CompOp(e1, _, e2) ->
+      begin
+        let (delta1, pot1) = check_fexp_simple' trace env delta pot e1.A.func_structure A.Integer ext mode isSend in
+        let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2.A.func_structure A.Integer ext mode isSend in
+        (delta2, pot2, A.Boolean)
+      end
+  | A.RelOp(e1, _, e2) ->
+      begin
+        let (delta1, pot1) = check_fexp_simple' trace env delta pot e1.A.func_structure A.Boolean ext mode isSend in
+        let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2.A.func_structure A.Boolean ext mode isSend in
+        (delta2, pot2, A.Boolean)
+      end
+  | A.App(l) ->
+      begin
+        let (l', en) = split_last l in
+        let (delta1, pot1, t) =
+          begin
+            if List.length l' > 1
+            then synth_fexp_simple' trace env delta pot (A.App(l')) ext mode isSend
+            else synth_fexp_simple' trace env delta pot ((List.hd l').A.func_structure) ext mode isSend
+          end
+        in
+        match t with
+            A.Arrow(t1,t2) ->
+              let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 en.A.func_structure t1 ext mode isSend in
+              (delta2, pot2, t2)
+          | _t -> error ("type mismatch of " ^ PP.pp_fexp env 0 (A.App(l')) ^ ", expected arrow, found: " ^ PP.pp_ftp_simple t)
+      end
+
+  | _t -> raise UnknownTypeError
 
 and checkfexp trace env delta pot e zc ext mode = match e.A.func_structure with
     A.Command(p) -> check_exp' trace env delta pot p.A.st_structure zc ext mode

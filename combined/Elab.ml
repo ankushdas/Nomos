@@ -116,6 +116,7 @@ and elab_exps env dcls ext = match dcls with
     (* already checked validity during first pass *)
       dcl::(elab_exps' env dcls' ext)
   | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p))::dcls' ->
+      let () = print_string ("type checking: " ^ f ^ "\n") in
       let p' = (*Cost.apply_cost_work*) p in (* applying the cost model *)
       let () =
         begin
