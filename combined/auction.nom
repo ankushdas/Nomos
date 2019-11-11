@@ -1,99 +1,34 @@
 type coin = 1
 type lcoin = +{cons : coin * lcoin, nil : 1}
 
-type money = &{value : int ^ money,
-               add : money -o money,
-               subtract : int -> +{sufficient : money * money,
-                                   insufficient : money},
-               coins : lcoin}
+type money = &{value : <{*}| int ^ money,
+               coins : <{*}| lcoin}
 
-proc asset append : ($l1 : lcoin), ($l2 : lcoin) |- ($l : lcoin) =
+proc asset wallet : (n : int), ($l : lcoin) |{*}- ($m : money) =
   {
-    case $l1 (
-      cons => $x <- recv $l1 ;
-              $l.cons ;
-              send $l $x ;
-              $l <- append <- $l1 $l2
-    | nil => wait $l1 ;
-             $l <- $l2
+    case $m (
+      value => get $m {*} ;
+               send $m n;
+               work {*} ;
+               $m <- wallet <- n $l
+    | coins => get $m {*} ;
+               work {*} ;
+               $m <- $l
     )
   }
 
-proc asset empty : . |- ($l : lcoin) =
+proc asset empty : . |{*}- ($l : lcoin) =
   {
     $l.nil ;
     close $l
   }
 
-proc asset cons : ($x : coin), ($l : lcoin) |- ($k : lcoin) =
-  {
-    $k.cons ;
-    send $k $x ;
-    $k <- $l
-  }
-
-proc asset remove_helper : (n : int), ($l : lcoin), ($m : lcoin) |- ($k : lcoin * lcoin) =
-  {
-    if n = 0
-    then
-      send $k $m ;
-      $k <- $l
-    else
-      case $l (
-        cons => $x <- recv $l ;
-                $m1 <- cons <- $x $m ;
-                let n1 = (n-1) ;
-                $k <- remove_helper <- n1 $l $m1
-       | nil => wait $l ;
-                send $k $m ;
-                $l <- empty <- ;
-                $k <- $l 
-      )
-  }
-
-
-proc asset remove : (n : int), ($l : lcoin) |- ($k : lcoin * lcoin) =
-  {
-    $m <- empty <- ;
-    $k <- remove_helper <- n $l $m
-  }
-
-proc asset empty_wallet : . |- ($m : money) =
+proc asset empty_wallet : . |{*}- ($m : money) =
   {
     $l <- empty <- ;
     let n = 0 ;
     $m <- wallet <- n $l
   }
-
-proc asset wallet : (n : int), ($l : lcoin) |- ($m : money) =
-  {
-    case $m (
-      value => send $m n;
-               $m <- wallet <- n $l
-    | add => $m1 <- recv $m ;
-             $m1.value ;
-             v = recv $m1 ;
-             $m1.coins ;
-             $k <- append <- $l $m1 ;
-             let n1 = n+v ;
-             $m <- wallet <- n1 $k
-    | subtract => n1 = recv $m ;
-                  if (n1 > n)
-                  then
-                    $m.insufficient ;
-                    $m <- wallet <- n $l
-                  else
-                    $m.sufficient ;
-                    $l1 <- remove <- n1 $l ;
-                    $k <- recv $l1 ;
-                    $m1 <- wallet <- n1 $k ;
-                    send $m $m1 ;
-                    let n2 = n - n1 ;
-                    $m <- wallet <- n2 $l1
-    | coins => $m <- $l
-    )
-  }
-
 
 type auction = /\ +{running : &{bid : int -> money -o \/ auction,
                                        cancel : \/ auction},
@@ -105,7 +40,7 @@ type bid = &{addr : int ^ bid, val : money}
 type bids = +{cons : bid * bids, nil : 1}
 type lot = 1
 
-proc asset bidproc : (r : int), ($m : money) |- ($b : bid) =
+proc asset bidproc : (r : int), ($m : money) |{*}- ($b : bid) =
   {
     case $b (
       addr => send $b r ;
@@ -114,20 +49,20 @@ proc asset bidproc : (r : int), ($m : money) |- ($b : bid) =
     )
   }
 
-proc asset cons_bid : ($b : bid), ($bs : bids) |- ($newbs : bids) =
+proc asset cons_bid : ($b : bid), ($bs : bids) |{*}- ($newbs : bids) =
   {
     $newbs.cons ;
     send $newbs $b ;
     $newbs <- $bs
   }
 
-proc asset addbid : (r : int), ($m : money), ($bs : bids) |- ($newbs : bids) =
+proc asset addbid : (r : int), ($m : money), ($bs : bids) |{*}- ($newbs : bids) =
   {
     $b <- bidproc <- r $m ;
     $newbs <- cons_bid <- $b $bs
   }
 
-proc contract run : ($b : bids), ($l : lot) |- (#sa : auction) =
+proc contract run : ($b : bids), ($l : lot) |{*}- (#sa : auction) =
 {
   $la <- accept #sa ;
   $la.running ;
@@ -142,13 +77,13 @@ proc contract run : ($b : bids), ($l : lot) |- (#sa : auction) =
   )
 }
 
-proc asset empty_bids : . |- ($bs : bids) =
+proc asset empty_bids : . |{*}- ($bs : bids) =
   {
     $bs.nil ;
     close $bs
   }
 
-proc asset append_bids : ($l1 : bids), ($l2 : bids) |- ($l : bids) =
+proc asset append_bids : ($l1 : bids), ($l2 : bids) |{*}- ($l : bids) =
   {
     case $l1 (
       cons => $x <- recv $l1 ;
@@ -160,7 +95,7 @@ proc asset append_bids : ($l1 : bids), ($l2 : bids) |- ($l : bids) =
     )
   }
 
-proc asset removebid_helper : (r : int), ($bs : bids), ($acc : bids) |- ($newbs : money * bids) =
+proc asset removebid_helper : (r : int), ($bs : bids), ($acc : bids) |{*}- ($newbs : money * bids) =
   {
     case $bs (
       cons => $b <- recv $bs ;
@@ -181,13 +116,13 @@ proc asset removebid_helper : (r : int), ($bs : bids), ($acc : bids) |- ($newbs 
     )
   }
 
-proc asset removebid : (r : int), ($bs : bids) |- ($newbs : money * bids) =
+proc asset removebid : (r : int), ($bs : bids) |{*}- ($newbs : money * bids) =
   {
     $acc <- empty_bids <- ;
     $newbs <- removebid_helper <- r $bs $acc
   }
 
-proc contract end_lot : (w : int), ($b : bids), ($l : lot) |- (#sa : auction) =
+proc contract end_lot : (w : int), ($b : bids), ($l : lot) |{*}- (#sa : auction) =
 {
   $la <- accept #sa ;
   $la.ended ;
@@ -211,7 +146,7 @@ proc contract end_lot : (w : int), ($b : bids), ($l : lot) |- (#sa : auction) =
   )
 }
 
-proc contract end_nolot : (w : int), ($b : bids) |- (#sa : auction) =
+proc contract end_nolot : (w : int), ($b : bids) |{*}- (#sa : auction) =
 {
   $la <- accept #sa ;
   $la.ended ;

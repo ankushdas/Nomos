@@ -48,18 +48,18 @@ let pp_potpos e = match e with
   | A.Arith e -> "{" ^ R.pp_arith e ^ "}";;
 
 let pp_arith_opr opr = match opr with
-    A.Add -> "+"
-  | A.Sub -> "-"
-  | A.Mult -> "*"
-  | A.Div -> "/";;
+    A.Add -> " + "
+  | A.Sub -> " - "
+  | A.Mult -> " * "
+  | A.Div -> " / ";;
 
 let pp_comp_opr opr = match opr with
-    A.Eq -> "="
-  | A.Neq -> "<>"
-  | A.Lt -> "<"
-  | A.Gt -> ">"
-  | A.Leq -> "<="
-  | A.Geq -> ">=";;
+    A.Eq -> " = "
+  | A.Neq -> " <> "
+  | A.Lt -> " < "
+  | A.Gt -> " > "
+  | A.Leq -> " <= "
+  | A.Geq -> " >= ";;
 
 let pp_rel_opr opr = match opr with
     A.And -> "&&"
@@ -356,7 +356,7 @@ and pp_fexp env i e =
         sargs ^ q
     | A.App l ->
         pp_fexp_list env i l
-    | A.Tick(pot,e) -> "tick " ^ pp_potpos pot ^ " ; \n" ^ pp_fexp_indent env i e.A.func_structure
+    | A.Tick(pot,e) -> "(tick " ^ pp_potpos pot ^ " ; " ^ pp_fexp env i e.A.func_structure ^ ")"
     | A.Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
 
 and pp_fexp_indent env i p = spaces i ^ pp_fexp env i p;;

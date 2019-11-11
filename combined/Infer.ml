@@ -172,7 +172,7 @@ let rec substitute_exp exp psols msols = match exp with
   | A.Case(x,branches) -> A.Case(substitute_mode x msols, substitute_branches branches psols msols)
   | A.Send(x,w,p) -> A.Send(substitute_mode x msols, substitute_mode w msols, substitute_aug p psols msols)
   | A.Recv(x,y,p) -> A.Recv(substitute_mode x msols, substitute_mode y msols, substitute_aug p psols msols)
-  | A.Close(x) -> A.Close(x)
+  | A.Close(x) -> A.Close(substitute_mode x msols)
   | A.Wait(x,q) -> A.Wait(substitute_mode x msols, substitute_aug q psols msols)
   | A.Work(pot,p) ->
       let pot' = substitute_pot pot psols in

@@ -2,92 +2,17 @@ type coin = 1
 type lcoin = +{cons : coin * lcoin, nil : 1}
 
 type money = &{value : <{*}| int ^ money,
-               add : <{*}| money -o money,
-               subtract : <{*}| int -> +{sufficient : money * money,
-                                   insufficient : money},
                coins : <{*}| lcoin}
-
-proc asset append : ($l1 : lcoin), ($l2 : lcoin) |{*}- ($l : lcoin) =
-  {
-    case $l1 (
-      cons => $x <- recv $l1 ;
-              $l.cons ;
-              send $l $x ;
-              $l <- append <- $l1 $l2
-    | nil => wait $l1 ;
-             $l <- $l2
-    )
-  }
-
-proc asset empty : . |{*}- ($l : lcoin) =
-  {
-    $l.nil ;
-    close $l
-  }
-
-proc asset cons : ($x : coin), ($l : lcoin) |{*}- ($k : lcoin) =
-  {
-    $k.cons ;
-    send $k $x ;
-    $k <- $l
-  }
-
-proc asset remove_helper : (n : int), ($l : lcoin), ($m : lcoin) |{*}- ($k : lcoin * lcoin) =
-  {
-    if n = 0
-    then
-      send $k $m ;
-      $k <- $l
-    else
-      case $l (
-        cons => $x <- recv $l ;
-                $m1 <- cons <- $x $m ;
-                let n1 = (n-1) ;
-                $k <- remove_helper <- n1 $l $m1
-       | nil => wait $l ;
-                send $k $m ;
-                $l <- empty <- ;
-                $k <- $l 
-      )
-  }
-
-proc asset remove : (n : int), ($l : lcoin) |{*}- ($k : lcoin * lcoin) =
-  {
-    $m <- empty <- ;
-    $k <- remove_helper <- n $l $m
-  }
 
 proc asset wallet : (n : int), ($l : lcoin) |{*}- ($m : money) =
   {
     case $m (
       value => get $m {*} ;
                send $m n;
+               work {*} ;
                $m <- wallet <- n $l
-    | add => get $m {*} ;
-             $m1 <- recv $m ;
-             $m1.value ;
-             pay $m1 {*} ;
-             v = recv $m1 ;
-             $m1.coins ;
-             pay $m1 {*} ;
-             $k <- append <- $l $m1 ;
-             let n1 = n+v ;
-             $m <- wallet <- n1 $k
-    | subtract => get $m {*} ;
-                  n1 = recv $m ;
-                  if (n1 > n)
-                  then
-                    $m.insufficient ;
-                    $m <- wallet <- n $l
-                  else
-                    $m.sufficient ;
-                    $l1 <- remove <- n1 $l ;
-                    $k <- recv $l1 ;
-                    $m1 <- wallet <- n1 $k ;
-                    send $m $m1 ;
-                    let n2 = n - n1 ;
-                    $m <- wallet <- n2 $l1
     | coins => get $m {*} ;
+               work {*} ;
                $m <- $l
     )
   }
