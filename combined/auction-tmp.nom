@@ -1,0 +1,52 @@
+type coin = 1
+type lcoin = +{cons : coin * lcoin, nil : 1}
+
+type money = &{value : <{*}| int ^ money,
+               coins : <{*}| lcoin}
+
+proc asset wallet : (n : int), ($l : lcoin) |{*}- ($m : money) =
+  {
+    case $m (
+      value => get $m {*} ;
+               send $m n;
+               work {*} ;
+               $m <- wallet <- n $l
+    | coins => get $m {*} ;
+               work {*} ;
+               $m <- $l
+    )
+  }
+
+proc asset empty : . |{*}- ($l : lcoin) =
+  {
+    $l.nil ;
+    close $l
+  }
+
+proc asset empty_wallet : . |{*}- ($m : money) =
+  {
+    $l <- empty <- ;
+    let n = 0 ;
+    $m <- wallet <- n $l
+  }
+
+type auction = /\ +{running : &{bid : int -> money -o \/ auction,
+                                       cancel : \/ auction},
+                    ended : &{collect : int -> +{won : lot * \/ auction,
+                                                 lost : money * \/ auction},
+                              cancel : \/ auction}}
+
+type bid = &{addr : <{*}| int ^ bid, val : <{*}| money}
+type bids = +{cons : bid * bids, nil : 1}
+type lot = 1
+
+proc asset bidproc : (r : int), ($m : money) |{*}- ($b : bid) =
+  {
+    case $b (
+      addr => get $b {*} ;
+              send $b r ;
+              $b <- bidproc <- r $m
+    | val => get $b {*} ;
+             $b <- $m
+    )
+  }
