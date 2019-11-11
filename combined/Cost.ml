@@ -35,7 +35,24 @@ and cost_recv_aug f {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_s
 and cost_recv_branches f bs = match bs with
     [] -> []
   | (l,p)::branches ->
-      (l, cost_recv_aug f p)::(cost_recv_branches f branches);;
+      (l, cost_recv_aug f p)::(cost_recv_branches f branches)
+
+and cost_tick_aug {A.func_data = d; A.func_structure = e} = {A.func_data = d; A.func_structure = cost_tick e}
+
+and cost_tick fexp = match fexp with
+    A.If(e1,e2,e3) -> tick (A.If(cost_tick_aug e1, cost_tick_aug e2, cost_tick_aug e3))
+  | A.LetIn(x,e1,e2) -> tick (A.LetIn(x, cost_tick_aug e1, cost_tick_aug e2))
+  | A.Bool _ | A.Int _ | A.Var _ -> tick (fexp)
+  | A.ListE(l) -> tick (A.ListE(List.map cost_tick_aug l))
+  | A.App(es) -> tick (A.App(List.map cost_tick_aug es))
+  | A.Cons(e1,e2) -> tick (A.Cons(cost_tick_aug e1, cost_tick_aug e2))
+  | A.Match(e1,e2,x,xs,e3) -> tick (A.Match(cost_tick_aug e1, cost_tick_aug e2, x, xs, cost_tick_aug e3))
+  | A.Lambda(xs,e) -> tick (A.Lambda(xs, cost_tick_aug e))
+  | A.Op(e1,op,e2) -> tick (A.Op(cost_tick_aug e1, op, cost_tick_aug e2))
+  | A.CompOp(e1,cop,e2) -> tick (A.CompOp(cost_tick_aug e1, cop, cost_tick_aug e2))
+  | A.RelOp(e1,rop,e2) -> tick (A.RelOp(cost_tick_aug e1, rop, cost_tick_aug e2))
+  | A.Tick(pot,e) -> A.Tick(pot, cost_tick_aug e)
+  | A.Command(p) -> tick (A.Command(cost_tick_aug p));;
 
 let rec cost_send f exp = match exp with
     A.Fwd(x,y) -> A.Fwd(x,y)
@@ -74,7 +91,7 @@ and cost_send_branches f bs = match bs with
   | (l,p)::branches ->
       (l, cost_send_aug f p)::(cost_send_branches f branches);;
 
-let cost_model f flag exp = match flag with
+let cost_model ff fst flag exp = match flag with
     Flags.None -> exp
   | Flags.Free -> exp
   | Flags.Recv -> cost_recv f exp
