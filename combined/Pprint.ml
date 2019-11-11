@@ -337,7 +337,7 @@ and pp_fexp env i e =
         let a = pp_fexp env i head.A.func_structure in
         let b = pp_fexp env i tail.A.func_structure in
         a ^ "::" ^ b
-    | Match(x,y,a,b,z) ->
+    | A.Match(x,y,a,b,z) ->
         let sx = pp_fexp env i x.A.func_structure in
         let snil = "| [] -> " in
         let lnil = len snil in
@@ -348,15 +348,16 @@ and pp_fexp env i e =
         "match " ^ sx ^ " with \n" ^
         spaces (i+2) ^ snil ^ sy ^ "\n" ^
         spaces (i+2) ^ scons ^ sz
-    | Lambda(args, body) ->
+    | A.Lambda(args, body) ->
         let p = pp_args args in
         let sargs = "fun " ^ p ^ " -> " in
         let largs = len sargs in
         let q = pp_fexp env (i+largs) body.A.func_structure in
         sargs ^ q
-    | App l ->
+    | A.App l ->
         pp_fexp_list env i l
-    | Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
+    | A.Tick(pot,e) -> "tick " ^ pp_potpos pot ^ " ; \n" ^ pp_fexp_indent env i e.A.func_structure
+    | A.Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
 
 and pp_fexp_indent env i p = spaces i ^ pp_fexp env i p;;
 
@@ -443,18 +444,3 @@ let pp_decl env dcl = match dcl with
 let pp_exp = fun env -> fun p -> pp_exp env 0 p;;
 
 let pp_program env decls = (List.fold_left (fun s d -> s ^ "\n" ^ pp_decl env d) "" decls) ^ "\n";;
-
-(*
-let rec print_constraints (l : (Ast.ocamlTP * Ast.ocamlTP) list) = 
-                        match l with
-                                [] -> ""
-                        | (t1, t2)::xs -> Printf.sprintf "(%s, %s) \n %s"
-                                        (print_type(t1))
-                                        (print_type(t2))
-                                        (print_constraints xs)
-
-let rec print_sub l = match l with
-                        [] -> ""
-                 | (s, t)::xs -> match xs with
-                                   |    _  -> Printf.sprintf "(%s = %s), %s" s (print_type t) (print_sub xs)
-*)

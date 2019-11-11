@@ -633,6 +633,15 @@ and check_fexp_simple trace env delta pot e tp ext mode isSend = match e with
                 (delta2, pot2)
           | _t -> error ("type mismatch of " ^ PP.pp_fexp env 0 (A.App(l')) ^ ", expected arrow, found: " ^ PP.pp_ftp_simple t)
       end
+  | A.Tick(cpot,e) ->
+      begin
+        if not (ge pot cpot)
+        then error ("insufficient potential to tick: " ^ pp_lt pot cpot)
+        else
+          let (delta1, pot1) = (delta, minus pot cpot) in
+          let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e.A.func_structure tp ext mode isSend in
+          (delta2, pot2)
+      end
   | A.Command _ -> raise UnknownTypeError
 
 and synth_fexp_simple trace env delta pot e ext mode isSend = match e with
@@ -706,8 +715,17 @@ and synth_fexp_simple trace env delta pot e ext mode isSend = match e with
               (delta2, pot2, t2)
           | _t -> error ("type mismatch of " ^ PP.pp_fexp env 0 (A.App(l')) ^ ", expected arrow, found: " ^ PP.pp_ftp_simple t)
       end
-
-  | _t -> raise UnknownTypeError
+  | A.Tick(cpot,e) ->
+      begin
+        if not (ge pot cpot)
+        then error ("insufficient potential to tick: " ^ pp_lt pot cpot)
+        else
+          let (delta1, pot1) = (delta, minus pot cpot) in
+          let (delta2, pot2, t) = synth_fexp_simple' trace env delta1 pot1 e.A.func_structure ext mode isSend in
+          (delta2, pot2, t)
+      end
+  | A.Command _ -> error ("cannot synthesize type of " ^ PP.pp_fexp env 0 e)
+  
 
 and checkfexp trace env delta pot e zc ext mode = match e.A.func_structure with
     A.Command(p) -> check_exp' trace env delta pot p.A.st_structure zc ext mode

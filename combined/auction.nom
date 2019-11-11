@@ -1,12 +1,3 @@
-type x = 1 -o 1
-
-type bits = +{b0 : bits, b1 : bits, e : 1}
-type ctr = &{inc : ctr, val : bits}
-type listA = +{cons : A * listA, nil : 1}
-type queue = &{ins : A -o queue,
-               del : +{none : 1,
-                       some : A * queue}}
-
 type coin = 1
 type lcoin = +{cons : coin * lcoin, nil : 1}
 
