@@ -717,6 +717,7 @@ and synth_fexp_simple trace env delta pot e ext mode isSend = match e with
       end
   | A.Tick(cpot,e) ->
       begin
+        let () = print_string ("Checking: " ^ pp_lt pot cpot) in
         if not (ge pot cpot)
         then error ("insufficient potential to tick: " ^ pp_lt pot cpot)
         else

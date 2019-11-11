@@ -117,7 +117,7 @@ and elab_exps env dcls ext = match dcls with
       dcl::(elab_exps' env dcls' ext)
   | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p))::dcls' ->
       let () = print_string ("type checking: " ^ f ^ "\n") in
-      let p' = (*Cost.apply_cost_work*) p in (* applying the cost model *)
+      let p' = Cost.apply_cost p in (* applying the cost model *)
       let () =
         begin
           match !Flags.syntax with                    (* print reconstructed term *)

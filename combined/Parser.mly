@@ -93,8 +93,8 @@ argument :
 
 decl : 
     | TYPE; x = ID; EQUALS; t = stype   { Ast.TpDef (x,t) }
-    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr    { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, Ast.Arith(Arith.Int(0)), (c,t)), e) }
-    | PROC; m = mode; f = ID; COLON; ctx = context_opt; BAR; pot = potential; MINUS; c = mid; COLON; t = stype; EQUALS; e = expr    { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, pot, (c,t)), e) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr                      { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, Ast.Arith(Arith.Int(0)), (c,t)), e) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; BAR; pot = potential; MINUS; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr    { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, pot, (c,t)), e) }
     | EXEC; f = ID                      { Ast.Exec(f) }
     ;
 
