@@ -33,9 +33,14 @@ let rec esync env seen tp c ext is_shared =
     | A.PayPot(_pot,a) -> esync env seen a c ext is_shared
     | A.GetPot(_pot,a) -> esync env seen a c ext is_shared
     | A.TpName(v) ->
-        if List.exists (fun x -> x = v) seen
-        then ()
-        else esync env (v::seen) (A.expd_tp env v) c ext is_shared
+        begin
+          try
+            if List.exists (fun x -> x = v) seen
+            then ()
+            else esync env (v::seen) (A.expd_tp env v) c ext is_shared
+          with
+            | A.UndeclaredTp -> error ("type " ^ v ^ " undeclared")
+        end
     | A.Up(a) -> esync env seen a c ext true
     | A.Down(a) -> esync env seen a c ext false
     | A.FArrow(_t,a) -> esync env seen a c ext is_shared

@@ -192,6 +192,7 @@ type msg =
 (* Environments *)
 
 exception AstImpossible
+exception UndeclaredTp
 
 let rec lookup_tp decls v = match decls with
     TpDef(v',a)::decls' ->
@@ -201,7 +202,7 @@ let rec lookup_tp decls v = match decls with
 
 let expd_tp env v = match lookup_tp env v with
     Some a -> a
-  | None -> raise AstImpossible;;
+  | None -> raise UndeclaredTp;;
 
 let rec lookup_expdec decls f = match decls with
     ExpDecDef(f',m,(ctx, pot, zc),_p)::decls' ->
@@ -221,7 +222,6 @@ let rec lookup_choice cs k = match cs with
       else lookup_choice choices' k
   | [] -> None;;
 
-exception UndeclaredTp
 
 let rec is_shared env tp = match tp with
     Up _ -> true
