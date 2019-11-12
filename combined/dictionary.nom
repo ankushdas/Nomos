@@ -1,0 +1,35 @@
+type val = 1
+
+type dictionary = &{add : <{*}| int -> val -o dictionary,
+                    delete : <{*}| int -> val * dictionary,
+                    check : <{*}| int -> bool ^ dictionary}
+
+proc asset newval : . |{*}- ($v : val) =
+  {
+    close $v
+  }
+
+proc asset dummy : . |{*}- ($d : dictionary) =
+  {
+    case $d (
+      add => get $d {*} ;
+             key = recv $d ;
+             $v <- recv $d ;
+             wait $v ;
+             $d <- dummy <- 
+    | delete => get $d {*} ;
+                key = recv $d ;
+                $v <- newval <- ;
+                send $d $v ;
+                $d <- dummy <- 
+    | check => get $d {*} ;
+               key = recv $d ;
+               if key > 0
+               then
+                  send $d true ;
+                  $d <- dummy <-
+               else
+                  send $d false ;
+                  $d <- dummy <-
+    )
+  }
