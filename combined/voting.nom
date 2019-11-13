@@ -1,0 +1,78 @@
+type val = 1
+
+type dictionary = &{add : <{*}| int -> val -o dictionary,
+                    delete : <{*}| int -> val * dictionary,
+                    check : <{*}| int -> bool ^ dictionary}
+
+proc asset newval : . |{*}- ($v : val) =
+{
+  close $v
+}
+
+proc asset dummy : . |{*}- ($d : dictionary) =
+{
+  case $d (
+    add => get $d {*} ;
+            key = recv $d ;
+            $v <- recv $d ;
+            wait $v ;
+            $d <- dummy <- 
+  | delete => get $d {*} ;
+              key = recv $d ;
+              $v <- newval <- ;
+              send $d $v ;
+              $d <- dummy <- 
+  | check => get $d {*} ;
+              key = recv $d ;
+              if key > 0
+              then
+                send $d true ;
+                $d <- dummy <-
+              else
+                send $d false ;
+                $d <- dummy <-
+  )
+}
+
+type ballot = /\ <{*}| +{open : int -> +{vote : int -> |{*}> \/ ballot,
+                                         novote : |{*}> \/ ballot},
+                         closed : int ^ |{*}> \/ ballot}
+
+proc asset candidate : (addr : int) |{*}- ($c : 1) =
+{
+  close $c
+}
+
+proc contract open_election : (T : int), ($votes : dictionary) |{*}- (#sb : ballot) =
+{
+  $lb <- accept #sb ;
+  get $lb {*} ;
+  $lb.open ;
+  v = recv $lb ;
+  $votes.check ;
+  pay $votes {*} ;
+  send $votes v ;
+  r = recv $votes ;
+  if r
+  then
+    $lb.vote ;
+    c = recv $lb ;
+    $c <- candidate <- c ;
+    $votes.add ;
+    pay $votes {*} ;
+    send $votes v ;
+    send $votes $c ;
+    pay $lb {*} ;
+    #sb <- detach $lb ;
+    #sb <- check <- T $votes
+  else
+    $lb.novote ;
+    pay $lb {*} ;
+    #sb <- detach $lb ;
+    #sb <- open_election <- T $votes
+}
+
+proc contract check : (T : int), ($votes : dictionary) |{*}- (#sb : ballot) =
+{
+  #sb <- open_election <- T $votes
+}

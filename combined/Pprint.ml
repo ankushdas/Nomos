@@ -177,7 +177,7 @@ let rec pp_tp i a = match a with
   | A.FProduct(t,a) ->
       let tstr = pp_ftp_simple t in
       let inc = len tstr in
-      let s = " -> " in
+      let s = " ^ " in
       let l = len s in
       tstr ^ s ^ pp_tp (i+inc+l) a
   | A.TpName(v) -> v
