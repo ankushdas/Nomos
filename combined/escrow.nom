@@ -1,0 +1,86 @@
+type escrow = /\ <{*}| &{approve : int -> |{*}> \/ escrow,
+                         cancel : int -> |{*}> \/ escrow,
+                         deposit : int -> lot -o |{*}> \/ escrow,
+                         withdraw : int -> lot * |{*}> \/ escrow}
+
+type lot = 1
+
+proc asset emp : . |{*}- ($l : lot) =
+{
+  close $l
+}
+
+proc contract escrow_con : (buyer : int), (seller : int), (buyerOk : bool),
+                           (sellerOk : bool), ($l : lot) |{*}- (#se : escrow) =
+{
+  $le <- accept #se ;
+  get $le {*} ;
+  case $le (
+    approve => r = recv $le ;
+               if r = buyer
+               then
+                let buyerOk = true ;
+                pay $le {*} ;
+                #se <- detach $le ;
+                work {*} ;
+                #se <- escrow_con <- buyer seller buyerOk sellerOk $l
+               else
+                if r = seller
+                then
+                  let sellerOk = true ;
+                  pay $le {*} ;
+                  #se <- detach $le ;
+                  work {*} ;
+                  #se <- escrow_con <- buyer seller buyerOk sellerOk $l
+                else
+                  pay $le {*} ;
+                  #se <- detach $le ;
+                  work {*} ;
+                  #se <- escrow_con <- buyer seller buyerOk sellerOk $l
+  | cancel => r = recv $le ;
+              if r = buyer
+              then
+                let buyerOk = false ;
+                pay $le {*} ;
+                #se <- detach $le ;
+                work {*} ;
+                #se <- escrow_con <- buyer seller buyerOk sellerOk $l
+              else
+                if r = seller
+                then
+                  let sellerOk = false ;
+                  pay $le {*} ;
+                  #se <- detach $le ;
+                  work {*} ;
+                  #se <- escrow_con <- buyer seller buyerOk sellerOk $l
+                else
+                  pay $le {*} ;
+                  #se <- detach $le ;
+                  work {*} ;
+                  #se <- escrow_con <- buyer seller buyerOk sellerOk $l
+  | deposit => r = recv $le ;
+               $m <- recv $le ;
+               let seller = r ;
+               pay $le {*} ;
+               #se <- detach $le ;
+               wait $m ;
+               work {*} ;
+               #se <- escrow_con <- buyer seller buyerOk sellerOk $l
+  | withdraw => r = recv $le ;
+                if r = buyer
+                then
+                  send $le $l ;
+                  $l <- emp <- ;
+                  pay $le {*} ;
+                  #se <- detach $le ;
+                  work {*} ;
+                  #se <- escrow_con <- buyer seller buyerOk sellerOk $l
+                else
+                  $m <- emp <- ;
+                  send $le $m ;
+                  pay $le {*} ;
+                  #se <- detach $le ;
+                  work {*} ;
+                  #se <- escrow_con <- buyer seller buyerOk sellerOk $l 
+  )
+}
