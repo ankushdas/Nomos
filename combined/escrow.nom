@@ -1,17 +1,17 @@
 type escrow = /\ <{*}| &{approve : int -> |{*}> \/ escrow,
                          cancel : int -> |{*}> \/ escrow,
-                         deposit : int -> lot -o |{*}> \/ escrow,
-                         withdraw : int -> lot * |{*}> \/ escrow}
+                         deposit : int -> bond -o |{*}> \/ escrow,
+                         withdraw : int -> bond * |{*}> \/ escrow}
 
-type lot = 1
+type bond = 1
 
-proc asset emp : . |{*}- ($l : lot) =
+proc asset emp : . |{*}- ($l : bond) =
 {
   close $l
 }
 
 proc contract escrow_con : (buyer : int), (seller : int), (buyerOk : bool),
-                           (sellerOk : bool), ($l : lot) |{*}- (#se : escrow) =
+                           (sellerOk : bool), ($l : bond) |{*}- (#se : escrow) =
 {
   $le <- accept #se ;
   get $le {*} ;
