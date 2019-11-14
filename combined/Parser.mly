@@ -93,13 +93,12 @@ argument :
 
 decl : 
     | TYPE; x = ID; EQUALS; t = stype   { Ast.TpDef (x,t) }
-    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr    { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, Ast.Arith(Arith.Int(0)), (c,t)), e) }
-    | PROC; m = mode; f = ID; COLON; ctx = context_opt; BAR; pot = potential; MINUS; c = mid; COLON; t = stype; EQUALS; e = expr    { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, pot, (c,t)), e) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr                      { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, Ast.Arith(Arith.Int(0)), (c,t)), e) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; BAR; pot = potential; MINUS; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr    { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, pot, (c,t)), e) }
     | EXEC; f = ID                      { Ast.Exec(f) }
     ;
 
 expr :
-
     | LPAREN MINUS i = INT RPAREN     { {Ast.func_structure = Ast.Int (-i); func_data = ()} } 
     | LPAREN e = expr RPAREN          { e }
     | TRUE                            { {func_structure = Ast.Bool(true); func_data = ()}  }
@@ -150,8 +149,8 @@ cons:
 
 op :
    | x = expr; PLUS; y = expr   { Ast.Op(x, Add, y) } 
-   | x = expr; TIMES; y = expr  { Ast.Op(x, Sub, y) } 
-   | x = expr; MINUS; y = expr  { Ast.Op(x, Mult, y) } 
+   | x = expr; TIMES; y = expr  { Ast.Op(x, Mult, y) } 
+   | x = expr; MINUS; y = expr  { Ast.Op(x, Sub, y) } 
    | x = expr; DIV; y = expr    { Ast.Op(x, Div, y) } 
    ;
 
@@ -179,7 +178,7 @@ matchExp :
 
 
 arg :
-    | LPAREN e = expr RPAREN      { e          }    
+    | LPAREN e = expr RPAREN      { e }    
     | x = ID                      { {func_structure = Var(x); func_data = ()} }     
     | TRUE                        { {func_structure = Bool(true); func_data = ()}  }   
     | FALSE                       { {func_structure = Bool(false); func_data = ()} }   
@@ -188,7 +187,7 @@ arg :
 
 app :
     | x = ID; l = nonempty_list(arg)   { Ast.App({func_structure = Ast.Var(x); func_data = ()}::l) }
-    | LPAREN e = expr RPAREN l = nonempty_list(arg) { Ast.App(e::l) }
+    | LPAREN; e = expr; RPAREN; l = nonempty_list(arg) { Ast.App(e::l) }
     ;
 
 id_list:
@@ -247,7 +246,7 @@ st_struct:
     |  x = mid; DOT; k = ID; SEMI; p = st                            { Ast.Lab(x,k,p)  }
     |  CASE; x = linid; LPAREN; b = branches                         { Ast.Case(x,b) }
     |  CLOSE; x = linid                                              { Ast.Close(x)  } 
-    |  WAIT; x = linid; p = st                                       { Ast.Wait(x,p) } 
+    |  WAIT; x = linid; SEMI; p = st                                 { Ast.Wait(x,p) } 
     |  WORK; pot = potential; SEMI; p = st                           { Ast.Work(pot, p) }
     |  PAY; x = linid; pot = potential; SEMI; p = st                 { Ast.Pay(x, pot, p) }
     |  GET; x = linid; pot = potential; SEMI; p = st                 { Ast.Get(x, pot, p) }
@@ -255,7 +254,7 @@ st_struct:
     |  y = mid; LARROW; ACCEPT; x = sharedid; SEMI; p = st           { Ast.Accept(x,y,p) }
     |  y = mid; LARROW; RELEASE; x = linid; SEMI; p = st             { Ast.Release(x,y,p) }
     |  y = mid; LARROW; DETACH; x = linid; SEMI; p = st              { Ast.Detach(x,y,p)  }
-    |  SEND; x = linid; LPAREN; e = expr; RPAREN; SEMI; p = st       { Ast.SendF(x,e,p)   }
+    |  SEND; x = linid; e = arg; SEMI; p = st       { Ast.SendF(x,e,p)   }
     |  y = ID; EQUALS; RECV; x = linid; SEMI; p = st                 { Ast.RecvF(x,y,p)   }
     |  LET; x = ID; EQUALS; e = expr; SEMI; p = st                   { Ast.Let(x,e,p)  }
     |  IF; ifE = expr; THEN; thenE = st; ELSE; elseE = st            { Ast.IfS (ifE, thenE, elseE) }

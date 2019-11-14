@@ -1,0 +1,18 @@
+type coin = 1
+type lcoin = +{cons : coin * lcoin, nil : 1}
+
+type money = &{value : <{*}| int ^ money,
+               coins : <{*}| lcoin}
+
+proc asset wallet : (n : int), ($l : lcoin) |{*}- ($m : money) =
+  {
+    case $m (
+      value => get $m {*} ;
+               send $m n;
+               work {*} ;
+               $m <- wallet <- n $l
+    | coins => get $m {*} ;
+               work {*} ;
+               $m <- $l
+    )
+  }

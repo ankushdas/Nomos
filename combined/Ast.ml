@@ -25,7 +25,7 @@ type mode =
   | Transaction
   | Pure
   | Unknown
-  | Var of string;;
+  | MVar of string;;
 
 type str =
     Hash
@@ -99,6 +99,7 @@ and 'a func_expr =
   | Op of 'a func_aug_expr * arith_operator * 'a func_aug_expr
   | CompOp of 'a func_aug_expr * comp_operator * 'a func_aug_expr
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
+  | Tick of potential * 'a func_aug_expr
   | Command of 'a st_aug_expr
 and 'a st_expr =
   (* judgmental constructs *)
@@ -187,3 +188,53 @@ type msg =
   | MPayG of chan * potential * chan      (* pay c {p} ; c+ <- c *)
   | MSendP of chan * valued_expr * chan   (* send c M ; c <- c+ *)
   | MSendA of chan * valued_expr * chan   (* send c M ; c+ <- c *)
+
+(* Environments *)
+
+exception AstImpossible
+exception UndeclaredTp
+
+let rec lookup_tp decls v = match decls with
+    TpDef(v',a)::decls' ->
+      if v = v' then Some a else lookup_tp decls' v
+  | _decl::decls' -> lookup_tp decls' v
+  | [] -> None;;
+
+let expd_tp env v = match lookup_tp env v with
+    Some a -> a
+  | None -> raise UndeclaredTp;;
+
+let rec lookup_expdec decls f = match decls with
+    ExpDecDef(f',m,(ctx, pot, zc),_p)::decls' ->
+      if f = f' then Some (ctx,pot,zc,m) else lookup_expdec decls' f
+  | _decl::decls' -> lookup_expdec decls' f
+  | [] -> None;;
+
+let rec lookup_expdef decls f = match decls with
+    ExpDecDef(f',_m,_dec,p)::decls' ->
+      if f = f' then Some p else lookup_expdef decls' f
+  | _decl::decls' -> lookup_expdef decls' f
+  | [] -> None;;
+
+let rec lookup_choice cs k = match cs with
+    (l,a)::choices' ->
+      if k = l then Some a
+      else lookup_choice choices' k
+  | [] -> None;;
+
+
+let rec is_shared env tp = match tp with
+    Up _ -> true
+  | TpName(v) ->
+      begin
+        match lookup_tp env v with
+            None -> raise UndeclaredTp
+          | Some a -> is_shared env a
+      end
+  | Plus _ | With _
+  | Tensor _ | Lolli _
+  | One
+  | PayPot _ | GetPot _
+  | FArrow _ | FProduct _
+  | Down _ -> false;;
+

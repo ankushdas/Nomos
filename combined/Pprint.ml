@@ -48,18 +48,18 @@ let pp_potpos e = match e with
   | A.Arith e -> "{" ^ R.pp_arith e ^ "}";;
 
 let pp_arith_opr opr = match opr with
-    A.Add -> "+"
-  | A.Sub -> "-"
-  | A.Mult -> "*"
-  | A.Div -> "/";;
+    A.Add -> " + "
+  | A.Sub -> " - "
+  | A.Mult -> " * "
+  | A.Div -> " / ";;
 
 let pp_comp_opr opr = match opr with
-    A.Eq -> "="
-  | A.Neq -> "<>"
-  | A.Lt -> "<"
-  | A.Gt -> ">"
-  | A.Leq -> "<="
-  | A.Geq -> ">=";;
+    A.Eq -> " = "
+  | A.Neq -> " <> "
+  | A.Lt -> " < "
+  | A.Gt -> " > "
+  | A.Leq -> " <= "
+  | A.Geq -> " >= ";;
 
 let pp_rel_opr opr = match opr with
     A.And -> "&&"
@@ -85,7 +85,7 @@ let pp_mode m = match m with
   | A.Transaction -> "T"
   | A.Linear -> "L"
   | A.Pure -> "P"
-  | A.Var v -> v;;
+  | A.MVar v -> v;;
 
 let rec pp_ftp_simple t = match t with
     A.Integer -> "int"
@@ -122,7 +122,7 @@ let pp_outer_mode m = match m with
   | A.Transaction -> "transaction"
   | A.Linear -> raise ImpossMode
   | A.Pure -> "asset"
-  | A.Var _v -> raise ImpossMode;;
+  | A.MVar _v -> raise ImpossMode;;
 
 let pp_structure s = match s with
     A.Hash -> "#"
@@ -177,7 +177,7 @@ let rec pp_tp i a = match a with
   | A.FProduct(t,a) ->
       let tstr = pp_ftp_simple t in
       let inc = len tstr in
-      let s = " -> " in
+      let s = " ^ " in
       let l = len s in
       tstr ^ s ^ pp_tp (i+inc+l) a
   | A.TpName(v) -> v
@@ -337,7 +337,7 @@ and pp_fexp env i e =
         let a = pp_fexp env i head.A.func_structure in
         let b = pp_fexp env i tail.A.func_structure in
         a ^ "::" ^ b
-    | Match(x,y,a,b,z) ->
+    | A.Match(x,y,a,b,z) ->
         let sx = pp_fexp env i x.A.func_structure in
         let snil = "| [] -> " in
         let lnil = len snil in
@@ -348,15 +348,16 @@ and pp_fexp env i e =
         "match " ^ sx ^ " with \n" ^
         spaces (i+2) ^ snil ^ sy ^ "\n" ^
         spaces (i+2) ^ scons ^ sz
-    | Lambda(args, body) ->
+    | A.Lambda(args, body) ->
         let p = pp_args args in
         let sargs = "fun " ^ p ^ " -> " in
         let largs = len sargs in
         let q = pp_fexp env (i+largs) body.A.func_structure in
         sargs ^ q
-    | App l ->
+    | A.App l ->
         pp_fexp_list env i l
-    | Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
+    | A.Tick(pot,e) -> "(tick " ^ pp_potpos pot ^ " ; " ^ pp_fexp env i e.A.func_structure ^ ")"
+    | A.Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
 
 and pp_fexp_indent env i p = spaces i ^ pp_fexp env i p;;
 
@@ -433,7 +434,7 @@ let pp_decl env dcl = match dcl with
     let potstr = pp_pot pot in
     "proc " ^ pp_outer_mode m ^ " " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ potstr ^ "- "
     ^ pp_chan_tp (x,a) ^ " = \n" ^
-    (pp_fexp_indent env 4 p.A.func_structure)
+    (pp_fexp_indent env 2 p.A.func_structure)
   | A.Exec(f) -> "exec " ^ f;;
 
 (**********************)
@@ -443,18 +444,3 @@ let pp_decl env dcl = match dcl with
 let pp_exp = fun env -> fun p -> pp_exp env 0 p;;
 
 let pp_program env decls = (List.fold_left (fun s d -> s ^ "\n" ^ pp_decl env d) "" decls) ^ "\n";;
-
-(*
-let rec print_constraints (l : (Ast.ocamlTP * Ast.ocamlTP) list) = 
-                        match l with
-                                [] -> ""
-                        | (t1, t2)::xs -> Printf.sprintf "(%s, %s) \n %s"
-                                        (print_type(t1))
-                                        (print_type(t2))
-                                        (print_constraints xs)
-
-let rec print_sub l = match l with
-                        [] -> ""
-                 | (s, t)::xs -> match xs with
-                                   |    _  -> Printf.sprintf "(%s = %s), %s" s (print_type t) (print_sub xs)
-*)

@@ -9,7 +9,7 @@ type func_tp =
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string
-type mode = Shared | Linear | Transaction | Pure | Unknown | Var of string
+type mode = Shared | Linear | Transaction | Pure | Unknown | MVar of string
 type str = Hash | Dollar
 type chan = str * string * mode
 type stype =
@@ -48,6 +48,7 @@ and 'a func_expr =
   | Op of 'a func_aug_expr * arith_operator * 'a func_aug_expr
   | CompOp of 'a func_aug_expr * comp_operator * 'a func_aug_expr
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
+  | Tick of potential * 'a func_aug_expr
   | Command of 'a st_aug_expr
 and 'a st_expr =
     Fwd of chan * chan
@@ -104,3 +105,12 @@ type msg =
   | MPayG of chan * potential * chan
   | MSendP of chan * valued_expr * chan
   | MSendA of chan * valued_expr * chan
+exception AstImpossible
+val lookup_tp : decl list -> tpname -> stype option
+val expd_tp : decl list -> tpname -> stype
+val lookup_expdec :
+  decl list -> expname -> (context * potential * chan_tp * mode) option
+val lookup_expdef : decl list -> expname -> parsed_expr option
+val lookup_choice : ('a * 'b) list -> 'a -> 'b option
+exception UndeclaredTp
+val is_shared : decl list -> stype -> bool

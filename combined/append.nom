@@ -1,0 +1,72 @@
+type coin = 1
+type lcoin = +{cons : |{*}> coin * lcoin, nil : 1}
+type lcoin1 = +{cons : |{*}> coin * lcoin1, nil : 1}
+type lcoin2 = +{cons : |{*}> coin * lcoin2, nil : 1}
+
+proc asset empty : . |{*}- ($l : lcoin3) =
+  {
+    $l.nil ;
+    close $l
+  }
+
+proc asset cons : ($x : coin), ($l : lcoin4) |{*}- ($k : lcoin4) =
+  {
+    $k.cons ;
+    pay $k {*} ;
+    send $k $x ;
+    $k <- $l
+  }
+
+type lcoin3 = +{cons : |{*}> coin * lcoin3, nil : 1}
+type lcoin4 = +{cons : |{*}> coin * lcoin4, nil : 1}
+
+proc asset remove_helper : (n : int), ($l : lcoin3), ($m : lcoin4) |{*}- ($k : lcoin4 * lcoin3) =
+  {
+    if n = 0
+    then
+      send $k $m ;
+      work {*} ;
+      $k <- $l
+    else
+      case $l (
+        cons => get $l {*} ;
+                $x <- recv $l ;
+                $m1 <- cons <- $x $m ;
+                let n1 = (n-1) ;
+                work {*} ;
+                $k <- remove_helper <- n1 $l $m1
+       | nil => wait $l ;
+                send $k $m ;
+                $l <- empty <- ;
+                work {*} ;
+                $k <- $l 
+      )
+  }
+
+proc asset empty_acc : . |{*}- ($l : lcoin4) =
+  {
+    $l.nil ;
+    close $l
+  }
+
+proc asset remove : (n : int), ($l : lcoin3) |{*}- ($k : lcoin4 * lcoin3) =
+  {
+    $m <- empty_acc <- ;
+    $k <- remove_helper <- n $l $m
+  }
+
+proc asset append : ($l1 : lcoin3), ($l2 : lcoin4) |{*}- ($l : lcoin4) =
+  {
+    case $l1 (
+      cons => get $l1 {*} ;
+              $x <- recv $l1 ;
+              $l.cons ;
+              pay $l {*} ;
+              send $l $x ;
+              work {*} ;
+              $l <- append <- $l1 $l2
+    | nil => wait $l1 ;
+             work {*} ;
+             $l <- $l2
+    )
+  }
