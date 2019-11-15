@@ -313,10 +313,17 @@ and removeU_fexp fexp = match fexp with
 let potvar_map = ref (M.empty (module C.String));;
 let modevar_map = ref (M.empty (module C.String));;
 
+let num_vars = ref 0;;
+let num_constraints = ref 0;;
+let t_vars () = num_vars := !num_vars + 1;;
+let t_cons () = num_constraints := !num_constraints + 1;;
+
 let get_potvar v =
   match M.find !potvar_map v with
       None ->
         let sv = ClpS.fresh_var () in
+        let () = t_vars () in
+        let () = t_cons () in
         let () = ClpS.add_constr_list ~lower:0.0 [(sv, 1.0)] in
         let () = potvar_map := M.add_exn !potvar_map ~key:v ~data:sv in
         sv
@@ -326,6 +333,8 @@ let get_modevar v =
   match M.find !modevar_map v with
       None ->
         let sv = ClpS.fresh_var () in
+        let () = t_vars () in
+        let () = t_cons () in
         let () = ClpS.add_constr_list ~lower:0.0 ~upper:3.0 [(sv, 1.0)] in
         let () = modevar_map := M.add_exn !modevar_map ~key:v ~data:sv in
         sv
@@ -365,6 +374,7 @@ let add_eq_constr n l =
   else
     let cl = constr_list l in
     let neg_n = float_of_int (-n) in
+    let () = t_cons () in
     ClpS.add_constr_list ~lower:neg_n ~upper:neg_n cl;;
 
 let add_ge_constr n l =
@@ -372,6 +382,7 @@ let add_ge_constr n l =
   else
     let cl = constr_list l in
     let neg_n = float_of_int (-n) in
+    let () = t_cons () in
     ClpS.add_constr_list ~lower:neg_n cl;;
 
 let eq e1 e2 =
@@ -399,6 +410,7 @@ let m_eq v1 v2 =
     let sv1 = get_modevar v1 in
     let sv2 = get_modevar v2 in
     let () = if !Flags.verbosity >= 2 then print_string (v1 ^ " = " ^ v2 ^ "\n") in
+    let () = t_cons () in
     let () = ClpS.add_constr_list ~lower:0.0 ~upper:0.0 [(sv1, 1.0); (sv2, -1.0)]
     in true;;
 
@@ -420,6 +432,7 @@ let m_eq_const v m =
   let c = modeval m in
   let sv = get_modevar v in
   let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode m ^ "\n") in
+  let () = t_cons () in
   let () = ClpS.add_constr_list ~lower:c ~upper:c [(sv, 1.0)] in
   true;;
 
@@ -430,6 +443,7 @@ let m_eq_pair v m1 m2 =
   let max_val = max c1 c2 in
   let sv = get_modevar v in
   let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Shared ^ "\n") in
+  let () = t_cons () in
   let () = ClpS.add_constr_list ~lower:min_val ~upper:max_val [(sv, 1.0)] in
   true;;
 
@@ -445,6 +459,7 @@ let m_lin v =
   let (min_val, max_val) = min_max A.Pure A.Linear A.Transaction in
   let sv = get_modevar v in
   let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Linear ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Transaction ^ "\n") in
+  let () = t_cons () in
   let () = ClpS.add_constr_list ~lower:min_val ~upper:max_val [(sv, 1.0)] in
   true;;
 
@@ -480,6 +495,11 @@ let reset () =
   let () = mnum := 0 in
   let () = vnum := 0 in
   let () = ClpS.reset () in
+  ();;
+
+let print_stats () =
+  let () = print_string ("# Vars = " ^ string_of_int !num_vars ^ "\n") in
+  let () = print_string ("# Constraints = " ^ string_of_int !num_constraints ^ "\n") in
   ();;
 
 let solve_and_print () =
