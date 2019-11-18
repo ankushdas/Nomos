@@ -66,6 +66,7 @@ let load file =
   (*
   let () = I.reset () in                      (* resets the LP solver *)
   *)
+  let t0 = Unix.gettimeofday () in
   let inx = C.In_channel.read_all file in       (* read file *)
   let lexbuf = Lexing.from_string inx in      (* lex file *)
   let decls = parse lexbuf in                 (* parse file *)
@@ -78,6 +79,7 @@ let load file =
                 Some env' -> env'
               | None -> raise ErrorMsg.Error  (* error during elaboration *)
   in
+  let t1 = Unix.gettimeofday () in
   let env = EL.remove_stars env in
   let env = EL.removeU env in
   let () = if !Flags.verbosity >= 2 then print_string ("========================================================\n") in
@@ -85,8 +87,12 @@ let load file =
   let () = EL.gen_constraints env env () in
   let (psols,msols) = I.solve_and_print () in
   let env = EL.substitute env psols msols in
+  let t2 = Unix.gettimeofday () in
   let () = if !Flags.verbosity >= 1 then print_string ("========================================================\n") in
   let () = if !Flags.verbosity >= 1 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in
+  let () = print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
+  let () = print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
+  let () = I.print_stats () in
   env;;
 
 
