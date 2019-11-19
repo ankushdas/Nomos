@@ -23,9 +23,9 @@ proc contract wallet : (n : int), ($l : lcoin) |{*}- (#sm : money) =
                work {*} ;
                send $m $l ;
                $l <- emp <- ;
-               let n = 0 ;
+               let n1 = 0 ;
                #sm <- detach $m ;
-               #sm <- wallet <- n $l
+               #sm <- wallet <- n1 $l
 
     )
   }

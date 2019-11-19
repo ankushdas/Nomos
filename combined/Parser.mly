@@ -32,7 +32,9 @@
 
 
 file :
-     | vl = list(decl) EOF { vl }
+     | vl = list(decl) EOF { (vl, Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)) }
      ;
 
 mode :
@@ -92,30 +94,73 @@ argument :
     ;
 
 decl : 
-    | TYPE; x = ID; EQUALS; t = stype   { Ast.TpDef (x,t) }
-    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr                      { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, Ast.Arith(Arith.Int(0)), (c,t)), e) }
-    | PROC; m = mode; f = ID; COLON; ctx = context_opt; BAR; pot = potential; MINUS; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr    { Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, pot, (c,t)), e) }
-    | EXEC; f = ID                      { Ast.Exec(f) }
+    | TYPE; x = ID; EQUALS; t = stype   { (Ast.TpDef (x,t), Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr                      { (Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, Ast.Arith(Arith.Int(0)), (c,t)), e),
+                                                                                                                                                      Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                                                      ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                                                      $startpos.Lexing.pos_fname)) }
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; BAR; pot = potential; MINUS; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr    { (Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, pot, (c,t)), e),
+                                                                                                                                                      Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                                                      ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                                                      $startpos.Lexing.pos_fname)) }
+    | EXEC; f = ID                      { (Ast.Exec(f), Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                        ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                        $startpos.Lexing.pos_fname)) }
     ;
 
 expr :
-    | LPAREN MINUS i = INT RPAREN     { {Ast.func_structure = Ast.Int (-i); func_data = ()} } 
+    | LPAREN MINUS i = INT RPAREN     { {Ast.func_structure = Ast.Int (-i); func_data = 
+                                        Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
     | LPAREN e = expr RPAREN          { e }
-    | TRUE                            { {func_structure = Ast.Bool(true); func_data = ()}  }
-    | FALSE                           { {func_structure = Ast.Bool(false); func_data = ()} }
-    | i = INT                         { {func_structure = Ast.Int(i); func_data = ()}  }
-    | x = ID                          { {func_structure = Ast.Var(x); func_data = ()}  }
-    | c = cond                        { {func_structure = c; func_data = ()} }
-    | l = letin                       { {func_structure = l; func_data = ()} }
-    | lst = listVal                   { {func_structure = lst; func_data = ()} }
-    | a = app                         { {func_structure = a; func_data = ()} }
-    | c = cons                        { {func_structure = c; func_data = ()} }
-    | m = matchExp                    { {func_structure = m; func_data = ()} }
-    | l = lambdaExp                   { {func_structure = l; func_data = ()} }
-    | o = op                          { {func_structure = o; func_data = ()} }
-    | c = compOp                      { {func_structure = c; func_data = ()} }
-    | r = relOp                       { {Ast.func_structure = r; Ast.func_data = ()} }
-    | LBRACE; s = st; RBRACE          { {func_structure = Ast.Command(s); func_data = ()} } 
+    | TRUE                            { {func_structure = Ast.Bool(true); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | FALSE                           { {func_structure = Ast.Bool(false); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | i = INT                         { {func_structure = Ast.Int(i); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | x = ID                          { {func_structure = Ast.Var(x); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | c = cond                        { {func_structure = c; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | l = letin                       { {func_structure = l; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | lst = listVal                   { {func_structure = lst; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | a = app                         { {func_structure = a; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | c = cons                        { {func_structure = c; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | m = matchExp                    { {func_structure = m; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | l = lambdaExp                   { {func_structure = l; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | o = op                          { {func_structure = o; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | c = compOp                      { {func_structure = c; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | r = relOp                       { {Ast.func_structure = r; Ast.func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | LBRACE; s = st; RBRACE          { {func_structure = Ast.Command(s); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} }
     ;
 
 
@@ -126,7 +171,9 @@ cond :
     ;
 
 func :
-    | args = id_list; EQUALS; e = expr { {func_structure = Ast.Lambda(args, e); func_data = ()} }
+    | args = id_list; EQUALS; e = expr { {func_structure = Ast.Lambda(args, e); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
     ;
 
 letin :
@@ -179,20 +226,34 @@ matchExp :
 
 arg :
     | LPAREN e = expr RPAREN      { e }    
-    | x = ID                      { {func_structure = Var(x); func_data = ()} }     
-    | TRUE                        { {func_structure = Bool(true); func_data = ()}  }   
-    | FALSE                       { {func_structure = Bool(false); func_data = ()} }   
-    | i = INT                     { {Ast.func_structure = Int(i); func_data = ()}  }
+    | x = ID                      { {func_structure = Var(x); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | TRUE                        { {func_structure = Bool(true); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | FALSE                       { {func_structure = Bool(false); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
+    | i = INT                     { {Ast.func_structure = Int(i); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
     ;
 
 app :
-    | x = ID; l = nonempty_list(arg)   { Ast.App({func_structure = Ast.Var(x); func_data = ()}::l) }
+    | x = ID; l = nonempty_list(arg)   { Ast.App({func_structure = Ast.Var(x); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)}::l) }
     | LPAREN; e = expr; RPAREN; l = nonempty_list(arg) { Ast.App(e::l) }
     ;
 
 id_list:
-    | x = ID;                   { Ast.Single(x) }
-    | x = ID;  l = id_list      { Ast.Curry(x, l) } 
+    | x = ID;                   { Ast.Single(x, Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)) }
+    | x = ID;  l = id_list      { Ast.Curry((x, Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)), l) } 
     ;
 
 lambdaExp :
@@ -261,5 +322,7 @@ st_struct:
     ;
 
 st :
-    | s = st_struct { {st_structure = s; st_data = () } }
+    | s = st_struct { {st_structure = s; st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} } 
     ;

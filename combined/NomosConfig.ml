@@ -11,6 +11,16 @@ module TC = Typecheck
 open Lexer
 open Lexing
  
+let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
+  let open Lexing in
+  lexbuf.lex_curr_p <- {
+    pos_fname = fname;
+    pos_lnum = 1;
+    pos_bol = 0;
+    pos_cnum = 0;
+  }
+  ;
+
 (************************)
 (* Command Line Options *)
 (************************)
@@ -29,9 +39,10 @@ let print_position _outx lexbuf =
 let parse_with_error lexbuf =
   try Parser.file Lexer.token lexbuf with
   | SyntaxError msg ->
-      (C.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg; [])
+      (C.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg; 
+      ([], None))
   | Parser.Error ->
-      (C.printf "PARSING FAILURE: %a\n" print_position lexbuf; [])
+      (C.printf "PARSING FAILURE: %a\n" print_position lexbuf; ([], None))
 
 (* use the parser created by Menhir and return the list of declarations *)
 let parse lexbuf =
@@ -61,6 +72,8 @@ let process_option _ext op = match op with
 let reset () =
   ErrorMsg.reset ();;
 
+
+
 let load file =
   let () = reset () in                        (* internal lexer and parser state *)
   (*
@@ -69,13 +82,14 @@ let load file =
   let t0 = Unix.gettimeofday () in
   let inx = C.In_channel.read_all file in       (* read file *)
   let lexbuf = Lexing.from_string inx in      (* lex file *)
-  let decls = parse lexbuf in                 (* parse file *)
+  let _ = init lexbuf file in
+  let (decls, ext) = parse lexbuf in                 (* parse file *)
   let () = EL.check_redecl [] decls in        (* may raise ErrorMsg.Error *)
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
   let decls' = EL.commit_channels decls decls in
   (* allow for mutually recursive definitions in the same file *)
-  let env = match EL.elab_decls decls' decls' () with
+  let env = match EL.elab_decls decls' decls' ext with
                 Some env' -> env'
               | None -> raise ErrorMsg.Error  (* error during elaboration *)
   in
@@ -83,10 +97,11 @@ let load file =
   let env = EL.remove_stars env in
   let env = EL.removeU env in
   let () = if !Flags.verbosity >= 2 then print_string ("========================================================\n") in
-  let () = if !Flags.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in
-  let () = EL.gen_constraints env env () in
+  let () = if !Flags.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") "" 
+  (List.map (fun (x,_) -> x) env)) in
+  let () = EL.gen_constraints env (List.map (fun (x,_) -> x) env) ext in
   let (psols,msols) = I.solve_and_print () in
-  let env = EL.substitute env psols msols in
+  let env = EL.substitute (List.map (fun (x,_) -> x) env) psols msols in
   let t2 = Unix.gettimeofday () in
   let () = if !Flags.verbosity >= 1 then print_string ("========================================================\n") in
   let () = if !Flags.verbosity >= 1 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in

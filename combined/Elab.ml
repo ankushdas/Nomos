@@ -22,6 +22,7 @@ module E = TpError
 module I = Infer
 
 let error = ErrorMsg.error ErrorMsg.Type;;
+let error1 = ErrorMsg.error1 ErrorMsg.Type;;
  
 let postponed dcl = match dcl with
     A.Exec _ -> "% "
@@ -51,12 +52,12 @@ let rec valid_ctx env ctx ext = match ctx with
 let valid_delta env delta ext = valid_ctx env (delta.A.shared @ delta.A.linear) ext;;
 *)
 
-let check_nonneg pot _ext =
+let check_nonneg pot ext =
   match pot with
       A.Star -> ()
     | A.Arith pot -> 
         if R.non_neg pot then ()
-        else error ("process potential " ^ R.pp_arith pot ^ " not positive");;
+        else error ext ("process potential " ^ R.pp_arith pot ^ " not positive");;
 
 (***************************)
 (* Elaboration, First Pass *)
@@ -71,22 +72,22 @@ let check_nonneg pot _ext =
  *)
 let rec elab_tps env dcls ext = match dcls with
     [] -> []
-  | (A.TpDef(v,a) as dcl)::dcls' ->
+  | ((A.TpDef(v,a), ext') as dcl)::dcls' ->
       let () = if !Flags.verbosity >= 1
-               then print_string (postponed dcl ^ PP.pp_decl env dcl ^ "\n")
+               then print_string (postponed (A.TpDef(v,a)) ^ PP.pp_decl env (A.TpDef(v,a)) ^ "\n")
                else () in
       let () = if TC.contractive a then ()
-               else error ("type " ^ PP.pp_tp env a ^ " not contractive") in
+               else error ext' ("type " ^ PP.pp_tp env a ^ " not contractive") in
       (*let () = TC.valid env TC.Zero a ext in*)
-      let () = TC.esync_tp env (A.TpName(v)) ext in
+      let () = TC.esync_tp env (A.TpName(v)) ext' in
       dcl::(elab_tps env dcls' ext)
-  | (A.ExpDecDef(_f,_m,(delta,pot,(x,a)),_p) as dcl)::dcls' ->
+  | ((A.ExpDecDef(_f,_m,(delta,pot,(x,a)),_), ext') as dcl)::dcls' ->
       (* do not print process declaration so they are printed close to their use *)
-      let () = if dups ((x,a)::delta.linear) then error ("duplicate variable in process declaration") else () in
+      let () = if dups ((x,a)::delta.linear) then error ext' ("duplicate variable in process declaration") else () in
       (*let () = valid_delta env delta ext in*)
       (*let () = TC.valid env TC.Zero a ext in*)
-      let () = TC.esync_tp env a ext in
-      let () = check_nonneg pot ext in
+      let () = TC.esync_tp env a ext' in
+      let () = check_nonneg pot ext' in
       dcl::(elab_tps env dcls' ext)
   | dcl::dcls' -> dcl::(elab_tps env dcls' ext);;
 
@@ -103,26 +104,27 @@ exception ElabImpossible;;
  *)
 let rec elab_exps' env dcls ext = match dcls with
     [] -> []
-  | (A.TpDef _)::_ -> (* do not print type definition again *)
+  | ((A.TpDef _), _)::_ -> (* do not print type definition again *)
       elab_exps env dcls ext
-  | dcl::_ ->
+  | (dcl, _)::_ ->
       if !Flags.verbosity >= 1
       then print_string (postponed dcl ^ PP.pp_decl env dcl ^ "\n")
       else () ;
       elab_exps env dcls ext
 and elab_exps env dcls ext = match dcls with
     [] -> []
-  | (A.TpDef _ as dcl)::dcls' ->
+  | ((A.TpDef _, _) as dcl)::dcls' ->
     (* already checked validity during first pass *)
       dcl::(elab_exps' env dcls' ext)
-  | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p))::dcls' ->
+  | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p), ext')::dcls' ->
       let () = print_string ("type checking: " ^ f ^ "\n") in
       let p' = Cost.apply_cost p in (* applying the cost model *)
       let () =
         begin
           match !Flags.syntax with                    (* print reconstructed term *)
               Flags.Implicit ->
-                ErrorMsg.error ErrorMsg.Pragma ("implicit syntax currently not supported")
+              (* ask Ankush *)
+                ErrorMsg.error ErrorMsg.Pragma ext' "implicit syntax currently not supported"
             | Flags.Explicit -> (* maybe only if there is a cost model... *)
                 if !Flags.verbosity >= 2
                 then print_string ("% with cost model " ^ pp_costs () ^ "\n"
@@ -130,25 +132,25 @@ and elab_exps env dcls ext = match dcls with
                 else ()
         end
       in
-      let () = try TC.checkfexp false env delta pot p' (x,a) ext m (* approx. type check *)
+      let () = try TC.checkfexp false env delta pot p' (x,a) ext' m (* approx. type check *)
                with ErrorMsg.Error ->
                   (* if verbosity >= 2, type-check again, this time with tracing *)
                   if !Flags.verbosity >= 2
                     then
                       begin
                         print_string ("% tracing type checking...\n")
-                        ; TC.checkfexp true env delta pot p' (x,a) ext m
+                        ; TC.checkfexp true env delta pot p' (x,a) ext' m
                       end (* will re-raise ErrorMsg.Error *)
                   else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
-      A.ExpDecDef(f,m,(delta,pot,(x,a)),p')::(elab_exps' env dcls' ext)
-  | (A.Exec(f) as dcl)::dcls' ->
+      (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'), ext')::(elab_exps' env dcls' ext)
+  | ((A.Exec(f), ext') as dcl)::dcls' ->
       begin
         match A.lookup_expdec env f with
             Some (ctx,_pot,_zc,_m) ->
               if List.length ctx.A.ordered > 0
-              then error ("process " ^ f ^ " has a non-empty context, cannot be executed")
+              then error ext' ("process " ^ f ^ " has a non-empty context, cannot be executed")
               else dcl::elab_exps' env dcls' ext
-          | None -> error ("process " ^ f ^ " undefined")
+          | None -> error ext' ("process " ^ f ^ " undefined")
       end;;
 
 (* elab_decls env decls = SOME(env')
@@ -178,15 +180,15 @@ let elab_decls env dcls ext =
  
 let rec check_redecl env dcls = match dcls with
     [] -> ()
-  | A.TpDef(v,_)::dcls' ->
+  | (A.TpDef(v,_), ext)::dcls' ->
       if is_tpdef env v || is_tpdef dcls' v
-      then error ("type name " ^ v ^ " defined more than once")
+      then error ext ("type name " ^ v ^ " defined more than once")
       else check_redecl env dcls'
-  | A.ExpDecDef(f,_,_,_)::dcls' ->
+  | (A.ExpDecDef(f,_,_,_), ext')::dcls' ->
       if is_expdecdef env f || is_expdecdef dcls' f
-      then error ("process name " ^ f ^ " defined more than once")
+      then error ext' ("process name " ^ f ^ " defined more than once")
       else check_redecl env dcls'
-  | (A.Exec _)::dcls' -> check_redecl env dcls';;
+  | ((A.Exec _), _)::dcls' -> check_redecl env dcls';;
 
 (* separates channels into shared and linear *)
 
@@ -199,27 +201,29 @@ let rec commit env ctx octx = match ctx with
           if A.is_shared env t
           then {A.shared = (c,t)::s ; A.linear = l ; A.ordered = o}
           else {A.shared = s ; A.linear = (c,t)::l ; A.ordered = o}
-        with A.UndeclaredTp -> error ("type " ^ PP.pp_tp_compact env t ^ " undeclared");;
+        with A.UndeclaredTp -> 
+        let _ = Printf.printf "hi!" in
+        error1 ("type " ^ PP.pp_tp_compact env t ^ " undeclared");;
 
 let rec commit_channels env dcls = match dcls with
     [] -> []
-  | A.ExpDecDef(f,m,(delta,pot,(x,a)),p)::dcls' ->
+  | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p), ext)::dcls' ->
       let delta' = commit env delta.ordered delta.ordered in
-      A.ExpDecDef(f,m,(delta',pot,(x,a)),p)::(commit_channels env dcls')
+      (A.ExpDecDef(f,m,(delta',pot,(x,a)),p), ext)::(commit_channels env dcls')
   | dcl::dcls' -> dcl::(commit_channels env dcls');;
 
 (* Replace stars in potential annotations with variables in types and expressions *)
 let rec remove_stars_tps dcls = match dcls with
     [] -> []
-  | A.TpDef(v,a)::dcls' ->
+  | (A.TpDef(v,a), ext)::dcls' ->
       let a' = I.remove_stars_tp a in
-      A.TpDef(v,a')::(remove_stars_tps dcls')
-  | (A.ExpDecDef _ as dcl)::dcls' -> dcl::(remove_stars_tps dcls')
-  | (A.Exec _ as dcl)::dcls' -> dcl::(remove_stars_tps dcls');;
+      (A.TpDef(v,a'), ext)::(remove_stars_tps dcls')
+  | ((A.ExpDecDef _, _) as dcl)::dcls' -> dcl::(remove_stars_tps dcls')
+  | ((A.Exec _, _) as dcl)::dcls' -> dcl::(remove_stars_tps dcls');;
 
 let rec remove_stars_exps dcls = match dcls with
     [] -> []
-  | A.ExpDecDef(f,m,(delta,pot,(z,c)),p)::dcls' ->
+  | (A.ExpDecDef(f,m,(delta,pot,(z,c)),p), ext)::dcls' ->
     let remove_list = List.map (fun (x,a) -> (x, I.remove_stars_tp a)) in
     let remove_arglist = List.map (fun x -> match x with
                                                 A.Functional(v,t) -> A.Functional(v,I.remove_stars_ftp t)
@@ -232,9 +236,9 @@ let rec remove_stars_exps dcls = match dcls with
     let pot' = I.remove_star pot in
     let zc' = (z, I.remove_stars_tp c) in
     let p' = I.remove_stars_faug p in
-    A.ExpDecDef(f,m,(delta',pot',zc'),p')::(remove_stars_exps dcls')
-  | (A.TpDef _ as dcl)::dcls' -> dcl::(remove_stars_exps dcls')
-  | (A.Exec _ as dcl)::dcls' -> dcl::(remove_stars_exps dcls');;
+    (A.ExpDecDef(f,m,(delta',pot',zc'),p'), ext)::(remove_stars_exps dcls')
+  | ((A.TpDef _, _) as dcl)::dcls' -> dcl::(remove_stars_exps dcls')
+  | ((A.Exec _, _) as dcl)::dcls' -> dcl::(remove_stars_exps dcls');;
 
 let remove_stars env =
   let env = remove_stars_tps env in
@@ -244,15 +248,15 @@ let remove_stars env =
 (* remove U from modes, and substitute them with variables *)
 let rec removeU_tps dcls = match dcls with
     [] -> []
-  | A.TpDef(v,a)::dcls' ->
+  | (A.TpDef(v,a), ext)::dcls' ->
       let a' = I.removeU_tp a in
-      A.TpDef(v,a')::(removeU_tps dcls')
-  | (A.ExpDecDef _ as dcl)::dcls' -> dcl::(removeU_tps dcls')
-  | (A.Exec _ as dcl)::dcls' -> dcl::(removeU_tps dcls');;
+      (A.TpDef(v,a'), ext)::(removeU_tps dcls')
+  | ((A.ExpDecDef _, _) as dcl)::dcls' -> dcl::(removeU_tps dcls')
+  | ((A.Exec _, _) as dcl)::dcls' -> dcl::(removeU_tps dcls');;
 
 let rec removeU_exps dcls = match dcls with
     [] -> []
-  | A.ExpDecDef(f,m,(delta,pot,(z,c)),p)::dcls' ->
+  | (A.ExpDecDef(f,m,(delta,pot,(z,c)),p), ext)::dcls' ->
     let removeU_list = List.map (fun (x,a) -> (I.removeU x, I.removeU_tp a)) in
     let removeU_arglist = List.map (fun x -> match x with
                                                 A.Functional(v,t) -> A.Functional(v,t)
@@ -264,9 +268,9 @@ let rec removeU_exps dcls = match dcls with
     let delta' = {A.shared = sdelta'; A.linear = ldelta'; A.ordered = odelta'} in
     let zc' = (I.removeU z, I.removeU_tp c) in
     let p' = I.removeU_faug p in
-    A.ExpDecDef(f,m,(delta',pot,zc'),p')::(removeU_exps dcls')
-  | (A.TpDef _ as dcl)::dcls' -> dcl::(removeU_exps dcls')
-  | (A.Exec _ as dcl)::dcls' -> dcl::(removeU_exps dcls');;
+    (A.ExpDecDef(f,m,(delta',pot,zc'),p'), ext)::(removeU_exps dcls')
+  | ((A.TpDef _, _) as dcl)::dcls' -> dcl::(removeU_exps dcls')
+  | ((A.Exec _, _) as dcl)::dcls' -> dcl::(removeU_exps dcls');;
 
 let removeU env =
   let env = removeU_tps env in

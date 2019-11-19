@@ -8,7 +8,7 @@
   (flags --explain)
   (infer true))
 
-(ocamllex lexer)
+(ocamllex Lexer)
 
 (env
     (dev

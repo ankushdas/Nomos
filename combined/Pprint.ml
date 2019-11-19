@@ -202,8 +202,8 @@ let pp_tp_compact _env a = pp_tp_simple a;;
 
 let rec pp_args args = 
   match args with
-    | A.Single(x) -> x
-    | A.Curry(x, rest) ->
+    | A.Single(x, _) -> x
+    | A.Curry((x, _), rest) ->
         let a = pp_args rest in
         x ^ " " ^ a;;
 

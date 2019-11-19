@@ -1,5 +1,7 @@
 module R = Arith
 
+type ext = Mark.ext option      (* optional extent (source region info) *)
+
 type potential =
   | Arith of R.arith            (* p,q, potential for work *)
   | Star                        (* potential to be inferred *)
@@ -50,8 +52,8 @@ type stype =
 and choices = (label * stype) list
 
 type arglist =
-  | Single of string
-  | Curry of string * arglist;;
+  | Single of string * ext 
+  | Curry of (string * ext) * arglist;;
 
 type arith_operator =
   | Add
@@ -145,7 +147,7 @@ and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list;;                          (* (l1 => P1 | ... | ln => Pn) *)
 
 
-type parsed_expr = unit func_aug_expr
+type parsed_expr = ext func_aug_expr
 type typed_expr = func_tp func_aug_expr
 
 type argument =
@@ -167,7 +169,7 @@ type decl =
     parsed_expr
   | Exec of expname                           (* exec f *)
 
-type program = decl list
+type program = (decl * ext) list * ext
 
 type value =
   | IntV of int
@@ -195,9 +197,9 @@ exception AstImpossible
 exception UndeclaredTp
 
 let rec lookup_tp decls v = match decls with
-    TpDef(v',a)::decls' ->
+    (TpDef(v',a), _)::decls' ->
       if v = v' then Some a else lookup_tp decls' v
-  | _decl::decls' -> lookup_tp decls' v
+  | (_decl, _)::decls' -> lookup_tp decls' v
   | [] -> None;;
 
 let expd_tp env v = match lookup_tp env v with
@@ -205,13 +207,13 @@ let expd_tp env v = match lookup_tp env v with
   | None -> raise UndeclaredTp;;
 
 let rec lookup_expdec decls f = match decls with
-    ExpDecDef(f',m,(ctx, pot, zc),_p)::decls' ->
+    (ExpDecDef(f',m,(ctx, pot, zc),_p), _)::decls' ->
       if f = f' then Some (ctx,pot,zc,m) else lookup_expdec decls' f
   | _decl::decls' -> lookup_expdec decls' f
   | [] -> None;;
 
 let rec lookup_expdef decls f = match decls with
-    ExpDecDef(f',_m,_dec,p)::decls' ->
+    (ExpDecDef(f',_m,_dec,p), _)::decls' ->
       if f = f' then Some p else lookup_expdef decls' f
   | _decl::decls' -> lookup_expdef decls' f
   | [] -> None;;
