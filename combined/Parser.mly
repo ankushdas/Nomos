@@ -298,31 +298,65 @@ app_arg :
     | x = ID            { Ast.FArg(x) }
     ;
 
-st_struct:
-    |  x = mid; LARROW; f = ID; LARROW; xs = list(app_arg); SEMI; p = st { Ast.Spawn(x, f, xs, p) }
-    |  x = mid; LARROW; f = ID; LARROW; xs = list(app_arg)               { Ast.ExpName(x, f, xs) }
-    |  x = mid; LARROW; y = mid                                      { Ast.Fwd(x,y) }
-    |  SEND; x = linid; w = mid; SEMI; p = st                        { Ast.Send(x,w,p) }
-    |  y = mid; LARROW; RECV; x = linid; SEMI; p = st                { Ast.Recv(x,y,p) }
-    |  x = mid; DOT; k = ID; SEMI; p = st                            { Ast.Lab(x,k,p)  }
-    |  CASE; x = linid; LPAREN; b = branches                         { Ast.Case(x,b) }
-    |  CLOSE; x = linid                                              { Ast.Close(x)  } 
-    |  WAIT; x = linid; SEMI; p = st                                 { Ast.Wait(x,p) } 
-    |  WORK; pot = potential; SEMI; p = st                           { Ast.Work(pot, p) }
-    |  PAY; x = linid; pot = potential; SEMI; p = st                 { Ast.Pay(x, pot, p) }
-    |  GET; x = linid; pot = potential; SEMI; p = st                 { Ast.Get(x, pot, p) }
-    |  y = mid; LARROW; ACQUIRE; x = sharedid; SEMI; p = st          { Ast.Acquire(x,y,p) }
-    |  y = mid; LARROW; ACCEPT; x = sharedid; SEMI; p = st           { Ast.Accept(x,y,p) }
-    |  y = mid; LARROW; RELEASE; x = linid; SEMI; p = st             { Ast.Release(x,y,p) }
-    |  y = mid; LARROW; DETACH; x = linid; SEMI; p = st              { Ast.Detach(x,y,p)  }
-    |  SEND; x = linid; e = arg; SEMI; p = st       { Ast.SendF(x,e,p)   }
-    |  y = ID; EQUALS; RECV; x = linid; SEMI; p = st                 { Ast.RecvF(x,y,p)   }
-    |  LET; x = ID; EQUALS; e = expr; SEMI; p = st                   { Ast.Let(x,e,p)  }
-    |  IF; ifE = expr; THEN; thenE = st; ELSE; elseE = st            { Ast.IfS (ifE, thenE, elseE) }
-    ;
-
-st :
-    | s = st_struct { {st_structure = s; st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
-                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
-                                             $startpos.Lexing.pos_fname)} } 
+st:
+    |  x = mid; LARROW; f = ID; LARROW; xs = list(app_arg); s = SEMI; p = st { {st_structure = Ast.Spawn(x, f, xs, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  x = mid; LARROW; f = ID; LARROW; xs = list(app_arg)               { {st_structure = Ast.ExpName(x, f, xs); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }  
+    |  x = mid; LARROW; y = mid                                          { {st_structure = Ast.Fwd(x,y); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  SEND; x = linid; w = mid; s = SEMI; p = st                            { {st_structure = Ast.Send(x,w,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }      
+    |  y = mid; LARROW; RECV; x = linid; s = SEMI; p = st                    { {st_structure = Ast.Recv(x,y,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }   
+    |  x = mid; DOT; k = ID; s = SEMI; p = st                                { {st_structure = Ast.Lab(x,k,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }   
+        |  CASE; x = linid; LPAREN; b = branches                         { {st_structure = Ast.Case(x,b); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                    $startpos.Lexing.pos_fname)} }
+    |  CLOSE; x = linid                                                  { {st_structure = Ast.Close(x); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                    $startpos.Lexing.pos_fname)} }     
+    |  WAIT; x = linid; s = SEMI; p = st                                     { {st_structure = Ast.Wait(x,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }   
+    |  WORK; pot = potential; s = SEMI; p = st                               { {st_structure = Ast.Work(pot, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} } 
+    |  PAY; x = linid; pot = potential; s = SEMI; p = st                     { {st_structure = Ast.Pay(x, pot, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} } 
+    |  GET; x = linid; pot = potential; s = SEMI; p = st                     { {st_structure = Ast.Get(x, pot, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }       
+    |  y = mid; LARROW; ACQUIRE; x = sharedid; s = SEMI; p = st              { {st_structure = Ast.Acquire(x,y,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }  
+    |  y = mid; LARROW; ACCEPT; x = sharedid; s = SEMI; p = st               { {st_structure = Ast.Accept(x,y,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} } 
+    |  y = mid; LARROW; RELEASE; x = linid; s = SEMI; p = st                 { {st_structure = Ast.Release(x,y,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} } 
+    |  y = mid; LARROW; DETACH; x = linid; s = SEMI; p = st                  { {st_structure = Ast.Detach(x,y,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  SEND; x = linid; e = arg; s = SEMI; p = st                            { {st_structure = Ast.SendF(x,e,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} } 
+    |  y = ID; EQUALS; RECV; x = linid; s = SEMI; p = st                     { {st_structure = Ast.RecvF(x,y,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }   
+    |  LET; x = ID; EQUALS; e = expr; s = SEMI; p = st                       { {st_structure = Ast.Let(x,e,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }   
+    |  IF; ifE = expr; THEN; thenE = st; ELSE; elseE = st                { {Ast.st_structure = Ast.IfS (ifE, thenE, elseE); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
     ;

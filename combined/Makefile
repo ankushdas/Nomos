@@ -2,7 +2,7 @@
 
 # MENHIR          := menhir
 
-# MENHIRFLAGS     := --infer --explain
+# MENHIRFLAGS     := --infer --explain --unused-tokens
 
 # OCAMLBUILD      := ocamlbuild -use-ocamlfind -tag thread -quiet -pkg core -use-menhir -menhir "$(MENHIR) $(MENHIRFLAGS)"
 
