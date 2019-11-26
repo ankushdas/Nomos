@@ -538,7 +538,7 @@ and synth_fexp_simple' trace env delta pot (e : A.parsed_expr)  ext mode isSend 
   end
   ; synth_fexp_simple trace env delta pot e ext mode isSend
 
-and check_fexp_simple trace env delta pot (e : A.parsed_expr)  tp ext mode isSend = match (e.A.func_structure) with
+and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend = match (e.A.func_structure) with
     A.If(e1,e2,e3) ->
       begin
         let (delta1, pot1) = check_fexp_simple' trace env delta pot e1 A.Boolean ext mode isSend in
@@ -552,8 +552,18 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr)  tp ext mode isSen
         let (delta2, pot2) = check_fexp_simple' trace env (add_var (x,t) delta1) pot1 e2 tp ext mode isSend in
         (remove_var x delta2, pot2)
       end
-  | A.Bool(_) -> (delta, pot)
-  | A.Int(_) -> (delta, pot)
+  | A.Bool(_) -> 
+      begin
+        match tp with
+            A.Boolean -> (delta, pot)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected boolean, found: " ^ PP.pp_ftp_simple tp)
+      end
+  | A.Int(_) ->
+      begin
+        match tp with
+            A.Integer -> (delta, pot)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected integer, found: " ^ PP.pp_ftp_simple tp)
+      end
   | A.Var(x) -> 
       begin
         let t1 = lookup_ftp x delta (e.A.func_data) in
@@ -1423,7 +1433,7 @@ and check_branchesR trace env delta pot branches z choices ext mode = match bran
       begin
         if trace then print_string ("| " ^ l1 ^ " => \n") else ()
         ; if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext
-        ; check_exp' trace env delta pot p (z,c) ext mode
+        ; check_exp' trace env delta pot p (z,c) (p.A.st_data) mode
         ; check_branchesR trace env delta pot branches' z choices' ext mode
       end
   | [], [] -> ()
@@ -1437,7 +1447,7 @@ and check_branchesL trace env delta x choices pot branches zc ext mode = match c
       begin
         if trace then print_string ("| " ^ l1 ^ " => \n") else ()
         ; if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext
-        ; check_exp' trace env (update_tp env x a delta) pot p zc ext mode
+        ; check_exp' trace env (update_tp env x a delta) pot p zc (p.A.st_data) mode
         ; check_branchesL trace env delta x choices' pot branches' zc ext mode
       end
   | [], [] -> ()
