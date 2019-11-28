@@ -21,7 +21,7 @@ proc asset empty : . |{*}- (q : queue) =
 
   )
 
-proc asset elem : (x : A), (t : queue) |{0}- (q : queue) =
+proc asset elem : (x : A), (t : queue) |{*}- (q : queue) =
   case q (
     ins =>
       get q {*} ;

@@ -21,19 +21,19 @@ Clone the repository and obtain the source code, and install the necessary libra
 $ git clone https://github.com/ankushdas/Nomos.git
 $ cd Nomos
 $ opam update
-$ opam pin add -y rast .    # only the first time you build
+$ opam pin add -y nomos .    # only the first time you build
 $ opam upgrade              # after packages upgrade
 ```
 The next step is installing the [Coin-Or LP solver](https://projects.coin-or.org/Clp). Use the instructions below.
 ```
-$ cd src/clp
+$ cd clp
 $ svn co https://projects.coin-or.org/svn/Clp/stable/1.16 coin-Clp
 $ cd coin-Clp
 $ ./configure -C
 $ make
 $ make test
 $ make install
-$ cd ../../..
+$ cd ../..
 ```
 The next step is setting up the environment variable `CLP_PATH` to the directory where the Coin-Or LP solver is installed. Use the command below.
 ```
@@ -47,23 +47,33 @@ $ make
 ```
 
 ### Executing
-The executable generated exists at `_build/default/src/rast.exe`. To typecheck a file, simply run
+The make command creates two executables: one for resource-aware session types at `_build/default/rast-src/rast.exe` and one for nomos at `_build/default/nomos-src/nomos.exe`. To typecheck a file with rast, simply run
 ```
-$ ./_build/default/src/rast.exe <file-path>
+$ _build/default/rast-src/rast.exe <file-path>
+```
+Alternatively, to typecheck a file with nomos, run
+```
+$ _build/default/nomos-src/nomos.exe <file-path>
 ```
 
-To test whether your build is successful, I have created a test file in the repository. Run it using
+To test whether your rast build is successful, I have created a test file in the repository. Run it using
 ```
-$ ./_build/default/src/rast.exe test/success/testfile.rast
+$ ./_build/default/rast-src/rast.exe rast-tests/success/testfile.rast
+```
+It should produce the output "% runtime successful!" at the end.
+
+To test whether your nomos build is successful, I have created a test file in the repository. Run it using
+```
+$ ./_build/default/nomos-src/rast.exe nomos-tests/auction-dict.nom
 ```
 It should produce the output "% runtime successful!" at the end.
 
 ### Regression Testing
-I have also created an executable at `_build/default/src/regression.exe`. This executes a set of files and generates a report by matching the expected and actual output.
+I have also created an executable at `_build/default/rast-src/regression.exe`. This executes a set of files and generates a report by matching the expected and actual output.
 
 To test if all files work as expected, run the command
 ```
-$ ./_build/default/src/regression.exe test/*/*.rast
+$ ./_build/default/src/regression.exe rast-tests/*/*.rast
 ```
 
 ### Troubleshooting

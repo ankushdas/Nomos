@@ -1,6 +1,6 @@
 (library
  (name            clp)
- (public_name     rast.clp)
+ (public_name     nomos.clp)
  (c_names         clp_stubs)
  (c_flags         (-I/%{env:CLP_PATH=/}/include))
  (c_library_flags (-L/%{env:CLP_PATH=/}/lib -lClp -lCoinUtils)))
