@@ -64,7 +64,7 @@ It should produce the output "% runtime successful!" at the end.
 
 To test whether your nomos build is successful, I have created a test file in the repository. Run it using
 ```
-$ ./_build/default/nomos-src/rast.exe nomos-tests/auction-dict.nom
+$ ./_build/default/nomos-src/nomos.exe nomos-tests/auction-dict.nom
 ```
 It should produce the output "% runtime successful!" at the end.
 
