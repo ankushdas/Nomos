@@ -1,0 +1,10 @@
+prefix=/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp
+libdir=/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp/Osi/src/Osi
+
+Name: Osi
+Description: COIN-OR Open Solver Interface
+URL: https://projects.coin-or.org/Osi
+Version: 0.107
+Libs: ${libdir}/libOsi.la 
+Cflags: -I/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp/Osi/src/Osi -I/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp/Osi/src/Osi
+Requires: coinutils 

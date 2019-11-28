@@ -1,0 +1,10 @@
+prefix=/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp
+libdir=/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp/CoinUtils/src
+
+Name: CoinUtils
+Description: COIN-OR Utilities
+URL: https://projects.coin-or.org/CoinUtils
+Version: 2.10
+Libs: ${libdir}/libCoinUtils.la -lbz2 -lz -framework Accelerate -framework Accelerate -lm 
+Cflags: -I/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp/CoinUtils/src -I/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp/CoinUtils/src
+Requires: 
