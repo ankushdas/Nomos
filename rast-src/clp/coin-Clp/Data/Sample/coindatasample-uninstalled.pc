@@ -1,8 +1,0 @@
-datadir=/Users/ankushd/Documents/Projects/Nomos/src/clp/coin-Clp/Data/Sample
-
-Name: Sample
-Description: Sample models
-URL: https://projects.coin-or.org/svn/Data/Sample
-Version: 1.2
-Libs:
-Cflags:

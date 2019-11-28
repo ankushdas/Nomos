@@ -1,7 +1,0 @@
-Clp_ampl.lo: Clp_ampl.cpp ClpConfig.h config.h Clp_ampl.h
-
-ClpConfig.h:
-
-config.h:
-
-Clp_ampl.h:
