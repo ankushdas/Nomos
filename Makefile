@@ -1,11 +1,11 @@
 DUNE=dune
 
-.PHONY: all build clean
+.PHONY: all rast nomos clean
 
-all: build regression
+all: rast regression nomos
 
 editor:
-	cd src; \
+	cd rast-src; \
 	ocamlc Arith.mli; \
 	ocamlc Normalize.mli; \
 	ocamlc Mark.mli; \
@@ -29,11 +29,14 @@ editor:
 	ocamlfind ocamlc -thread -linkpkg -package core RastConfig.mli; \
 	cd ..
 
-build:
-	@${DUNE} build src/rast.exe
+rast:
+	@${DUNE} build rast-src/rast.exe
 
 regression:
-	@${DUNE} build src/regression.exe
+	@${DUNE} build rast-src/regression.exe
+
+nomos:
+	@${DUNE} build nomos-src/nomos.exe
 
 clean:
 	@${DUNE} clean
