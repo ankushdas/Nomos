@@ -73,7 +73,7 @@ I have also created an executable at `_build/default/rast-src/regression.exe`. T
 
 To test if all files work as expected, run the command
 ```
-$ ./_build/default/src/regression.exe rast-tests/*/*.rast
+$ ./_build/default/rast-src/regression.exe rast-tests/*/*.rast
 ```
 
 ### Troubleshooting
