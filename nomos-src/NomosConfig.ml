@@ -115,7 +115,18 @@ let load file =
 (* Executing Programs *)
 (**********************)
 
-let run _env _dcls = ();;
+let run env dcls =
+  match dcls with
+      {A.declaration = A.Exec(f) ; A.decl_extent = _ext}::dcls' ->
+        let () = if !Flags.verbosity >= 1
+                 then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
+                 else () in
+        let _config = E.exec env f in
+        (* may raise Exec.RuntimeError *)
+        run env dcls'
+    | _dcl::dcls' -> run env dcls'
+    | [] -> ();;
+
 
 let cmd_ext = None;;
 

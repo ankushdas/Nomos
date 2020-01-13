@@ -138,7 +138,7 @@ and 'a st_expr =
   | Detach of chan * chan * 'a st_aug_expr                  (* y <- detach x *)
 
   (* arrow and product *)
-  | RecvF of chan * string * 'a st_aug_expr                     (* y <- recv x ; P *)
+  | RecvF of chan * string * 'a st_aug_expr                     (* y = recv x ; P *)
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr           (* send x (M) ; P *)
   | Let of string * 'a func_aug_expr * 'a st_aug_expr           (* let x = M ; P *)
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr   (* if e then P else Q *)
@@ -240,3 +240,52 @@ let rec is_shared env tp = match tp with
   | FArrow _ | FProduct _
   | Down _ -> false;;
 
+(*************************)
+(* Operational Semantics *)
+(*************************)
+
+let sub (sc',c',mc') (_sc,c,_mc) (sx,x,mx) =
+  if x = c then (sc',c',mc') else (sx,x,mx);;
+
+let rec subst_list c' c l = match l with
+   [] -> []
+  | x::xs -> (sub c' c x)::(subst_list c' c xs);;
+
+let rec subst c' c expr = match expr with
+    Fwd(x,y) -> Fwd(sub c' c x, sub c' c y)
+  | Spawn(x,f,xs,q) -> Spawn(x,f, subst_list c' c xs, subst_aug c' c q)
+  | ExpName(x,f,xs) -> ExpName(x,f, subst_list c' c xs)
+  | Lab(x,k,p) -> Lab(sub c' c x, k, subst_aug c' c p)
+  | Case(x,branches) -> Case(sub c' c x, subst_branches c' c branches)
+  | Send(x,w,p) -> Send(sub c' c x, sub c' c w, subst_aug c' c p)
+  | Recv(x,y,p) -> Recv(sub c' c x, y, subst_aug c' c p)
+  | Close(x) -> Close(sub c' c x)
+  | Wait(x,q) -> Wait(sub c' c x, subst_aug c' c q)
+  | Work(pot,p) -> Work(pot, subst_aug c' c p)
+  | Pay(x,pot,p) -> Pay(sub c' c x, pot, subst_aug c' c p)
+  | Get(x,pot,p) -> Get(sub c' c x, pot, subst_aug c' c p)
+  | Acquire(x,y,p) -> Acquire(sub c' c x, y, subst_aug c' c p)
+  | Accept(x,y,p) -> Accept(sub c' c x, y, subst_aug c' c p)
+  | Release(x,y,p) -> Release(sub c' c x, y, subst_aug c' c p)
+  | Detach(x,y,p) -> Detach(sub c' c x, y, subst_aug c' c p)
+
+and subst_branches c' c bs = match bs with
+    [] -> []
+  | {lab_exp = (l,p); exp_extent = ext}::bs' ->
+    {lab_exp = (l, subst c' c p); exp_extent = ext}::
+    (subst_branches c' c bs');;
+
+let rec subst_ctx ctx' ctx expr = match ctx',ctx with
+    c'::ctx', c::ctx ->
+      subst c' c (subst_ctx ctx' ctx expr)
+  | [], [] -> expr
+  | _c', _c -> raise AstImpossible;;
+
+let msubst c' c m = match m with
+    MLabI(x,k,y) -> MLabI(sub c' c x, k, sub c' c y)
+  | MLabE(x,k,y) -> MLabE(sub c' c x, k, sub c' c y)
+  | MSendT(x,w,y) -> MSendT(sub c' c x, w, sub c' c y)
+  | MSendL(x,w,y) -> MSendL(sub c' c x, w, sub c' c y)
+  | MClose(x) -> MClose(sub c' c x)
+  | MPayP(x,pot,y) -> MPayP(sub c' c x, pot, sub c' c y)
+  | MPayG(x,pot,y) -> MPayG(sub c' c x, pot, sub c' c y);;
