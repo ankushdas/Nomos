@@ -116,3 +116,17 @@ val lookup_expdec :
 val lookup_expdef : (decl * 'a) list -> expname -> parsed_expr option
 val lookup_choice : ('a * 'b) list -> 'a -> 'b option
 val is_shared : (decl * 'a) list -> stype -> bool
+val sub : 'a * 'b * 'c -> 'd * 'b * 'e -> 'a * 'b * 'c -> 'a * 'b * 'c
+val sub_arg : str * string * mode -> 'a * string * 'b -> arg -> arg
+val subst_list :
+  str * string * mode -> 'a * string * 'b -> arg list -> arg list
+val subst :
+  str * string * mode -> 'a * string * 'b -> 'c st_expr -> 'c st_expr
+val subst_branches :
+  str * string * mode -> 'a * string * 'b -> 'c branches -> 'c branches
+val subst_aug :
+  str * string * mode -> 'a * string * 'b -> 'c st_aug_expr -> 'c st_aug_expr
+val subst_ctx :
+  (str * string * mode) list ->
+  ('a * string * 'b) list -> 'c st_expr -> 'c st_expr
+val msubst : str * string * mode -> 'a * string * 'b -> msg -> msg

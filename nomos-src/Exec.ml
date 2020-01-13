@@ -27,8 +27,8 @@ exception StarPotential (* star potential encountered at runtime *)
 exception RuntimeError (* should never happen at runtime *)
 
 type sem =
-    Proc of A.chan * int * (int * int) * A.expression   (* Proc(chan, time, (work, pot), P) *)
-  | Msg of A.chan * int * (int * int) * A.msg           (* Msg(chan, time, (work, pot), M) *)
+    Proc of A.chan * int * (int * int) * A.ext A.st_expr          (* Proc(chan, time, (work, pot), P) *)
+  | Msg of A.chan * int * (int * int) * A.msg                     (* Msg(chan, time, (work, pot), M) *)
 
 let pp_sem sem = match sem with
     Proc(c,t,(w,pot),p) ->
@@ -78,7 +78,7 @@ let chan_num = ref 0;;
 let lfresh () =
   let n = !chan_num in
   let () = chan_num := n+1 in
-  ("ch" ^ (string_of_int n), A.Unknown);;
+  (A.Dollar, "ch" ^ (string_of_int n), A.Unknown);;
 
 let max(t,t') =
   if t > t' then t else t';;
@@ -97,7 +97,7 @@ let try_eq pot1 pot2 =
 
 let rec find_branch l bs =
   match bs with
-      {A.lab_exp = (k,p); A.exp_extent = _ext}::bs' ->
+      (k,p)::bs' ->
         if k = l then p
         else find_branch l bs'
     | [] -> raise MissingBranch;;
@@ -163,7 +163,7 @@ let get_pot env f =
       None -> raise UndefinedProcess
     | Some(_ctx,pot,_zc,_m) -> pot;;
 
-let uneq_name (c1,_m1) (c2,_m2) = not (c1 = c2);;
+let uneq_name (_s1,c1,_m1) (_s2,c2,_m2) = not (c1 = c2);;
 
 let fwd ch config =
   let s = find_sem ch config in
@@ -197,10 +197,11 @@ let fwd ch config =
               | Some(Msg(_d,t',(w',pot'),(A.MLabI _ as m)))
               | Some(Msg(_d,t',(w',pot'),(A.MSendT _ as m)))
               | Some(Msg(_d,t',(w',pot'),(A.MClose _ as m)))
-              | Some(Msg(_d,t',(w',pot'),(A.MPayP _ as m))) ->
+              | Some(Msg(_d,t',(w',pot'),(A.MPayP _ as m)))
+              | Some(Msg(_d,t',(w',pot'),(A.MSendP _ as m))) ->
                   let config = remove_sem c1 config in
                   let config = remove_sem d config in
-                  let msg = Msg(c1,max(t,t'),(w+w',pot+pot'),A.msubst c1 d m) in
+                  let msg = Msg(c1,max(t,t'),(w+w',pot+pot'), A.msubst c1 d m) in
                   let config = add_sem msg config in
                   let d' = get_cont d config in
                   let config = remove_cont d config in
@@ -221,7 +222,7 @@ let spawn env ch config =
         then raise InsufficientPotential
         else
           let proc1 = Proc(c',t+1,(0,pot'),A.ExpName(c',f,xs)) in
-          let proc2 = Proc(d,t+1,(w,pot-pot'),A.subst c' x q) in
+          let proc2 = Proc(d,t+1,(w,pot-pot'),A.subst c' x q.A.st_structure) in
           let config = add_sem proc1 config in
           let config = add_sem proc2 config in
           Changed config
@@ -238,8 +239,8 @@ let expd_def env x f xs =
         match A.lookup_expdec env f with
             None -> raise ExecImpossible
           | Some (ctx,_pot,(z,_c),_m) ->
-              let exp = A.subst x z exp in
-              let exp = A.subst_ctx xs (fst ctx.ordered) exp in
+              let exp = A.fsubst x z exp in
+              let exp = A.fsubst_ctx xs (fst ctx.ordered) exp in
               exp;;
 
 let expand env ch config =

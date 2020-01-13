@@ -247,9 +247,11 @@ let rec is_shared env tp = match tp with
 let sub (sc',c',mc') (_sc,c,_mc) (sx,x,mx) =
   if x = c then (sc',c',mc') else (sx,x,mx);;
 
-let rec subst_list c' c l = match l with
-   [] -> []
-  | x::xs -> (sub c' c x)::(subst_list c' c xs);;
+let sub_arg c' c a = match a with
+    FArg s -> FArg s
+  | STArg x -> STArg (sub c' c x);;
+
+let rec subst_list c' c l = List.map (fun a -> sub_arg c' c a) l;; 
 
 let rec subst c' c expr = match expr with
     Fwd(x,y) -> Fwd(sub c' c x, sub c' c y)
@@ -268,12 +270,18 @@ let rec subst c' c expr = match expr with
   | Accept(x,y,p) -> Accept(sub c' c x, y, subst_aug c' c p)
   | Release(x,y,p) -> Release(sub c' c x, y, subst_aug c' c p)
   | Detach(x,y,p) -> Detach(sub c' c x, y, subst_aug c' c p)
+  | RecvF(x,y,p) -> RecvF(sub c' c x, y, subst_aug c' c p)
+  | SendF(x,m,p) -> SendF(sub c' c x, m, subst_aug c' c p)
+  | Let(x,e,p) -> Let(x, e, subst_aug c' c p)
+  | IfS(e,p1,p2) -> IfS(e, subst_aug c' c p1, subst_aug c' c p2)
 
 and subst_branches c' c bs = match bs with
     [] -> []
-  | {lab_exp = (l,p); exp_extent = ext}::bs' ->
-    {lab_exp = (l, subst c' c p); exp_extent = ext}::
-    (subst_branches c' c bs');;
+  | (l,p)::bs' ->
+      (l, subst_aug c' c p)::(subst_branches c' c bs')
+
+and subst_aug c' c {st_structure = exp; st_data = d} =
+  {st_structure = subst c' c exp; st_data = d};;
 
 let rec subst_ctx ctx' ctx expr = match ctx',ctx with
     c'::ctx', c::ctx ->
@@ -288,4 +296,24 @@ let msubst c' c m = match m with
   | MSendL(x,w,y) -> MSendL(sub c' c x, w, sub c' c y)
   | MClose(x) -> MClose(sub c' c x)
   | MPayP(x,pot,y) -> MPayP(sub c' c x, pot, sub c' c y)
-  | MPayG(x,pot,y) -> MPayG(sub c' c x, pot, sub c' c y);;
+  | MPayG(x,pot,y) -> MPayG(sub c' c x, pot, sub c' c y)
+  | MSendP(x,v,y) -> MSendP(sub c' c x, v, sub c' c y)
+  | MSendA(x,v,y) -> MSendA(sub c' c x, v, sub c' c y);;
+
+let fsubst c' c fexp = match fexp with
+    If(e1,e2,e3) -> If(fsubst_aug c' c e1, fsubst_aug c' c e2, fsubst_aug c' c e3)
+  | LetIn(x,e1,e2) -> LetIn(x, fsubst_aug c' c e1, fsubst_aug c' c e2)
+  | Bool _ | Int _ | Var _ -> fexp
+  | ListE(l) -> ListE(List.map (fsubst_aug c' c) l)
+  | App(es) -> App(List.map (fsubst_aug c' c) es)
+  | Cons(e1,e2) -> Cons(fsubst_aug c' c e1, fsubst_aug c' c e2)
+  | Match(e1,e2,x,xs,e3) -> Match(fsubst_aug c' c e1, fsubst_aug c' c e2, x, xs, fsubst_aug c' c e3)
+  | Lambda(xs,e) -> Lambda(xs, fsubst_aug c' c e)
+  | Op(e1,op,e2) -> Op(fsubst_aug c' c e1, op, fsubst_aug c' c e2)
+  | CompOp(e1,cop,e2) -> CompOp(fsubst_aug c' c e1, cop, fsubst_aug c' c e2)
+  | RelOp(e1,rop,e2) -> RelOp(fsubst_aug c' c e1, rop, fsubst_aug c' c e2)
+  | Tick(pot,e) -> Tick(pot, fsubst_aug c' c e)
+  | Command(p) -> Command(subst_aug c' c p)
+
+and fsubst_aug c' c {func_structure = exp ; func_data = d} =
+  {func_structure = fsubst c' c exp ; func_data = d};;
