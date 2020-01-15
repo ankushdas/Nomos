@@ -130,3 +130,8 @@ val subst_ctx :
   (str * string * mode) list ->
   ('a * string * 'b) list -> 'c st_expr -> 'c st_expr
 val msubst : str * string * mode -> 'a * string * 'b -> msg -> msg
+val fsubst :
+  str * string * mode -> 'a * string * 'b -> 'c func_expr -> 'c func_expr
+val fsubst_aug :
+  str * string * mode ->
+  'a * string * 'b -> 'c func_aug_expr -> 'c func_aug_expr

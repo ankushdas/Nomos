@@ -239,7 +239,7 @@ let expd_def env x f xs =
         match A.lookup_expdec env f with
             None -> raise ExecImpossible
           | Some (ctx,_pot,(z,_c),_m) ->
-              let exp = A.fsubst x z exp in
+              let exp = A.fsubst x z exp.func_structure in
               let exp = A.fsubst_ctx xs (fst ctx.ordered) exp in
               exp;;
 

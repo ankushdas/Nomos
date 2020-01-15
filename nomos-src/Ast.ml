@@ -175,10 +175,7 @@ type value =
   | IntV of int
   | BoolV of bool
   | ListV of value list
-  | LambdaV of value_context * arglist * valued_expr
-
-and value_context = (string * value) list
-and valued_expr = value func_aug_expr
+  | LambdaV of arglist * unit func_aug_expr;;
 
 type msg =
     MLabI of chan * label * chan          (* c.k ; c <- c+ *)
@@ -188,8 +185,8 @@ type msg =
   | MClose of chan                        (* close c *)
   | MPayP of chan * potential * chan      (* pay c {p} ; c <- c+ *)
   | MPayG of chan * potential * chan      (* pay c {p} ; c+ <- c *)
-  | MSendP of chan * valued_expr * chan   (* send c M ; c <- c+ *)
-  | MSendA of chan * valued_expr * chan   (* send c M ; c+ <- c *)
+  | MSendP of chan * value * chan         (* send c M ; c <- c+ *)
+  | MSendA of chan * value * chan         (* send c M ; c+ <- c *)
 
 (* Environments *)
 
@@ -251,7 +248,7 @@ let sub_arg c' c a = match a with
     FArg s -> FArg s
   | STArg x -> STArg (sub c' c x);;
 
-let rec subst_list c' c l = List.map (fun a -> sub_arg c' c a) l;; 
+let subst_list c' c l = List.map (fun a -> sub_arg c' c a) l;; 
 
 let rec subst c' c expr = match expr with
     Fwd(x,y) -> Fwd(sub c' c x, sub c' c y)
@@ -272,8 +269,8 @@ let rec subst c' c expr = match expr with
   | Detach(x,y,p) -> Detach(sub c' c x, y, subst_aug c' c p)
   | RecvF(x,y,p) -> RecvF(sub c' c x, y, subst_aug c' c p)
   | SendF(x,m,p) -> SendF(sub c' c x, m, subst_aug c' c p)
-  | Let(x,e,p) -> Let(x, e, subst_aug c' c p)
-  | IfS(e,p1,p2) -> IfS(e, subst_aug c' c p1, subst_aug c' c p2)
+  | Let(x,e,p) -> Let(x, fsubst_aug c' c e, subst_aug c' c p)
+  | IfS(e,p1,p2) -> IfS(fsubst_aug c' c e, subst_aug c' c p1, subst_aug c' c p2)
 
 and subst_branches c' c bs = match bs with
     [] -> []
@@ -281,26 +278,9 @@ and subst_branches c' c bs = match bs with
       (l, subst_aug c' c p)::(subst_branches c' c bs')
 
 and subst_aug c' c {st_structure = exp; st_data = d} =
-  {st_structure = subst c' c exp; st_data = d};;
+  {st_structure = subst c' c exp; st_data = d}
 
-let rec subst_ctx ctx' ctx expr = match ctx',ctx with
-    c'::ctx', c::ctx ->
-      subst c' c (subst_ctx ctx' ctx expr)
-  | [], [] -> expr
-  | _c', _c -> raise AstImpossible;;
-
-let msubst c' c m = match m with
-    MLabI(x,k,y) -> MLabI(sub c' c x, k, sub c' c y)
-  | MLabE(x,k,y) -> MLabE(sub c' c x, k, sub c' c y)
-  | MSendT(x,w,y) -> MSendT(sub c' c x, w, sub c' c y)
-  | MSendL(x,w,y) -> MSendL(sub c' c x, w, sub c' c y)
-  | MClose(x) -> MClose(sub c' c x)
-  | MPayP(x,pot,y) -> MPayP(sub c' c x, pot, sub c' c y)
-  | MPayG(x,pot,y) -> MPayG(sub c' c x, pot, sub c' c y)
-  | MSendP(x,v,y) -> MSendP(sub c' c x, v, sub c' c y)
-  | MSendA(x,v,y) -> MSendA(sub c' c x, v, sub c' c y);;
-
-let fsubst c' c fexp = match fexp with
+and fsubst c' c fexp = match fexp with
     If(e1,e2,e3) -> If(fsubst_aug c' c e1, fsubst_aug c' c e2, fsubst_aug c' c e3)
   | LetIn(x,e1,e2) -> LetIn(x, fsubst_aug c' c e1, fsubst_aug c' c e2)
   | Bool _ | Int _ | Var _ -> fexp
@@ -317,3 +297,80 @@ let fsubst c' c fexp = match fexp with
 
 and fsubst_aug c' c {func_structure = exp ; func_data = d} =
   {func_structure = fsubst c' c exp ; func_data = d};;
+
+let rec toExpr v = match v with
+    IntV i -> {func_structure = Int i ; func_data = ()}
+  | BoolV b -> {func_structure = Bool b ; func_data = ()}
+  | ListV l -> {func_structure = ListE (List.map (fun x -> toExpr x) l) ; func_data = ()}
+  | LambdaV(xs,e) -> {func_structure = Lambda (xs,e) ; func_data = ()};;
+
+let rec substv v' v fexp = match fexp with
+    If(e1,e2,e3) -> If(substv_aug v' v e1, substv_aug v' v e2, substv_aug v' v e3)
+  | LetIn(x,e1,e2) -> LetIn(x, substv_aug v' v e1, substv_aug v' v e2)
+  | Bool _ | Int _ -> fexp
+  | Var x -> if x = v then (toExpr v').func_structure else Var x
+  | ListE(l) -> ListE(List.map (substv_aug v' v) l)
+  | App(es) -> App(List.map (substv_aug v' v) es)
+  | Cons(e1,e2) -> Cons(substv_aug v' v e1, substv_aug v' v e2)
+  | Match(e1,e2,x,xs,e3) -> Match(substv_aug v' v e1, substv_aug v' v e2, x, xs, substv_aug v' v e3)
+  | Lambda(xs,e) -> Lambda(xs, substv_aug v' v e)
+  | Op(e1,op,e2) -> Op(substv_aug v' v e1, op, substv_aug v' v e2)
+  | CompOp(e1,cop,e2) -> CompOp(substv_aug v' v e1, cop, substv_aug v' v e2)
+  | RelOp(e1,rop,e2) -> RelOp(substv_aug v' v e1, rop, substv_aug v' v e2)
+  | Tick(pot,e) -> Tick(pot, substv_aug v' v e)
+  | Command(p) -> Command(esubstv_aug v' v p)
+
+and substv_aug v' v {func_structure = fexp ; func_data = d} =
+  {func_structure = substv v' v fexp ; func_data = d}
+
+and esubstv_aug v' v {st_structure = exp ; st_data = d} =
+  {st_structure = esubstv v' v exp ; st_data = d}
+
+and esubstv v' v exp = match exp with
+    Fwd(x,y) -> Fwd(x, y)
+  | Spawn(x,f,xs,q) -> Spawn(x, f, xs, esubstv_aug v' v q)
+  | ExpName(x,f,xs) -> ExpName(x,f, xs)
+  | Lab(x,k,p) -> Lab(x, k, esubstv_aug v' v p)
+  | Case(x,branches) -> Case(x, esubstv_branches v' v branches)
+  | Send(x,w,p) -> Send(x, w, esubstv_aug v' v p)
+  | Recv(x,y,p) -> Recv(x, y, esubstv_aug v' v p)
+  | Close(x) -> Close(x)
+  | Wait(x,q) -> Wait(x, esubstv_aug v' v q)
+  | Work(pot,p) -> Work(pot, esubstv_aug v' v p)
+  | Pay(x,pot,p) -> Pay(x, pot, esubstv_aug v' v p)
+  | Get(x,pot,p) -> Get(x, pot, esubstv_aug v' v p)
+  | Acquire(x,y,p) -> Acquire(x, y, esubstv_aug v' v p)
+  | Accept(x,y,p) -> Accept(x, y, esubstv_aug v' v p)
+  | Release(x,y,p) -> Release(x, y, esubstv_aug v' v p)
+  | Detach(x,y,p) -> Detach(x, y, esubstv_aug v' v p)
+  | RecvF(x,y,p) -> RecvF(x, y, esubstv_aug v' v p)
+  | SendF(x,m,p) -> SendF(x, substv_aug v' v m, esubstv_aug v' v p)
+  | Let(x,e,p) -> Let(x, substv_aug v' v e, esubstv_aug v' v p)
+  | IfS(e,p1,p2) -> IfS(substv_aug v' v e, esubstv_aug v' v p1, esubstv_aug v' v p2)
+
+and esubstv_branches v' v bs = match bs with
+    [] -> []
+  | (l,p)::bs' ->
+  (l, esubstv_aug v' v p)::(esubstv_branches v' v bs');;
+
+let rec fsubst_ctx ctx' ctx expr = match ctx',ctx with
+    (STArg c')::ctx', (STyped (c,_t))::ctx ->
+      subst c' c (fsubst_ctx ctx' ctx expr)
+  | (FArg v')::ctx', (Functional (v,_t))::ctx ->
+      esubstv v' v (fsubst_ctx ctx' ctx expr)
+  | [], [] -> expr
+  | _c', _c -> raise AstImpossible;;
+
+
+
+
+let msubst c' c m = match m with
+    MLabI(x,k,y) -> MLabI(sub c' c x, k, sub c' c y)
+  | MLabE(x,k,y) -> MLabE(sub c' c x, k, sub c' c y)
+  | MSendT(x,w,y) -> MSendT(sub c' c x, w, sub c' c y)
+  | MSendL(x,w,y) -> MSendL(sub c' c x, w, sub c' c y)
+  | MClose(x) -> MClose(sub c' c x)
+  | MPayP(x,pot,y) -> MPayP(sub c' c x, pot, sub c' c y)
+  | MPayG(x,pot,y) -> MPayG(sub c' c x, pot, sub c' c y)
+  | MSendP(x,v,y) -> MSendP(sub c' c x, v, sub c' c y)
+  | MSendA(x,v,y) -> MSendA(sub c' c x, v, sub c' c y);;
