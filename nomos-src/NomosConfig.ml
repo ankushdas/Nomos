@@ -98,7 +98,7 @@ let load file =
   let env = EL.removeU env in
   let () = if !Flags.verbosity >= 2 then print_string ("========================================================\n") in
   let () = if !Flags.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") "" 
-  (List.map (fun (x,_) -> x) env)) in
+    (List.map (fun (x,_) -> x) env)) in
   let () = EL.gen_constraints env (List.map (fun (x,_) -> x) env) ext in
   let (psols,msols) = I.solve_and_print () in
   let env = EL.substitute (List.map (fun (x,_) -> x) env) psols msols in
@@ -115,13 +115,13 @@ let load file =
 (* Executing Programs *)
 (**********************)
 
-let run env dcls =
+let rec run env dcls =
   match dcls with
-      {A.declaration = A.Exec(f) ; A.decl_extent = _ext}::dcls' ->
+      A.Exec(f)::dcls' ->
         let () = if !Flags.verbosity >= 1
                  then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
                  else () in
-        let _config = E.exec env f in
+        (* let _config = E.exec env f in *)
         (* may raise Exec.RuntimeError *)
         run env dcls'
     | _dcl::dcls' -> run env dcls'
