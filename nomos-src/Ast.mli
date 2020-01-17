@@ -129,7 +129,7 @@ val fsubst :
 val fsubst_aug :
   str * string * mode ->
   'a * string * 'b -> 'c func_aug_expr -> 'c func_aug_expr
-val toExpr : value -> unit func_aug_expr
+val toExpr : unit -> value -> unit func_expr
 val substv : 'a func_expr -> string -> 'a func_expr -> 'a func_expr
 val substv_aug :
   'a func_expr -> string -> 'a func_aug_expr -> 'a func_aug_expr
