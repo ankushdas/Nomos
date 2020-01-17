@@ -192,6 +192,7 @@ type msg =
 
 exception AstImpossible
 exception UndeclaredTp
+exception RuntimeError
 
 let rec lookup_tp decls v = match decls with
     (TpDef(v',a), _)::decls' ->
@@ -298,11 +299,11 @@ and fsubst c' c fexp = match fexp with
 and fsubst_aug c' c {func_structure = exp ; func_data = d} =
   {func_structure = fsubst c' c exp ; func_data = d};;
 
-let rec toExpr v = match v with
-    IntV i -> {func_structure = Int i ; func_data = ()}
-  | BoolV b -> {func_structure = Bool b ; func_data = ()}
-  | ListV l -> {func_structure = ListE (List.map (fun x -> toExpr x) l) ; func_data = ()}
-  | LambdaV(xs,e) -> {func_structure = Lambda (xs,e) ; func_data = ()};;
+let rec toExpr d v = match v with
+    IntV i -> Int i
+  | BoolV b -> Bool b
+  | ListV l -> ListE (List.map (fun x -> {func_structure = toExpr d x ; func_data = d}) l)
+  | LambdaV(xs,e) -> Lambda (xs,e);;
 
 let rec substv v' v fexp = match fexp with
     If(e1,e2,e3) -> If(substv_aug v' v e1, substv_aug v' v e2, substv_aug v' v e3)
@@ -375,3 +376,36 @@ let msubst c' c m = match m with
   | MPayG(x,pot,y) -> MPayG(sub c' c x, pot, sub c' c y)
   | MSendP(x,v,y) -> MSendP(sub c' c x, v, sub c' c y)
   | MSendA(x,v,y) -> MSendA(sub c' c x, v, sub c' c y);;
+
+let rec eval fexp = match fexp.func_structure with
+    If(e1,e2,e3) ->
+      begin
+        let v1 = eval e1 in
+        match v1 with
+            BoolV true -> eval e2
+          | BoolV false -> eval e3
+          | _ -> raise RuntimeError
+      end
+  | LetIn(x,e1,e2) ->
+      begin
+        let v1 = eval e1 in
+        let e2 = substv_aug (toExpr e1.func_data v1) x e2 in
+        eval e2
+      end
+  | Bool b -> BoolV b
+  | Int i -> IntV i
+  | Var x -> raise RuntimeError
+  | ListE(l) ->
+      begin
+        let vs = List.map eval l in
+        ListV vs
+      end
+  | App(es) -> App(List.map (substv_aug v' v) es)
+  | Cons(e1,e2) -> Cons(substv_aug v' v e1, substv_aug v' v e2)
+  | Match(e1,e2,x,xs,e3) -> Match(substv_aug v' v e1, substv_aug v' v e2, x, xs, substv_aug v' v e3)
+  | Lambda(xs,e) -> Lambda(xs, substv_aug v' v e)
+  | Op(e1,op,e2) -> Op(substv_aug v' v e1, op, substv_aug v' v e2)
+  | CompOp(e1,cop,e2) -> CompOp(substv_aug v' v e1, cop, substv_aug v' v e2)
+  | RelOp(e1,rop,e2) -> RelOp(substv_aug v' v e1, rop, substv_aug v' v e2)
+  | Tick(pot,e) -> Tick(pot, substv_aug v' v e)
+  | Command(p) -> Command(esubstv_aug v' v p);;
