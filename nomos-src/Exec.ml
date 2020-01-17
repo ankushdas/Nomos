@@ -273,7 +273,7 @@ let ichoice_S ch config =
         else
           let c' = lfresh () in
           let msg = Msg(c1,t+1,(0,0),A.MLabI(c1,l,c')) in
-          let proc = Proc(c',t+1,wp,A.subst c' c1 p) in
+          let proc = Proc(c',t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
@@ -295,7 +295,7 @@ let ichoice_R ch config =
                   then raise ChannelMismatch
                   else
                     let q = find_branch l bs in
-                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
+                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -315,7 +315,7 @@ let echoice_S ch config =
         else
           let c' = lfresh () in
           let msg = Msg(c',t+1,(0,0),A.MLabE(c,l,c')) in
-          let proc = Proc(d,t+1,wp,A.subst c' c p) in
+          let proc = Proc(d,t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
@@ -337,7 +337,7 @@ let echoice_R ch config =
                   then raise ChannelMismatch
                   else
                     let q = find_branch l bs in
-                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
+                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
@@ -357,7 +357,7 @@ let tensor_S ch config =
         else
           let c' = lfresh () in
           let msg = Msg(c1,t+1,(0,0),A.MSendT(c1,e,c')) in
-          let proc = Proc(c',t+1,wp,A.subst c' c1 p) in
+          let proc = Proc(c',t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
@@ -378,8 +378,8 @@ let tensor_R ch config =
                   if uneq_name ceq c
                   then raise ChannelMismatch
                   else
-                    let q = A.subst e x q in
-                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
+                    let q = A.subst_aug e x q in
+                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -399,7 +399,7 @@ let lolli_S ch config =
         else
           let c' = lfresh () in
           let msg = Msg(c',t+1,(0,0),A.MSendL(c,e,c')) in
-          let proc = Proc(d,t+1,wp,A.subst c' c p) in
+          let proc = Proc(d,t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
@@ -420,8 +420,8 @@ let lolli_R ch config =
                   if uneq_name c2eq c2
                   then raise ExecImpossible
                   else
-                    let q = A.subst e x q in
-                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
+                    let q = A.subst_aug e x q in
+                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
@@ -460,7 +460,7 @@ let one_R ch config =
                   if uneq_name ceq c
                   then raise ChannelMismatch
                   else
-                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), q) in
+                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -478,7 +478,7 @@ let work ch config =
         if pot < k
         then raise InsufficientPotential
         else
-          let proc = Proc(c,t+1,(w+k,pot-k),p) in
+          let proc = Proc(c,t+1,(w+k,pot-k),p.A.st_structure) in
           let config = add_sem proc config in
           Changed config
     | _s -> raise ExecImpossible;;
@@ -496,7 +496,7 @@ let paypot_S ch config =
           let c' = lfresh () in
           let vpot = try_evaluate epot in
           let msg = Msg(c1,t+1,(0,vpot),A.MPayP(c1,epot,c')) in
-          let proc = Proc(c',t+1,(w,pot-vpot),A.subst c' c1 p) in
+          let proc = Proc(c',t+1,(w,pot-vpot),A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
@@ -519,7 +519,7 @@ let paypot_R ch config =
                   else if not (try_eq epot epot')
                   then raise PotentialMismatch
                   else
-                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
+                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -542,7 +542,7 @@ let getpot_S ch config =
           let c' = lfresh () in
           let vpot = try_evaluate epot in
           let msg = Msg(c',t+1,(0,vpot),A.MPayG(c,epot,c')) in
-          let proc = Proc(d,t+1,(w,pot-vpot),A.subst c' c p) in
+          let proc = Proc(d,t+1,(w,pot-vpot),A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
@@ -565,7 +565,7 @@ let getpot_R ch config =
                   else if not (try_eq epot epot')
                   then raise PotentialMismatch
                   else
-                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
+                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
@@ -615,8 +615,8 @@ let up ch config =
                         then raise ChannelMismatch
                         else
                           let al = lfresh () in
-                          let proc1 = Proc(al,max(t,t')+1,wp,A.subst al x p) in
-                          let proc2 = Proc(c,max(t,t')+1,wp',A.subst al x' q) in
+                          let proc1 = Proc(al,max(t,t')+1,wp,A.subst al x p.A.st_structure) in
+                          let proc2 = Proc(c,max(t,t')+1,wp',A.subst al x' q.A.st_structure) in
                           let config = remove_sem as1 config in
                           let config = remove_sem c config in
                           let config = add_sem proc1 config in
@@ -658,8 +658,8 @@ let down ch config =
                         then raise ChannelMismatch
                         else
                           let ash = get_shared_chan al1 config in
-                          let proc1 = Proc(ash,max(t,t')+1,wp,A.subst ash x p) in
-                          let proc2 = Proc(c,max(t,t')+1,wp',A.subst ash x' q) in
+                          let proc1 = Proc(ash,max(t,t')+1,wp,A.subst ash x p.A.st_structure) in
+                          let proc2 = Proc(c,max(t,t')+1,wp',A.subst ash x' q.A.st_structure) in
                           let config = remove_sem al1 config in
                           let config = remove_sem c config in
                           let config = add_sem proc1 config in
@@ -679,9 +679,9 @@ let product_S ch config =
         then raise ChannelMismatch
         else
           let c' = lfresh () in
-          let v = eval m in
+          let v = A.eval m in
           let msg = Msg(c1,t+1,(0,0),A.MSendP(c1,v,c')) in
-          let proc = Proc(c',t+1,wp,A.subst c' c1 p) in
+          let proc = Proc(c',t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
