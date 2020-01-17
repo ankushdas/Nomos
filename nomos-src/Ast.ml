@@ -412,14 +412,19 @@ let rec eval fexp = match fexp.func_structure with
         let vs = List.map eval l in
         ListV vs
       end
-  | App(es) ->
+  | App(l) ->
       begin
-        let e1 = List.hd es in
-        let e2 = App (List.tl es) in
-        let v1 = eval e1 in
-        let v2 = eval e2 in
-        match v1 with
-            A.LambdaV
+        let (l', en) = split_last l in
+        let v' = eval {func_structure = App(l') ; func_data = ()} in
+        let vn = eval en in
+        match v' with
+            LambdaV (xs, e) ->
+              begin
+                match xs with
+                    Single (x,_ext) -> eval (substv_aug (toExpr en.func_data vn) x e)
+                  | Curry ((x,_ext),xs') -> 
+              end
+          | _ -> raise RuntimeError
       end
   | Cons(e1,e2) -> Cons(substv_aug v' v e1, substv_aug v' v e2)
   | Match(e1,e2,x,xs,e3) -> Match(substv_aug v' v e1, substv_aug v' v e2, x, xs, substv_aug v' v e3)
