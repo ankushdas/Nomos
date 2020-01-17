@@ -496,17 +496,6 @@ let rec consify l = match l with
       let d = e.A.func_data in
       A.Cons(e, {A.func_data = d; A.func_structure = consify es});;
 
-exception SplitError
-
-let split_last l =
-  if List.length l <= 1
-  then raise SplitError
-  else
-    let revl = List.rev l in
-    match revl with
-        [] -> raise UnknownTypeError
-      | e::es -> (List.rev es, e);;
-
 (* check_exp trace env ctx con A pot P C = () if A |{pot}- P : C
 * raises ErrorMsg.Error otherwise
 * assumes ctx ; con |= A valid
@@ -634,7 +623,7 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
       end
   | A.App(l) ->
       begin
-        let (l', en) = split_last l in
+        let (l', en) = A.split_last l in
         let (delta1, pot1, t) =
           begin
             if List.length l' > 1
@@ -719,7 +708,7 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr)  ext mode isSend =
       end
   | A.App(l) ->
       begin
-        let (l', en) = split_last l in
+        let (l', en) = A.split_last l in
         let (delta1, pot1, t) =
           begin
             if List.length l' > 1

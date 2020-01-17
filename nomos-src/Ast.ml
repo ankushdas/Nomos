@@ -377,6 +377,18 @@ let msubst c' c m = match m with
   | MSendP(x,v,y) -> MSendP(sub c' c x, v, sub c' c y)
   | MSendA(x,v,y) -> MSendA(sub c' c x, v, sub c' c y);;
 
+exception SplitError
+
+let split_last l =
+  if List.length l <= 1
+  then raise SplitError
+  else
+    let revl = List.rev l in
+    match revl with
+        [] -> raise AstImpossible
+      | e::es -> (List.rev es, e);;
+
+(*
 let rec eval fexp = match fexp.func_structure with
     If(e1,e2,e3) ->
       begin
@@ -400,7 +412,15 @@ let rec eval fexp = match fexp.func_structure with
         let vs = List.map eval l in
         ListV vs
       end
-  | App(es) -> App(List.map (substv_aug v' v) es)
+  | App(es) ->
+      begin
+        let e1 = List.hd es in
+        let e2 = App (List.tl es) in
+        let v1 = eval e1 in
+        let v2 = eval e2 in
+        match v1 with
+            A.LambdaV
+      end
   | Cons(e1,e2) -> Cons(substv_aug v' v e1, substv_aug v' v e2)
   | Match(e1,e2,x,xs,e3) -> Match(substv_aug v' v e1, substv_aug v' v e2, x, xs, substv_aug v' v e3)
   | Lambda(xs,e) -> Lambda(xs, substv_aug v' v e)
@@ -409,3 +429,4 @@ let rec eval fexp = match fexp.func_structure with
   | RelOp(e1,rop,e2) -> RelOp(substv_aug v' v e1, rop, substv_aug v' v e2)
   | Tick(pot,e) -> Tick(pot, substv_aug v' v e)
   | Command(p) -> Command(esubstv_aug v' v p);;
+*)

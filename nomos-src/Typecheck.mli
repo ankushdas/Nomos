@@ -104,8 +104,6 @@ val consume_pot : A.func_tp -> A.func_tp
 val consumevar : string -> A.argument list -> A.argument list
 val consume : string -> A.context -> A.context
 val consify : 'a A.func_aug_expr list -> 'a A.func_expr
-exception SplitError
-val split_last : 'a list -> 'a list * 'a
 val check_fexp_simple' :
   bool ->
   (A.decl * 'a) list ->

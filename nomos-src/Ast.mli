@@ -106,6 +106,7 @@ type msg =
   | MSendA of chan * value * chan
 exception AstImpossible
 exception UndeclaredTp
+exception RuntimeError
 val lookup_tp : (decl * 'a) list -> tpname -> stype option
 val expd_tp : (decl * 'a) list -> tpname -> stype
 val lookup_expdec :
@@ -140,3 +141,5 @@ val esubstv_branches : 'a func_expr -> string -> 'a branches -> 'a branches
 val fsubst_ctx :
   'a arg list -> argument list -> 'a func_aug_expr -> 'a func_aug_expr
 val msubst : str * string * mode -> 'a * string * 'b -> msg -> msg
+exception SplitError
+val split_last : 'a list -> 'a list * 'a
