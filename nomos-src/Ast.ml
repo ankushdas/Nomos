@@ -73,10 +73,6 @@ type rel_operator =
   | And
   | Or;;
 
-type arg =
-    STArg of chan
-  | FArg of string;;
-
 type 'a func_aug_expr =
   {
     func_structure : 'a func_expr;
@@ -107,8 +103,8 @@ and 'a st_expr =
   (* judgmental constructs *)
   | Fwd of chan * chan                                      (* x <- y *)
   | Spawn of chan * expname *
-    arg list * 'a st_aug_expr                               (* x <- f <- [y] ; Q *)
-  | ExpName of chan * expname * arg list                    (* x <- f <- [y] *)
+    'a arg list * 'a st_aug_expr                            (* x <- f <- [y] ; Q *)
+  | ExpName of chan * expname * 'a arg list                 (* x <- f <- [y] *)
 
   (* choice +{...} or &{...} *)
   | Lab of chan * label * 'a st_aug_expr                    (* x.k ; P *)
@@ -144,7 +140,11 @@ and 'a st_expr =
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr   (* if e then P else Q *)
 and 'a branch = label * 'a st_aug_expr
 
-and 'a branches = 'a branch list;;                          (* (l1 => P1 | ... | ln => Pn) *)
+and 'a branches = 'a branch list                          (* (l1 => P1 | ... | ln => Pn) *)
+
+and 'a arg =
+  STArg of chan
+| FArg of 'a func_expr;;
 
 
 type parsed_expr = ext func_aug_expr
@@ -308,7 +308,7 @@ let rec substv v' v fexp = match fexp with
     If(e1,e2,e3) -> If(substv_aug v' v e1, substv_aug v' v e2, substv_aug v' v e3)
   | LetIn(x,e1,e2) -> LetIn(x, substv_aug v' v e1, substv_aug v' v e2)
   | Bool _ | Int _ -> fexp
-  | Var x -> if x = v then (toExpr v').func_structure else Var x
+  | Var x -> if x = v then v' else Var x
   | ListE(l) -> ListE(List.map (substv_aug v' v) l)
   | App(es) -> App(List.map (substv_aug v' v) es)
   | Cons(e1,e2) -> Cons(substv_aug v' v e1, substv_aug v' v e2)
@@ -325,6 +325,10 @@ and substv_aug v' v {func_structure = fexp ; func_data = d} =
 
 and esubstv_aug v' v {st_structure = exp ; st_data = d} =
   {st_structure = esubstv v' v exp ; st_data = d}
+
+and esubstv_arg v' v arg = match arg with
+    FArg e -> FArg (substv v' v e)
+  | STArg c -> STArg c
 
 and esubstv v' v exp = match exp with
     Fwd(x,y) -> Fwd(x, y)
@@ -360,9 +364,6 @@ let rec fsubst_ctx ctx' ctx expr = match ctx',ctx with
       esubstv v' v (fsubst_ctx ctx' ctx expr)
   | [], [] -> expr
   | _c', _c -> raise AstImpossible;;
-
-
-
 
 let msubst c' c m = match m with
     MLabI(x,k,y) -> MLabI(sub c' c x, k, sub c' c y)

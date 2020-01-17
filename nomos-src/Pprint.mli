@@ -33,8 +33,6 @@ val pp_ctx : 'a -> A.context -> string
 val pp_tpj_compact :
   'a ->
   A.context -> A.potential -> (A.str * string * A.mode) * A.stype -> string
-val pp_argname : A.arg -> string
-val pp_argnames : A.arg list -> string
 val pp_exp_indent : 'a -> int -> 'b A.st_aug_expr -> string
 val pp_exp_after : 'a -> int -> string -> 'b A.st_expr -> string
 val pp_then : int -> string
@@ -44,6 +42,8 @@ val pp_branches_indent : 'a -> int -> 'b A.branches -> string
 val pp_fexp_list : 'a -> int -> 'b A.func_aug_expr list -> string
 val pp_fexp : 'a -> int -> 'b A.func_expr -> string
 val pp_fexp_indent : 'a -> int -> 'b A.func_expr -> string
+val pp_argname : 'a -> 'b A.arg -> string
+val pp_argnames : 'a -> 'b A.arg list -> string
 val pp_exp_prefix : 'a A.st_expr -> string
 val pp_val_list : Ast.value list -> string
 val pp_val : Ast.value -> string

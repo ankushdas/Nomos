@@ -295,7 +295,7 @@ potential :
 
 app_arg :
     | x = mid           { Ast.STArg(x) }
-    | x = ID            { Ast.FArg(x) }
+    | x = ID            { Ast.FArg(Ast.Var(x)) }
     ;
 
 st:

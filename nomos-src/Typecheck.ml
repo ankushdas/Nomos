@@ -408,7 +408,7 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
             end
       end
-  | (A.Functional (_sv,st))::sig_ctx', (A.FArg v)::ctx' ->
+  | (A.Functional (_sv,st))::sig_ctx', (A.FArg (A.Var v))::ctx' ->
       begin
         if not (check_ftp v delta)
         then error ext ("unknown or duplicate variable: " ^ v)

@@ -84,7 +84,7 @@ val update_tp :
 val match_ctx :
   (A.decl * 'a) list ->
   A.argument list ->
-  A.arg list ->
+  'b A.arg list ->
   A.context ->
   int -> int -> ((int * int) * (int * int) * string) option -> A.context
 val join : A.context -> A.argument list
@@ -112,67 +112,52 @@ val check_fexp_simple' :
   A.context ->
   A.potential ->
   A.parsed_expr ->
-  PP.A.func_tp ->
-  ((int * int) * (int * int) * string) option ->
-  PP.A.mode -> bool -> A.context * A.potential
+  PP.A.func_tp -> A.ext -> PP.A.mode -> bool -> A.context * A.potential
 val synth_fexp_simple' :
   bool ->
   (A.decl * 'a) list ->
   A.context ->
   A.potential ->
   A.parsed_expr ->
-  ((int * int) * (int * int) * string) option ->
-  PP.A.mode -> bool -> A.context * A.potential * A.func_tp
+  A.ext -> PP.A.mode -> bool -> A.context * A.potential * A.func_tp
 val check_fexp_simple :
   bool ->
   (A.decl * 'a) list ->
   A.context ->
   A.potential ->
   A.parsed_expr ->
-  PP.A.func_tp ->
-  ((int * int) * (int * int) * string) option ->
-  PP.A.mode -> bool -> A.context * A.potential
+  PP.A.func_tp -> A.ext -> PP.A.mode -> bool -> A.context * A.potential
 val synth_fexp_simple :
   bool ->
   (A.decl * 'a) list ->
   A.context ->
   A.potential ->
   A.parsed_expr ->
-  ((int * int) * (int * int) * string) option ->
-  PP.A.mode -> bool -> A.context * A.potential * A.func_tp
+  A.ext -> PP.A.mode -> bool -> A.context * A.potential * A.func_tp
 val checkfexp :
   bool ->
   (A.decl * 'a) list ->
   PP.A.context ->
   PP.A.potential ->
-  ((int * int) * (int * int) * string) option A.func_aug_expr ->
-  (PP.A.str * string * PP.A.mode) * PP.A.stype ->
-  ((int * int) * (int * int) * string) option -> PP.A.mode -> unit
+  A.ext A.func_aug_expr -> A.chan * PP.A.stype -> A.ext -> PP.A.mode -> unit
 val check_exp' :
   bool ->
   (A.decl * 'a) list ->
   PP.A.context ->
   PP.A.potential ->
-  ((int * int) * (int * int) * string) option A.st_aug_expr ->
-  (PP.A.str * string * PP.A.mode) * PP.A.stype ->
-  ((int * int) * (int * int) * string) option -> PP.A.mode -> unit
+  A.ext A.st_aug_expr -> A.chan * PP.A.stype -> A.ext -> PP.A.mode -> unit
 val check_exp :
   bool ->
   (A.decl * 'a) list ->
   PP.A.context ->
   PP.A.potential ->
-  ((int * int) * (int * int) * string) option A.st_aug_expr ->
-  (PP.A.str * string * PP.A.mode) * PP.A.stype ->
-  ((int * int) * (int * int) * string) option -> PP.A.mode -> unit
+  A.ext A.st_aug_expr -> A.chan * PP.A.stype -> A.ext -> PP.A.mode -> unit
 val check_branchesR :
   bool ->
   (A.decl * 'a) list ->
   PP.A.context ->
   PP.A.potential ->
-  ((int * int) * (int * int) * string) option A.branches ->
-  PP.A.str * string * PP.A.mode ->
-  A.choices ->
-  ((int * int) * (int * int) * string) option -> PP.A.mode -> unit
+  A.ext A.branches -> A.chan -> A.choices -> A.ext -> PP.A.mode -> unit
 val check_branchesL :
   bool ->
   (A.decl * 'a) list ->
@@ -180,17 +165,13 @@ val check_branchesL :
   A.chan ->
   A.choices ->
   PP.A.potential ->
-  ((int * int) * (int * int) * string) option A.branches ->
-  (PP.A.str * string * PP.A.mode) * PP.A.stype ->
-  ((int * int) * (int * int) * string) option -> PP.A.mode -> unit
+  A.ext A.branches -> A.chan * PP.A.stype -> A.ext -> PP.A.mode -> unit
 val checkexp :
   bool ->
   (A.decl * 'a) list ->
   PP.A.context ->
   PP.A.potential ->
-  ((int * int) * (int * int) * string) option A.st_aug_expr ->
-  (PP.A.str * string * PP.A.mode) * PP.A.stype ->
-  ((int * int) * (int * int) * string) option -> PP.A.mode -> unit
+  A.ext A.st_aug_expr -> A.chan * PP.A.stype -> A.ext -> PP.A.mode -> unit
 val find_tp :
   'a * 'b * 'c ->
   (('d * 'b * 'e) * 'f) list -> (('d * 'b * 'e) * 'g) list -> 'd * 'b * 'e

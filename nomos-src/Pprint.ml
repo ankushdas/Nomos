@@ -228,15 +228,6 @@ let pp_tpj_compact env delta pot (x,a) =
   pp_ctx env delta ^ " |" ^ pp_pot pot ^ "- (" ^
   pp_chan x ^ " : " ^ pp_tp_compact env a ^ ")";;
 
-let pp_argname arg = match arg with
-    A.FArg(v) -> v
-  | A.STArg(c) -> pp_chan c;;
-
-let rec pp_argnames args = match args with
-    [] -> ""
-  | [a] -> pp_argname a
-  | a::args' -> pp_argname a ^ " " ^ pp_argnames args';;
-
 (***********************)
 (* Process expressions *)
 (***********************)
@@ -251,9 +242,9 @@ let rec pp_argnames args = match args with
 let rec pp_exp env i exp = match exp with
     A.Fwd(x,y) -> pp_chan x ^ " <- " ^ pp_chan y
   | A.Spawn(x,f,xs,q) -> (* exp = x <- f <- xs ; q *)
-      pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames xs ^ " ;\n"
+      pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames env xs ^ " ;\n"
       ^ pp_exp_indent env i q
-  | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames xs
+  | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames env xs
   | A.Lab(x,k,p) -> pp_chan x ^ "." ^ k ^ " ;\n" ^ pp_exp_indent env i p
   | A.Case(x,bs) -> "case " ^ pp_chan x ^ " ( " ^ pp_branches env (i+8+len (pp_chan x)) bs ^ " )"
   | A.Send(x,w,p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ;\n" ^ pp_exp_indent env i p
@@ -359,13 +350,22 @@ and pp_fexp env i e =
     | A.Tick(pot,e) -> "(tick " ^ pp_potpos pot ^ " ; " ^ pp_fexp env i e.A.func_structure ^ ")"
     | A.Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
 
-and pp_fexp_indent env i p = spaces i ^ pp_fexp env i p;;
+and pp_fexp_indent env i p = spaces i ^ pp_fexp env i p
+
+and pp_argname env arg = match arg with
+    A.FArg(v) -> pp_fexp env 0 v
+  | A.STArg(c) -> pp_chan c
+
+and pp_argnames env args = match args with
+    [] -> ""
+  | [a] -> pp_argname env a
+  | a::args' -> pp_argname env a ^ " " ^ pp_argnames env args';;
 
 let pp_exp_prefix exp = match exp with
     A.Fwd(x,y) -> pp_chan x ^ " <- " ^ pp_chan y
   | A.Spawn(x,f,xs,_q) -> (* exp = x <- f <- xs ; q *)
-      pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames xs ^ " ; ..."
-  | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames xs
+      pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames () xs ^ " ; ..."
+  | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames () xs
   | A.Lab(x,k,_p) -> pp_chan x ^ "." ^ k ^ " ; ..."
   | A.Case(x,_bs) -> "case " ^ pp_chan x ^ " ( ... )"
   | A.Send(x,w,_p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ; ..."
@@ -404,7 +404,7 @@ and pp_val v =
       Ast.IntV(v1) -> string_of_int v1 
     | Ast.BoolV(v1) -> string_of_bool v1
     | Ast.ListV(l) -> "[" ^ pp_val_list l ^ "]"
-    | Ast.LambdaV(_, args, v1) -> "fun " ^ pp_args args ^ " -> " ^ pp_val v1.A.func_data;;
+    | Ast.LambdaV(args, v1) -> "fun " ^ pp_args args ^ " -> " ^ pp_fexp () 0 v1.A.func_structure;;
 
 let pp_msg m = match m with
     A.MLabI(c,k,c') -> "+ " ^ pp_chan c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
@@ -418,8 +418,8 @@ let pp_msg m = match m with
   | A.MPayG(c,pot,c') ->
       let potstr = pp_potpos pot in
       "- " ^ "pay " ^ pp_chan c ^ " " ^ potstr ^ " ; " ^ pp_exp_prefix (Fwd(c',c))
-  | A.MSendP(c,e,c') -> "+ " ^ "send " ^ pp_chan c ^ " " ^ pp_val e.A.func_data ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
-  | A.MSendA(c,e,c') -> "- " ^ "send " ^ pp_chan c ^ " " ^ pp_val e.A.func_data ^ " ; " ^ pp_exp_prefix (Fwd(c',c));;
+  | A.MSendP(c,e,c') -> "+ " ^ "send " ^ pp_chan c ^ " " ^ pp_val e ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
+  | A.MSendA(c,e,c') -> "- " ^ "send " ^ pp_chan c ^ " " ^ pp_val e ^ " ; " ^ pp_exp_prefix (Fwd(c',c));;
 
 (****************)
 (* Declarations *)

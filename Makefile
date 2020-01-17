@@ -46,7 +46,7 @@ nomos-editor:
 	ocamlfind ocamlc -thread -linkpkg -package core Infer.mli; \
 	ocamlc Elab.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core Exec.mli; \
-	ocamlfind ocamlc -thread -linkpkg -package core RastConfig.mli; \
+	ocamlfind ocamlc -thread -linkpkg -package core NomosConfig.mli; \
 	cd ..
 
 
