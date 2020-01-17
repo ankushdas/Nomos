@@ -5,6 +5,7 @@ module S = Solver
 module C = Core
 module M = C.Map
 module PP = Pprint
+module F = NomosFlags
 module ClpS = S.Clp (S.Clp_std_options);;
 
 exception InferImpossible;;
@@ -138,7 +139,7 @@ let substitute_mode (s,c,m) sols = (s, c, subst_mode m sols);;
 let substitute_argmode arg sols = match arg with
     A.FArg a -> A.FArg a
   | A.STArg a -> A.STArg (substitute_mode a sols);;
-  
+
 let rec substitute_tp tp psols msols = match tp with
     A.Plus(choices) -> A.Plus(substitute_choices choices psols msols)
   | A.With(choices) -> A.With(substitute_choices choices psols msols)
@@ -286,7 +287,7 @@ and removeU_branches bs = match bs with
   | (l,p)::bs' ->
       (l, removeU_aug p)::
       (removeU_branches bs')
-      
+
 and removeU_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = removeU_exp p}
 
 and removeU_faug {A.func_data = d; A.func_structure = e} = {A.func_data = d; A.func_structure = removeU_fexp e}
@@ -389,7 +390,7 @@ let eq e1 e2 =
   try (R.evaluate e1) = (R.evaluate e2)
   with R.NotClosed ->
     let en = N.normalize (R.minus e1 e2) in
-    let () = if !Flags.verbosity >= 2 then print_string (R.pp_arith e1 ^ " = " ^ R.pp_arith e2 ^ "\n") in
+    let () = if !F.verbosity >= 2 then print_string (R.pp_arith e1 ^ " = " ^ R.pp_arith e2 ^ "\n") in
     let (n, l) = get_expr_list en in
     let () = add_eq_constr n l in
     true;;
@@ -398,7 +399,7 @@ let ge e1 e2 =
   try (R.evaluate e1) >= (R.evaluate e2)
   with R.NotClosed ->
     let en = N.normalize (R.minus e1 e2) in
-    let () = if !Flags.verbosity >= 2 then print_string (R.pp_arith e1 ^ " >= " ^ R.pp_arith e2 ^ "\n") in
+    let () = if !F.verbosity >= 2 then print_string (R.pp_arith e1 ^ " >= " ^ R.pp_arith e2 ^ "\n") in
     let (n, l) = get_expr_list en in
     let () = add_ge_constr n l in
     true;;
@@ -409,7 +410,7 @@ let m_eq v1 v2 =
   else
     let sv1 = get_modevar v1 in
     let sv2 = get_modevar v2 in
-    let () = if !Flags.verbosity >= 2 then print_string (v1 ^ " = " ^ v2 ^ "\n") in
+    let () = if !F.verbosity >= 2 then print_string (v1 ^ " = " ^ v2 ^ "\n") in
     let () = t_cons () in
     let () = ClpS.add_constr_list ~lower:0.0 ~upper:0.0 [(sv1, 1.0); (sv2, -1.0)]
     in true;;
@@ -431,7 +432,7 @@ let get_mode f = match f with
 let m_eq_const v m =
   let c = modeval m in
   let sv = get_modevar v in
-  let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode m ^ "\n") in
+  let () = if !F.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode m ^ "\n") in
   let () = t_cons () in
   let () = ClpS.add_constr_list ~lower:c ~upper:c [(sv, 1.0)] in
   true;;
@@ -442,7 +443,7 @@ let m_eq_pair v m1 m2 =
   let min_val = min c1 c2 in
   let max_val = max c1 c2 in
   let sv = get_modevar v in
-  let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Shared ^ "\n") in
+  let () = if !F.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Shared ^ "\n") in
   let () = t_cons () in
   let () = ClpS.add_constr_list ~lower:min_val ~upper:max_val [(sv, 1.0)] in
   true;;
@@ -458,7 +459,7 @@ let min_max m1 m2 m3 =
 let m_lin v =
   let (min_val, max_val) = min_max A.Pure A.Linear A.Transaction in
   let sv = get_modevar v in
-  let () = if !Flags.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Linear ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Transaction ^ "\n") in
+  let () = if !F.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Linear ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Transaction ^ "\n") in
   let () = t_cons () in
   let () = ClpS.add_constr_list ~lower:min_val ~upper:max_val [(sv, 1.0)] in
   true;;
@@ -467,7 +468,7 @@ let get_potvarlist () =
   M.fold_right !potvar_map ~init:[] ~f:(fun ~key:k ~data:_v l -> k::l);;
 
 let get_modevarlist () =
-  M.fold_right !modevar_map ~init:[] ~f:(fun ~key:k ~data:_v l -> k::l);;  
+  M.fold_right !modevar_map ~init:[] ~f:(fun ~key:k ~data:_v l -> k::l);;
 
 let get_solution () =
   let vs = get_potvarlist () in
@@ -507,9 +508,9 @@ let solve_and_print () =
   match res with
       S.Feasible ->
         let (psols, msols) = get_solution () in
-        let () = if !Flags.verbosity >= 2 then print_pot_solution psols in
-        let () = if !Flags.verbosity >= 2 then print_mode_solution msols in
+        let () = if !F.verbosity >= 2 then print_pot_solution psols in
+        let () = if !F.verbosity >= 2 then print_mode_solution msols in
         (psols, msols)
     | S.Infeasible ->
-        let () = if !Flags.verbosity >= 1 then print_string ("Infeasible LP!\n") in
+        let () = if !F.verbosity >= 1 then print_string ("Infeasible LP!\n") in
         raise ErrorMsg.Error;;

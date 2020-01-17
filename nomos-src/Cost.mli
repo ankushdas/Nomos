@@ -1,5 +1,6 @@
 module R = Arith
 module A = Ast
+module F = NomosFlags
 val cost_recv :
   ('a A.st_expr -> 'a A.st_expr) -> 'a A.st_expr -> 'a A.st_expr
 val cost_recv_aug :
@@ -9,8 +10,7 @@ val cost_recv_branches :
 val cost_tick_aug : 'a A.func_aug_expr -> 'a A.func_aug_expr
 val cost_tick : 'a A.func_expr -> 'a A.func_expr
 val cost_model :
-  ('a A.st_expr -> 'a A.st_expr) ->
-  Flags.cost -> 'a A.st_expr -> 'a A.st_expr
+  ('a A.st_expr -> 'a A.st_expr) -> F.cost -> 'a A.st_expr -> 'a A.st_expr
 val apply_cost_work : 'a A.st_aug_expr -> 'a A.st_aug_expr
 val cost_send :
   ('a A.st_expr -> 'a A.st_expr) -> 'a A.st_expr -> 'a A.st_expr

@@ -1,5 +1,6 @@
 module R = Arith
 module A = Ast
+module F = NomosFlags
 
 let rec cost_recv f exp = match exp with
     A.Fwd(x,y) -> A.Fwd(x,y)
@@ -55,14 +56,14 @@ and cost_tick fexp = match fexp with
   | A.Command(p) -> A.Command(apply_cost_work p)
 
 and cost_model f flag exp = match flag with
-    Flags.None -> exp
-  | Flags.Free -> exp
-  | Flags.Recv -> cost_recv f exp
-  | Flags.RecvSend -> cost_send f (cost_recv f exp)
-  | Flags.Send -> cost_send f exp
+    F.None -> exp
+  | F.Free -> exp
+  | F.Recv -> cost_recv f exp
+  | F.RecvSend -> cost_send f (cost_recv f exp)
+  | F.Send -> cost_send f exp
 
 and apply_cost_work {A.st_data = d; A.st_structure = exp} =
-  {A.st_data = d; A.st_structure = cost_model (fun k -> A.Work(A.Arith (R.Int 1),{A.st_data = d; A.st_structure = k})) (!Flags.work) exp}
+  {A.st_data = d; A.st_structure = cost_model (fun k -> A.Work(A.Arith (R.Int 1),{A.st_data = d; A.st_structure = k})) (!F.work) exp}
 
 and cost_send f exp = match exp with
     A.Fwd(x,y) -> A.Fwd(x,y)

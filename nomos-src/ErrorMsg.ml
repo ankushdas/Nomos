@@ -1,3 +1,5 @@
+module F = NomosFlags
+
 (* Initial values of compiler state variables *)
 let anyErrors = ref false;;
 
@@ -19,7 +21,7 @@ let err_string cat = match cat with
 
 (* We turn tabs into spaces because they are counted as a single character in
     the extents, so in order for the emphasis to be correct we need each
-    character to be one column wide. *)     
+    character to be one column wide. *)
 let tabToSpace = String.map (fun c -> match c with | '\t' -> ' ' | c -> c);;
 
 let omap f opt = match opt with
@@ -34,7 +36,7 @@ let pmsg str ext note =
 
 let error_msg cat ext note =
     ( anyErrors := true
-    ; if !Flags.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
+    ; if !F.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
       then pmsg (err_string cat ^ " error") ext note
       else () );;
 
@@ -51,7 +53,7 @@ let pmsg1 str note =
 
 let error_msg1 cat note =
     ( anyErrors := true
-    ; if !Flags.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
+    ; if !F.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
       then pmsg1 (err_string cat ^ " error") note
       else () );;
 

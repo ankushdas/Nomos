@@ -1,4 +1,4 @@
-(* Interface for RastConfig *)
+(* Interface for NomosConfig *)
 
 module A = Ast
 module C = Core

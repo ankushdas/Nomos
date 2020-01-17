@@ -1,16 +1,16 @@
 (* Configuration for running rast files *)
- 
+
 module R = Arith
 module A = Ast
 module PP = Pprint
-module F = Flags
 module C = Core
 module EL = Elab
 module I = Infer
 module TC = Typecheck
+module F = NomosFlags
 open Lexer
 open Lexing
- 
+
 let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
   let open Lexing in
   lexbuf.lex_curr_p <- {
@@ -24,7 +24,7 @@ let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
 (************************)
 (* Command Line Options *)
 (************************)
- 
+
 type option =
     Work of string
   | Syntax of string
@@ -39,7 +39,7 @@ let print_position _outx lexbuf =
 let parse_with_error lexbuf =
   try Parser.file Lexer.token lexbuf with
   | SyntaxError msg ->
-      (C.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg; 
+      (C.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg;
       ([], None))
   | Parser.Error ->
       (C.printf "PARSING FAILURE: %a\n" print_position lexbuf; ([], None))
@@ -47,8 +47,8 @@ let parse_with_error lexbuf =
 (* use the parser created by Menhir and return the list of declarations *)
 let parse lexbuf =
   let env = parse_with_error lexbuf in
-  env;; 
-  
+  env;;
+
 
 let process_option _ext op = match op with
     Work(s) ->
@@ -68,7 +68,7 @@ let process_option _ext op = match op with
 (*********************************)
 (* Loading and Elaborating Files *)
 (*********************************)
- 
+
 let reset () =
   ErrorMsg.reset ();;
 
@@ -96,15 +96,15 @@ let load file =
   let t1 = Unix.gettimeofday () in
   let env = EL.remove_stars env in
   let env = EL.removeU env in
-  let () = if !Flags.verbosity >= 2 then print_string ("========================================================\n") in
-  let () = if !Flags.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") "" 
+  let () = if !F.verbosity >= 2 then print_string ("========================================================\n") in
+  let () = if !F.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") ""
     (List.map (fun (x,_) -> x) env)) in
   let () = EL.gen_constraints env (List.map (fun (x,_) -> x) env) ext in
   let (psols,msols) = I.solve_and_print () in
   let env = EL.substitute (List.map (fun (x,_) -> x) env) psols msols in
   let t2 = Unix.gettimeofday () in
-  let () = if !Flags.verbosity >= 1 then print_string ("========================================================\n") in
-  let () = if !Flags.verbosity >= 0 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in
+  let () = if !F.verbosity >= 1 then print_string ("========================================================\n") in
+  let () = if !F.verbosity >= 0 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in
   let () = print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
   let () = print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
   let () = I.print_stats () in
@@ -118,7 +118,7 @@ let load file =
 let rec run env dcls =
   match dcls with
       A.Exec(f)::dcls' ->
-        let () = if !Flags.verbosity >= 1
+        let () = if !F.verbosity >= 1
                  then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
                  else () in
         (* let _config = E.exec env f in *)
@@ -186,9 +186,9 @@ let nomos_command =
           let () = F.reset () in
           let () = List.iter (process_option cmd_ext) [vlevel; work_cm; syntax] in
           let env = try load file
-                    with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1 
+                    with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
           in
           let () = print_string ("% compilation successful!\n") in
-          
+
           let () = run env env in
           print_string ("% runtime successful!\n"));;

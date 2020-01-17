@@ -20,22 +20,23 @@ module PP = Pprint
 module TC = Typecheck
 module E = TpError
 module I = Infer
+module F = NomosFlags
 
 let error = ErrorMsg.error ErrorMsg.Type;;
 let error1 = ErrorMsg.error1 ErrorMsg.Type;;
- 
+
 let postponed dcl = match dcl with
     A.Exec _ -> "% "
   | A.TpDef _
   | A.ExpDecDef _ -> "";;
- 
+
 (*********************)
 (* Validity of Types *)
 (*********************)
- 
+
 let pp_costs () =
-  "-work=" ^ Flags.pp_cost (!Flags.work);;
- 
+  "-work=" ^ F.pp_cost (!F.work);;
+
  (* dups vs = true if there is a duplicate variable in vs *)
 let rec dups delta = match delta with
   | [] -> false
@@ -55,7 +56,7 @@ let valid_delta env delta ext = valid_ctx env (delta.A.shared @ delta.A.linear) 
 let check_nonneg pot ext =
   match pot with
       A.Star -> ()
-    | A.Arith pot -> 
+    | A.Arith pot ->
         if R.non_neg pot then ()
         else error ext ("process potential " ^ R.pp_arith pot ^ " not positive");;
 
@@ -73,7 +74,7 @@ let check_nonneg pot ext =
 let rec elab_tps env dcls ext = match dcls with
     [] -> []
   | ((A.TpDef(v,a), ext') as dcl)::dcls' ->
-      let () = if !Flags.verbosity >= 1
+      let () = if !F.verbosity >= 1
                then print_string (postponed (A.TpDef(v,a)) ^ PP.pp_decl env (A.TpDef(v,a)) ^ "\n")
                else () in
       let () = if TC.contractive a then ()
@@ -96,7 +97,7 @@ let rec elab_tps env dcls ext = match dcls with
 (****************************)
 
 exception ElabImpossible;;
- 
+
 (* elab_env env decls = env' if all declarations in decls
  * are well-typed with respect to env, elaborating to env'
  * raises exception otherwise.
@@ -107,7 +108,7 @@ let rec elab_exps' env dcls ext = match dcls with
   | ((A.TpDef _), _)::_ -> (* do not print type definition again *)
       elab_exps env dcls ext
   | (dcl, _)::_ ->
-      if !Flags.verbosity >= 1
+      if !F.verbosity >= 1
       then print_string (postponed dcl ^ PP.pp_decl env dcl ^ "\n")
       else () ;
       elab_exps env dcls ext
@@ -120,12 +121,12 @@ and elab_exps env dcls ext = match dcls with
       let p' = Cost.apply_cost p in (* applying the cost model *)
       let () =
         begin
-          match !Flags.syntax with                    (* print reconstructed term *)
-              Flags.Implicit ->
+          match !F.syntax with                    (* print reconstructed term *)
+              F.Implicit ->
               (* ask Ankush *)
                 ErrorMsg.error ErrorMsg.Pragma ext' "implicit syntax currently not supported"
-            | Flags.Explicit -> (* maybe only if there is a cost model... *)
-                if !Flags.verbosity >= 2
+            | F.Explicit -> (* maybe only if there is a cost model... *)
+                if !F.verbosity >= 2
                 then print_string ("% with cost model " ^ pp_costs () ^ "\n"
                                   ^ (PP.pp_decl env (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'))) ^ "\n")
                 else ()
@@ -134,7 +135,7 @@ and elab_exps env dcls ext = match dcls with
       let () = try TC.checkfexp false env delta pot p' (x,a) ext' m (* approx. type check *)
                with ErrorMsg.Error ->
                   (* if verbosity >= 2, type-check again, this time with tracing *)
-                  if !Flags.verbosity >= 2
+                  if !F.verbosity >= 2
                     then
                       begin
                         print_string ("% tracing type checking...\n")
@@ -165,18 +166,18 @@ let elab_decls env dcls ext =
   Some env''
 
   with ErrorMsg.Error -> None;;
- 
+
  (**************************)
  (* Checking Redeclaration *)
  (**************************)
- 
+
  (* Because of mutual recursion, we cannot redefine or
   * redeclare types or processes
   *)
- 
+
  let is_tpdef env a = match A.lookup_tp env a with None -> false | Some _ -> true;;
  let is_expdecdef env f = match A.lookup_expdef env f with None -> false | Some _ -> true;;
- 
+
 let rec check_redecl env dcls = match dcls with
     [] -> ()
   | (A.TpDef(v,_), ext)::dcls' ->
@@ -200,7 +201,7 @@ let rec commit env ctx octx = match ctx with
           if A.is_shared env t
           then {A.shared = (c,t)::s ; A.linear = l ; A.ordered = o}
           else {A.shared = s ; A.linear = (c,t)::l ; A.ordered = o}
-        with A.UndeclaredTp -> 
+        with A.UndeclaredTp ->
         let _ = Printf.printf "hi!" in
         error1 ("type " ^ PP.pp_tp_compact env t ^ " undeclared");;
 
@@ -316,4 +317,3 @@ let rec substitute dcls psols msols = match dcls with
 
 
 (* structure Elab *)
- 
