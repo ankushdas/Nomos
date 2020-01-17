@@ -359,9 +359,9 @@ and esubstv_branches v' v bs = match bs with
 
 let rec fsubst_ctx ctx' ctx expr = match ctx',ctx with
     (STArg c')::ctx', (STyped (c,_t))::ctx ->
-      subst c' c (fsubst_ctx ctx' ctx expr)
+      fsubst_aug c' c (fsubst_ctx ctx' ctx expr)
   | (FArg v')::ctx', (Functional (v,_t))::ctx ->
-      esubstv v' v (fsubst_ctx ctx' ctx expr)
+      substv_aug v' v (fsubst_ctx ctx' ctx expr)
   | [], [] -> expr
   | _c', _c -> raise AstImpossible;;
 

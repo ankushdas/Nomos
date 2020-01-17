@@ -137,5 +137,6 @@ val esubstv_aug : 'a func_expr -> string -> 'a st_aug_expr -> 'a st_aug_expr
 val esubstv_arg : 'a func_expr -> string -> 'a arg -> 'a arg
 val esubstv : 'a func_expr -> string -> 'a st_expr -> 'a st_expr
 val esubstv_branches : 'a func_expr -> string -> 'a branches -> 'a branches
-val fsubst_ctx : 'a arg list -> argument list -> 'a st_expr -> 'a st_expr
+val fsubst_ctx :
+  'a arg list -> argument list -> 'a func_aug_expr -> 'a func_aug_expr
 val msubst : str * string * mode -> 'a * string * 'b -> msg -> msg

@@ -232,6 +232,10 @@ let rec fst l = match l with
     (c,_t)::l' -> c::(fst l')
   | [] -> [];;
 
+let get_stexp fexp = match fexp.A.func_structure with
+    A.Command(exp) -> exp
+  | _ -> raise ExecImpossible;;
+
 let expd_def env x f xs =
   match A.lookup_expdef env f with
       None -> raise UndefinedProcess
@@ -239,8 +243,9 @@ let expd_def env x f xs =
         match A.lookup_expdec env f with
             None -> raise ExecImpossible
           | Some (ctx,_pot,(z,_c),_m) ->
-              let exp = A.fsubst x z exp.func_structure in
-              let exp = A.fsubst_ctx xs (fst ctx.ordered) exp in
+              let exp = A.fsubst_aug x z exp in
+              let exp = A.fsubst_ctx xs ctx.ordered exp in
+              let exp = get_stexp exp in
               exp;;
 
 let expand env ch config =
@@ -253,7 +258,7 @@ let expand env ch config =
         if pot <> pot'
         then raise PotentialMismatch
         else
-          let proc = Proc(c,t,(w,pot),A.subst c x p) in
+          let proc = Proc(c,t,(w,pot),A.subst c x p.A.st_structure) in
           let config = add_sem proc config in
           Changed config
     | _s -> raise ExecImpossible;;
