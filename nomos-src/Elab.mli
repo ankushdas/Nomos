@@ -4,6 +4,7 @@ module PP = Pprint
 module TC = Typecheck
 module E = TpError
 module I = Infer
+module F = NomosFlags
 val error : ((int * int) * (int * int) * string) option -> string -> 'a
 val error1 : string -> 'a
 val postponed : A.decl -> string
@@ -18,16 +19,13 @@ val elab_tps :
 exception ElabImpossible
 val elab_exps' :
   (A.decl * 'a) list ->
-  (A.decl * ((int * int) * (int * int) * string) option) list ->
-  'b -> (A.decl * ((int * int) * (int * int) * string) option) list
+  (A.decl * TC.A.ext) list -> 'b -> (A.decl * TC.A.ext) list
 val elab_exps :
   (A.decl * 'a) list ->
-  (A.decl * ((int * int) * (int * int) * string) option) list ->
-  'b -> (A.decl * ((int * int) * (int * int) * string) option) list
+  (A.decl * TC.A.ext) list -> 'b -> (A.decl * TC.A.ext) list
 val elab_decls :
   (TC.A.decl * 'a) list ->
-  (A.decl * ((int * int) * (int * int) * string) option) list ->
-  'b -> (A.decl * ((int * int) * (int * int) * string) option) list option
+  (A.decl * TC.A.ext) list -> 'b -> (A.decl * TC.A.ext) list option
 val is_tpdef : (A.decl * 'a) list -> A.tpname -> bool
 val is_expdecdef : (A.decl * 'a) list -> A.expname -> bool
 val check_redecl :
@@ -51,8 +49,7 @@ val well_formedness :
   TC.PP.A.str * string * TC.PP.A.mode ->
   ((int * int) * (int * int) * string) option -> unit
 val gen_constraints :
-  (TC.A.decl * 'a) list ->
-  A.decl list -> ((int * int) * (int * int) * string) option -> unit
+  (TC.A.decl * 'a) list -> A.decl list -> TC.A.ext -> unit
 val substitute :
-  A.decl list ->
-  (string * int) list -> (string * I.A.mode) list -> A.decl list
+  (A.decl * 'a) list ->
+  (string * int) list -> (string * I.A.mode) list -> (A.decl * 'a) list

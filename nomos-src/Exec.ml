@@ -12,8 +12,6 @@ exception PotentialMismatch (* mismatch while spawning or exchanging *)
 
 exception MissingBranch (* missing branch during internal/external choice *)
 
-exception MarkedExpCategory (* marked expression found at runtime *)
-
 exception ProgressError (* final configuration inconsistent *)
 
 exception ChannelMismatch (* channel name mismatch in sem *)
@@ -227,10 +225,6 @@ let spawn env ch config =
           let config = add_sem proc2 config in
           Changed config
     | _s -> raise ExecImpossible;;
-
-let rec fst l = match l with
-    (c,_t)::l' -> c::(fst l')
-  | [] -> [];;
 
 let get_stexp fexp = match fexp.A.func_structure with
     A.Command(exp) -> exp
@@ -898,74 +892,6 @@ and iterate_and_one_step env sems config stepped =
           | Unchanged config -> iterate_and_one_step env sems' config stepped;;
 
 (*
-
-(* compute steps env config queue = final_config
- * steps are interactions or transitions taken to arrive at queue
- * env is global program
- * (List.rev queue) @ config is current configuration
- * config still to be scanned for possible transitions
- * queue has the processes resulting from transitions
- *)
-(* wp = (work, potential) is unused and just blindly propagated
- * until we integrate this Fri Apr  6 08:45:49 2018 -fp *)
-
-fun interactsL msg = case msg of
-    M.LabL _ => true | M.NowL => true | M.PayL _ => true | M.AssertL _ => true
-  | _ => false
-
-fun interactsR msg = case msg of
-    M.LabR _ => true | M.CloseR => true | M.NowR => true | M.PayR _ => true | M.AssertR _ => true
-  | _ => false
-
-datatype category = 
-    RecvL 
-  | RecvR
-  | Fwd
-  | Internal
-  | MsgR
-  | MsgL
-
-fun cat_of proc = case proc of
-    A.Proc(_,_,P) =>
-      (case P of
-        A.Cut _ => Internal
-      | A.Spawn _ => Internal
-      | A.Id => Fwd
-      | A.LabR _ => Internal
-      | A.CaseL _ => RecvL
-      | A.LabL _ => Internal
-      | A.CaseR _ => RecvR
-      | A.CloseR => Internal
-      | A.WaitL _ => RecvL
-      | A.Delay _ => Internal
-      | A.WhenR _ => RecvR
-      | A.NowL _ => Internal
-      | A.WhenL _ => RecvL
-      | A.NowR _ => Internal
-      | A.Work _ => Internal
-      | A.PayR _ => Internal
-      | A.PayL _ => Internal
-      | A.GetR _ => RecvR
-      | A.GetL _ => RecvL
-      | A.AssertR _ => Internal
-      | A.AssertL _ => Internal
-      | A.AssumeR _ => RecvR
-      | A.AssumeL _ => RecvL
-      | A.Imposs => Internal
-      | A.ExpName _ => Internal
-      | A.Marked _ => raise MarkedExpCategory)
-  | A.Msg(_,_,M) =>
-      (case M of
-        M.LabR _ => MsgR
-      | M.LabL _ => MsgL
-      | M.CloseR => MsgR
-      | M.NowR => MsgR
-      | M.NowL => MsgL
-      | M.PayR _ => MsgR
-      | M.PayL _ => MsgL
-      | M.AssertR _ => MsgR
-      | M.AssertL _ => MsgL)
-
 fun is_final (P::(config as Q::config')) =
     (case (cat_of P, cat_of Q) of
       (MsgR, MsgL) => raise ProgressError (* type error *)
@@ -1011,8 +937,6 @@ let exec env f =
                          ; raise RuntimeError
       | ProgressError -> error "final configuration inconsistent"
                          ; raise RuntimeError
-      | MarkedExpCategory -> error "marked expression found at runtime"
-                             ; raise RuntimeError
       | ChannelMismatch -> error "channel name mismatch found at runtime"
                            ; raise RuntimeError
       | UndefinedProcess -> error "undefined process found at runtime"

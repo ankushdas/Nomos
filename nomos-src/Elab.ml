@@ -296,7 +296,7 @@ let rec gen_constraints env dcls ext = match dcls with
 
 let rec substitute dcls psols msols = match dcls with
     [] -> []
-  | A.ExpDecDef(f,m,(delta,pot,(z,c)),p)::dcls' ->
+  | (A.ExpDecDef(f,m,(delta,pot,(z,c)),p), dext)::dcls' ->
       let subst_list = List.map (fun (x,a) -> (I.substitute_mode x msols, I.substitute_tp a psols msols)) in
       let subst_arglist = List.map (fun x -> match x with
                                                 A.Functional(v,t) -> A.Functional(v, I.substitute_ftp t psols msols)
@@ -309,10 +309,10 @@ let rec substitute dcls psols msols = match dcls with
       let pot' = I.substitute_pot pot psols in
       let zc' = (I.substitute_mode z msols, I.substitute_tp c psols msols) in
       let p' = I.substitute_faug p psols msols in
-      A.ExpDecDef(f,m,(ctx',pot',zc'),p')::(substitute dcls' psols msols)
-  | A.TpDef(v,a)::dcls' ->
+      (A.ExpDecDef(f,m,(ctx',pot',zc'),p'), dext)::(substitute dcls' psols msols)
+  | (A.TpDef(v,a), dext)::dcls' ->
       let a' = I.substitute_tp a psols msols in
-      A.TpDef(v,a')::(substitute dcls' psols msols)
+      (A.TpDef(v,a'), dext)::(substitute dcls' psols msols)
   | dcl::dcls' -> dcl::(substitute dcls' psols msols);;
 
 

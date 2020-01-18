@@ -74,7 +74,6 @@ let reset () =
   ErrorMsg.reset ();;
 
 
-
 let load file =
   let () = reset () in                        (* internal lexer and parser state *)
   (*
@@ -102,10 +101,10 @@ let load file =
     (List.map (fun (x,_) -> x) env)) in
   let () = EL.gen_constraints env (List.map (fun (x,_) -> x) env) ext in
   let (psols,msols) = I.solve_and_print () in
-  let env = EL.substitute (List.map (fun (x,_) -> x) env) psols msols in
+  let env = EL.substitute env psols msols in
   let t2 = Unix.gettimeofday () in
   let () = if !F.verbosity >= 1 then print_string ("========================================================\n") in
-  let () = if !F.verbosity >= 0 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in
+  let () = if !F.verbosity >= 0 then print_string (List.fold_left (fun str (dcl, _) -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in
   let () = print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
   let () = print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
   let () = I.print_stats () in
@@ -118,7 +117,7 @@ let load file =
 
 let rec run env dcls =
   match dcls with
-      A.Exec(f)::dcls' ->
+      (A.Exec(f), _ext)::dcls' ->
         let () = if !F.verbosity >= 1
                  then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
                  else () in

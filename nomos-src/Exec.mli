@@ -34,7 +34,7 @@ type configuration = map_chan_sem * map_chan_chan * map_chan_chan;;
 
 val pp_sem : sem -> string
 
-val get_pot : A.decl_ext list -> A.expname -> A.potential
+val get_pot : (A.decl * 'a) list -> string -> A.potential
 
 exception RuntimeError
 
@@ -42,8 +42,5 @@ exception ProgressError
 
 val pp_maps : (string * string) list -> string
 
-val exec :
-  A.decl_ext list ->
-  A.expname ->
-  configuration
+val exec : (A.decl * 'a) list -> string -> configuration
 
