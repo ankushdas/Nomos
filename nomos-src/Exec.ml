@@ -28,7 +28,7 @@ exception RuntimeError (* should never happen at runtime *)
 
 type sem =
     Proc of A.chan * int * (int * int) * A.ext A.st_expr          (* Proc(chan, time, (work, pot), P) *)
-  | Msg of A.chan * int * (int * int) * A.msg                     (* Msg(chan, time, (work, pot), M) *)
+  | Msg of A.chan * int * (int * int) * A.ext A.msg               (* Msg(chan, time, (work, pot), M) *)
 
 let pp_sem sem = match sem with
     Proc(c,t,(w,pot),p) ->
@@ -45,13 +45,13 @@ module Chan =
         type t = A.chan
 
         let compare x y =
-          let (c1,_m1) = x in
-          let (c2,_m2) = y in
+          let (_s1,c1,_m1) = x in
+          let (_s2,c2,_m2) = y in
           C.String.compare c1 c2
         
-        let sexp_of_t (c,_m) = C.String.sexp_of_t c
+        let sexp_of_t (_s,c,_m) = C.String.sexp_of_t c
 
-        let t_of_sexp s = (C.String.t_of_sexp s, A.Unknown)
+        let t_of_sexp s = (A.Dollar, C.String.t_of_sexp s, A.Unknown)
       end
       include T
       include C.Comparable.Make(T)
@@ -674,12 +674,12 @@ let product_S ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(c1,t,wp,A.SendF(c2,m,p)) ->
+      Proc(c1,t,wp,A.SendF(c2,e,p)) ->
         if uneq_name c1 c2
         then raise ChannelMismatch
         else
           let c' = lfresh () in
-          let v = A.eval m in
+          let v = A.eval e in
           let msg = Msg(c1,t+1,(0,0),A.MSendP(c1,v,c')) in
           let proc = Proc(c',t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
@@ -698,12 +698,12 @@ let product_R ch config =
           let msg = find_msg c config Pos in
           begin
             match msg with
-                Some(Msg(ceq, t', (w',pot'), A.MSendP(_ceq,e,c'))) ->
+                Some(Msg(ceq, t', (w',pot'), A.MSendP(_ceq,v,c'))) ->
                   if uneq_name ceq c
                   then raise ChannelMismatch
                   else
-                    let q = A.subst e x q in
-                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q) in
+                    let q = A.esubstv_aug (A.toExpr None v) x q in
+                    let proc = Proc(d, max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -712,49 +712,81 @@ let product_R ch config =
               | _m -> Unchanged config
           end
     | _s -> raise ExecImpossible;;
-            
-    let lolli_S ch config =
-      let s = find_sem ch config in
-      let config = remove_sem ch config in
-      match s with
-          Proc(d,t,wp,A.Send(c,e,p)) ->
-            if not (uneq_name d c)
-            then raise ChannelMismatch
-            else
-              let c' = lfresh () in
-              let msg = Msg(c',t+1,(0,0),A.MSendL(c,e,c')) in
-              let proc = Proc(d,t+1,wp,A.subst c' c p) in
-              let config = add_sem msg config in
-              let config = add_sem proc config in
-              let config = add_cont (c,c') config in
-              Changed config
-        | _s -> raise ExecImpossible;;
+
+let arrow_S ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(d,t,wp,A.SendF(c,e,p)) ->
+        if not (uneq_name d c)
+        then raise ChannelMismatch
+        else
+          let c' = lfresh () in
+          let v = A.eval e in
+          let msg = Msg(c',t+1,(0,0),A.MSendA(c,v,c')) in
+          let proc = Proc(d,t+1,wp,A.subst c' c p.A.st_structure) in
+          let config = add_sem msg config in
+          let config = add_sem proc config in
+          let config = add_cont (c,c') config in
+          Changed config
+    | _s -> raise ExecImpossible;;
+
+let arrow_R ch config =
+  let s = find_sem ch config in
+  match s with
+      Proc(c1,t,(w,pot),A.RecvF(c2,x,q)) ->
+        if uneq_name c1 c2
+        then raise ChannelMismatch
+        else
+          let msg = find_msg c2 config Neg in
+          begin
+            match msg with
+                Some(Msg(c2', t', (w',pot'), A.MSendA(c2eq,v,_c2'))) ->
+                  if uneq_name c2eq c2
+                  then raise ExecImpossible
+                  else
+                    let q = A.esubstv_aug (A.toExpr None v) x q in
+                    let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
+                    let config = remove_sem ch config in
+                    let config = remove_sem c2' config in
+                    let config = add_sem proc config in
+                    let config = remove_cont c2 config in
+                    Changed config
+              | _m -> Unchanged config
+          end
+    | _s -> raise ExecImpossible;;
     
-    let lolli_R ch config =
-      let s = find_sem ch config in
-      match s with
-          Proc(c1,t,(w,pot),A.Recv(c2,x,q)) ->
-            if uneq_name c1 c2
-            then raise ChannelMismatch
-            else
-              let msg = find_msg c2 config Neg in
-              begin
-                match msg with
-                    Some(Msg(c2', t', (w',pot'), A.MSendL(c2eq,e,_c2'))) ->
-                      if uneq_name c2eq c2
-                      then raise ExecImpossible
-                      else
-                        let q = A.subst e x q in
-                        let proc = Proc(c2', max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q) in
-                        let config = remove_sem ch config in
-                        let config = remove_sem c2' config in
-                        let config = add_sem proc config in
-                        let config = remove_cont c2 config in
-                        Changed config
-                  | _m -> Unchanged config
-              end
-        | _s -> raise ExecImpossible;;
-    
+let letS ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c,t,wp,A.Let(x,e,p)) ->
+        let v = A.eval e in
+        let p = A.esubstv_aug (A.toExpr None v) x p in
+        let proc = Proc(c,t+1,wp,p.A.st_structure) in
+        let config = add_sem proc config in
+        Changed config
+    | _s -> raise ExecImpossible;;
+
+let ifS ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(c,t,wp,A.IfS(e,p1,p2)) ->
+        let v = A.eval e in
+        begin
+          match v with
+              A.BoolV true ->
+                let proc = Proc(c,t+1,wp,p1.A.st_structure) in
+                let config = add_sem proc config in
+                Changed config
+            | A.BoolV false ->
+                let proc = Proc(c,t+1,wp,p2.A.st_structure) in
+                let config = add_sem proc config in
+                Changed config
+            | _ -> raise A.RuntimeError
+        end
+    | _s -> raise ExecImpossible
 
 let match_and_one_step env sem config =
   match sem with
@@ -825,9 +857,6 @@ let match_and_one_step env sem config =
             
             | A.IfS _ ->
                 ifS c config
-            
-            | A.Marked _ ->
-                raise MarkedExpCategory
         end
     | Msg _ -> Unchanged config;;
 

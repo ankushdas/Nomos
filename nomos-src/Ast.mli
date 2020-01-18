@@ -89,12 +89,12 @@ type decl =
       parsed_expr
   | Exec of expname
 type program = (decl * ext) list * ext
-type value =
+type 'a value =
     IntV of int
   | BoolV of bool
-  | ListV of value list
-  | LambdaV of arglist * unit func_aug_expr
-type msg =
+  | ListV of 'a value list
+  | LambdaV of arglist * 'a func_aug_expr
+type 'a msg =
     MLabI of chan * label * chan
   | MLabE of chan * label * chan
   | MSendT of chan * chan * chan
@@ -102,8 +102,8 @@ type msg =
   | MClose of chan
   | MPayP of chan * potential * chan
   | MPayG of chan * potential * chan
-  | MSendP of chan * value * chan
-  | MSendA of chan * value * chan
+  | MSendP of chan * 'a value * chan
+  | MSendA of chan * 'a value * chan
 exception AstImpossible
 exception UndeclaredTp
 exception RuntimeError
@@ -130,7 +130,7 @@ val fsubst :
 val fsubst_aug :
   str * string * mode ->
   'a * string * 'b -> 'c func_aug_expr -> 'c func_aug_expr
-val toExpr : unit -> value -> unit func_expr
+val toExpr : 'a -> 'a value -> 'a func_expr
 val substv : 'a func_expr -> string -> 'a func_expr -> 'a func_expr
 val substv_aug :
   'a func_expr -> string -> 'a func_aug_expr -> 'a func_aug_expr
@@ -140,6 +140,10 @@ val esubstv : 'a func_expr -> string -> 'a st_expr -> 'a st_expr
 val esubstv_branches : 'a func_expr -> string -> 'a branches -> 'a branches
 val fsubst_ctx :
   'a arg list -> argument list -> 'a func_aug_expr -> 'a func_aug_expr
-val msubst : str * string * mode -> 'a * string * 'b -> msg -> msg
+val msubst : str * string * mode -> 'a * string * 'b -> 'c msg -> 'c msg
 exception SplitError
 val split_last : 'a list -> 'a list * 'a
+val apply_op : arith_operator -> int -> int -> int
+val compare_op : comp_operator -> 'a -> 'a -> bool
+val relate_op : rel_operator -> bool -> bool -> bool
+val eval : 'a option func_aug_expr -> 'a option value

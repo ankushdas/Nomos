@@ -38,7 +38,7 @@ nomos-editor:
 	ocamlc SafeIO.mli; \
 	ocamlc Ast.mli; \
 	ocamlc ErrorMsg.mli; \
-	ocamlc Flags.mli; \
+	ocamlc NomosFlags.mli; \
 	ocamlc Cost.mli; \
 	ocamlc Pprint.mli; \
 	ocamlc TpError.mli; \

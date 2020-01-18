@@ -171,13 +171,13 @@ type decl =
 
 type program = (decl * ext) list * ext
 
-type value =
+type 'a value =
   | IntV of int
   | BoolV of bool
-  | ListV of value list
-  | LambdaV of arglist * unit func_aug_expr;;
+  | ListV of 'a value list
+  | LambdaV of arglist * 'a func_aug_expr;;
 
-type msg =
+type 'a msg =
     MLabI of chan * label * chan          (* c.k ; c <- c+ *)
   | MLabE of chan * label * chan          (* c.k ; c+ <- c *)
   | MSendT of chan * chan * chan          (* send c d ; c <- c+ *)
@@ -185,8 +185,8 @@ type msg =
   | MClose of chan                        (* close c *)
   | MPayP of chan * potential * chan      (* pay c {p} ; c <- c+ *)
   | MPayG of chan * potential * chan      (* pay c {p} ; c+ <- c *)
-  | MSendP of chan * value * chan         (* send c M ; c <- c+ *)
-  | MSendA of chan * value * chan         (* send c M ; c+ <- c *)
+  | MSendP of chan * 'a value * chan      (* send c M ; c <- c+ *)
+  | MSendA of chan * 'a value * chan      (* send c M ; c+ <- c *)
 
 (* Environments *)
 
@@ -388,7 +388,27 @@ let split_last l =
         [] -> raise AstImpossible
       | e::es -> (List.rev es, e);;
 
-(*
+let apply_op op n1 n2 =
+  match op with
+      Add -> n1 + n2
+    | Sub -> n1 - n2
+    | Mult -> n1 * n2
+    | Div -> n1 / n2;;
+
+let compare_op cop n1 n2 =
+  match cop with
+      Eq -> n1 = n2 
+    | Neq -> n1 <> n2
+    | Lt -> n1 < n2
+    | Gt -> n1 > n2
+    | Leq -> n1 <= n2
+    | Geq -> n1 >= n2;;
+
+let relate_op rop b1 b2 =
+  match rop with
+      And -> b1 && b2
+    | Or -> b1 || b2;;
+
 let rec eval fexp = match fexp.func_structure with
     If(e1,e2,e3) ->
       begin
@@ -415,23 +435,64 @@ let rec eval fexp = match fexp.func_structure with
   | App(l) ->
       begin
         let (l', en) = split_last l in
-        let v' = eval {func_structure = App(l') ; func_data = ()} in
+        let v' = eval {func_structure = App(l') ; func_data = None} in
         let vn = eval en in
         match v' with
             LambdaV (xs, e) ->
               begin
                 match xs with
                     Single (x,_ext) -> eval (substv_aug (toExpr en.func_data vn) x e)
-                  | Curry ((x,_ext),xs') -> 
+                  | Curry ((x,_ext),xs') -> LambdaV(xs', substv_aug (toExpr en.func_data vn) x e)
               end
           | _ -> raise RuntimeError
       end
-  | Cons(e1,e2) -> Cons(substv_aug v' v e1, substv_aug v' v e2)
-  | Match(e1,e2,x,xs,e3) -> Match(substv_aug v' v e1, substv_aug v' v e2, x, xs, substv_aug v' v e3)
-  | Lambda(xs,e) -> Lambda(xs, substv_aug v' v e)
-  | Op(e1,op,e2) -> Op(substv_aug v' v e1, op, substv_aug v' v e2)
-  | CompOp(e1,cop,e2) -> CompOp(substv_aug v' v e1, cop, substv_aug v' v e2)
-  | RelOp(e1,rop,e2) -> RelOp(substv_aug v' v e1, rop, substv_aug v' v e2)
-  | Tick(pot,e) -> Tick(pot, substv_aug v' v e)
-  | Command(p) -> Command(esubstv_aug v' v p);;
-*)
+  | Cons(e1,e2) ->
+      begin
+        let v1 = eval e1 in
+        let v2 = eval e2 in
+        match v2 with
+            ListV l -> ListV(v1::l)
+          | _ -> raise RuntimeError
+      end
+  | Match(e1,e2,x,xs,e3) ->
+      begin
+        let v1 = eval e1 in
+        match v1 with
+            ListV l ->
+              begin
+                match l with
+                    [] -> eval e2
+                  | v::vs ->
+                      let e3 = substv_aug (toExpr None v) x e3 in
+                      let e3 = substv_aug (toExpr None (ListV vs)) xs e3 in
+                      eval e3
+              end
+          | _ -> raise RuntimeError
+      end
+  | Lambda(xs,e) -> LambdaV(xs,e)
+  | Op(e1,op,e2) ->
+      begin
+        let v1 = eval e1 in
+        let v2 = eval e2 in
+        match v1, v2 with
+            IntV i1, IntV i2 -> IntV (apply_op op i1 i2)
+          | _, _ -> raise RuntimeError
+      end
+  | CompOp(e1,cop,e2) ->
+      begin
+        let v1 = eval e1 in
+        let v2 = eval e2 in
+        match v1, v2 with
+            IntV i1, IntV i2 -> BoolV (compare_op cop i1 i2)
+          | _, _ -> raise RuntimeError
+      end
+  | RelOp(e1,rop,e2) ->
+      begin
+        let v1 = eval e1 in
+        let v2 = eval e2 in
+        match v1, v2 with
+            BoolV b1, BoolV b2 -> BoolV (relate_op rop b1 b2)
+          | _, _ -> raise RuntimeError
+      end
+  | Tick(pot,e) -> eval e
+  | Command(p) -> raise RuntimeError;;

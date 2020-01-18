@@ -45,9 +45,9 @@ val pp_fexp_indent : 'a -> int -> 'b A.func_expr -> string
 val pp_argname : 'a -> 'b A.arg -> string
 val pp_argnames : 'a -> 'b A.arg list -> string
 val pp_exp_prefix : 'a A.st_expr -> string
-val pp_val_list : Ast.value list -> string
-val pp_val : Ast.value -> string
-val pp_msg : A.msg -> string
+val pp_val_list : 'a Ast.value list -> string
+val pp_val : 'a Ast.value -> string
+val pp_msg : 'a A.msg -> string
 exception Unsupported
 val pp_decl : 'a -> A.decl -> string
 val pp_exp : 'a -> 'b A.st_expr -> string

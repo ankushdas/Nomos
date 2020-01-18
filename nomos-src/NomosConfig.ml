@@ -8,6 +8,7 @@ module EL = Elab
 module I = Infer
 module TC = Typecheck
 module F = NomosFlags
+module E = Exec
 open Lexer
 open Lexing
 
@@ -121,7 +122,7 @@ let rec run env dcls =
         let () = if !F.verbosity >= 1
                  then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
                  else () in
-        (* let _config = E.exec env f in *)
+        let _config = E.exec env f in
         (* may raise Exec.RuntimeError *)
         run env dcls'
     | _dcl::dcls' -> run env dcls'
