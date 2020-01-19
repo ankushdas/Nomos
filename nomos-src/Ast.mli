@@ -106,7 +106,6 @@ type 'a msg =
   | MSendA of chan * 'a value * chan
 exception AstImpossible
 exception UndeclaredTp
-exception RuntimeError
 val lookup_tp : (decl * 'a) list -> tpname -> stype option
 val expd_tp : (decl * 'a) list -> tpname -> stype
 val lookup_expdec :
@@ -143,7 +142,3 @@ val fsubst_ctx :
 val msubst : str * string * mode -> 'a * string * 'b -> 'c msg -> 'c msg
 exception SplitError
 val split_last : 'a list -> 'a list * 'a
-val apply_op : arith_operator -> int -> int -> int
-val compare_op : comp_operator -> 'a -> 'a -> bool
-val relate_op : rel_operator -> bool -> bool -> bool
-val eval : 'a option func_aug_expr -> 'a option value
