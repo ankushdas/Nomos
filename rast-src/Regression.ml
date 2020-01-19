@@ -1,7 +1,7 @@
 (* Simple regression testing for rast *)
 
 module A = Ast
-module F = Flags
+module F = RastFlags
 module RC = RastConfig
 module C = Core
 
@@ -59,8 +59,8 @@ let is_none (preamble : A.decl_ext option) = match preamble with
 let run_file filename =
   let () = Parsestate.reset () in
   let () = ErrorMsg.reset () in
-  let () = Flags.reset () in
-  let () = Flags.verbosity := -1 in (* really quiet *)
+  let () = F.reset () in
+  let () = F.verbosity := -1 in (* really quiet *)
   let preamble = try Parse.parse_preamble filename
                  with Sys_error _e -> raise (Outcome (None, FileNotReadable)) in
   let () = if is_none preamble then print_string ("no pragma found!\n") in

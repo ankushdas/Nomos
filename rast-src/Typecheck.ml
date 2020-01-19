@@ -8,6 +8,7 @@ module A = Ast
 module PP = Pprint
 module E = TpError
 module I = Infer
+module F = RastFlags
 
 let error = ErrorMsg.error ErrorMsg.Type;;
 
@@ -22,7 +23,7 @@ let error = ErrorMsg.error ErrorMsg.Type;;
 *)
 
 let rec esync env seen tp c ext is_shared =
-  if !Flags.verbosity >= 3
+  if !F.verbosity >= 3
   then print_string ("checking esync: \n" ^ PP.pp_tp env tp ^ "\n" ^ PP.pp_tp env c ^ "\n") ;
   match tp with
       A.Plus(choice) -> esync_choices env seen choice c ext is_shared
@@ -241,7 +242,7 @@ let rec mem_seen env seen a a' = match seen with
 
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
 let rec eq_tp' env seen a a' =
-  if !Flags.verbosity >= 3
+  if !F.verbosity >= 3
   then print_string ("comparing " ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
   else ()
   ; eq_tp env seen a a'

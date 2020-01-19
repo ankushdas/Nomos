@@ -3,7 +3,7 @@
 module R = Arith
 module A = Ast
 module PP = Pprint
-module F = Flags
+module F = RastFlags
 module C = Core
 module E = Exec
 module EL = Elab
@@ -103,13 +103,13 @@ let load file =
   in
   let env = EL.remove_stars env in
   let env = EL.removeU env in
-  let () = if !Flags.verbosity >= 2 then print_string ("========================================================\n") in
-  let () = if !Flags.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl.A.declaration) ^ "\n") "" env) in
+  let () = if !F.verbosity >= 2 then print_string ("========================================================\n") in
+  let () = if !F.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl.A.declaration) ^ "\n") "" env) in
   let () = EL.gen_constraints env env in
   let (psols,msols) = I.solve_and_print () in
   let env = EL.substitute env psols msols in
-  let () = if !Flags.verbosity >= 1 then print_string ("========================================================\n") in
-  let () = if !Flags.verbosity >= 1 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl.A.declaration) ^ "\n") "" env) in
+  let () = if !F.verbosity >= 1 then print_string ("========================================================\n") in
+  let () = if !F.verbosity >= 1 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl.A.declaration) ^ "\n") "" env) in
   env;;
 
 
@@ -120,7 +120,7 @@ let load file =
 let rec run env dcls =
   match dcls with
       {A.declaration = A.Exec(f) ; A.decl_extent = _ext}::dcls' ->
-        let () = if !Flags.verbosity >= 1
+        let () = if !F.verbosity >= 1
                  then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
                  else () in
         let _config = E.exec env f in

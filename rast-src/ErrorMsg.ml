@@ -1,3 +1,5 @@
+module F = RastFlags
+
 (* Initial values of compiler state variables *)
 let anyErrors = ref false;;
 
@@ -34,7 +36,7 @@ let pmsg str ext note =
 
 let error_msg cat ext note =
     ( anyErrors := true
-    ; if !Flags.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
+    ; if !F.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
       then pmsg (err_string cat ^ " error") ext note
       else () );;
 

@@ -20,6 +20,7 @@ module PP = Pprint
 module TC = Typecheck
 module E = TpError
 module I = Infer
+module F = RastFlags
 
 let error = ErrorMsg.error ErrorMsg.Type;;
  
@@ -34,7 +35,7 @@ let postponed dcl = match dcl with
 (*********************)
  
 let pp_costs () =
-  "-work=" ^ Flags.pp_cost (!Flags.work);;
+  "-work=" ^ F.pp_cost (!F.work);;
  
  (* dups vs = true if there is a duplicate variable in vs *)
 let rec dups delta = match delta with
@@ -81,7 +82,7 @@ let rec commit env ctx octx = match ctx with
 let rec elab_tps env dcls = match dcls with
     [] -> []
   | ({A.declaration = A.TpDef(v,a); A.decl_extent = ext} as dcl)::dcls' ->
-      let () = if !Flags.verbosity >= 1
+      let () = if !F.verbosity >= 1
                then print_string (postponed dcl.declaration ^ PP.pp_decl env dcl.declaration ^ "\n")
                else () in
       let () = if TC.contractive a then ()
@@ -90,7 +91,7 @@ let rec elab_tps env dcls = match dcls with
       let () = TC.esync_tp env (A.TpName(v)) ext in
       dcl::(elab_tps env dcls')
   | ({A.declaration = A.TpEq((A.TpName(_v) as a), (A.TpName(_v') as a')); A.decl_extent = ext} as dcl)::dcls' ->
-      let () = if !Flags.verbosity >= 1
+      let () = if !F.verbosity >= 1
               then print_string (postponed dcl.declaration ^ PP.pp_decl env dcl.declaration ^ "\n")
               else () in
       (*let () = TC.valid env TC.Zero a ext in
@@ -124,7 +125,7 @@ let rec elab_exps' env dcls = match dcls with
   | {A.declaration = A.TpDef _; A.decl_extent = _ext}::_ -> (* do not print type definition again *)
       elab_exps env dcls
   | dcl::_ ->
-      if !Flags.verbosity >= 1
+      if !F.verbosity >= 1
       then print_string (postponed dcl.declaration ^ PP.pp_decl env dcl.declaration ^ "\n")
       else () ;
       elab_exps env dcls
@@ -143,11 +144,11 @@ and elab_exps env dcls = match dcls with
       let p' = Cost.apply_cost_work p in (* applying the cost model *)
       let () =
         begin
-          match !Flags.syntax with                    (* print reconstructed term *)
-              Flags.Implicit ->
+          match !F.syntax with                    (* print reconstructed term *)
+              F.Implicit ->
                 ErrorMsg.error ErrorMsg.Pragma ext ("implicit syntax currently not supported")
-            | Flags.Explicit -> (* maybe only if there is a cost model... *)
-                if !Flags.verbosity >= 2
+            | F.Explicit -> (* maybe only if there is a cost model... *)
+                if !F.verbosity >= 2
                 then print_string ("% with cost model " ^ pp_costs () ^ "\n"
                                   ^ (PP.pp_decl env (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'))) ^ "\n")
                 else ()
@@ -156,7 +157,7 @@ and elab_exps env dcls = match dcls with
       let () = try TC.checkexp false env delta pot p' (x,a) ext m (* approx. type check *)
                with ErrorMsg.Error ->
                   (* if verbosity >= 2, type-check again, this time with tracing *)
-                  if !Flags.verbosity >= 2
+                  if !F.verbosity >= 2
                     then
                       begin
                         print_string ("% tracing type checking...\n")

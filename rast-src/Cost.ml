@@ -1,5 +1,6 @@
 module R = Arith
 module A = Ast
+module F = RastFlags
 
 let rec cost_recv f exp = match exp with
     A.Fwd(x,y) -> A.Fwd(x,y)
@@ -66,12 +67,12 @@ and cost_send_branches f bs = match bs with
       {lab_exp = (l, cost_send f p); exp_extent = ext}::cost_send_branches f branches;;
 
 let cost_model f flag exp = match flag with
-    Flags.None -> exp
-  | Flags.Free -> exp
-  | Flags.Recv -> cost_recv f exp
-  | Flags.RecvSend -> cost_send f (cost_recv f exp)
-  | Flags.Send -> cost_send f exp;;
+    F.None -> exp
+  | F.Free -> exp
+  | F.Recv -> cost_recv f exp
+  | F.RecvSend -> cost_send f (cost_recv f exp)
+  | F.Send -> cost_send f exp;;
 
-let apply_cost_work exp = cost_model (fun k -> A.Work(A.Arith (R.Int 1),k)) (!Flags.work) exp;;
+let apply_cost_work exp = cost_model (fun k -> A.Work(A.Arith (R.Int 1),k)) (!F.work) exp;;
 
 (* structure Cost *)
