@@ -80,3 +80,18 @@ $ ./_build/default/rast-src/regression.exe rast-tests/*/*.rast
 1. Sometimes, your `$ make` command may fail with the error "dune: command not found". In this case, try restarting your terminal and running `$ make` again.
 
 2. Sometimes, the core library of ocaml is not correctly installed (generally, if you already have an old installation of core). In these cases, simply run `$ opam install core` and try running `$ make` again.
+
+### Writing Nomos programs
+Writing session-typed programs needs some guidance. First, I will introduce the basic declarations. There are three forms of declarations:
+
+1. Type Definitions: New type names can be defined using the following syntax `type v = A` where type name `v` has definition `A`. As an example, the `auction` type is defined as follows:
+```
+type auction = /\ <{*}| +{running : &{bid : int -> money -o |{*}> \/ auction,
+                                      cancel : |{*}> \/ auction},
+                          ended : &{collect : int -> +{won : lot * |{*}> \/ auction,
+                                                 lost : money * |{*}> \/ auction},
+                                    cancel : |{*}> \/ auction}}
+
+```
+
+2. Process Definitions: New processes are defined using the syntax `proc f : &#916; |{q}- (x : A)`
