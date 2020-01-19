@@ -81,7 +81,7 @@ $ ./_build/default/rast-src/regression.exe rast-tests/*/*.rast
 
 2. Sometimes, the core library of ocaml is not correctly installed (generally, if you already have an old installation of core). In these cases, simply run `$ opam install core` and try running `$ make` again.
 
-### Writing Nomos programs
+## Writing Nomos programs
 Writing session-typed programs needs some guidance. First, I will introduce the basic declarations. There are three forms of declarations:
 
 1. Type Definitions: New type names can be defined using the following syntax `type v = A` where type name `v` has definition `A`. As an example, the `auction` type is defined as follows:
@@ -89,9 +89,14 @@ Writing session-typed programs needs some guidance. First, I will introduce the 
 type auction = /\ <{*}| +{running : &{bid : int -> money -o |{*}> \/ auction,
                                       cancel : |{*}> \/ auction},
                           ended : &{collect : int -> +{won : lot * |{*}> \/ auction,
-                                                 lost : money * |{*}> \/ auction},
+                                                       lost : money * |{*}> \/ auction},
                                     cancel : |{*}> \/ auction}}
 
 ```
+Here, `/\` and `\/` are used to denote up-shift and down-shift, `<{q}|` and `|{q}>` are used to receive and send potential resp., `->` and `^` are used to receive and send functional data, `-o` and `*` are used to receive and send channels, `+` and `&` denote internal and external choice, and `1` indicates termination. Note that `*` can be used in place of `q` to denote unknown potential, which is later inferred by the compiler.
 
-2. Process Definitions: New processes are defined using the syntax `proc f : &#916; |{q}- (x : A)`
+2. Process Definitions: New processes are defined using the syntax `proc f : (x1 : A1), (x2 : A2), ..., (xn : An) |{q}- (x : A) = P` where the process name is `f`, its context is a sequence of channel names `xi` with types `Ai`, the potential stored is `q`, and the offered channel is `x` of type `A`. The definition is denoted by the expression `P`. An empty context is described using `.`.
+
+3. Process Execution: A process `f` can be executed using the syntax `exec f`. Note that since Nomos only allows closed processes to execute, I require that `f` is defined with an empty context (this is checked by the type checker).
+
+### Process Syntax
