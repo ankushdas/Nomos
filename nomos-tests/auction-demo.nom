@@ -1,8 +1,85 @@
 type auction = /\ <{*}| +{running : &{bid : int -> money -o |{*}> \/ auction,
                                       cancel : |{*}> \/ auction},
                           ended : &{collect : int -> +{won : lot * |{*}> \/ auction,
-                                                 lost : money * |{*}> \/ auction},
+                                                       lost : money * |{*}> \/ auction},
                                     cancel : |{*}> \/ auction}}
+
+proc transaction bid_client : (a : int), ($m : money), (#sa : auction) |{*}- ($d : 1) =
+{
+  $la <- acquire #sa ;
+  pay $la {*} ;
+  case $la (
+    running => $la.bid ;
+               send $la a ;
+               send $la $m ;
+               get $la {*} ;
+               #sa <- release $la ;
+               work {*} ;
+               close $d
+  | ended => $la.cancel ;
+             get $la {*} ;
+             #sa <- release $la ;
+             $m.coins ;
+             pay $m {*} ;
+             wait $m ;
+             work {*} ;
+             close $d
+  )
+}
+
+proc transaction collect_client : (a : int), (#sa : auction) |{*}- ($d : 1) =
+{
+  $la <- acquire #sa ;
+  pay $la {*} ;
+  case $la (
+    running => $la.cancel ;
+               get $la {*} ;
+               #sa <- release $la ;
+               work {*} ;
+               close $d
+  | ended => $la.collect ;
+             send $la a ;
+             case $la (
+               won => $l <- recv $la ;
+                      get $la {*} ;
+                      #sa <- release $la ;
+                      wait $l ;
+                      work {*} ;
+                      close $d
+              | lost => $m <- recv $la ;
+                        get $la {*} ;
+                        #sa <- release $la ;
+                        $m.coins ;
+                        pay $m {*} ;
+                        wait $m ;
+                        work {*} ;
+                        close $d
+             )
+  )
+}
+
+proc asset empty_lot : . |{*}- ($l : lot) =
+{
+  close $l
+}
+
+proc transaction main : . |{*}- ($d : 1) =
+{
+  let T = 100 ;
+  let w = 0 ;
+  let v = 0 ;
+  let n = 0 ;
+  $D <- dummy <- n ;
+  $l <- empty_lot <- ;
+  #sa <- run <- T w v $D $l ;
+  $M <- empty_wallet <- ;
+  let A = 24 ;
+  $c <- bid_client <- A $M #sa ;
+  wait $c ;
+  close $d
+}
+
+exec main
 
 proc contract run : (T : int), (w : int), (v : int), ($b : dictionary), ($l : lot) |{*}- (#sa : auction) =
 {

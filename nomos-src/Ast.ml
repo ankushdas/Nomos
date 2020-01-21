@@ -332,8 +332,8 @@ and esubstv_arg v' v arg = match arg with
 
 and esubstv v' v exp = match exp with
     Fwd(x,y) -> Fwd(x, y)
-  | Spawn(x,f,xs,q) -> Spawn(x, f, xs, esubstv_aug v' v q)
-  | ExpName(x,f,xs) -> ExpName(x,f, xs)
+  | Spawn(x,f,xs,q) -> Spawn(x, f, List.map (fun arg -> esubstv_arg v' v arg) xs, esubstv_aug v' v q)
+  | ExpName(x,f,xs) -> ExpName(x, f, List.map (fun arg -> esubstv_arg v' v arg) xs)
   | Lab(x,k,p) -> Lab(x, k, esubstv_aug v' v p)
   | Case(x,branches) -> Case(x, esubstv_branches v' v branches)
   | Send(x,w,p) -> Send(x, w, esubstv_aug v' v p)

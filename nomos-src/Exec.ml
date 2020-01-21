@@ -826,7 +826,9 @@ let arrow_S ch config =
         then raise ChannelMismatch
         else
           let c' = lfresh () in
+          let () = print_string ("trying to evaluate " ^ PP.pp_fexp () 0 e.A.func_structure) in
           let v = eval e in
+          let () = print_string ("evaluated to: " ^ PP.pp_val v) in
           let msg = Msg(c',t+1,(0,0),A.MSendA(c,v,c')) in
           let proc = Proc(d,t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
