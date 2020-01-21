@@ -57,92 +57,114 @@ let relate_op rop b1 b2 =
       A.And -> b1 && b2
     | A.Or -> b1 || b2;;
 
+let rec proj l = match l with
+    [] -> ([], [])
+  | (v,c)::l' ->
+      let (vs, cs) = proj l' in
+      (v::vs, c::cs);; 
+
 let rec eval fexp = match fexp.A.func_structure with
     A.If(e1,e2,e3) ->
       begin
-        let v1 = eval e1 in
+        let (v1, c1) = eval e1 in
         match v1 with
-            A.BoolV true -> eval e2
-          | A.BoolV false -> eval e3
+            A.BoolV true ->
+              let (v2, c2) = eval e2 in
+              (v2, R.plus c1 c2)
+          | A.BoolV false ->
+              let (v3, c3) = eval e3 in
+              (v3, R.plus c1 c3)
           | _ -> raise RuntimeError
       end
   | A.LetIn(x,e1,e2) ->
       begin
-        let v1 = eval e1 in
+        let (v1, c1) = eval e1 in
         let e2 = A.substv_aug (A.toExpr e1.func_data v1) x e2 in
-        eval e2
+        let (v2, c2) = eval e2 in
+        (v2, R.plus c1 c2)
       end
-  | A.Bool b -> A.BoolV b
-  | A.Int i -> A.IntV i
+  | A.Bool b -> (A.BoolV b, R.Int 0)
+  | A.Int i -> (A.IntV i, R.Int 0)
   | A.Var x -> raise RuntimeError
   | A.ListE(l) ->
       begin
-        let vs = List.map eval l in
-        A.ListV vs
+        let (vs, cs) = proj (List.map eval l) in
+        (A.ListV vs, List.fold_left (fun s x -> R.plus s x) (R.Int 0) cs)
       end
   | A.App(l) ->
       begin
         let (l', en) = A.split_last l in
-        let v' = eval {A.func_structure = A.App(l') ; A.func_data = None} in
-        let vn = eval en in
+        let (v', c') = eval {A.func_structure = A.App(l') ; A.func_data = None} in
+        let (vn, cn) = eval en in
         match v' with
             A.LambdaV (xs, e) ->
               begin
                 match xs with
-                    A.Single (x,_ext) -> eval (A.substv_aug (A.toExpr en.func_data vn) x e)
-                  | A.Curry ((x,_ext),xs') -> A.LambdaV(xs', A.substv_aug (A.toExpr en.func_data vn) x e)
+                    A.Single (x,_ext) ->
+                      let (v, c) = eval (A.substv_aug (A.toExpr en.func_data vn) x e) in
+                      (v, R.plus c (R.plus c' cn))
+                  | A.Curry ((x,_ext),xs') -> (A.LambdaV(xs', A.substv_aug (A.toExpr en.func_data vn) x e), R.plus c' cn)
               end
           | _ -> raise RuntimeError
       end
   | A.Cons(e1,e2) ->
       begin
-        let v1 = eval e1 in
-        let v2 = eval e2 in
+        let (v1, c1) = eval e1 in
+        let (v2, c2) = eval e2 in
         match v2 with
-            A.ListV l -> A.ListV(v1::l)
+            A.ListV l -> (A.ListV(v1::l), R.plus c1 c2)
           | _ -> raise RuntimeError
       end
   | A.Match(e1,e2,x,xs,e3) ->
       begin
-        let v1 = eval e1 in
+        let (v1, c1) = eval e1 in
         match v1 with
             A.ListV l ->
               begin
                 match l with
-                    [] -> eval e2
+                    [] ->
+                      let (v2, c2) = eval e2 in
+                      (v2, R.plus c1 c2)
                   | v::vs ->
                       let e3 = A.substv_aug (A.toExpr None v) x e3 in
                       let e3 = A.substv_aug (A.toExpr None (A.ListV vs)) xs e3 in
-                      eval e3
+                      let (v3, c3) = eval e3 in
+                      (v3, R.plus c1 c3)
               end
           | _ -> raise RuntimeError
       end
-  | A.Lambda(xs,e) -> A.LambdaV(xs,e)
+  | A.Lambda(xs,e) -> (A.LambdaV(xs,e), R.Int 0)
   | A.Op(e1,op,e2) ->
       begin
-        let v1 = eval e1 in
-        let v2 = eval e2 in
+        let (v1, c1) = eval e1 in
+        let (v2, c2) = eval e2 in
         match v1, v2 with
-            A.IntV i1, A.IntV i2 -> A.IntV (apply_op op i1 i2)
+            A.IntV i1, A.IntV i2 -> (A.IntV (apply_op op i1 i2), R.plus c1 c2)
           | _, _ -> raise RuntimeError
       end
   | A.CompOp(e1,cop,e2) ->
       begin
-        let v1 = eval e1 in
-        let v2 = eval e2 in
+        let (v1, c1) = eval e1 in
+        let (v2, c2) = eval e2 in
         match v1, v2 with
-            A.IntV i1, A.IntV i2 -> A.BoolV (compare_op cop i1 i2)
+            A.IntV i1, A.IntV i2 -> (A.BoolV (compare_op cop i1 i2), R.plus c1 c2)
           | _, _ -> raise RuntimeError
       end
   | A.RelOp(e1,rop,e2) ->
       begin
-        let v1 = eval e1 in
-        let v2 = eval e2 in
+        let (v1, c1) = eval e1 in
+        let (v2, c2) = eval e2 in
         match v1, v2 with
-            A.BoolV b1, A.BoolV b2 -> A.BoolV (relate_op rop b1 b2)
+            A.BoolV b1, A.BoolV b2 -> (A.BoolV (relate_op rop b1 b2), R.plus c1 c2)
           | _, _ -> raise RuntimeError
       end
-  | A.Tick(pot,e) -> eval e
+  | A.Tick(pot,e) ->
+      begin
+        let (v, c) = eval e in
+        match pot with
+            A.Star -> raise RuntimeError
+          | A.Arith p -> (v, R.plus c p)
+      end
   | A.Command(p) -> raise RuntimeError;;
 
 
@@ -360,9 +382,9 @@ let expand env ch config =
       Proc(c,t,(w,pot),A.ExpName(x,f,xs)) ->
         let p = expd_def env x f xs in
         let pot' = try_evaluate (get_pot env f) in
-        (*if pot <> pot'
+        if pot <> pot'
         then raise PotentialMismatch
-        else*)
+        else
           let proc = Proc(c,t,(w,pot),A.subst c x p.A.st_structure) in
           let config = add_sem proc config in
           Changed config
@@ -781,14 +803,15 @@ let product_S ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(c1,t,wp,A.SendF(c2,e,p)) ->
+      Proc(c1,t,(w,pot),A.SendF(c2,e,p)) ->
         if uneq_name c1 c2
         then raise ChannelMismatch
         else
           let c' = lfresh () in
-          let v = eval e in
+          let (v, acost) = eval e in
+          let vcost = R.evaluate acost in
           let msg = Msg(c1,t+1,(0,0),A.MSendP(c1,v,c')) in
-          let proc = Proc(c',t+1,wp,A.subst c' c1 p.A.st_structure) in
+          let proc = Proc(c',t+1,(w+vcost,pot-vcost),A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
@@ -824,16 +847,17 @@ let arrow_S ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(d,t,wp,A.SendF(c,e,p)) ->
+      Proc(d,t,(w,pot),A.SendF(c,e,p)) ->
         if not (uneq_name d c)
         then raise ChannelMismatch
         else
           let c' = lfresh () in
           (* let () = print_string ("trying to evaluate " ^ PP.pp_fexp () 0 e.A.func_structure ^ "\n") in *)
-          let v = eval e in
+          let (v, acost) = eval e in
+          let vcost = R.evaluate acost in
           (* let () = print_string ("evaluated to: " ^ PP.pp_val v ^ "\n") in *)
           let msg = Msg(c',t+1,(0,0),A.MSendA(c,v,c')) in
-          let proc = Proc(d,t+1,wp,A.subst c' c p.A.st_structure) in
+          let proc = Proc(d,t+1,(w+vcost,pot-vcost),A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
@@ -869,10 +893,11 @@ let letS ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(c,t,wp,A.Let(x,e,p)) ->
-        let v = eval e in
+      Proc(c,t,(w,pot),A.Let(x,e,p)) ->
+        let (v, acost) = eval e in
+        let vcost = R.evaluate acost in
         let p = A.esubstv_aug (A.toExpr None v) x p in
-        let proc = Proc(c,t+1,wp,p.A.st_structure) in
+        let proc = Proc(c,t+1,(w+vcost,pot-vcost),p.A.st_structure) in
         let config = add_sem proc config in
         Changed config
     | _s -> raise ExecImpossible;;
@@ -881,16 +906,17 @@ let ifS ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(c,t,wp,A.IfS(e,p1,p2)) ->
-        let v = eval e in
+      Proc(c,t,(w,pot),A.IfS(e,p1,p2)) ->
+        let (v, acost) = eval e in
+        let vcost = R.evaluate acost in
         begin
           match v with
               A.BoolV true ->
-                let proc = Proc(c,t+1,wp,p1.A.st_structure) in
+                let proc = Proc(c,t+1,(w+vcost,pot-vcost),p1.A.st_structure) in
                 let config = add_sem proc config in
                 Changed config
             | A.BoolV false ->
-                let proc = Proc(c,t+1,wp,p2.A.st_structure) in
+                let proc = Proc(c,t+1,(w+vcost,pot-vcost),p2.A.st_structure) in
                 let config = add_sem proc config in
                 Changed config
             | _ -> raise RuntimeError
