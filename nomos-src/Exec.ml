@@ -291,6 +291,7 @@ let fwd ch config =
                     match msgn with
                       | Some(Msg(_d,t',(w',pot'),(A.MLabI _ as m)))
                       | Some(Msg(_d,t',(w',pot'),(A.MSendL _ as m)))
+                      | Some(Msg(_d,t',(w',pot'),(A.MSendA _ as m)))
                       | Some(Msg(_d,t',(w',pot'),(A.MPayG _ as m))) ->
                           let config = remove_sem c1 config in
                           let e = get_cont c1 config in
@@ -359,9 +360,9 @@ let expand env ch config =
       Proc(c,t,(w,pot),A.ExpName(x,f,xs)) ->
         let p = expd_def env x f xs in
         let pot' = try_evaluate (get_pot env f) in
-        if pot <> pot'
+        (*if pot <> pot'
         then raise PotentialMismatch
-        else
+        else*)
           let proc = Proc(c,t,(w,pot),A.subst c x p.A.st_structure) in
           let config = add_sem proc config in
           Changed config
@@ -545,8 +546,10 @@ let one_S ch config =
         else if pot > 0
         then raise UnconsumedPotential
         else
-          let msg = Msg(c1,t+1,(w,pot),A.MClose(c1)) in
+          let c' = lfresh () in
+          let msg = Msg(c',t+1,(w,pot),A.MClose(c')) in
           let config = add_sem msg config in
+          let config = add_cont (c1,c') config in
           Changed config
     | _s -> raise ExecImpossible;;
 
@@ -826,9 +829,9 @@ let arrow_S ch config =
         then raise ChannelMismatch
         else
           let c' = lfresh () in
-          let () = print_string ("trying to evaluate " ^ PP.pp_fexp () 0 e.A.func_structure) in
+          (* let () = print_string ("trying to evaluate " ^ PP.pp_fexp () 0 e.A.func_structure ^ "\n") in *)
           let v = eval e in
-          let () = print_string ("evaluated to: " ^ PP.pp_val v) in
+          (* let () = print_string ("evaluated to: " ^ PP.pp_val v ^ "\n") in *)
           let msg = Msg(c',t+1,(0,0),A.MSendA(c,v,c')) in
           let proc = Proc(d,t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
