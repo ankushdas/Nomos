@@ -40,7 +40,7 @@ exception RuntimeError
 
 exception ProgressError
 
-val pp_maps : (string * string) list -> string
+val pp_maps : (A.chan * A.chan) list -> string
 
 val exec : (A.decl * 'a) list -> string -> configuration
 

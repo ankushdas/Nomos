@@ -245,9 +245,19 @@ let find_msg c (conf,conts,_shared) dual =
         begin
           match M.find conts c with
               None -> None
-            | Some c' -> M.find conf c'
+            | Some c' ->
+                let sem_obj = M.find conf c' in
+                match sem_obj with
+                    None -> None
+                  | Some (Proc _) -> None
+                  | Some (Msg _) -> sem_obj
         end
-    | Pos -> M.find conf c;;
+    | Pos ->
+        let sem_obj = M.find conf c in
+        match sem_obj with
+            None -> None
+          | Some (Proc _) -> None
+          | Some (Msg _) -> sem_obj;;
 
 let remove_sem c (conf,conts,shared) =
   (M.remove conf c, conts, shared);;
@@ -311,7 +321,7 @@ let fwd ch config =
                     (* try to apply fwd- rule *)
                     let msgn = find_msg c1 config Neg in
                     match msgn with
-                      | Some(Msg(_d,t',(w',pot'),(A.MLabI _ as m)))
+                      | Some(Msg(_d,t',(w',pot'),(A.MLabE _ as m)))
                       | Some(Msg(_d,t',(w',pot'),(A.MSendL _ as m)))
                       | Some(Msg(_d,t',(w',pot'),(A.MSendA _ as m)))
                       | Some(Msg(_d,t',(w',pot'),(A.MPayG _ as m))) ->
@@ -1012,13 +1022,13 @@ let get_conts (_conf,conts,_shared) =
 let rec pp_maps maps =
   match maps with
       [] -> "=======================================\n"
-    | (c,c')::maps' -> c ^ " -> " ^ c' ^ "\n" ^ pp_maps maps';; 
+    | (c,c')::maps' -> PP.pp_chan c ^ " -> " ^ PP.pp_chan c' ^ "\n" ^ pp_maps maps';; 
 
 let pp_config config =
   let sems = get_sems config in
   let _maps = get_maps config in
   let _conts = get_conts config in
-  pp_sems sems;;
+  (pp_sems sems);;
 
 let rec step env config =
   let sems = get_sems config in
