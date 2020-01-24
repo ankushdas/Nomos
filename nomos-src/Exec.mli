@@ -5,8 +5,8 @@ module C = Core
 module M = C.Map
 
 type sem =
-  Proc of A.chan * int * (int * int) * A.ext A.st_expr          (* Proc(chan, time, (work, pot), P) *)
-| Msg of A.chan * int * (int * int) * A.ext A.msg               (* Msg(chan, time, (work, pot), M) *)
+  Proc of string * A.chan * int * (int * int) * A.ext A.st_expr     (* Proc(chan, time, (work, pot), P) *)
+| Msg of A.chan * int * (int * int) * A.ext A.msg                   (* Msg(chan, time, (work, pot), M) *)
 
 module Chan :
   sig
