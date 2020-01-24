@@ -327,7 +327,6 @@ let fwd ch config =
                   end
               | Some(Msg(_d,t',(w',pot'),(A.MLabI _ as m)))
               | Some(Msg(_d,t',(w',pot'),(A.MSendT _ as m)))
-              | Some(Msg(_d,t',(w',pot'),(A.MClose _ as m)))
               | Some(Msg(_d,t',(w',pot'),(A.MPayP _ as m)))
               | Some(Msg(_d,t',(w',pot'),(A.MSendP _ as m))) ->
                   let config = remove_sem c1 config in
@@ -337,6 +336,12 @@ let fwd ch config =
                   let d' = get_cont d config in
                   let config = remove_cont d config in
                   let config = add_cont (c1,d') config in
+                  Changed config
+              | Some(Msg(_d,t',(w',pot'),(A.MClose _ as m))) ->
+                  let config = remove_sem c1 config in
+                  let config = remove_sem d config in
+                  let msg = Msg(c1,max(t,t'),(w+w',pot+pot'), A.msubst c1 d m) in
+                  let config = add_sem msg config in
                   Changed config
               | _s -> Unchanged config
           end
@@ -568,10 +573,8 @@ let one_S ch config =
         else if pot > 0
         then raise UnconsumedPotential
         else
-          let c' = lfresh () in
-          let msg = Msg(c',t+1,(w,pot),A.MClose(c')) in
+          let msg = Msg(c1,t+1,(w,pot),A.MClose(c1)) in
           let config = add_sem msg config in
-          let config = add_cont (c1,c') config in
           Changed config
     | _s -> raise ExecImpossible;;
 
