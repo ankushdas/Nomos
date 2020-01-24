@@ -386,9 +386,9 @@ let pp_exp_prefix exp = match exp with
   | A.Release(x,y,_p) -> pp_chan y ^ " <- release " ^ pp_chan x ^ " ; ..."
   | A.Detach(x,y,_p) -> pp_chan y ^ " <- detach " ^ pp_chan x ^ " ; ..."
   | A.RecvF(x,v,_p) -> v ^ " = recv " ^ pp_chan x ^ " ; ..."
-  | A.SendF(x,_e,_p) -> "send " ^ pp_chan x ^ " (" ^ "..." ^ ") ; ..."
-  | A.Let(v,_e,_p) -> "let " ^ v ^ " = " ^ "..." ^ " ; ..."
-  | A.IfS(_e,_p1,_p2) -> "if " ^ "..." ^ " ... ";;
+  | A.SendF(x,e,_p) -> "send " ^ pp_chan x ^ " (" ^ pp_fexp () 0 e.A.func_structure ^ ") ; ..."
+  | A.Let(v,e,_p) -> "let " ^ v ^ " = " ^ pp_fexp () 0 e.A.func_structure ^ " ; ..."
+  | A.IfS(e,_p1,_p2) -> "if " ^ pp_fexp () 0 e.A.func_structure ^ " ... ";;
 
 let rec pp_val_list l = 
   match l with

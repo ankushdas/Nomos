@@ -28,12 +28,14 @@ type sem =
     Proc of string * A.chan * int * (int * int) * A.ext A.st_expr     (* Proc(chan, time, (work, pot), P) *)
   | Msg of A.chan * int * (int * int) * A.ext A.msg                   (* Msg(chan, time, (work, pot), M) *)
 
+let pp_chan (s,c,_m) = PP.pp_structure s ^ c;;
+
 let pp_sem sem = match sem with
     Proc(f, c,t,(w,pot),p) ->
-      f ^ ": proc(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      f ^ ": proc(" ^ pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
       ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
   | Msg(c,t,(w,pot),m) ->
-      "msg(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      "msg(" ^ pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
       ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
 let apply_op op n1 n2 =
@@ -205,10 +207,14 @@ type stepped_config =
 
 let chan_num = ref 0;;
 
-let lfresh () =
+let get_str m = match m with
+    A.Shared -> A.Hash
+  | _ -> A.Dollar;;
+
+let cfresh m =
   let n = !chan_num in
   let () = chan_num := n+1 in
-  (A.Dollar, "ch" ^ (string_of_int n), A.Unknown);;
+  (get_str m, "ch" ^ (string_of_int n), A.Unknown);;
 
 let max(t,t') =
   if t > t' then t else t';;
@@ -357,12 +363,19 @@ let fwd ch config =
           end
     | _s -> raise ExecImpossible;;
 
+let chan_mode env f =
+  match A.lookup_expdec env f with
+      None -> raise UndefinedProcess
+    | Some(_ctx,_pot,_zc,m) -> m
+
+
 let spawn env ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
       Proc(func,d,t,(w,pot),A.Spawn(x,f,xs,q)) ->
-        let c' = lfresh () in
+        let m = chan_mode env f in
+        let c' = cfresh m in
         let pot' = try_evaluate (get_pot env f) in
         if pot < pot'
         then raise InsufficientPotential
@@ -413,7 +426,7 @@ let ichoice_S ch config =
         if uneq_name c1 c2
         then raise ChannelMismatch
         else
-          let c' = lfresh () in
+          let c' = cfresh A.Pure in
           let msg = Msg(c1,t+1,(0,0),A.MLabI(c1,l,c')) in
           let proc = Proc(func,c',t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
@@ -455,7 +468,7 @@ let echoice_S ch config =
         if not (uneq_name d c)
         then raise ChannelMismatch
         else
-          let c' = lfresh () in
+          let c' = cfresh A.Pure in
           let msg = Msg(c',t+1,(0,0),A.MLabE(c,l,c')) in
           let proc = Proc(func,d,t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
@@ -497,7 +510,7 @@ let tensor_S ch config =
         if uneq_name c1 c2
         then raise ChannelMismatch
         else
-          let c' = lfresh () in
+          let c' = cfresh A.Pure in
           let msg = Msg(c1,t+1,(0,0),A.MSendT(c1,e,c')) in
           let proc = Proc(func,c',t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
@@ -539,7 +552,7 @@ let lolli_S ch config =
         if not (uneq_name d c)
         then raise ChannelMismatch
         else
-          let c' = lfresh () in
+          let c' = cfresh A.Pure in
           let msg = Msg(c',t+1,(0,0),A.MSendL(c,e,c')) in
           let proc = Proc(func,d,t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
@@ -635,7 +648,7 @@ let paypot_S ch config =
         else if pot < try_evaluate epot
         then raise InsufficientPotential
         else
-          let c' = lfresh () in
+          let c' = cfresh A.Pure in
           let vpot = try_evaluate epot in
           let msg = Msg(c1,t+1,(0,vpot),A.MPayP(c1,epot,c')) in
           let proc = Proc(func,c',t+1,(w,pot-vpot),A.subst c' c1 p.A.st_structure) in
@@ -681,7 +694,7 @@ let getpot_S ch config =
         else if pot < try_evaluate epot
         then raise InsufficientPotential
         else
-          let c' = lfresh () in
+          let c' = cfresh A.Pure in
           let vpot = try_evaluate epot in
           let msg = Msg(c',t+1,(0,vpot),A.MPayG(c,epot,c')) in
           let proc = Proc(func,d,t+1,(w,pot-vpot),A.subst c' c p.A.st_structure) in
@@ -756,7 +769,7 @@ let up ch config =
                         if uneq_name aseq as1
                         then raise ChannelMismatch
                         else
-                          let al = lfresh () in
+                          let al = cfresh A.Pure in
                           let proc1 = Proc(func_acc,al,max(t,t')+1,wp,A.subst al x p.A.st_structure) in
                           let proc2 = Proc(func_acq,c,max(t,t')+1,wp',A.subst al x' q.A.st_structure) in
                           let config = remove_sem as1 config in
@@ -820,7 +833,7 @@ let product_S ch config =
         if uneq_name c1 c2
         then raise ChannelMismatch
         else
-          let c' = lfresh () in
+          let c' = cfresh A.Pure in
           let (v, acost) = eval e in
           let vcost = R.evaluate acost in
           let msg = Msg(c1,t+1,(0,0),A.MSendP(c1,v,c')) in
@@ -864,7 +877,7 @@ let arrow_S ch config =
         if not (uneq_name d c)
         then raise ChannelMismatch
         else
-          let c' = lfresh () in
+          let c' = cfresh A.Pure in
           (* let () = print_string ("trying to evaluate " ^ PP.pp_fexp () 0 e.A.func_structure ^ "\n") in *)
           let (v, acost) = eval e in
           let vcost = R.evaluate acost in
@@ -1075,7 +1088,7 @@ let create_config sem =
  * C' is final, poised configuration
  *)
 let exec env f =
-  let c = lfresh () in
+  let c = cfresh A.Pure in
   let pot = try_evaluate (get_pot env f) in
   let sem = Proc(f,c,0,(0,pot),A.ExpName(c,f,[])) in
   try step env (create_config sem)
