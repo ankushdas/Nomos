@@ -4,7 +4,9 @@ type auction = /\ <{*}| +{running : &{bid : int -> money -o |{*}> \/ auction,
                                                        lost : money * |{*}> \/ auction},
                                     cancel : |{*}> \/ auction}}
 
-proc transaction bid_client : (a : int), ($m : money), (#sa : auction) |{*}- ($d : 1) =
+type maybe_money = +{none: 1, some: money * 1}
+
+proc transaction bid_client : (a : int), ($m : money), (#sa : auction) |{*}- ($d : maybe_money) =
 {
   $la <- acquire #sa ;
   pay $la {*} ;
@@ -15,14 +17,13 @@ proc transaction bid_client : (a : int), ($m : money), (#sa : auction) |{*}- ($d
                get $la {*} ;
                #sa <- release $la ;
                work {*} ;
+               $d.none;
                close $d
   | ended => $la.cancel ;
              get $la {*} ;
              #sa <- release $la ;
-             $m.coins ;
-             pay $m {*} ;
-             wait $m ;
-             work {*} ;
+             $d.some;
+             send $d $m ;
              close $d
   )
 }
@@ -75,8 +76,14 @@ proc transaction main : . |{*}- ($d : 1) =
   $M <- empty_wallet <- ;
   let A = 24 ;
   $c <- bid_client <- A $M #sa ;
-  wait $c ;
-  close $d
+  case $c (
+    none => wait $c;
+            close $d
+  | some => $m <- recv $c ;
+            wait $c ;
+            #w <- new_full <- $m ;
+            close $d
+  )
 }
 
 exec main
@@ -193,20 +200,6 @@ proc asset removebid : (r : int), ($bs : dictionary) |{*}- ($newbs : money * dic
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 type money = &{value : <{*}| int ^ money,
                coins : <{*}| lcoin}
 type lcoin = 1
@@ -221,6 +214,36 @@ proc asset empty_wallet : . |{*}- ($m : money) =
   $l <- emp <- ;
   let n = 0 ;
   $m <- wallet <- n $l
+}
+
+type one_time_wallet = /\ <{*}| +{full : &{take : money * |{*}> \/ one_time_wallet,
+                                           cancel : |{*}> \/ one_time_wallet},
+                                  empty : |{*}> \/ one_time_wallet}
+
+proc contract new_empty : . |{*}- (#w : one_time_wallet) =
+{
+  $wl <- accept #w ;
+  get $wl {*} ;
+  $wl.empty ;
+  pay $wl {*} ;
+  #w <- detach $wl ;
+  #w <- new_empty <-
+}
+
+proc contract new_full : ($m : money) |{*}- (#w : one_time_wallet) =
+{
+  $wl <- accept #w ;
+  get $wl {*} ;
+  $wl.full;
+  case $wl (
+    take => send $wl $m ;
+            pay $wl {*} ;
+            #w <- detach $wl ;
+            #w <- new_empty <-
+  | cancel => pay $wl {*} ;
+              $w <- detach $wl ;
+              #w <- new_full <- $m
+  )
 }
 
 proc asset wallet : (n : int), ($l : lcoin) |{*}- ($m : money) = 
