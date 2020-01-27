@@ -69,10 +69,10 @@ proc transaction main : . |{*}- ($d : 1) =
   let T = 100 ;
   let w = 0 ;
   let v = 0 ;
-  let n = 3 ;
+  let n = 0 ;
   $D <- dummy <- n ;
   $l <- empty_lot <- ;
-  #sa <- end_lot <- T w $D $l ;
+  #sa <- run <- T w v $D $l ;
   $M <- empty_wallet <- ;
   let A = 24 ;
   $c <- bid_client <- A $M #sa ;
