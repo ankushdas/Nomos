@@ -11,10 +11,11 @@ let next_line lexbuf =
     { pos with pos_bol = lexbuf.lex_curr_pos;
                pos_lnum = pos.pos_lnum + 1
     }
+
+let comment_depth = ref 0
 }
 
 let newline = '\r' | '\n' | "\r\n"
-let comment = "(*" ['a' - 'z' 'A' - 'Z']+ "*)"
 rule token = parse
   (* declarations *)
   | "type"              { TYPE }
@@ -38,6 +39,7 @@ rule token = parse
   (* functional *)
   | [ ' ' '\t' ]        { token lexbuf }
   | newline             { next_line lexbuf; token lexbuf }
+  | "(*"                { comment_depth := 1; comment lexbuf; token lexbuf }
   | ['0'-'9']+  as i    { INT (int_of_string i) }
   | "let"               { LET }
   | "in"                { IN }
@@ -102,3 +104,10 @@ rule token = parse
   | eof                 { EOF }
   | _ { raise (SyntaxError ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
 
+and comment = parse
+    "(*"                { incr comment_depth; comment lexbuf }
+  | "*)"                { decr comment_depth;
+                          if !comment_depth = 0 then () else comment lexbuf }
+  | eof                 { raise (SyntaxError "Unterminated comment") }
+  | newline             { next_line lexbuf ; comment lexbuf }
+  | _                   { comment lexbuf }
