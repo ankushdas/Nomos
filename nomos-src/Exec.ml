@@ -28,14 +28,12 @@ type sem =
     Proc of string * A.chan * int * (int * int) * A.ext A.st_expr     (* Proc(chan, time, (work, pot), P) *)
   | Msg of A.chan * int * (int * int) * A.ext A.msg                   (* Msg(chan, time, (work, pot), M) *)
 
-let pp_chan (s,c,_m) = PP.pp_structure s ^ c;;
-
 let pp_sem sem = match sem with
     Proc(f, c,t,(w,pot),p) ->
-      f ^ ": proc(" ^ pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      f ^ ": proc(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
       ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
   | Msg(c,t,(w,pot),m) ->
-      "msg(" ^ pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      "msg(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
       ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
 let apply_op op n1 n2 =
@@ -214,7 +212,7 @@ let get_str m = match m with
 let cfresh m =
   let n = !chan_num in
   let () = chan_num := n+1 in
-  (get_str m, "ch" ^ (string_of_int n), A.Unknown);;
+  (get_str m, "ch" ^ (string_of_int n), m);;
 
 let max(t,t') =
   if t > t' then t else t';;
@@ -407,13 +405,13 @@ let expand env ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(func,c,t,(w,pot),A.ExpName(x,f,xs)) ->
+      Proc(_func,c,t,(w,pot),A.ExpName(x,f,xs)) ->
         let p = expd_def env x f xs in
         let pot' = try_evaluate (get_pot env f) in
         if pot <> pot'
         then raise PotentialMismatch
         else
-          let proc = Proc(func,c,t,(w,pot),A.subst c x p.A.st_structure) in
+          let proc = Proc(f,c,t,(w,pot),A.subst c x p.A.st_structure) in
           let config = add_sem proc config in
           Changed config
     | _s -> raise ExecImpossible;;
@@ -1088,7 +1086,8 @@ let create_config sem =
  * C' is final, poised configuration
  *)
 let exec env f =
-  let c = cfresh A.Pure in
+  let m = chan_mode env f in
+  let c = cfresh m in
   let pot = try_evaluate (get_pot env f) in
   let sem = Proc(f,c,0,(0,pot),A.ExpName(c,f,[])) in
   try step env (create_config sem)
