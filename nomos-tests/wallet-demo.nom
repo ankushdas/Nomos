@@ -1,0 +1,79 @@
+type money = &{value : <{*}| int ^ money,
+               coins : <{*}| lcoin}
+type lcoin = 1
+
+proc asset emp : . |{*}- ($l : lcoin) = 
+{
+  close $l
+}
+
+proc asset empty_wallet : . |{*}- ($m : money) = 
+{
+  $l <- emp <- ;
+  let n = 0 ;
+  $m <- wallet <- n $l
+}
+
+proc asset wallet : (n : int), ($l : lcoin) |{*}- ($m : money) = 
+{
+    case $m (
+      value => get $m {*};
+               send $m n;
+               $m <- wallet <- n $l 
+    | coins => get $m {*} ;
+               $m <- $l
+    )
+}
+
+type one_time_wallet = /\ <{*}| +{full : &{take : money * |{*}> \/ one_time_wallet,
+                                           cancel : |{*}> \/ one_time_wallet},
+                                  empty : |{*}> \/ one_time_wallet}
+
+proc contract new_empty : . |{*}- (#w : one_time_wallet) =
+{
+  $wle <- accept #w ;
+  get $wle {*} ;
+  $wle.empty ;
+  pay $wle {*} ;
+  #w <- detach $wle ;
+  #w <- new_empty <-
+}
+
+proc contract new_full : ($m : money) |{*}- (#w : one_time_wallet) =
+{
+  $wl <- accept #w ;
+  get $wl {*} ;
+  $wl.full;
+  case $wl (
+    take => send $wl $m ;
+            pay $wl {*} ;
+            #w <- detach $wl ;
+            #w <- new_empty <-
+  | cancel => pay $wl {*} ;
+              $w <- detach $wl ;
+              #w <- new_full <- $m
+  )
+}
+
+proc transaction main : . |{*}- ($d : 1) =
+{
+  $w <- empty_wallet <- ;
+  #ow <- new_full <- $w ;
+  $low <- acquire #ow ;
+  pay $low {*} ;
+  case $low (
+    full => $low.take ;
+            $m <- recv $low ;
+	    $m.coins ;
+	    pay $m {*} ;
+	    wait $m ;
+	    get $low {*} ;
+	    #ow <- release $low ;
+	    close $d
+  | empty => get $low {*} ;
+             #ow <- release $low ;
+	     close $d
+  )
+}
+
+exec main
