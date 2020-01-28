@@ -1080,6 +1080,30 @@ let create_config sem =
   let config = add_sem sem config in
   config;;
 
+(* verify the configuration after a transaction has executed *)
+let verify_configuration config =
+  let found = get_sems config |> List.fold_left (fun found sem ->
+    match sem with
+      (Proc(f, c, t, wp, p)) -> (
+        let (_, _, m) = c in
+        match m with
+            A.Transaction -> (error "transaction still running"; raise RuntimeError)
+          | _ -> found)
+    | (Msg(c, t, wp, msg)) ->
+        let (_, _, m) = c in
+        match m with
+            A.Transaction ->
+              if found
+                then (error "two transactions"; raise RuntimeError)
+                else true
+          | A.Linear | A.Pure -> found
+          | _ -> error "dangling message"
+                 ; raise RuntimeError
+  ) false in
+  if found
+    then config
+    else (error "missing transaction close"; raise RuntimeError)
+
 (* exec env C = C'
  * C is a process configuration
  * env is the elaborated environment
@@ -1090,7 +1114,7 @@ let exec env f =
   let c = cfresh m in
   let pot = try_evaluate (get_pot env f) in
   let sem = Proc(f,c,0,(0,pot),A.ExpName(c,f,[])) in
-  try step env (create_config sem)
+  try verify_configuration (step env (create_config sem))
   with exn ->
     match exn with
         InsufficientPotential -> error "insufficient potential during execution"
