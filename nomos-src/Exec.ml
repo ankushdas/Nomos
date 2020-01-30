@@ -1087,8 +1087,15 @@ let verify_configuration config =
       (Proc(f, c, t, wp, p)) -> (
         let (_, _, m) = c in
         match m with
-            A.Transaction -> (error "transaction still running"; raise RuntimeError)
-          | _ -> found)
+          | A.Shared -> (
+              match p with
+                  A.Accept _ -> found
+                | _ -> error "shared process not blocking on accept"; raise RuntimeError)
+          | A.Linear -> found (* placeholder *)
+          | A.Transaction -> (error "transaction still running"; raise RuntimeError)
+          | A.Pure -> found (* should we be checking something here? *)
+          | A.Unknown -> (error "process mode Unknown during runtime"; raise RuntimeError)
+          | A.MVar _ -> (error "process mode MVar during runtime"; raise RuntimeError))
     | (Msg(c, t, wp, msg)) ->
         let (_, _, m) = c in
         match m with
