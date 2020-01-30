@@ -1,6 +1,6 @@
 # Nomos
 ## Resource-Aware Session Types for Digital Contracts
-This repository will contain an implementation of Nomos, a programming language for smart contracts based on resource-aware session types.
+This repository contains an implementation of Nomos, a programming language for smart contracts based on resource-aware session types.
 
 ## Installation
 
@@ -47,34 +47,16 @@ $ make
 ```
 
 ### Executing
-The make command creates two executables: one for resource-aware session types at `_build/default/rast-src/rast.exe` and one for nomos at `_build/default/nomos-src/nomos.exe`. To typecheck a file with rast, simply run
-```
-$ _build/default/rast-src/rast.exe <file-path>
-```
-Alternatively, to typecheck a file with nomos, run
+The make command creates an executable for nomos at `_build/default/nomos-src/nomos.exe`. To typecheck a file with nomos, run
 ```
 $ _build/default/nomos-src/nomos.exe <file-path>
 ```
-
-To test whether your rast build is successful, I have created a test file in the repository. Run it using
-```
-$ ./_build/default/rast-src/rast.exe rast-tests/success/testfile.rast
-```
-It should produce the output "% runtime successful!" at the end.
 
 To test whether your nomos build is successful, I have created a test file in the repository. Run it using
 ```
 $ ./_build/default/nomos-src/nomos.exe nomos-tests/auction-dict.nom
 ```
 It should produce the output "% runtime successful!" at the end.
-
-### Regression Testing
-I have also created an executable at `_build/default/rast-src/regression.exe`. This executes a set of files and generates a report by matching the expected and actual output.
-
-To test if all files work as expected, run the command
-```
-$ ./_build/default/rast-src/regression.exe rast-tests/*/*.rast
-```
 
 ### Troubleshooting
 1. Sometimes, your `$ make` command may fail with the error "dune: command not found". In this case, try restarting your terminal and running `$ make` again.
