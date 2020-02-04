@@ -48,7 +48,7 @@ let apply_op op n1 n2 =
 
 let compare_op cop n1 n2 =
   match cop with
-      A.Eq -> n1 = n2 
+      A.Eq -> n1 = n2
     | A.Neq -> n1 <> n2
     | A.Lt -> n1 < n2
     | A.Gt -> n1 > n2
@@ -64,7 +64,7 @@ let rec proj l = match l with
     [] -> ([], [])
   | (v,c)::l' ->
       let (vs, cs) = proj l' in
-      (v::vs, c::cs);; 
+      (v::vs, c::cs);;
 
 let rec eval fexp = match fexp.A.func_structure with
     A.If(e1,e2,e3) ->
@@ -286,7 +286,7 @@ let get_shared_chan c (_conf,_conts,shared) =
 
 let remove_shared_map c (conf,conts,shared) =
   (conf, conts, M.remove shared c);;
-        
+
 let add_cont (c,c') (conf,conts,shared) =
   match M.find shared c with
       None -> (conf, M.add_exn conts ~key:c ~data:c', shared)
@@ -310,7 +310,9 @@ let get_pot env f =
       None -> raise UndefinedProcess
     | Some(_ctx,pot,_zc,_m) -> pot;;
 
-let uneq_name (_s1,c1,_m1) (_s2,c2,_m2) = not (c1 = c2);;
+let eq_name (_s1,c1,_m1) (_s2,c2,_m2) = c1 = c2;;
+
+let uneq_name c1 c2 = not (eq_name c1 c2);;
 
 let fwd ch config =
   let s = find_sem ch config in
@@ -375,10 +377,12 @@ let add_linear ch in_use =
       A.Linear | A.Pure -> ch::in_use
     | _ -> in_use
 
-let replace_linear ch' ch = 
-  List.map (fun other -> if ch = other then ch' else other)
+let replace_linear ch' ch l =
+  if not (List.exists (fun other -> ch = other) l)
+  then raise ExecImpossible
+  else List.map (fun other -> if ch = other then ch' else other) l
 
-let remove_linear ch = List.filter (fun other -> other != ch)
+let remove_linear ch = List.filter (fun other -> other <> ch)
 
 let spawn env ch config =
   let s = find_sem ch config in
