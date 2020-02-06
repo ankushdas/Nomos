@@ -24,6 +24,12 @@ exception StarPotential (* star potential encountered at runtime *)
 
 exception RuntimeError (* should never happen at runtime *)
 
+let print_debug s =
+  let debug = true in
+  if debug
+  then print_string (s ^ "\n")
+  else ()
+
 type sem =
     (* Proc(chan, in_use, time, (work, pot), P) *)
     Proc of string * A.chan * A.chan list * int * (int * int) * A.ext A.st_expr
@@ -241,7 +247,7 @@ let rec find_branch l bs =
 
 let find_sem c (conf,_conts,_shared) =
   match M.find conf c with
-      None -> raise ExecImpossible
+      None -> (print_debug (PP.pp_chan c); raise ExecImpossible)
     | Some v -> v;;
 
 type pol = Pos | Neg;;
@@ -371,18 +377,40 @@ let chan_mode env f =
       None -> raise UndefinedProcess
     | Some(_ctx,_pot,_zc,m) -> m
 
-let add_linear ch in_use =
-  let (_, _, m) = ch in
+let add_chan ch in_use = ch::in_use
+
+let replace_chan ch' ch l =
+  if not (List.exists (eq_name ch) l)
+  then (print_debug (PP.pp_chan ch); raise ExecImpossible)
+  else
+    List.map
+      (fun other -> if eq_name ch other then ch' else other)
+      l
+
+let remove_chan ch l =
+  if not (List.exists (eq_name ch) l)
+  then (print_debug (PP.pp_chan ch); raise ExecImpossible)
+  else List.filter (uneq_name ch) l
+
+let chans_diff chs1 chs2 =
+  List.filter
+    (fun x -> not (List.exists (eq_name x) chs2))
+    chs1
+
+let is_linear (_, _, m) =
   match m with
-      A.Linear | A.Pure -> ch::in_use
-    | _ -> in_use
+    A.Linear | A.Pure -> true
+  | _ -> false
 
-let replace_linear ch' ch l =
-  if not (List.exists (fun other -> ch = other) l)
-  then raise ExecImpossible
-  else List.map (fun other -> if ch = other then ch' else other) l
+let extract_chans l =
+  List.filter_map
+    (fun arg ->
+       match arg with
+         A.STArg c -> Some c
+       | A.FArg _ -> None) l |>
+  List.partition is_linear
 
-let remove_linear ch = List.filter (fun other -> other <> ch)
+let linear_chans = List.filter is_linear
 
 let spawn env ch config =
   let s = find_sem ch config in
@@ -395,8 +423,11 @@ let spawn env ch config =
         if pot < pot'
         then raise InsufficientPotential
         else
-          let proc1 = Proc(f,c',[],t+1,(0,pot'),A.ExpName(c',f,xs)) in
-          let proc2 = Proc(func,d,add_linear c' in_use,t+1,(w,pot-pot'),A.subst c' x q.A.st_structure) in
+          let (linear_args, shared_args) = extract_chans xs in
+          let f_in_use = linear_args @ shared_args in
+          let func_in_use = add_chan c' (chans_diff in_use linear_args) in
+          let proc1 = Proc(f,c',f_in_use,t+1,(0,pot'),A.ExpName(c',f,xs)) in
+          let proc2 = Proc(func,d,func_in_use,t+1,(w,pot-pot'),A.subst c' x q.A.st_structure) in
           let config = add_sem proc1 config in
           let config = add_sem proc2 config in
           Changed config
@@ -465,7 +496,7 @@ let ichoice_R ch config =
                   then raise ChannelMismatch
                   else
                     let q = find_branch l bs in
-                    let in_use' = replace_linear c' c in_use in
+                    let in_use' = replace_chan c' c in_use in
                     let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
@@ -486,7 +517,7 @@ let echoice_S ch config =
         else
           let c' = cfresh A.Pure in
           let msg = Msg(c',t+1,(0,0),A.MLabE(c,l,c')) in
-          let in_use' = replace_linear c' c in_use in
+          let in_use' = replace_chan c' c in_use in
           let proc = Proc(func,d,in_use',t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
@@ -529,7 +560,8 @@ let tensor_S ch config =
         else
           let c' = cfresh A.Pure in
           let msg = Msg(c1,t+1,(0,0),A.MSendT(c1,e,c')) in
-          let proc = Proc(func,c',in_use,t+1,wp,A.subst c' c1 p.A.st_structure) in
+          let in_use' = remove_chan e in_use in
+          let proc = Proc(func,c',in_use',t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
@@ -551,8 +583,8 @@ let tensor_R ch config =
                   then raise ChannelMismatch
                   else
                     let q = A.subst_aug e x q in
-                    let in_use' = replace_linear c' c in_use in
-                    let proc = Proc(func,d,in_use,max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
+                    let in_use' = add_chan e (replace_chan c' c in_use) in
+                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -572,7 +604,7 @@ let lolli_S ch config =
         else
           let c' = cfresh A.Pure in
           let msg = Msg(c',t+1,(0,0),A.MSendL(c,e,c')) in
-          let in_use' = remove_linear e in_use in
+          let in_use' = replace_chan c' c (remove_chan e in_use) in
           let proc = Proc(func,d,in_use',t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
@@ -595,8 +627,8 @@ let lolli_R ch config =
                   then raise ExecImpossible
                   else
                     let q = A.subst_aug e x q in
-                    let in_use' = add_linear e in_use in
-                    let proc = Proc(func,c2',in_use,max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
+                    let in_use' = add_chan e in_use in
+                    let proc = Proc(func,c2',in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
@@ -615,7 +647,7 @@ let one_S ch config =
         then raise ChannelMismatch
         else if pot > 0
         then raise UnconsumedPotential
-        else if List.length in_use > 0
+        else if List.length (linear_chans in_use) > 0
         then raise ExecImpossible
         else
           let msg = Msg(c1,t+1,(w,pot),A.MClose(c1)) in
@@ -637,11 +669,7 @@ let one_R ch config =
                   if uneq_name ceq c
                   then raise ChannelMismatch
                   else
-                    let in_use' = List.filter (fun other -> other <> c) in_use in
-                    let _ =
-                      if List.length in_use' = List.length in_use
-                        then raise ExecImpossible
-                        else () in
+                    let in_use' = remove_chan c in_use in
                     let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
@@ -688,7 +716,7 @@ let paypot_S ch config =
 let paypot_R ch config =
   let s = find_sem ch config in
   match s with
-      Proc(func,d,in_use,t,(w,pot),A.Get(c,epot,q)) ->
+      Proc(func,d,in_use,t,(w,pot),A.Get(c,epot,q)) as f ->
         if not (uneq_name d c)
         then raise ChannelMismatch
         else
@@ -701,8 +729,9 @@ let paypot_R ch config =
                   else if not (try_eq epot epot')
                   then raise PotentialMismatch
                   else
-                    let in_use' = replace_linear c' c in_use in
-                    let proc = Proc(func,d,in_use,max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
+                    let _ = print_debug (pp_sem f) in
+                    let in_use' = replace_chan c' c in_use in
+                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -725,7 +754,7 @@ let getpot_S ch config =
           let c' = cfresh A.Pure in
           let vpot = try_evaluate epot in
           let msg = Msg(c',t+1,(0,vpot),A.MPayG(c,epot,c')) in
-          let in_use' = replace_linear c' c in_use in
+          let in_use' = replace_chan c' c in_use in
           let proc = Proc(func,d,in_use',t+1,(w,pot-vpot),A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
@@ -800,7 +829,7 @@ let up ch config =
                         else
                           let al = cfresh A.Pure in
                           let proc1 = Proc(func_acc,al,in_use,max(t,t')+1,wp,A.subst al x p.A.st_structure) in
-                          let in_use_acq' = replace_linear al x' in_use_acq in
+                          let in_use_acq' = add_chan al in_use_acq in
                           let proc2 = Proc(func_acq,c,in_use_acq',max(t,t')+1,wp',A.subst al x' q.A.st_structure) in
                           let config = remove_sem as1 config in
                           let config = remove_sem c config in
@@ -844,7 +873,7 @@ let down ch config =
                         else
                           let ash = get_shared_chan al1 config in
                           let proc1 = Proc(func_det,ash,in_use,max(t,t')+1,wp,A.subst ash x p.A.st_structure) in
-                          let in_use_rel' = replace_linear ash x' in_use_rel in
+                          let in_use_rel' = remove_chan al1 in_use_rel in
                           let proc2 = Proc(func_rel,c,in_use_rel',max(t,t')+1,wp',A.subst ash x' q.A.st_structure) in
                           let config = remove_sem al1 config in
                           let config = remove_sem c config in
@@ -890,7 +919,7 @@ let product_R ch config =
                   then raise ChannelMismatch
                   else
                     let q = A.esubstv_aug (A.toExpr None v) x q in
-                    let in_use' = replace_linear c' c in_use in
+                    let in_use' = replace_chan c' c in_use in
                     let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
@@ -915,7 +944,7 @@ let arrow_S ch config =
           let vcost = R.evaluate acost in
           (* let () = print_string ("evaluated to: " ^ PP.pp_val v ^ "\n") in *)
           let msg = Msg(c',t+1,(0,0),A.MSendA(c,v,c')) in
-          let in_use' = replace_linear c' c in_use in
+          let in_use' = replace_chan c' c in_use in
           let proc = Proc(func,d,in_use',t+1,(w+vcost,pot-vcost),A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
@@ -1079,6 +1108,12 @@ let pp_config config =
 let rec step env config =
   let sems = get_sems config in
   let () = print_string (pp_config config) in
+  (* check that all in_use linear channels actually exist *)
+  let _ = List.map (fun sem ->
+    match sem with
+      (Proc(_f, _c, in_use, _t, _wp, _p)) ->
+        let _ = List.map (fun c -> find_sem c config) (linear_chans in_use) in ()
+    | (Msg(c, t, wp, msg)) -> ()) sems in
   let config = iterate_and_one_step env sems config false in
   config
 
