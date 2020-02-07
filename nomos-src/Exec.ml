@@ -24,11 +24,9 @@ exception StarPotential (* star potential encountered at runtime *)
 
 exception RuntimeError (* should never happen at runtime *)
 
-let print_debug s =
-  let debug = true in
-  if debug
-  then print_string (s ^ "\n")
-  else ()
+let debug = false
+
+let print_debug s = if debug then print_string (s ^ "\n") else ()
 
 type sem =
     (* Proc(chan, in_use, time, (work, pot), P) *)
@@ -729,7 +727,6 @@ let paypot_R ch config =
                   else if not (try_eq epot epot')
                   then raise PotentialMismatch
                   else
-                    let _ = print_debug (pp_sem f) in
                     let in_use' = replace_chan c' c in_use in
                     let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
@@ -1126,23 +1123,6 @@ and iterate_and_one_step env sems config stepped =
             Changed config -> iterate_and_one_step env sems' config true
           | Unchanged config -> iterate_and_one_step env sems' config stepped;;
 
-(*
-fun is_final (P::(config as Q::config')) =
-    (case (cat_of P, cat_of Q) of
-      (MsgR, MsgL) => raise ProgressError (* type error *)
-    | (MsgR, Fwd) => raise ProgressError (* can take a step *)
-    | (MsgR, RecvL) => raise ProgressError (* can take a step or type error *)
-    | (Fwd, MsgL) => raise ProgressError (* can take a step *)
-    | (RecvR, RecvL) => raise ProgressError (* type error *)
-    | (Internal, _) => raise ProgressError (* can take a step *)
-    | _ => is_final config)
-  | is_final (P::nil) =
-    (case cat_of P of
-      Internal => raise ProgressError (* can take a step *)
-    | _ => ())
-  | is_final nil = raise ProgressError (* empty configuration *)
-*)
-
 let error = ErrorMsg.error_msg ErrorMsg.Runtime None;;
 
 let create_config sem =
@@ -1150,37 +1130,93 @@ let create_config sem =
   let config = add_sem sem config in
   config;;
 
-(* verify the configuration after a transaction has executed *)
-let verify_configuration config =
-  let sems = get_sems config in
-  let found = sems |> List.fold_left (fun found sem ->
-    match sem with
-      (Proc(f, c, _in_use, _t, _wp, p)) -> (
-        let (_, _, m) = c in
+type state =
+  { energy : int;
+    gamma : A.chan list;
+    delta : A.chan list;
+    config : configuration;
+  }
+
+let checked_diff chs1 chs2 =
+  let diff = chans_diff chs1 chs2 in
+  if List.length chs1 - List.length chs2 = List.length diff
+  then Some diff
+  else None
+
+let checked_remove ch l =
+  if not (List.exists (eq_name ch) l)
+  then None
+  else Some(List.filter (uneq_name ch) l)
+
+let check_and_add (top : Chan.t) (sem : sem) (st : state): state option =
+  match sem with
+    (Proc(f, c, in_use, _t, (work, pot), p)) -> (
+      let (_, _, m) = c in
+      let st' = { st with energy = st.energy + work + pot } in
+      match checked_diff st.delta in_use with
+        None -> None
+      | Some(delta') -> Some(
         match m with
           | A.Shared -> (
               match p with
-                  A.Accept _ -> found
-                | _ -> error "shared process not blocking on accept"; raise RuntimeError)
-          | A.Linear -> found (* placeholder *)
-          | A.Transaction -> (error "transaction still running"; raise RuntimeError)
-          | A.Pure -> found (* should we be checking something here? *)
-          | A.Unknown -> (error "process mode Unknown during runtime"; raise RuntimeError)
-          | A.MVar _ -> (error "process mode MVar during runtime"; raise RuntimeError))
-    | (Msg(c, t, wp, msg)) ->
-        let (_, _, m) = c in
-        match m with
-            A.Transaction ->
-              if found
-                then (error "two transactions"; raise RuntimeError)
-                else true
-          | A.Linear | A.Pure -> found
-          | _ -> error "dangling message"
-                 ; raise RuntimeError
-  ) false in
-  if found
-    then config
-    else (error "missing transaction close"; raise RuntimeError)
+                  A.Accept _ ->
+                    { st' with gamma = c::st.gamma; delta = delta' }
+                | _ -> error "shared process not blocking on accept";
+                       raise RuntimeError)
+          | A.Pure -> { st' with delta = c::delta' }
+          | A.Linear -> (error "linear channel in final state";
+                         raise RuntimeError)
+          | A.Transaction -> (error "transaction still running";
+                              raise RuntimeError)
+          | A.Unknown -> (error "process mode Unknown during runtime";
+                          raise RuntimeError)
+          | A.MVar _ -> (error "process mode MVar during runtime";
+                         raise RuntimeError)))
+  | (Msg(c, t, wp, msg)) ->
+      let (_, _, m) = c in
+      match m with
+          A.Transaction ->
+            if eq_name c top
+            then Some st
+            else (error "transaction message not for main transaction";
+                  raise RuntimeError)
+        | A.Pure -> (
+            match msg with
+              A.MLabI (c, _, cplus)
+            | A.MLabE (cplus, _, c)
+            | A.MSendT (c, _, cplus)
+            | A.MSendL (cplus, _, c)
+            | A.MPayP (c, _, cplus)
+            | A.MPayG (cplus, _, c)
+            | A.MSendP (c, _, cplus)
+            | A.MSendA (cplus, _, c) ->
+                Option.map
+                  (fun delta' ->
+                     { st with delta = add_chan c delta' })
+                  (checked_remove cplus st.delta)
+            | A.MClose c ->
+                Some { st with delta = add_chan c st.delta })
+        | _ -> error "dangling message";
+               raise RuntimeError
+
+(* verify the configuration after a transaction has executed *)
+let verify_final_configuration top config =
+  let step_state st =
+    List.fold_left (fun (st, sems, changed) sem ->
+      match check_and_add top sem st with
+          None -> (st, sem::sems, changed)
+        | Some st' -> (st', sems, true))
+      (st, [], false) in
+  let rec st_fixpoint st sems =
+    let (st', sems', changed) = step_state st sems in
+    if changed then st_fixpoint st' sems' else (st', sems') in
+  let sems0 = get_sems config in
+  let st0 = { energy = 0; delta = []; gamma = []; config } in
+  let (_st_final, sems_final) = st_fixpoint st0 sems0 in
+  if List.length sems_final > 0
+    then (error "could not add some sems to final configuration";
+          raise RuntimeError)
+    else config
 
 (* exec env C = C'
  * C is a process configuration
@@ -1192,7 +1228,7 @@ let exec env f =
   let c = cfresh m in
   let pot = try_evaluate (get_pot env f) in
   let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,[])) in
-  try verify_configuration (step env (create_config sem))
+  try verify_final_configuration c (step env (create_config sem))
   with
     | InsufficientPotential -> error "insufficient potential during execution"
                                ; raise RuntimeError
