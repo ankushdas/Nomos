@@ -64,15 +64,15 @@ proc transaction main : . |{*}- ($d : 1) =
   case $low (
     full => $low.take ;
             $m <- recv $low ;
-	    $m.coins ;
-	    pay $m {*} ;
-	    wait $m ;
-	    get $low {*} ;
-	    #ow <- release $low ;
-	    close $d
+            $m.coins ;
+            pay $m {*} ;
+            wait $m ;
+            get $low {*} ;
+            #ow <- release $low ;
+            close $d
   | empty => get $low {*} ;
              #ow <- release $low ;
-	     close $d
+             close $d
   )
 }
 
