@@ -31,6 +31,9 @@ let rec cost_recv f exp = match exp with
   | A.Let(x,e,p) -> A.Let(x, cost_tick_aug e, cost_recv_aug f p)
   | A.IfS(e,p1,p2) -> A.IfS(cost_tick_aug e, cost_recv_aug f p1, cost_recv_aug f p2)
 
+  | A.GetCaller(x,p) -> f (A.GetCaller(x, cost_recv_aug f p))
+  | A.GetTxnSender(x,p) -> f (A.GetTxnSender(x, cost_recv_aug f p))
+
 and cost_recv_aug f {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_recv f p}
 
 and cost_recv_branches f bs = match bs with
@@ -53,6 +56,7 @@ and cost_tick fexp = match fexp with
   | A.CompOp(e1,cop,e2) -> A.CompOp(cost_tick_aug e1, cop, cost_tick_aug e2)
   | A.RelOp(e1,rop,e2) -> A.RelOp(cost_tick_aug e1, rop, cost_tick_aug e2)
   | A.Tick(pot,e) -> A.Tick(pot, cost_tick_aug e)
+  | A.GetTxnNum -> A.GetTxnNum
   | A.Command(p) -> A.Command(apply_cost_work p)
 
 and cost_model f flag exp = match flag with
@@ -88,11 +92,14 @@ and cost_send f exp = match exp with
   | A.Release(x,y,p) -> A.Release(x,y,cost_send_aug f p)
   | A.Detach(x,y,p) -> A.Detach(x,y,cost_send_aug f p)
 
-  | A.RecvF(x,y,p) -> A.RecvF(x,y,cost_recv_aug f p)
-  | A.SendF(x,e,p) -> f (A.SendF(x, cost_tick_aug e, cost_recv_aug f p))
+  | A.RecvF(x,y,p) -> A.RecvF(x,y,cost_send_aug f p)
+  | A.SendF(x,e,p) -> f (A.SendF(x, cost_tick_aug e, cost_send_aug f p))
 
-  | A.Let(x,e,p) -> f (A.Let(x, cost_tick_aug e, cost_recv_aug f p))
-  | A.IfS(e,p1,p2) -> f (A.IfS(cost_tick_aug e, cost_recv_aug f p1, cost_recv_aug f p2))
+  | A.Let(x,e,p) -> f (A.Let(x, cost_tick_aug e, cost_send_aug f p))
+  | A.IfS(e,p1,p2) -> f (A.IfS(cost_tick_aug e, cost_send_aug f p1, cost_send_aug f p2))
+
+  | A.GetCaller(x,p) -> f (A.GetCaller(x, cost_send_aug f p))
+  | A.GetTxnSender(x,p) -> f (A.GetTxnSender(x, cost_send_aug f p))
 
 and cost_send_aug f {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_send f p}
 

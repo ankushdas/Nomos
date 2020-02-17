@@ -49,6 +49,7 @@ and 'a func_expr =
   | CompOp of 'a func_aug_expr * comp_operator * 'a func_aug_expr
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
   | Tick of potential * 'a func_aug_expr
+  | GetTxnNum
   | Command of 'a st_aug_expr
 and 'a st_expr =
     Fwd of chan * chan
@@ -71,6 +72,8 @@ and 'a st_expr =
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr
   | Let of string * 'a func_aug_expr * 'a st_aug_expr
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
+  | GetCaller of chan * 'a st_aug_expr
+  | GetTxnSender of chan * 'a st_aug_expr
 and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list
 and 'a arg = STArg of chan | FArg of 'a func_expr

@@ -17,6 +17,7 @@ let comment_depth = ref 0
 
 let newline = '\r' | '\n' | "\r\n"
 rule token = parse
+  
   (* declarations *)
   | "type"              { TYPE }
   | "proc"              { PROC }
@@ -26,16 +27,19 @@ rule token = parse
   | "|-"                { TURNSTILE }
   | "exec"              { EXEC }
   | ":"                 { COLON }
+  
   (* session types *)
   | "-o"                { LOLLI }
   | "&"                 { AMPERSAND }
   | "/\\"               { UP }
   | "\\/"               { DOWN }
   | "^"                 { PRODUCT }
+  
   (* functional types *)
   | "int"               { INTEGER }
   | "bool"              { BOOLEAN }
   | "list"              { LIST }
+  
   (* functional *)
   | [ ' ' '\t' ]        { token lexbuf }
   | newline             { next_line lexbuf; token lexbuf }
@@ -72,6 +76,11 @@ rule token = parse
   | "then"              { THEN }
   | "else"              { ELSE }
   | "="                 { EQUALS }
+  
+  (* nomos specific *)
+  | "Nomos.GetCaller()"       { GETCALLER }
+  | "Nomos.GetTxnNum()"       { GETTXNNUM }
+  | "Nomos.GetTxnSender()"    { GETTXNSENDER }
 
   (* session type channels *)
   | "#"                 { HASH }

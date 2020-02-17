@@ -496,20 +496,7 @@ let rec consify l = match l with
       let d = e.A.func_data in
       A.Cons(e, {A.func_data = d; A.func_structure = consify es});;
 
-(* check_exp trace env ctx con A pot P C = () if A |{pot}- P : C
-* raises ErrorMsg.Error otherwise
-* assumes ctx ; con |= A valid
-*         ctx ; con |= C valid
-*         ctx ; con |= pot nat
-*
-* trace = true means to print some tracing information
-*
-* entry point is check_exp'
-*
-* We expand type definitions lazily, based on the direction of
-* interactions.  This is done so tracing (if enabled) or error
-* message are more intelligible.
-*)
+let wallet_tp = A.TpName("wallet");;
 
 let rec check_fexp_simple' trace env delta pot (e : A.parsed_expr) tp ext mode isSend =
   begin
@@ -649,9 +636,15 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
           let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e1 tp ext mode isSend in
           (delta2, pot2)
       end
+  | A.GetTxnNum ->
+      begin
+        match tp with
+            A.Integer -> (delta, pot)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected integer, found: " ^ PP.pp_ftp_simple tp)
+      end
   | A.Command _ -> raise UnknownTypeError
 
-and synth_fexp_simple trace env delta pot (e : A.parsed_expr)  ext mode isSend = match (e.A.func_structure) with
+and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = match (e.A.func_structure) with
     A.If(e1,e2,e3) ->
       begin
         let (delta1, pot1) = check_fexp_simple' trace env delta pot e1 A.Boolean ext mode isSend in
@@ -731,6 +724,7 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr)  ext mode isSend =
           let (delta2, pot2, t) = synth_fexp_simple' trace env delta1 pot1 e1 ext mode isSend in
           (delta2, pot2, t)
       end
+  | A.GetTxnNum -> (delta, pot, A.Integer)
   | A.Command _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
 
 
@@ -1374,7 +1368,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
           then
             if not (checktp x [zc])
             then E.error_unknown_var (x) (exp.A.st_data)
-            else (* the type c of z must be arrow *)
+            else (* the type c of z must be farrow *)
               let (z,c) = zc in
               if not (eq_mode x z)
               then E.error_mode_mismatch (x, z) (exp.A.st_data)
@@ -1392,7 +1386,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 | A.FProduct _ ->
                   error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                              ", expected farrow, found: " ^ PP.pp_tp_compact env c)
-          else (* the type a of x must be tensor *)
+          else (* the type a of x must be fproduct *)
             let d = find_ltp x delta (exp.A.st_data) in
             match d with
                 A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
@@ -1416,6 +1410,22 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         let (delta', pot') = check_fexp_simple trace env delta pot e A.Boolean ext mode false in
         check_exp' trace env delta' pot' p1 zc ext mode;
         check_exp' trace env delta' pot' p2 zc ext mode
+      end
+  | A.GetCaller(x,p) ->
+      begin
+        if check_tp x delta || checktp x [zc]
+        then error (exp.A.st_data) ("variable " ^ name_of x ^ " is not fresh")
+        else if not (mode_S x)
+        then error (exp.A.st_data) ("mode mismatch of wallet channel: expected S, found " ^ PP.pp_chan x)
+        else check_exp' trace env (add_chan env (x,wallet_tp) delta) pot p zc ext mode
+      end
+  | A.GetTxnSender(x,p) ->
+      begin
+        if check_tp x delta || checktp x [zc]
+        then error (exp.A.st_data) ("variable " ^ name_of x ^ " is not fresh")
+        else if not (mode_S x)
+        then error (exp.A.st_data) ("mode mismatch of wallet channel: expected S, found " ^ PP.pp_chan x)
+        else check_exp' trace env (add_chan env (x,wallet_tp) delta) pot p zc ext mode
       end
 
 and check_branchesR trace env delta pot branches z choices ext mode = match branches, choices with

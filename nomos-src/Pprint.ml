@@ -106,7 +106,7 @@ let rec pp_tp_simple a = match a with
   | A.Down(a) -> "\\/ " ^ pp_tp_simple a
   | A.FArrow(t,a) -> pp_ftp_simple t ^ " -> " ^ pp_tp_simple a
   | A.FProduct(t,a) -> pp_ftp_simple t ^ " ^ " ^ pp_tp_simple a 
-  | TpName(a) -> a
+  | A.TpName(a) -> a
 
 and pp_choice_simple cs = match cs with
     [] -> ""
@@ -268,6 +268,8 @@ let rec pp_exp env i exp = match exp with
   | A.SendF(x,e,p) -> "send " ^ pp_chan x ^ " (" ^ pp_fexp env i e.A.func_structure ^ ") ;\n" ^ pp_exp_indent env i p
   | A.Let(v,e,p) -> "let " ^ v ^ " = " ^ pp_fexp env i e.A.func_structure ^ " ;\n" ^ pp_exp_indent env i p
   | A.IfS(e,p1,p2) -> "if " ^ pp_fexp env i e.A.func_structure ^ "\n" ^ pp_then i ^ pp_exp_indent env (i+2) p1 ^ "\n" ^ pp_else i ^ pp_exp_indent env (i+2) p2
+  | A.GetCaller(x,p) -> pp_chan x ^ " <- " ^ "Nomos.GetCaller() ;\n" ^ pp_exp_indent env i p
+  | A.GetTxnSender(x,p) -> pp_chan x ^ " <- " ^ "Nomos.GetTxnSender() ;\n" ^ pp_exp_indent env i p
 
 and pp_exp_indent env i p = spaces i ^ pp_exp env i p.A.st_structure
 and pp_exp_after env i s p = s ^ pp_exp env (i+len(s)) p
@@ -348,6 +350,7 @@ and pp_fexp env i e =
     | A.App l ->
         pp_fexp_list env i l
     | A.Tick(pot,e) -> "(tick " ^ pp_potpos pot ^ " ; " ^ pp_fexp env i e.A.func_structure ^ ")"
+    | A.GetTxnNum -> "Nomos.GetTxnNum()"
     | A.Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
 
 and pp_fexp_indent env i p = spaces i ^ pp_fexp env i p
@@ -388,7 +391,9 @@ let pp_exp_prefix exp = match exp with
   | A.RecvF(x,v,_p) -> v ^ " = recv " ^ pp_chan x ^ " ; ..."
   | A.SendF(x,e,_p) -> "send " ^ pp_chan x ^ " (" ^ pp_fexp () 0 e.A.func_structure ^ ") ; ..."
   | A.Let(v,e,_p) -> "let " ^ v ^ " = " ^ pp_fexp () 0 e.A.func_structure ^ " ; ..."
-  | A.IfS(e,_p1,_p2) -> "if " ^ pp_fexp () 0 e.A.func_structure ^ " ... ";;
+  | A.IfS(e,_p1,_p2) -> "if " ^ pp_fexp () 0 e.A.func_structure ^ " ... "
+  | A.GetCaller(x,_p) -> pp_chan x ^ " <- " ^ "Nomos.GetCaller() ; ..."
+  | A.GetTxnSender(x,_p) -> pp_chan x ^ " <- " ^ "Nomos.GetTxnSender() ; ..."
 
 let rec pp_val_list l = 
   match l with

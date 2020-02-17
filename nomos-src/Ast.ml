@@ -98,6 +98,7 @@ and 'a func_expr =
   | CompOp of 'a func_aug_expr * comp_operator * 'a func_aug_expr
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
   | Tick of potential * 'a func_aug_expr
+  | GetTxnNum                       (* Nomos specific, get txn number *)
   | Command of 'a st_aug_expr
 and 'a st_expr =
   (* judgmental constructs *)
@@ -138,6 +139,10 @@ and 'a st_expr =
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr           (* send x (M) ; P *)
   | Let of string * 'a func_aug_expr * 'a st_aug_expr           (* let x = M ; P *)
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr   (* if e then P else Q *)
+
+  (* Nomos specific *)
+  | GetCaller of chan * 'a st_aug_expr                      (* x <- Nomos.GetCaller() *)
+  | GetTxnSender of chan * 'a st_aug_expr                   (* x <- Nomos.GetTxnSender() *)
 and 'a branch = label * 'a st_aug_expr
 
 and 'a branches = 'a branch list                          (* (l1 => P1 | ... | ln => Pn) *)
@@ -271,6 +276,8 @@ let rec subst c' c expr = match expr with
   | SendF(x,m,p) -> SendF(sub c' c x, m, subst_aug c' c p)
   | Let(x,e,p) -> Let(x, fsubst_aug c' c e, subst_aug c' c p)
   | IfS(e,p1,p2) -> IfS(fsubst_aug c' c e, subst_aug c' c p1, subst_aug c' c p2)
+  | GetCaller(x,p) -> GetCaller(x, subst_aug c' c p)
+  | GetTxnSender(x,p) -> GetTxnSender(x, subst_aug c' c p)
 
 and subst_branches c' c bs = match bs with
     [] -> []
@@ -293,6 +300,7 @@ and fsubst c' c fexp = match fexp with
   | CompOp(e1,cop,e2) -> CompOp(fsubst_aug c' c e1, cop, fsubst_aug c' c e2)
   | RelOp(e1,rop,e2) -> RelOp(fsubst_aug c' c e1, rop, fsubst_aug c' c e2)
   | Tick(pot,e) -> Tick(pot, fsubst_aug c' c e)
+  | GetTxnNum -> GetTxnNum
   | Command(p) -> Command(subst_aug c' c p)
 
 and fsubst_aug c' c {func_structure = exp ; func_data = d} =
@@ -318,6 +326,7 @@ let rec substv v' v fexp = match fexp with
   | CompOp(e1,cop,e2) -> CompOp(substv_aug v' v e1, cop, substv_aug v' v e2)
   | RelOp(e1,rop,e2) -> RelOp(substv_aug v' v e1, rop, substv_aug v' v e2)
   | Tick(pot,e) -> Tick(pot, substv_aug v' v e)
+  | GetTxnNum -> GetTxnNum
   | Command(p) -> Command(esubstv_aug v' v p)
 
 and substv_aug v' v {func_structure = fexp ; func_data = d} =
@@ -351,6 +360,8 @@ and esubstv v' v exp = match exp with
   | SendF(x,m,p) -> SendF(x, substv_aug v' v m, esubstv_aug v' v p)
   | Let(x,e,p) -> Let(x, substv_aug v' v e, esubstv_aug v' v p)
   | IfS(e,p1,p2) -> IfS(substv_aug v' v e, esubstv_aug v' v p1, esubstv_aug v' v p2)
+  | GetCaller(x,p) -> GetCaller(x, esubstv_aug v' v p)
+  | GetTxnSender(x,p) -> GetTxnSender(x, esubstv_aug v' v p)
 
 and esubstv_branches v' v bs = match bs with
     [] -> []

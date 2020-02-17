@@ -15,6 +15,10 @@
 %token NEQ GREATER LESS GREATEREQ LESSEQ
 %token ANDALSO ORELSE
 %token TYPE PROC ASSET CONTRACT TRANSACTION TURNSTILE EXEC COLON
+(* Nomos specific *)
+%token GETCALLER
+%token GETTXNNUM
+%token GETTXNSENDER
 (* session type layer *)
 %token LOLLI AMPERSAND UP DOWN PRODUCT
 %token LBRACE RBRACE
@@ -121,7 +125,10 @@ expr :
                                              $startpos.Lexing.pos_fname)} } 
     | FALSE                           { {func_structure = Ast.Bool(false); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
-                                             $startpos.Lexing.pos_fname)} } 
+                                             $startpos.Lexing.pos_fname)} }
+    | GETTXNNUM                       { {func_structure = Ast.GetTxnNum; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} }
     | i = INT                         { {func_structure = Ast.Int(i); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                              $startpos.Lexing.pos_fname)} } 
@@ -345,6 +352,12 @@ st:
                                                                                                                    ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} } 
     |  y = mid; LARROW; DETACH; x = linid; s = SEMI; p = st                  { {st_structure = Ast.Detach(x,y,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  x = mid; LARROW; GETCALLER; s = SEMI; p = st                          { {st_structure = Ast.GetCaller(x,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  x = mid; LARROW; GETTXNSENDER; s = SEMI; p = st                       { {st_structure = Ast.GetTxnSender(x,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }
     |  SEND; x = linid; e = arg; s = SEMI; p = st                            { {st_structure = Ast.SendF(x,e,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),

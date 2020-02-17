@@ -76,6 +76,8 @@ let rec remove_stars_exp exp = match exp with
   | A.RecvF(x,y,p) -> A.RecvF(x,y, remove_stars_aug p)
   | A.Let(x,e,p) -> A.Let(x,e, remove_stars_aug p)
   | A.IfS(e,p1,p2) -> A.IfS(e, remove_stars_aug p1, remove_stars_aug p2)
+  | A.GetCaller(x,p) -> A.GetCaller(x, remove_stars_aug p)
+  | A.GetTxnSender(x,p) -> A.GetTxnSender(x, remove_stars_aug p)
 
 and remove_stars_branches bs = match bs with
     [] -> []
@@ -100,6 +102,7 @@ and remove_stars_fexp fexp = match fexp with
   | A.CompOp(e1,cop,e2) -> A.CompOp(remove_stars_faug e1, cop, remove_stars_faug e2)
   | A.RelOp(e1,rop,e2) -> A.RelOp(remove_stars_faug e1, rop, remove_stars_faug e2)
   | A.Tick(pot,e) -> A.Tick(remove_star pot, remove_stars_faug e)
+  | A.GetTxnNum -> A.GetTxnNum
   | A.Command(p) -> A.Command(remove_stars_aug p);;
 
 (********************************************)
@@ -192,6 +195,8 @@ let rec substitute_exp exp psols msols = match exp with
   | A.RecvF(x,y,p) -> A.RecvF(substitute_mode x msols, y, substitute_aug p psols msols)
   | A.Let(x,e,p) -> A.Let(x,e, substitute_aug p psols msols)
   | A.IfS(e,p1,p2) -> A.IfS(e, substitute_aug p1 psols msols, substitute_aug p2 psols msols)
+  | A.GetCaller(x,p) -> A.GetCaller(substitute_mode x msols, substitute_aug p psols msols)
+  | A.GetTxnSender(x,p) -> A.GetTxnSender(substitute_mode x msols, substitute_aug p psols msols)
 
 and substitute_branches bs psols msols = match bs with
     [] -> []
@@ -216,6 +221,7 @@ and substitute_fexp fexp psols msols = match fexp with
   | A.CompOp(e1,cop,e2) -> A.CompOp(substitute_faug e1 psols msols, cop, substitute_faug e2 psols msols)
   | A.RelOp(e1,rop,e2) -> A.RelOp(substitute_faug e1 psols msols, rop, substitute_faug e2 psols msols)
   | A.Tick(pot,e) -> A.Tick(substitute_pot pot psols, substitute_faug e psols msols)
+  | A.GetTxnNum -> A.GetTxnNum
   | A.Command(p) -> A.Command(substitute_aug p psols msols);;
 
 (***************************************************************)
@@ -281,6 +287,8 @@ let rec removeU_exp exp = match exp with
   | A.RecvF(x,y,p) -> A.RecvF(removeU x, y, removeU_aug p)
   | A.Let(x,e,p) -> A.Let(x,e, removeU_aug p)
   | A.IfS(e,p1,p2) -> A.IfS(e, removeU_aug p1, removeU_aug p2)
+  | A.GetCaller(x,p) -> A.GetCaller(removeU x, removeU_aug p)
+  | A.GetTxnSender(x,p) -> A.GetTxnSender(removeU x, removeU_aug p)
 
 and removeU_branches bs = match bs with
     [] -> []
@@ -305,6 +313,7 @@ and removeU_fexp fexp = match fexp with
   | A.CompOp(e1,cop,e2) -> A.CompOp(removeU_faug e1, cop, removeU_faug e2)
   | A.RelOp(e1,rop,e2) -> A.RelOp(removeU_faug e1, rop, removeU_faug e2)
   | A.Tick(pot,e) -> A.Tick(pot, removeU_faug e)
+  | A.GetTxnNum -> A.GetTxnNum
   | A.Command(p) -> A.Command(removeU_aug p);;
 
 
