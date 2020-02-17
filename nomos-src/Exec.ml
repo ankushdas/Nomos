@@ -70,6 +70,8 @@ let rec proj l = match l with
       let (vs, cs) = proj l' in
       (v::vs, c::cs);;
 
+let txnNum = ref 0;;
+
 let rec eval fexp = match fexp.A.func_structure with
     A.If(e1,e2,e3) ->
       begin
@@ -172,6 +174,7 @@ let rec eval fexp = match fexp.A.func_structure with
             A.Star -> raise RuntimeError
           | A.Arith p -> (v, R.plus c p)
       end
+  | A.GetTxnNum -> (A.IntV !txnNum, R.Int 0)
   | A.Command(p) -> raise RuntimeError;;
 
 
@@ -317,6 +320,8 @@ let get_pot env f =
 let eq_name (_s1,c1,_m1) (_s2,c2,_m2) = c1 = c2;;
 
 let uneq_name c1 c2 = not (eq_name c1 c2);;
+
+let mode_of (_s,_c,m) = m;;
 
 let fwd ch config =
   let s = find_sem ch config in
@@ -470,7 +475,7 @@ let ichoice_S ch config =
         if uneq_name c1 c2
         then raise ChannelMismatch
         else
-          let c' = cfresh A.Pure in
+          let c' = cfresh (mode_of c1) in
           let msg = Msg(c1,t+1,(0,0),A.MLabI(c1,l,c')) in
           let proc = Proc(func,c',in_use,t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
@@ -513,7 +518,7 @@ let echoice_S ch config =
         if not (uneq_name d c)
         then raise ChannelMismatch
         else
-          let c' = cfresh A.Pure in
+          let c' = cfresh (mode_of c) in
           let msg = Msg(c',t+1,(0,0),A.MLabE(c,l,c')) in
           let in_use' = replace_chan c' c in_use in
           let proc = Proc(func,d,in_use',t+1,wp,A.subst c' c p.A.st_structure) in
@@ -556,7 +561,7 @@ let tensor_S ch config =
         if uneq_name c1 c2
         then raise ChannelMismatch
         else
-          let c' = cfresh A.Pure in
+          let c' = cfresh (mode_of c1) in
           let msg = Msg(c1,t+1,(0,0),A.MSendT(c1,e,c')) in
           let in_use' = remove_chan e in_use in
           let proc = Proc(func,c',in_use',t+1,wp,A.subst c' c1 p.A.st_structure) in
@@ -600,7 +605,7 @@ let lolli_S ch config =
         if not (uneq_name d c)
         then raise ChannelMismatch
         else
-          let c' = cfresh A.Pure in
+          let c' = cfresh (mode_of c) in
           let msg = Msg(c',t+1,(0,0),A.MSendL(c,e,c')) in
           let in_use' = replace_chan c' c (remove_chan e in_use) in
           let proc = Proc(func,d,in_use',t+1,wp,A.subst c' c p.A.st_structure) in
@@ -701,7 +706,7 @@ let paypot_S ch config =
         else if pot < try_evaluate epot
         then raise InsufficientPotential
         else
-          let c' = cfresh A.Pure in
+          let c' = cfresh (mode_of c1) in
           let vpot = try_evaluate epot in
           let msg = Msg(c1,t+1,(0,vpot),A.MPayP(c1,epot,c')) in
           let proc = Proc(func,c',in_use,t+1,(w,pot-vpot),A.subst c' c1 p.A.st_structure) in
@@ -748,7 +753,7 @@ let getpot_S ch config =
         else if pot < try_evaluate epot
         then raise InsufficientPotential
         else
-          let c' = cfresh A.Pure in
+          let c' = cfresh (mode_of c) in
           let vpot = try_evaluate epot in
           let msg = Msg(c',t+1,(0,vpot),A.MPayG(c,epot,c')) in
           let in_use' = replace_chan c' c in_use in
@@ -824,7 +829,7 @@ let up ch config =
                         if uneq_name aseq as1
                         then raise ChannelMismatch
                         else
-                          let al = cfresh A.Pure in
+                          let al = cfresh A.Linear in
                           let proc1 = Proc(func_acc,al,in_use,max(t,t')+1,wp,A.subst al x p.A.st_structure) in
                           let in_use_acq' = add_chan al in_use_acq in
                           let proc2 = Proc(func_acq,c,in_use_acq',max(t,t')+1,wp',A.subst al x' q.A.st_structure) in
@@ -890,7 +895,7 @@ let product_S ch config =
         if uneq_name c1 c2
         then raise ChannelMismatch
         else
-          let c' = cfresh A.Pure in
+          let c' = cfresh (mode_of c1) in
           let (v, acost) = eval e in
           let vcost = R.evaluate acost in
           let msg = Msg(c1,t+1,(0,0),A.MSendP(c1,v,c')) in
@@ -935,7 +940,7 @@ let arrow_S ch config =
         if not (uneq_name d c)
         then raise ChannelMismatch
         else
-          let c' = cfresh A.Pure in
+          let c' = cfresh (mode_of c) in
           (* let () = print_string ("trying to evaluate " ^ PP.pp_fexp () 0 e.A.func_structure ^ "\n") in *)
           let (v, acost) = eval e in
           let vcost = R.evaluate acost in
@@ -1077,6 +1082,14 @@ let match_and_one_step env sem config =
             
             | A.IfS _ ->
                 ifS c config
+            
+            (*
+            | A.GetCaller _ ->
+                getCaller c config
+            
+            | A.GetTxnSender _ ->
+                getTxnSender c config
+            *)
         end
     | Msg _ -> Unchanged config;;
 
