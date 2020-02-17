@@ -1011,7 +1011,33 @@ let ifS ch config =
                 Changed config
             | _ -> raise RuntimeError
         end
-    | _s -> raise ExecImpossible
+    | _s -> raise ExecImpossible;;
+
+let getCaller ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func,c,in_use,t,(w,pot),A.GetCaller(x,p)) ->
+        let cs = get_shared_chan c config in
+        let p = A.subst_aug cs x p in
+        let in_use' = add_chan cs in_use in
+        let proc = Proc(func,c,in_use',t+1, (w,pot), p.A.st_structure) in
+        let config = add_sem proc config in
+        Changed config
+    | _s -> raise ExecImpossible;;
+
+let getTxnSender ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func,c,in_use,t,(w,pot),A.GetTxnSender(x,p)) ->
+        let cs = get_shared_chan c config in
+        let p = A.subst_aug cs x p in
+        let in_use' = add_chan cs in_use in
+        let proc = Proc(func,c,in_use',t+1, (w,pot), p.A.st_structure) in
+        let config = add_sem proc config in
+        Changed config
+    | _s -> raise ExecImpossible;;
 
 let match_and_one_step env sem config =
   match sem with
@@ -1083,13 +1109,12 @@ let match_and_one_step env sem config =
             | A.IfS _ ->
                 ifS c config
             
-            (*
             | A.GetCaller _ ->
                 getCaller c config
             
             | A.GetTxnSender _ ->
                 getTxnSender c config
-            *)
+            
         end
     | Msg _ -> Unchanged config;;
 
