@@ -1,17 +1,20 @@
+open Sexplib.Std
 module R = Arith
 
 type ext = Mark.ext option      (* optional extent (source region info) *)
+[@@deriving sexp]
 
 type potential =
   | Arith of R.arith            (* p,q, potential for work *)
   | Star                        (* potential to be inferred *)
+[@@deriving sexp]
 
 (* Functional Types *)
 
 (* Session Types *)
-type label = string             (* l,k for internal and external choice *)
+type label = string [@@deriving sexp] (* l,k for internal and external choice *)
 type tpname = string            (* v, for types defined with v = A *)
-type expname = string           (* f, for processes defined with f = P *)
+type expname = string [@@deriving sexp] (* f, for processes defined with f = P *)
 
 
 type func_tp =
@@ -27,13 +30,16 @@ type mode =
   | Transaction
   | Pure
   | Unknown
-  | MVar of string;;
+  | MVar of string
+[@@deriving sexp]
 
 type str =
     Hash
-  | Dollar;;
+  | Dollar
+[@@deriving sexp]
 
 type chan = str * string * mode       (* channel name with modes *)
+[@@deriving sexp]
 
 type stype =
     Plus of choices                   (* +{...} *)
@@ -53,13 +59,15 @@ and choices = (label * stype) list
 
 type arglist =
   | Single of string * ext 
-  | Curry of (string * ext) * arglist;;
+  | Curry of (string * ext) * arglist
+[@@deriving sexp]
 
 type arith_operator =
   | Add
   | Sub
   | Mult
-  | Div;;
+  | Div
+[@@deriving sexp]
 
 type comp_operator =
   | Eq
@@ -67,11 +75,13 @@ type comp_operator =
   | Lt
   | Gt
   | Leq
-  | Geq;;
+  | Geq
+[@@deriving sexp]
 
 type rel_operator =
   | And
-  | Or;;
+  | Or
+[@@deriving sexp]
 
 type 'a func_aug_expr =
   {
@@ -149,7 +159,8 @@ and 'a branches = 'a branch list                          (* (l1 => P1 | ... | l
 
 and 'a arg =
   STArg of chan
-| FArg of 'a func_expr;;
+| FArg of 'a func_expr
+[@@deriving sexp]
 
 
 type parsed_expr = ext func_aug_expr
@@ -180,7 +191,8 @@ type 'a value =
   | IntV of int
   | BoolV of bool
   | ListV of 'a value list
-  | LambdaV of arglist * 'a func_aug_expr;;
+  | LambdaV of arglist * 'a func_aug_expr
+[@@deriving sexp]
 
 type 'a msg =
     MLabI of chan * label * chan          (* c.k ; c <- c+ *)
@@ -192,6 +204,7 @@ type 'a msg =
   | MPayG of chan * potential * chan      (* pay c {p} ; c+ <- c *)
   | MSendP of chan * 'a value * chan      (* send c M ; c <- c+ *)
   | MSendA of chan * 'a value * chan      (* send c M ; c+ <- c *)
+[@@deriving sexp]
 
 (* Environments *)
 
