@@ -30,7 +30,7 @@ rast-editor:
 	cd ..
 
 nomos-editor:
-	cd nomos-src; \
+	cd nomos-lib; \
 	ocamlc Arith.mli; \
 	ocamlc Normalize.mli; \
 	ocamlc Mark.mli; \
@@ -57,7 +57,7 @@ regression:
 	@${DUNE} build rast-src/regression.exe
 
 nomos:
-	@${DUNE} build nomos-src/nomos.exe
+	@${DUNE} build nomos-bin/nomos.exe
 
 clean:
 	@${DUNE} clean
