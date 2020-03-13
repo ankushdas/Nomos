@@ -28,11 +28,13 @@ let debug = false
 
 let print_debug s = if debug then print_string (s ^ "\n") else ()
 
+open Sexplib.Std
 type sem =
     (* Proc(chan, in_use, time, (work, pot), P) *)
     Proc of string * A.chan * A.chan list * int * (int * int) * A.ext A.st_expr
     (* Msg(chan, time, (work, pot), M) *)
   | Msg of A.chan * int * (int * int) * A.ext A.msg
+  [@@deriving sexp]
 
 let pp_sem sem = match sem with
     Proc(f,c,in_use,t,(w,pot),p) ->
@@ -182,32 +184,29 @@ module Chan =
   struct
     module T =
       struct
-        type t = A.chan
+        type t = A.chan [@@deriving sexp]
 
         let compare x y =
           let (_s1,c1,_m1) = x in
           let (_s2,c2,_m2) = y in
           C.String.compare c1 c2
-        
-        let sexp_of_t (_s,c,_m) = C.String.sexp_of_t c
-
-        let t_of_sexp s = (A.Dollar, C.String.t_of_sexp s, A.Unknown)
       end
       include T
       include C.Comparable.Make(T)
   end
 
 (* map from offered channel to semantic object *)
-type map_chan_sem = sem Chan.Map.t;;
+type map_chan_sem = sem Chan.Map.t [@@deriving sexp]
 
 (* map from channel to its continuation *)
-type map_chan_chan = A.chan Chan.Map.t;;
+type map_chan_chan = A.chan Chan.Map.t [@@deriving sexp]
 
 (* configuration type *)
 (* map from offered channel to semantic object *)
 (* map from channel to its continuation channel *)
 (* map from linear channel to its shared counterpart *)
-type configuration = map_chan_sem * map_chan_chan * map_chan_chan;;
+type configuration = map_chan_sem * map_chan_chan * map_chan_chan
+[@@deriving sexp]
 
 type stepped_config =
     Changed of configuration

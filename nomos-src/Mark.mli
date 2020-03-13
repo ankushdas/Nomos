@@ -1,4 +1,4 @@
-type ext = (int * int) * (int * int) * string
+type ext = (int * int) * (int * int) * string [@@deriving sexp]
 val pos : int * int -> string
 val show : (int * int) * (int * int) * string -> string
 val theLine : string -> string

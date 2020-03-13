@@ -1,6 +1,8 @@
+open Sexplib.Std
+
 (* ((line1, col1), (line2, col2), filename) : ext *)
 (* inclusive on left, exclusive on right *)
-type ext = (int * int) * (int * int) * string
+type ext = (int * int) * (int * int) * string [@@deriving sexp]
 
 (* col 0 means no column info, just show line number *)
 let pos (line, col) = match col with

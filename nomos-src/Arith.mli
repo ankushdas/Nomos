@@ -6,6 +6,7 @@ type arith =
   | Sub of arith * arith
   | Mult of arith * arith
   | Var of string
+[@@deriving sexp]
 val evaluate : arith -> int
 val plus : arith -> arith -> arith
 val minus : arith -> arith -> arith

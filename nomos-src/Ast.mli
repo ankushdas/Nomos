@@ -1,5 +1,5 @@
 module R = Arith
-type ext = Mark.ext option
+type ext = Mark.ext option [@@deriving sexp]
 type potential = Arith of R.arith | Star
 type label = string
 type tpname = string
@@ -10,9 +10,16 @@ type func_tp =
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string
-type mode = Shared | Linear | Transaction | Pure | Unknown | MVar of string
+type mode =
+    Shared
+  | Linear
+  | Transaction
+  | Pure
+  | Unknown
+  | MVar of string
+[@@deriving sexp]
 type str = Hash | Dollar
-type chan = str * string * mode
+type chan = str * string * mode [@@deriving sexp]
 type stype =
     Plus of choices
   | With of choices
@@ -28,6 +35,7 @@ type stype =
   | FProduct of func_tp * stype
 and choices = (label * stype) list
 type arglist = Single of string * ext | Curry of (string * ext) * arglist
+[@@deriving sexp]
 type arith_operator = Add | Sub | Mult | Div
 type comp_operator = Eq | Neq | Lt | Gt | Leq | Geq
 type rel_operator = And | Or
@@ -74,6 +82,7 @@ and 'a st_expr =
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
   | GetCaller of chan * 'a st_aug_expr
   | GetTxnSender of chan * 'a st_aug_expr
+  [@@deriving sexp]
 and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list
 and 'a arg = STArg of chan | FArg of 'a func_expr
@@ -107,6 +116,7 @@ type 'a msg =
   | MPayG of chan * potential * chan
   | MSendP of chan * 'a value * chan
   | MSendA of chan * 'a value * chan
+[@@deriving sexp]
 exception AstImpossible
 exception UndeclaredTp
 val lookup_tp : (decl * 'a) list -> tpname -> stype option

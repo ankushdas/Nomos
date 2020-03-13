@@ -1,9 +1,11 @@
+open Sexplib.Std
 type arith =
     Int of int            (* ..., -1, 0, 1, ... *)
   | Add of arith * arith  (* e1 + e2 *)
   | Sub of arith * arith  (* e1 - e2 *)
   | Mult of arith * arith (* e1 * e2 *)
   | Var of string
+[@@deriving sexp]
 
 exception NotClosed
 
