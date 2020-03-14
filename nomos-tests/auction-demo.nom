@@ -1,10 +1,13 @@
+
+
+type maybe_money = +{none: 1, some: money * 1}
+
 type auction = /\ <{*}| +{running : &{bid : int -> money -o |{*}> \/ auction,
                                       cancel : |{*}> \/ auction},
                           ended : &{collect : int -> +{won : lot * |{*}> \/ auction,
                                                        lost : money * |{*}> \/ auction},
                                     cancel : |{*}> \/ auction}}
 
-type maybe_money = +{none: 1, some: money * 1}
 
 proc transaction bid_client : (a : int), ($m : money), (#sa : auction) |{*}- ($d : maybe_money) =
 {
@@ -87,6 +90,7 @@ proc transaction main : . |{*}- ($d : 1) =
 }
 
 exec main
+
 
 proc contract run : (T : int), (w : int), (v : int), ($b : dictionary), ($l : lot) |{*}- (#sa : auction) =
 {

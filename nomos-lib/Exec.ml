@@ -74,6 +74,8 @@ let rec proj l = match l with
 
 let txnNum = ref 0;;
 
+let txnSender = ref "";;
+
 let rec eval fexp = match fexp.A.func_structure with
     A.If(e1,e2,e3) ->
       begin
@@ -96,6 +98,7 @@ let rec eval fexp = match fexp.A.func_structure with
       end
   | A.Bool b -> (A.BoolV b, R.Int 0)
   | A.Int i -> (A.IntV i, R.Int 0)
+  | A.Addr a -> (A.AddrV a, R.Int 0)
   | A.Var x -> raise RuntimeError
   | A.ListE(l) ->
       begin
@@ -177,6 +180,8 @@ let rec eval fexp = match fexp.A.func_structure with
           | A.Arith p -> (v, R.plus c p)
       end
   | A.GetTxnNum -> (A.IntV !txnNum, R.Int 0)
+  | A.GetCaller -> (A.AddrV !txnSender, R.Int 0)
+  | A.GetTxnSender -> (A.AddrV !txnSender, R.Int 0)
   | A.Command(p) -> raise RuntimeError;;
 
 
@@ -1012,6 +1017,9 @@ let ifS ch config =
         end
     | _s -> raise ExecImpossible;;
 
+(*
+obsolete code
+-------------
 let getCaller ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
@@ -1037,6 +1045,7 @@ let getTxnSender ch config =
         let config = add_sem proc config in
         Changed config
     | _s -> raise ExecImpossible;;
+*)
 
 let match_and_one_step env sem config =
   match sem with
@@ -1107,12 +1116,6 @@ let match_and_one_step env sem config =
             
             | A.IfS _ ->
                 ifS c config
-            
-            | A.GetCaller _ ->
-                getCaller c config
-            
-            | A.GetTxnSender _ ->
-                getTxnSender c config
             
         end
     | Msg _ -> Unchanged config;;

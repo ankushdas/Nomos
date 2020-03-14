@@ -20,6 +20,7 @@ type expname = string [@@deriving sexp] (* f, for processes defined with f = P *
 type func_tp =
   | Integer
   | Boolean
+  | Address
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string;;
@@ -98,6 +99,7 @@ and 'a func_expr =
   | LetIn of string * 'a func_aug_expr * 'a func_aug_expr
   | Bool of bool
   | Int of int
+  | Addr of string
   | Var of string
   | ListE of 'a func_aug_expr list
   | App of 'a func_aug_expr list
@@ -108,7 +110,10 @@ and 'a func_expr =
   | CompOp of 'a func_aug_expr * comp_operator * 'a func_aug_expr
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
   | Tick of potential * 'a func_aug_expr
-  | GetTxnNum                       (* Nomos specific, get txn number *)
+  (* Nomos specific *)
+  | GetTxnNum                                   (* Nomos.GetTxnNum(): get txn number *)
+  | GetCaller                                   (* Nomos.GetCaller(): get immediate caller *)
+  | GetTxnSender                                (* Nomos.GetTxnSender(): get txn issuer *)
   | Command of 'a st_aug_expr
 and 'a st_expr =
   (* judgmental constructs *)
@@ -149,10 +154,6 @@ and 'a st_expr =
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr           (* send x (M) ; P *)
   | Let of string * 'a func_aug_expr * 'a st_aug_expr           (* let x = M ; P *)
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr   (* if e then P else Q *)
-
-  (* Nomos specific *)
-  | GetCaller of chan * 'a st_aug_expr                      (* x <- Nomos.GetCaller() *)
-  | GetTxnSender of chan * 'a st_aug_expr                   (* x <- Nomos.GetTxnSender() *)
 and 'a branch = label * 'a st_aug_expr
 
 and 'a branches = 'a branch list                          (* (l1 => P1 | ... | ln => Pn) *)
@@ -190,6 +191,7 @@ type program = (decl * ext) list * ext
 type 'a value =
   | IntV of int
   | BoolV of bool
+  | AddrV of string
   | ListV of 'a value list
   | LambdaV of arglist * 'a func_aug_expr
 [@@deriving sexp]
@@ -289,8 +291,6 @@ let rec subst c' c expr = match expr with
   | SendF(x,m,p) -> SendF(sub c' c x, m, subst_aug c' c p)
   | Let(x,e,p) -> Let(x, fsubst_aug c' c e, subst_aug c' c p)
   | IfS(e,p1,p2) -> IfS(fsubst_aug c' c e, subst_aug c' c p1, subst_aug c' c p2)
-  | GetCaller(x,p) -> GetCaller(x, subst_aug c' c p)
-  | GetTxnSender(x,p) -> GetTxnSender(x, subst_aug c' c p)
 
 and subst_branches c' c bs = match bs with
     [] -> []
@@ -303,7 +303,7 @@ and subst_aug c' c {st_structure = exp; st_data = d} =
 and fsubst c' c fexp = match fexp with
     If(e1,e2,e3) -> If(fsubst_aug c' c e1, fsubst_aug c' c e2, fsubst_aug c' c e3)
   | LetIn(x,e1,e2) -> LetIn(x, fsubst_aug c' c e1, fsubst_aug c' c e2)
-  | Bool _ | Int _ | Var _ -> fexp
+  | Bool _ | Int _ | Addr _ | Var _ -> fexp
   | ListE(l) -> ListE(List.map (fsubst_aug c' c) l)
   | App(es) -> App(List.map (fsubst_aug c' c) es)
   | Cons(e1,e2) -> Cons(fsubst_aug c' c e1, fsubst_aug c' c e2)
@@ -314,6 +314,8 @@ and fsubst c' c fexp = match fexp with
   | RelOp(e1,rop,e2) -> RelOp(fsubst_aug c' c e1, rop, fsubst_aug c' c e2)
   | Tick(pot,e) -> Tick(pot, fsubst_aug c' c e)
   | GetTxnNum -> GetTxnNum
+  | GetCaller -> GetCaller
+  | GetTxnSender -> GetTxnSender
   | Command(p) -> Command(subst_aug c' c p)
 
 and fsubst_aug c' c {func_structure = exp ; func_data = d} =
@@ -322,13 +324,14 @@ and fsubst_aug c' c {func_structure = exp ; func_data = d} =
 let rec toExpr d v = match v with
     IntV i -> Int i
   | BoolV b -> Bool b
+  | AddrV a -> Addr a
   | ListV l -> ListE (List.map (fun x -> {func_structure = toExpr d x ; func_data = d}) l)
   | LambdaV(xs,e) -> Lambda (xs,e);;
 
 let rec substv v' v fexp = match fexp with
     If(e1,e2,e3) -> If(substv_aug v' v e1, substv_aug v' v e2, substv_aug v' v e3)
   | LetIn(x,e1,e2) -> LetIn(x, substv_aug v' v e1, substv_aug v' v e2)
-  | Bool _ | Int _ -> fexp
+  | Bool _ | Int _ | Addr _ -> fexp
   | Var x -> if x = v then v' else Var x
   | ListE(l) -> ListE(List.map (substv_aug v' v) l)
   | App(es) -> App(List.map (substv_aug v' v) es)
@@ -340,6 +343,8 @@ let rec substv v' v fexp = match fexp with
   | RelOp(e1,rop,e2) -> RelOp(substv_aug v' v e1, rop, substv_aug v' v e2)
   | Tick(pot,e) -> Tick(pot, substv_aug v' v e)
   | GetTxnNum -> GetTxnNum
+  | GetCaller -> GetCaller
+  | GetTxnSender -> GetTxnSender
   | Command(p) -> Command(esubstv_aug v' v p)
 
 and substv_aug v' v {func_structure = fexp ; func_data = d} =
@@ -373,8 +378,6 @@ and esubstv v' v exp = match exp with
   | SendF(x,m,p) -> SendF(x, substv_aug v' v m, esubstv_aug v' v p)
   | Let(x,e,p) -> Let(x, substv_aug v' v e, esubstv_aug v' v p)
   | IfS(e,p1,p2) -> IfS(substv_aug v' v e, esubstv_aug v' v p1, esubstv_aug v' v p2)
-  | GetCaller(x,p) -> GetCaller(x, esubstv_aug v' v p)
-  | GetTxnSender(x,p) -> GetTxnSender(x, esubstv_aug v' v p)
 
 and esubstv_branches v' v bs = match bs with
     [] -> []

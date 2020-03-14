@@ -187,6 +187,7 @@ let mode_recv m1 m2 = match m1, m2 with
 let rec eq_ftp tp tp' = match tp, tp' with
     A.Integer, A.Integer -> true
   | A.Boolean, A.Boolean -> true
+  | A.Address, A.Address -> true
   | A.ListTP(t,pot), A.ListTP(t',pot') -> eq_ftp t t' && eq pot pot'
   | A.Arrow(t1,t2), A.Arrow(t1',t2') -> eq_ftp t1 t1' && eq_ftp t2 t2'
   | A.VarT v, A.VarT v' -> v = v'
@@ -475,7 +476,7 @@ let remove_var x delta =
   {A.shared = delta.A.shared; A.linear = delta.A.linear; A.ordered = removevar x delta.A.ordered};;
 
 let rec consume_pot tp = match tp with
-    A.Integer | A.Boolean | A.VarT _ -> tp
+    A.Integer | A.Boolean | A.Address | A.VarT _ -> tp
   | A.ListTP(t,_pot) -> A.ListTP(consume_pot t, A.Arith (R.Int(0)))
   | A.Arrow(t1,t2) -> A.Arrow(consume_pot t1, consume_pot t2);;
 
@@ -495,8 +496,6 @@ let rec consify l = match l with
   | e::es ->
       let d = e.A.func_data in
       A.Cons(e, {A.func_data = d; A.func_structure = consify es});;
-
-let wallet_tp = A.TpName("wallet");;
 
 let rec check_fexp_simple' trace env delta pot (e : A.parsed_expr) tp ext mode isSend =
   begin
@@ -540,6 +539,13 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
         match tp with
             A.Integer -> (delta, pot)
           | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected integer, found: " ^ PP.pp_ftp_simple tp)
+      end
+  | A.Addr(_) ->
+      begin
+        match tp with
+            A.Address -> (delta, pot)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
+
       end
   | A.Var(x) ->
       begin
@@ -642,6 +648,18 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
             A.Integer -> (delta, pot)
           | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected integer, found: " ^ PP.pp_ftp_simple tp)
       end
+  | A.GetCaller ->
+      begin
+        match tp with
+            A.Address -> (delta, pot)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
+      end
+  | A.GetTxnSender ->
+      begin
+        match tp with
+            A.Address -> (delta, pot)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
+      end
   | A.Command _ -> raise UnknownTypeError
 
 and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = match (e.A.func_structure) with
@@ -654,15 +672,16 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
         (odelta, opot, t)
       end
   | A.LetIn _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
-  | Bool _ -> (delta, pot, A.Boolean)
-  | Int _ -> (delta, pot, A.Integer)
-  | Var(x) ->
+  | A.Bool _ -> (delta, pot, A.Boolean)
+  | A.Int _ -> (delta, pot, A.Integer)
+  | A.Addr _ -> (delta, pot, A.Address)
+  | A.Var(x) ->
       begin
         let t = lookup_ftp x delta (e.A.func_data) in
         let delta' = if isSend then consume x delta else delta in
         (delta', pot, t)
       end
-  | ListE(l) ->
+  | A.ListE(l) ->
       begin
         if List.length l = 0
         then error (e.A.func_data) ("cannot synthesize type of empty list: " ^ PP.pp_fexp env 0 (e.A.func_structure))
@@ -670,7 +689,7 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
           let cons_exp = consify l in
           synth_fexp_simple' trace env delta pot {func_structure = cons_exp; func_data = e.A.func_data} ext mode isSend
       end
-  | Cons(e1,e2) ->
+  | A.Cons(e1,e2) ->
       begin
         let (delta2, pot2, tplist) = synth_fexp_simple' trace env delta pot e2 ext mode isSend in
         match tplist with
@@ -679,8 +698,8 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
               (delta1, pot1, tplist)
           | _t -> error (e.A.func_data) ("type of " ^ PP.pp_fexp env 0 e2.A.func_structure ^ " not a list")
       end
-  | Match _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
-  | Lambda _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
+  | A.Match _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
+  | A.Lambda _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
   | A.Op(e1, _, e2) ->
       begin
         let (delta1, pot1) = check_fexp_simple' trace env delta pot e1 A.Integer ext mode isSend in
@@ -725,6 +744,8 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
           (delta2, pot2, t)
       end
   | A.GetTxnNum -> (delta, pot, A.Integer)
+  | A.GetCaller -> (delta, pot, A.Address)
+  | A.GetTxnSender -> (delta, pot, A.Address)
   | A.Command _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
 
 
@@ -1410,22 +1431,6 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         let (delta', pot') = check_fexp_simple trace env delta pot e A.Boolean ext mode false in
         check_exp' trace env delta' pot' p1 zc ext mode;
         check_exp' trace env delta' pot' p2 zc ext mode
-      end
-  | A.GetCaller(x,p) ->
-      begin
-        if check_tp x delta || checktp x [zc]
-        then error (exp.A.st_data) ("variable " ^ name_of x ^ " is not fresh")
-        else if not (mode_S x)
-        then error (exp.A.st_data) ("mode mismatch of wallet channel: expected S, found " ^ PP.pp_chan x)
-        else check_exp' trace env (add_chan env (x,wallet_tp) delta) pot p zc ext mode
-      end
-  | A.GetTxnSender(x,p) ->
-      begin
-        if check_tp x delta || checktp x [zc]
-        then error (exp.A.st_data) ("variable " ^ name_of x ^ " is not fresh")
-        else if not (mode_S x)
-        then error (exp.A.st_data) ("mode mismatch of wallet channel: expected S, found " ^ PP.pp_chan x)
-        else check_exp' trace env (add_chan env (x,wallet_tp) delta) pot p zc ext mode
       end
 
 and check_branchesR trace env delta pot branches z choices ext mode = match branches, choices with

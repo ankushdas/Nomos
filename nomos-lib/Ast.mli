@@ -7,6 +7,7 @@ type expname = string
 type func_tp =
     Integer
   | Boolean
+  | Address
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string
@@ -46,6 +47,7 @@ and 'a func_expr =
   | LetIn of string * 'a func_aug_expr * 'a func_aug_expr
   | Bool of bool
   | Int of int
+  | Addr of string
   | Var of string
   | ListE of 'a func_aug_expr list
   | App of 'a func_aug_expr list
@@ -58,6 +60,8 @@ and 'a func_expr =
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
   | Tick of potential * 'a func_aug_expr
   | GetTxnNum
+  | GetCaller
+  | GetTxnSender
   | Command of 'a st_aug_expr
 and 'a st_expr =
     Fwd of chan * chan
@@ -80,8 +84,6 @@ and 'a st_expr =
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr
   | Let of string * 'a func_aug_expr * 'a st_aug_expr
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
-  | GetCaller of chan * 'a st_aug_expr
-  | GetTxnSender of chan * 'a st_aug_expr
   [@@deriving sexp]
 and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list
@@ -104,6 +106,7 @@ type program = (decl * ext) list * ext
 type 'a value =
     IntV of int
   | BoolV of bool
+  | AddrV of string
   | ListV of 'a value list
   | LambdaV of arglist * 'a func_aug_expr
 type 'a msg =

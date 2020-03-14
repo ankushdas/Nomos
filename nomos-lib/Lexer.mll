@@ -38,6 +38,7 @@ rule token = parse
   (* functional types *)
   | "int"               { INTEGER }
   | "bool"              { BOOLEAN }
+  | "address"           { ADDRESS }
   | "list"              { LIST }
   
   (* functional *)

@@ -90,6 +90,7 @@ let pp_mode m = match m with
 let rec pp_ftp_simple t = match t with
     A.Integer -> "int"
   | A.Boolean -> "bool"
+  | A.Address -> "address"
   | A.ListTP(t,pot) -> pp_ftp_simple t ^ " list " ^ pp_pot pot
   | A.Arrow(t1,t2) -> pp_ftp_simple t1 ^ " -> " ^ pp_ftp_simple t2
   | A.VarT s -> s;;
@@ -268,8 +269,6 @@ let rec pp_exp env i exp = match exp with
   | A.SendF(x,e,p) -> "send " ^ pp_chan x ^ " (" ^ pp_fexp env i e.A.func_structure ^ ") ;\n" ^ pp_exp_indent env i p
   | A.Let(v,e,p) -> "let " ^ v ^ " = " ^ pp_fexp env i e.A.func_structure ^ " ;\n" ^ pp_exp_indent env i p
   | A.IfS(e,p1,p2) -> "if " ^ pp_fexp env i e.A.func_structure ^ "\n" ^ pp_then i ^ pp_exp_indent env (i+2) p1 ^ "\n" ^ pp_else i ^ pp_exp_indent env (i+2) p2
-  | A.GetCaller(x,p) -> pp_chan x ^ " <- " ^ "Nomos.GetCaller() ;\n" ^ pp_exp_indent env i p
-  | A.GetTxnSender(x,p) -> pp_chan x ^ " <- " ^ "Nomos.GetTxnSender() ;\n" ^ pp_exp_indent env i p
 
 and pp_exp_indent env i p = spaces i ^ pp_exp env i p.A.st_structure
 and pp_exp_after env i s p = s ^ pp_exp env (i+len(s)) p
@@ -307,6 +306,7 @@ and pp_fexp env i e =
     | A.Var(x)  -> x
     | A.Bool(b) -> string_of_bool b
     | A.Int(i)  -> string_of_int i
+    | A.Addr(s) -> s
     | A.LetIn(x, e1, e2) ->
         let a = pp_fexp env i e1.A.func_structure in
         let b = pp_fexp_indent env i e2.A.func_structure in
@@ -351,6 +351,8 @@ and pp_fexp env i e =
         pp_fexp_list env i l
     | A.Tick(pot,e) -> "(tick " ^ pp_potpos pot ^ " ; " ^ pp_fexp env i e.A.func_structure ^ ")"
     | A.GetTxnNum -> "Nomos.GetTxnNum()"
+    | A.GetCaller -> "Nomos.GetCaller()"
+    | A.GetTxnSender -> "Nomos.GetTxnSender()"
     | A.Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
 
 and pp_fexp_indent env i p = spaces i ^ pp_fexp env i p
@@ -392,8 +394,6 @@ let pp_exp_prefix exp = match exp with
   | A.SendF(x,e,_p) -> "send " ^ pp_chan x ^ " (" ^ pp_fexp () 0 e.A.func_structure ^ ") ; ..."
   | A.Let(v,e,_p) -> "let " ^ v ^ " = " ^ pp_fexp () 0 e.A.func_structure ^ " ; ..."
   | A.IfS(e,_p1,_p2) -> "if " ^ pp_fexp () 0 e.A.func_structure ^ " ... "
-  | A.GetCaller(x,_p) -> pp_chan x ^ " <- " ^ "Nomos.GetCaller() ; ..."
-  | A.GetTxnSender(x,_p) -> pp_chan x ^ " <- " ^ "Nomos.GetTxnSender() ; ..."
 
 let rec pp_val_list l = 
   match l with
@@ -406,10 +406,11 @@ let rec pp_val_list l =
       else a ^ "; " ^ b
 and pp_val v =
   match v with 
-      Ast.IntV(v1) -> string_of_int v1 
-    | Ast.BoolV(v1) -> string_of_bool v1
-    | Ast.ListV(l) -> "[" ^ pp_val_list l ^ "]"
-    | Ast.LambdaV(args, v1) -> "fun " ^ pp_args args ^ " -> " ^ pp_fexp () 0 v1.A.func_structure;;
+      A.IntV(v1) -> string_of_int v1 
+    | A.BoolV(v1) -> string_of_bool v1
+    | A.AddrV(a) -> a
+    | A.ListV(l) -> "[" ^ pp_val_list l ^ "]"
+    | A.LambdaV(args, v1) -> "fun " ^ pp_args args ^ " -> " ^ pp_fexp () 0 v1.A.func_structure;;
 
 let pp_msg m = match m with
     A.MLabI(c,k,c') -> "+ " ^ pp_chan c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))
