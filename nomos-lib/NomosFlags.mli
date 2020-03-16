@@ -11,4 +11,6 @@ val work : cost ref
 val syntax : syntax ref
 val verbosity : int ref
 val help : bool ref
+val config_in : (string option) ref
+val config_out : (string option) ref
 val reset : unit -> unit
