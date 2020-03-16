@@ -1213,7 +1213,7 @@ let check_and_add (top : Chan.t) (sem : sem) (st : state): state option =
       match m with
           A.Transaction ->
             if eq_name c top
-            then Some st
+            then Some { st with config = remove_sem c st.config }
             else (error "transaction message not for main transaction";
                   raise RuntimeError)
         | A.Pure -> (
@@ -1248,11 +1248,12 @@ let verify_final_configuration top config =
     if changed then st_fixpoint st' sems' else (st', sems') in
   let sems0 = get_sems config in
   let st0 = { energy = 0; delta = []; gamma = []; config } in
-  let (_st_final, sems_final) = st_fixpoint st0 sems0 in
+  let (st_final, sems_final) = st_fixpoint st0 sems0 in
+  let config' = st_final.config in
   if List.length sems_final > 0
     then (error "could not add some sems to final configuration";
           raise RuntimeError)
-    else config
+    else config'
 
 (* transaction num * channel num * configuration *)
 type full_configuration = int * int * configuration
