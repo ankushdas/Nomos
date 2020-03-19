@@ -351,7 +351,6 @@ and pp_fexp env i e =
         pp_fexp_list env i l
     | A.Tick(pot,e) -> "(tick " ^ pp_potpos pot ^ " ; " ^ pp_fexp env i e.A.func_structure ^ ")"
     | A.GetTxnNum -> "Nomos.GetTxnNum()"
-    | A.GetCaller -> "Nomos.GetCaller()"
     | A.GetTxnSender -> "Nomos.GetTxnSender()"
     | A.Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
 

@@ -79,7 +79,6 @@ rule token = parse
   | "="                 { EQUALS }
   
   (* nomos specific *)
-  | "Nomos.GetCaller()"       { GETCALLER }
   | "Nomos.GetTxnNum()"       { GETTXNNUM }
   | "Nomos.GetTxnSender()"    { GETTXNSENDER }
 

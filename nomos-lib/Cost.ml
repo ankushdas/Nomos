@@ -54,7 +54,6 @@ and cost_tick fexp = match fexp with
   | A.RelOp(e1,rop,e2) -> A.RelOp(cost_tick_aug e1, rop, cost_tick_aug e2)
   | A.Tick(pot,e) -> A.Tick(pot, cost_tick_aug e)
   | A.GetTxnNum -> A.GetTxnNum
-  | A.GetCaller -> A.GetCaller
   | A.GetTxnSender -> A.GetTxnSender
   | A.Command(p) -> A.Command(apply_cost_work p)
 

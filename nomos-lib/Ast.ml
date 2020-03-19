@@ -112,7 +112,6 @@ and 'a func_expr =
   | Tick of potential * 'a func_aug_expr
   (* Nomos specific *)
   | GetTxnNum                                   (* Nomos.GetTxnNum(): get txn number *)
-  | GetCaller                                   (* Nomos.GetCaller(): get immediate caller *)
   | GetTxnSender                                (* Nomos.GetTxnSender(): get txn issuer *)
   | Command of 'a st_aug_expr
 and 'a st_expr =
@@ -314,7 +313,6 @@ and fsubst c' c fexp = match fexp with
   | RelOp(e1,rop,e2) -> RelOp(fsubst_aug c' c e1, rop, fsubst_aug c' c e2)
   | Tick(pot,e) -> Tick(pot, fsubst_aug c' c e)
   | GetTxnNum -> GetTxnNum
-  | GetCaller -> GetCaller
   | GetTxnSender -> GetTxnSender
   | Command(p) -> Command(subst_aug c' c p)
 
@@ -343,7 +341,6 @@ let rec substv v' v fexp = match fexp with
   | RelOp(e1,rop,e2) -> RelOp(substv_aug v' v e1, rop, substv_aug v' v e2)
   | Tick(pot,e) -> Tick(pot, substv_aug v' v e)
   | GetTxnNum -> GetTxnNum
-  | GetCaller -> GetCaller
   | GetTxnSender -> GetTxnSender
   | Command(p) -> Command(esubstv_aug v' v p)
 

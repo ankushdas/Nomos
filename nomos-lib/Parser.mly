@@ -16,7 +16,6 @@
 %token ANDALSO ORELSE
 %token TYPE PROC ASSET CONTRACT TRANSACTION TURNSTILE EXEC COLON
 (* Nomos specific *)
-%token GETCALLER
 %token GETTXNNUM
 %token GETTXNSENDER
 (* session type layer *)
@@ -129,9 +128,6 @@ expr :
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                              $startpos.Lexing.pos_fname)} }
     | GETTXNNUM                       { {func_structure = Ast.GetTxnNum; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
-                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
-                                             $startpos.Lexing.pos_fname)} }
-    | GETCALLER                       { {func_structure = Ast.GetCaller; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                              $startpos.Lexing.pos_fname)} }
     | GETTXNSENDER                    { {func_structure = Ast.GetTxnSender; func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),

@@ -648,12 +648,6 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
             A.Integer -> (delta, pot)
           | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected integer, found: " ^ PP.pp_ftp_simple tp)
       end
-  | A.GetCaller ->
-      begin
-        match tp with
-            A.Address -> (delta, pot)
-          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
-      end
   | A.GetTxnSender ->
       begin
         match tp with
@@ -744,7 +738,6 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
           (delta2, pot2, t)
       end
   | A.GetTxnNum -> (delta, pot, A.Integer)
-  | A.GetCaller -> (delta, pot, A.Address)
   | A.GetTxnSender -> (delta, pot, A.Address)
   | A.Command _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
 

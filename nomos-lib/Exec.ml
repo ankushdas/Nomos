@@ -180,7 +180,6 @@ let rec eval fexp = match fexp.A.func_structure with
           | A.Arith p -> (v, R.plus c p)
       end
   | A.GetTxnNum -> (A.IntV !txnNum, R.Int 0)
-  | A.GetCaller -> (A.AddrV !txnSender, R.Int 0)
   | A.GetTxnSender -> (A.AddrV !txnSender, R.Int 0)
   | A.Command(p) -> raise RuntimeError;;
 

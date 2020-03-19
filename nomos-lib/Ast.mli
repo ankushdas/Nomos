@@ -60,7 +60,6 @@ and 'a func_expr =
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
   | Tick of potential * 'a func_aug_expr
   | GetTxnNum
-  | GetCaller
   | GetTxnSender
   | Command of 'a st_aug_expr
 and 'a st_expr =

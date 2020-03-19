@@ -101,7 +101,6 @@ and remove_stars_fexp fexp = match fexp with
   | A.RelOp(e1,rop,e2) -> A.RelOp(remove_stars_faug e1, rop, remove_stars_faug e2)
   | A.Tick(pot,e) -> A.Tick(remove_star pot, remove_stars_faug e)
   | A.GetTxnNum -> A.GetTxnNum
-  | A.GetCaller -> A.GetCaller
   | A.GetTxnSender -> A.GetTxnSender
   | A.Command(p) -> A.Command(remove_stars_aug p);;
 
@@ -220,7 +219,6 @@ and substitute_fexp fexp psols msols = match fexp with
   | A.RelOp(e1,rop,e2) -> A.RelOp(substitute_faug e1 psols msols, rop, substitute_faug e2 psols msols)
   | A.Tick(pot,e) -> A.Tick(substitute_pot pot psols, substitute_faug e psols msols)
   | A.GetTxnNum -> A.GetTxnNum
-  | A.GetCaller -> A.GetCaller
   | A.GetTxnSender -> A.GetTxnSender
   | A.Command(p) -> A.Command(substitute_aug p psols msols);;
 
@@ -312,7 +310,6 @@ and removeU_fexp fexp = match fexp with
   | A.RelOp(e1,rop,e2) -> A.RelOp(removeU_faug e1, rop, removeU_faug e2)
   | A.Tick(pot,e) -> A.Tick(pot, removeU_faug e)
   | A.GetTxnNum -> A.GetTxnNum
-  | A.GetCaller -> A.GetCaller
   | A.GetTxnSender -> A.GetTxnSender
   | A.Command(p) -> A.Command(removeU_aug p);;
 
