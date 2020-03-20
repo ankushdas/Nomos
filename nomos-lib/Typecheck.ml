@@ -202,7 +202,7 @@ let rec mem_seen env seen a a' = match seen with
   | [] -> false;;
 
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
-let rec eq_tp' env seen a a' =
+ let rec eq_tp' env seen a a' =
   if !F.verbosity >= 3
   then print_string ("comparing " ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
   else ()
@@ -255,7 +255,115 @@ and eq_name_name env seen a a' =
   if mem_seen env seen a a' then true
   else eq_tp' env ((a,a')::seen) (A.expd_tp env a) (A.expd_tp env a');;
 
-let eqtp env tp tp' = eq_tp' env [] tp tp';;
+let eqtp env tp tp' = eq_tp' env [] tp tp';; 
+
+(* ******************* *)
+(* Subtyping Algorithm *)
+(* ******************* *)
+
+let rec sub_tp' env seen a a' =
+  if !F.verbosity >= 3
+  then print_string ("comparing " ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
+  else ()
+  ; sub_tp env seen a a'
+
+and sub_tp env seen tp tp' = match tp, tp' with
+    A.Plus(choice), A.Plus(choice') ->
+      sub_ichoice env seen choice choice'
+  | A.With(choice), A.With(choice') ->
+      sub_echoice env seen choice choice'
+  | A.Tensor(s,t,m), A.Tensor(s',t',m') ->
+      eqmode m m' && sub_tp' env seen s s' && sub_tp' env seen t t'
+  | A.Lolli(s,t,m), A.Lolli(s',t',m') ->
+      eqmode m m' && sub_tp' env seen s' s && sub_tp' env seen t t'
+  | A.One, A.One -> true
+
+  | A.PayPot(pot,a), A.PayPot(pot',a') ->
+      eq pot pot' && sub_tp' env seen a a'
+  | A.GetPot(pot,a), A.GetPot(pot',a') ->
+      eq pot pot' && sub_tp' env seen a a'
+
+  | A.Up(a), A.Up(a') ->
+      sub_tp' env seen a a'
+  | A.Down(a), A.Down(a') ->
+      sub_tp' env seen a a'
+
+  | A.FArrow(t,a), A.FArrow(t',a') ->
+      eq_ftp t t' && sub_tp' env seen a a'
+  | A.FProduct(t,a), A.FProduct(t',a') ->
+      eq_ftp t t' && sub_tp' env seen a a'
+
+  | A.TpName(a), A.TpName(a') ->
+      sub_name_name env seen a a' (* coinductive subtyping *)
+  | A.TpName(a), a' ->
+      sub_tp' env seen (A.expd_tp env a) a'
+  | a, A.TpName(a') ->
+      sub_tp' env seen a (A.expd_tp env a')
+
+  | _a, _a' -> false
+
+and sub_ichoice env seen cs cs' = match cs with
+    [] -> true
+  | (l,a)::choice -> 
+  let lab_match = List.find_all (fun (l', _) -> l = l') cs' in
+  if (List.length lab_match != 1)
+  then false
+  else let (l', a') = List.nth lab_match 0 in 
+  sub_tp' env seen a a' && sub_ichoice env seen choice cs'
+
+and sub_echoice env seen cs cs' = match cs' with
+    [] -> true
+  | (l',a')::choice -> 
+  let lab_match = List.find_all (fun (l, _) -> l = l') cs in
+  if (List.length lab_match != 1)
+  then false
+  else let (l, a) = List.nth lab_match 0 in 
+  sub_tp' env seen a a' && sub_echoice env seen cs choice
+
+and sub_name_name env seen a a' =
+  if mem_seen env seen a a' then true
+  else sub_tp' env ((a,a')::seen) (A.expd_tp env a) (A.expd_tp env a');;
+
+let subtp env tp tp' = sub_tp' env [] tp tp';;
+
+
+(*
+  Sub-Synchronizing Session Types
+  Purely linear types are always sub-synchronizing
+*)
+let rec ssync env seen tp c ext is_shared =
+  if !F.verbosity >= 3
+  then print_string ("checking ssync: \n" ^ PP.pp_tp env tp ^ "\n" ^ PP.pp_tp env c ^ "\n") ;
+  match tp with
+      A.Plus(choice) -> ssync_choices env seen choice c ext is_shared
+    | A.With(choice) -> ssync_choices env seen choice c ext is_shared
+    | A.Tensor(_a,b,_m) -> ssync env seen b c ext is_shared
+    | A.Lolli(_a,b,_m) -> ssync env seen b c ext is_shared
+     (* Ask Ankush *)
+    | A.One -> if is_shared then error ext ("type not sub-synchronizing") else ()
+    | A.PayPot(_pot,a) -> ssync env seen a c ext is_shared
+    | A.GetPot(_pot,a) -> ssync env seen a c ext is_shared
+    | A.TpName(v) ->
+        begin
+          try
+            let seen' = List.exists (fun x -> subtp env tp (A.TpName(x))) seen in
+            if seen'
+            then ()
+            else ssync env (v::seen) (A.expd_tp env v) c ext is_shared
+          with
+          
+            | A.UndeclaredTp -> error ext ("type " ^ v ^ " undeclared")
+        end
+    | A.Up(a) -> ssync env seen a c ext true
+    | A.Down(a) -> ssync env seen a c ext false
+    | A.FArrow(_t,a) -> ssync env seen a c ext is_shared
+    | A.FProduct(_t,a) -> ssync env seen a c ext is_shared
+
+and ssync_choices env seen cs c ext is_shared = match cs with
+    (_l,a)::as' -> ssync env seen a c ext is_shared ; ssync_choices env seen as' c ext is_shared
+  | [] -> ();;
+
+let ssync_tp env tp ext = ssync env [] tp tp ext false;;
 
 (*************************************)
 (* Type checking process expressions *)
@@ -396,7 +504,8 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
           then
             begin
               let t = find_stp c delta ext in
-              if eqtp env st t
+              (* "subtype is sufficient with subsync types" *)
+              if subtp env t st
               then match_ctx env sig_ctx' ctx' delta sig_len len ext
               else error ext ("shared type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
@@ -404,7 +513,8 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
           else
             begin
               let t = find_ltp c delta ext in
-              if eqtp env st t
+              (* "subtype is sufficient with subsync types" *)
+              if subtp env t st
               then match_ctx env sig_ctx' ctx' (remove_tp c delta) sig_len len ext
               else error ext ("linear type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
@@ -795,9 +905,10 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             then E.error_unknown_var_ctx (y) (exp.A.st_data)
             else
               let a = find_stp y delta (exp.A.st_data) in
-              if eqtp env a c
+              (* "subtype is sufficient with subsync types" *)
+              if subtp env a c
               then ()
-              else error (exp.A.st_data) ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
+              else error (exp.A.st_data) ("left type " ^ PP.pp_tp_compact env a ^ " not subtype of right type " ^
               PP.pp_tp_compact env c)
           end
         else
@@ -811,7 +922,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             then E.error_mode_mismatch (y, ty) (exp.A.st_data)
             else if not (eq pot zero)
             then error (exp.A.st_data) ("unconsumed potential: " ^ pp_uneq pot zero)
-            else if eqtp env a c
+            (* "subtype is sufficient with subsync types" *)
+            else if subtp env a c
             then ()
             else error (exp.A.st_data) ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
                        PP.pp_tp_compact env c)
@@ -856,7 +968,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               then E.error_unknown_var_right (x) (exp.A.st_data)
               else if not (eq_mode x z)
               then E.error_mode_mismatch (x, z) (exp.A.st_data)
-              else if not (eqtp env a' c)
+              (* "subtype is sufficient with subsync types" *)
+              else if not (subtp env a' c)
               then error (exp.A.st_data) ("type mismatch on right, expected: " ^ PP.pp_tp_compact env a' ^
                               ", found: " ^ PP.pp_tp_compact env c)
               else
@@ -973,7 +1086,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                       let (_sw,_w,mw) = w in
                       if not (eqmode m mw)
                       then error (exp.A.st_data) ("mode mismatch, expected at tensor: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
-                      else if not (eqtp env a a')
+                      (* "subtype is sufficient with subsync types" *)
+                      else if not (subtp env a' a)
                       then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan w ^
                                       ", expected: " ^ PP.pp_tp_compact env a ^
                                       ", found: " ^ PP.pp_tp_compact env a')
@@ -993,7 +1107,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                     let (_sw,_w,mw) = w in
                     if not (eqmode m mw)
                     then error (exp.A.st_data) ("mode mismatch, expected at lolli: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
-                    else if not (eqtp env a a')
+                    (* "subtype is sufficient with subsync types" *)
+                    else if not (subtp env a' a)
                     then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
                                     ", found: " ^ PP.pp_tp_compact env a')
@@ -1026,7 +1141,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                       let (_sw,_w,mw) = w in
                       if not (eqmode m mw)
                       then error (exp.A.st_data) ("mode mismatch, expected at tensor: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
-                      else if not (eqtp env a a')
+                      (* "subtype is sufficient with subsync types" *)
+                      else if not (subtp env a' a)
                       then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan w ^
                                       ", expected: " ^ PP.pp_tp_compact env a ^
                                       ", found: " ^ PP.pp_tp_compact env a')
@@ -1046,7 +1162,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                     let (_sw,_w,mw) = w in
                     if not (eqmode m mw)
                     then error (exp.A.st_data) ("mode mismatch, expected at lolli: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
-                    else if not (eqtp env a a')
+                    (* "subtype is sufficient with subsync types" *)
+                    else if not (subtp env a' a)
                     then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
                                     ", found: " ^ PP.pp_tp_compact env a')
@@ -1127,7 +1244,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
           else if not (mode_lin x)
           then E.error_mode_shared_comm (x) (exp.A.st_data)
           else
-          if not (eqtp env c A.One)
+          (* "subtype is sufficient with subsync types" *)
+          if not (subtp env c A.One)
           then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan x ^ ", expected: 1, " ^
                           "found: " ^ PP.pp_tp_compact env c)
           else ()
@@ -1138,7 +1256,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         then E.error_unknown_var (x) (exp.A.st_data)
         else
           let a = find_ltp x delta (exp.A.st_data) in
-          if not (eqtp env a A.One)
+          (* "subtype is sufficient with subsync types" *)
+          if not (subtp env a A.One)
           then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan x ^ ", expected: 1, " ^
                           " found: " ^ PP.pp_tp_compact env a)
           else check_exp' trace env (remove_tp x delta) pot p zc ext mode

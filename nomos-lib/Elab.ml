@@ -76,14 +76,14 @@ let rec elab_tps env dcls ext = match dcls with
       let () = if TC.contractive a then ()
                else error ext' ("type " ^ PP.pp_tp env a ^ " not contractive") in
       (*let () = TC.valid env TC.Zero a ext in*)
-      let () = TC.esync_tp env (A.TpName(v)) ext' in
+      let () = TC.ssync_tp env (A.TpName(v)) ext' in
       dcl::(elab_tps env dcls' ext)
   | ((A.ExpDecDef(_f,_m,(delta,pot,(x,a)),_), ext') as dcl)::dcls' ->
       (* do not print process declaration so they are printed close to their use *)
       let () = if dups ((x,a)::delta.linear) then error ext' ("duplicate variable in process declaration") else () in
       (*let () = valid_delta env delta ext in*)
       (*let () = TC.valid env TC.Zero a ext in*)
-      let () = TC.esync_tp env a ext' in
+      let () = TC.ssync_tp env a ext' in
       let () = check_nonneg pot ext' in
       dcl::(elab_tps env dcls' ext)
   | dcl::dcls' -> dcl::(elab_tps env dcls' ext);;
