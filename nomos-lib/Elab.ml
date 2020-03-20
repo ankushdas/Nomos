@@ -73,9 +73,6 @@ let check_nonneg pot ext =
 let rec elab_tps env dcls ext = match dcls with
     [] -> []
   | ((A.TpDef(v,a), ext') as dcl)::dcls' ->
-      let () = if !F.verbosity >= 1
-               then print_string (postponed (A.TpDef(v,a)) ^ PP.pp_decl env (A.TpDef(v,a)) ^ "\n")
-               else () in
       let () = if TC.contractive a then ()
                else error ext' ("type " ^ PP.pp_tp env a ^ " not contractive") in
       (*let () = TC.valid env TC.Zero a ext in*)
@@ -107,9 +104,6 @@ let rec elab_exps' env dcls ext = match dcls with
   | ((A.TpDef _), _)::_ -> (* do not print type definition again *)
       elab_exps env dcls ext
   | (dcl, _)::_ ->
-      if !F.verbosity >= 1
-      then print_string (postponed dcl ^ PP.pp_decl env dcl ^ "\n")
-      else () ;
       elab_exps env dcls ext
 and elab_exps env dcls ext = match dcls with
     [] -> []

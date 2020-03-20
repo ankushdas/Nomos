@@ -322,6 +322,10 @@ and pp_fexp env i e =
         let a = pp_fexp env i e1.A.func_structure in
         let b = pp_fexp env i e2.A.func_structure in
         a ^ pp_comp_opr opr ^ b
+    | A.EqAddr(e1, e2) ->
+        let a = pp_fexp env i e1.A.func_structure in
+        let b = pp_fexp env i e2.A.func_structure in
+        a ^ " == " ^ b
     | A.RelOp(e1, opr, e2) ->
         let a = pp_fexp env i e1.A.func_structure in
         let b = pp_fexp env i e2.A.func_structure in

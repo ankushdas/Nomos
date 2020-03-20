@@ -98,6 +98,7 @@ and remove_stars_fexp fexp = match fexp with
   | A.Lambda(xs,e) -> A.Lambda(xs, remove_stars_faug e)
   | A.Op(e1,op,e2) -> A.Op(remove_stars_faug e1, op, remove_stars_faug e2)
   | A.CompOp(e1,cop,e2) -> A.CompOp(remove_stars_faug e1, cop, remove_stars_faug e2)
+  | A.EqAddr(e1,e2) -> A.EqAddr(remove_stars_faug e1, remove_stars_faug e2)
   | A.RelOp(e1,rop,e2) -> A.RelOp(remove_stars_faug e1, rop, remove_stars_faug e2)
   | A.Tick(pot,e) -> A.Tick(remove_star pot, remove_stars_faug e)
   | A.GetTxnNum -> A.GetTxnNum
@@ -216,6 +217,7 @@ and substitute_fexp fexp psols msols = match fexp with
   | A.Lambda(xs,e) -> A.Lambda(xs, substitute_faug e psols msols)
   | A.Op(e1,op,e2) -> A.Op(substitute_faug e1 psols msols, op, substitute_faug e2 psols msols)
   | A.CompOp(e1,cop,e2) -> A.CompOp(substitute_faug e1 psols msols, cop, substitute_faug e2 psols msols)
+  | A.EqAddr(e1,e2) -> A.EqAddr(substitute_faug e1 psols msols, substitute_faug e2 psols msols)
   | A.RelOp(e1,rop,e2) -> A.RelOp(substitute_faug e1 psols msols, rop, substitute_faug e2 psols msols)
   | A.Tick(pot,e) -> A.Tick(substitute_pot pot psols, substitute_faug e psols msols)
   | A.GetTxnNum -> A.GetTxnNum
@@ -307,6 +309,7 @@ and removeU_fexp fexp = match fexp with
   | A.Lambda(xs,e) -> A.Lambda(xs, removeU_faug e)
   | A.Op(e1,op,e2) -> A.Op(removeU_faug e1, op, removeU_faug e2)
   | A.CompOp(e1,cop,e2) -> A.CompOp(removeU_faug e1, cop, removeU_faug e2)
+  | A.EqAddr(e1,e2) -> A.EqAddr(removeU_faug e1, removeU_faug e2)
   | A.RelOp(e1,rop,e2) -> A.RelOp(removeU_faug e1, rop, removeU_faug e2)
   | A.Tick(pot,e) -> A.Tick(pot, removeU_faug e)
   | A.GetTxnNum -> A.GetTxnNum

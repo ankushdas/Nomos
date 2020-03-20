@@ -214,12 +214,13 @@ op :
 
 
 compOp :
-   | x = expr; EQUALS; y = expr         { Ast.CompOp(x, Eq, y) } 
-   | x = expr; NEQ; y = expr            { Ast.CompOp(x, Neq, y) } 
-   | x = expr; GREATER; y = expr        { Ast.CompOp(x, Gt, y) } 
-   | x = expr; LESS; y = expr           { Ast.CompOp(x, Lt, y) } 
-   | x = expr; GREATEREQ; y = expr      { Ast.CompOp(x, Geq, y) } 
-   | x = expr; LESSEQ; y = expr         { Ast.CompOp(x, Leq, y) } 
+   | x = expr; EQUALS; y = expr             { Ast.CompOp(x, Eq, y) }
+   | x = expr; EQUALS; EQUALS; y = expr     { Ast.EqAddr(x, y)}
+   | x = expr; NEQ; y = expr                { Ast.CompOp(x, Neq, y) } 
+   | x = expr; GREATER; y = expr            { Ast.CompOp(x, Gt, y) } 
+   | x = expr; LESS; y = expr               { Ast.CompOp(x, Lt, y) } 
+   | x = expr; GREATEREQ; y = expr          { Ast.CompOp(x, Geq, y) } 
+   | x = expr; LESSEQ; y = expr             { Ast.CompOp(x, Leq, y) } 
    ;
 
 

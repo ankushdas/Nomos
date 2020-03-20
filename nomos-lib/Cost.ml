@@ -51,6 +51,7 @@ and cost_tick fexp = match fexp with
   | A.Lambda(xs,e) -> A.Lambda(xs, cost_tick_aug e)
   | A.Op(e1,op,e2) -> A.Op(cost_tick_aug e1, op, cost_tick_aug e2)
   | A.CompOp(e1,cop,e2) -> A.CompOp(cost_tick_aug e1, cop, cost_tick_aug e2)
+  | A.EqAddr(e1,e2) -> A.EqAddr(cost_tick_aug e1, cost_tick_aug e2)
   | A.RelOp(e1,rop,e2) -> A.RelOp(cost_tick_aug e1, rop, cost_tick_aug e2)
   | A.Tick(pot,e) -> A.Tick(pot, cost_tick_aug e)
   | A.GetTxnNum -> A.GetTxnNum

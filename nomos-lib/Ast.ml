@@ -108,6 +108,7 @@ and 'a func_expr =
   | Lambda of arglist * 'a func_aug_expr
   | Op of 'a func_aug_expr * arith_operator * 'a func_aug_expr
   | CompOp of 'a func_aug_expr * comp_operator * 'a func_aug_expr
+  | EqAddr of 'a func_aug_expr * 'a func_aug_expr
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
   | Tick of potential * 'a func_aug_expr
   (* Nomos specific *)
@@ -310,6 +311,7 @@ and fsubst c' c fexp = match fexp with
   | Lambda(xs,e) -> Lambda(xs, fsubst_aug c' c e)
   | Op(e1,op,e2) -> Op(fsubst_aug c' c e1, op, fsubst_aug c' c e2)
   | CompOp(e1,cop,e2) -> CompOp(fsubst_aug c' c e1, cop, fsubst_aug c' c e2)
+  | EqAddr(e1,e2) -> EqAddr(fsubst_aug c' c e1, fsubst_aug c' c e2)
   | RelOp(e1,rop,e2) -> RelOp(fsubst_aug c' c e1, rop, fsubst_aug c' c e2)
   | Tick(pot,e) -> Tick(pot, fsubst_aug c' c e)
   | GetTxnNum -> GetTxnNum
@@ -338,6 +340,7 @@ let rec substv v' v fexp = match fexp with
   | Lambda(xs,e) -> Lambda(xs, substv_aug v' v e)
   | Op(e1,op,e2) -> Op(substv_aug v' v e1, op, substv_aug v' v e2)
   | CompOp(e1,cop,e2) -> CompOp(substv_aug v' v e1, cop, substv_aug v' v e2)
+  | EqAddr(e1,e2) -> EqAddr(substv_aug v' v e1, substv_aug v' v e2)
   | RelOp(e1,rop,e2) -> RelOp(substv_aug v' v e1, rop, substv_aug v' v e2)
   | Tick(pot,e) -> Tick(pot, substv_aug v' v e)
   | GetTxnNum -> GetTxnNum

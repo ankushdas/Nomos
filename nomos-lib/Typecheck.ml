@@ -577,6 +577,14 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
           let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2 A.Integer ext mode isSend in
           (delta2, pot2)
       end
+  | A.EqAddr(e1, e2) ->
+      begin
+        if not(eq_ftp tp A.Boolean) then error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ", expected boolean, found: " ^ (PP.pp_ftp_simple tp))
+        else
+          let (delta1, pot1) = check_fexp_simple' trace env delta pot e1 A.Address ext mode isSend in
+          let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2 A.Address ext mode isSend in
+          (delta2, pot2)
+      end
   | A.RelOp(e1, _, e2) ->
       begin
         if not(eq_ftp tp A.Boolean) then error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ", expected boolean, found: " ^ (PP.pp_ftp_simple tp))
@@ -704,6 +712,12 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
       begin
         let (delta1, pot1) = check_fexp_simple' trace env delta pot e1 A.Integer ext mode isSend in
         let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2 A.Integer ext mode isSend in
+        (delta2, pot2, A.Boolean)
+      end
+  | A.EqAddr(e1, e2) ->
+      begin
+        let (delta1, pot1) = check_fexp_simple' trace env delta pot e1 A.Address ext mode isSend in
+        let (delta2, pot2) = check_fexp_simple' trace env delta1 pot1 e2 A.Address ext mode isSend in
         (delta2, pot2, A.Boolean)
       end
   | A.RelOp(e1, _, e2) ->

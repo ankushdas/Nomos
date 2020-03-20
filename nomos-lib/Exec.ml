@@ -164,6 +164,14 @@ let rec eval fexp = match fexp.A.func_structure with
             A.IntV i1, A.IntV i2 -> (A.BoolV (compare_op cop i1 i2), R.plus c1 c2)
           | _, _ -> raise RuntimeError
       end
+  | A.EqAddr(e1,e2) ->
+      begin
+        let (v1, c1) = eval e1 in
+        let (v2, c2) = eval e2 in
+        match v1, v2 with
+            A.AddrV a1, A.AddrV a2 -> (A.BoolV (a1 = a2), R.plus c1 c2)
+          | _, _ -> raise RuntimeError
+      end
   | A.RelOp(e1,rop,e2) ->
       begin
         let (v1, c1) = eval e1 in

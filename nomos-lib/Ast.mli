@@ -57,6 +57,7 @@ and 'a func_expr =
   | Lambda of arglist * 'a func_aug_expr
   | Op of 'a func_aug_expr * arith_operator * 'a func_aug_expr
   | CompOp of 'a func_aug_expr * comp_operator * 'a func_aug_expr
+  | EqAddr of 'a func_aug_expr * 'a func_aug_expr
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
   | Tick of potential * 'a func_aug_expr
   | GetTxnNum
