@@ -1,0 +1,161 @@
+type money =  <{*}| &{value : int ^ |{*}> money,
+                      plus : money -o |{*}> money,
+                      minus : int -> +{sufficient : money * |{*}> money,
+                                       insufficient : |{*}> money},
+                      destroy : |{*}> 1}
+
+proc asset money_proc : (n : int) |{*}- ($m : money) =
+{
+  get $m {*} ;
+  case $m (
+    value => send $m n ;
+             pay $m {*} ;
+             work {*} ;
+             $m <- money_proc <- n
+  | plus => $addm <- recv $m ;
+            pay $m {*} ;
+            pay $addm {*} ;
+            $addm.value ;
+            addn = recv $addm ;
+            get $addm {*} ;
+            pay $addm {*} ;
+            $addm.destroy ;
+            get $addm {*} ;
+            wait $addm ;
+            let newn = addn + n ;
+            work {*} ;
+            $m <- money_proc <- newn
+  | minus => subn = recv $m ;
+             if n > subn
+             then
+                $m.sufficient ;
+                $subm <- money_proc <- subn ;
+                send $m $subm ;
+                pay $m {*} ;
+                let newn = n - subn ;
+                work {*} ;
+                $m <- money_proc <- newn
+             else
+                $m.insufficient ;
+                pay $m {*} ;
+                work {*} ;
+                $m <- money_proc <- n
+  | destroy => pay $m {*} ;
+               work {*} ;
+               close $m
+  )
+}
+
+proc contract wallet_proc : ($m : money) |{*}- (#sw : wallet) =
+{
+  $lw <- accept #sw ;
+  get $lw {*} ;
+  pay $m {*} ;
+  case $lw (
+    add => $am <- recv $lw ;
+           pay $lw {*} ;
+           #sw <- detach $lw ;
+           $m.plus ;
+           send $m $am ;
+           get $m {*} ;
+           #sw <- wallet_proc <- $m
+  | sub => to_sub = recv $lw ;
+           $m.minus ;
+           send $m to_sub ;
+           case $m (
+             sufficient => $lw.sufficient ;
+                           $subm <- recv $m ;
+                           send $lw $subm ;
+                           get $m {*} ;
+                           pay $lw {*} ;
+                           #sw <- detach $lw ;
+                           #sw <- wallet_proc <- $m
+           | insufficient => $lw.insufficient ;
+                             get $m {*} ;
+                             pay $lw {*} ;
+                             #sw <- detach $lw ;
+                             #sw <- wallet_proc <- $m
+           )
+  | val => $m.value ;
+           v = recv $m ;
+           get $m {*} ;
+           send $lw v ;
+           pay $lw {*} ;
+           #sw <- detach $lw ;
+           #sw <- wallet_proc <- $m
+  )
+}
+
+proc transaction create_wallet : (n : int) |{*}- ($d : 1) =
+{
+  $m <- money_proc <- n ;
+  #sw <- wallet_proc <- $m ;
+  close $d
+}
+
+type wallet = /\ <{*}| &{add : money -o |{*}> \/ wallet,
+                         sub : int -> +{sufficient : money * |{*}> \/ wallet,
+                                        insufficient : |{*}> \/ wallet},
+                         val : int ^ |{*}> \/ wallet}
+
+proc transaction transfer : (#sender : wallet), (#receiver : wallet), (amt : int) |{*}- ($d : 1) =
+{
+  $ls <- acquire #sender ;
+  pay $ls {*} ;
+  $ls.sub ;
+  send $ls amt ;
+  case $ls (
+    sufficient => $subm <- recv $ls ;
+                  get $ls {*} ;
+                  #sender <- release $ls ;
+                  $lr <- acquire #receiver ;
+                  pay $lr {*} ;
+                  $lr.add ;
+                  send $lr $subm ;
+                  get $lr {*} ;
+                  #receiver <- release $lr ;
+                  work {*} ;
+                  close $d
+  | insufficient => get $ls {*} ;
+                    #sender <- release $ls ;
+                    work {*} ;
+                    close $d
+  )
+}
+
+(*
+proc main =
+{
+  bs = read_blockchain_state() ;
+  while ()
+  {
+    t = read_transaction() ;
+    bs = exec (bs + t)
+  }
+  write_blockchain_state() ;
+}
+*)
+(*
+ * start with an empty configuration
+ * write the empty configuration to a file -> call this file "blockchain0.state"
+ * read "blockchain0.state" and create a (currently empty) configuration out of it
+ * create a file with a list of transactions -> for wallet contract, call this "wallet.trans"
+ * a transaction is just a function call, i.e. 0: create_wallet(1000)
+ * this should create a contract process: (#ch1 <- wallet_proc <- ...)
+ * now, write this configuration to "blockchain1.state"
+ * wallet.trans -> 1: create_wallet(100)
+ * this creates a contract process : (#ch2 <- wallet_proc <- ...)
+ * wallet.trans -> 2: transfer(#ch1, #ch2, 20)
+ * ./run.exe -input blockchain0.state -trans wallet0.trans -output blockchain1.state -src test-wallet.nom
+ * ./run.exe -input blockchain1.state -trans wallet1.trans -output blockchain2.state -src test-wallet.nom
+*)
+
+(*
+proc transaction main : . |- ($d : 1) =
+{
+  #sw <- create_wallet <- 1000 ;
+  close $d
+}
+
+exec main
+*)
