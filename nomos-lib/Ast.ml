@@ -210,7 +210,7 @@ type 'a msg =
 (* Environments *)
 
 exception AstImpossible
-exception UndeclaredTp
+exception UndeclaredTp;;
 
 let rec lookup_tp decls v = match decls with
     (TpDef(v',a), _)::decls' ->

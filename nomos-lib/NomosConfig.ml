@@ -80,11 +80,12 @@ let load file =
   let () = I.reset () in                      (* resets the LP solver *)
   *)
   let t0 = Unix.gettimeofday () in
-  let inx = C.In_channel.read_all file in       (* read file *)
+  let inx = C.In_channel.read_all file in     (* read file *)
   let lexbuf = Lexing.from_string inx in      (* lex file *)
   let _ = init lexbuf file in
-  let (decls, ext) = parse lexbuf in                 (* parse file *)
-  let () = EL.check_redecl [] decls in        (* may raise ErrorMsg.Error *)
+  let (decls, ext) = parse lexbuf in          (* parse file *)
+  let () = EL.check_redecl decls in           (* may raise ErrorMsg.Error *)
+  let () = EL.check_valid decls decls in
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
   let decls' = EL.commit_channels decls decls in

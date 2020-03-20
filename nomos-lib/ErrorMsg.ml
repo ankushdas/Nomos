@@ -46,18 +46,3 @@ let warn cat ext note = pmsg (err_string cat ^ " warning") ext note;;
 exception Error
 
 let error cat ext msg = ( error_msg cat ext msg ; raise Error );;
-
-
-let pmsg1 str note =
-  List.iter print_string [":"; str; ":"; note; "\n"];;
-
-let error_msg1 cat note =
-    ( anyErrors := true
-    ; if !F.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
-      then pmsg1 (err_string cat ^ " error") note
-      else () );;
-
-let warn1 cat note = pmsg1 (err_string cat ^ " warning") note;;
-
-
-let error1 cat msg = ( error_msg1 cat msg ; raise Error );;

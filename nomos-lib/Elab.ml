@@ -23,7 +23,6 @@ module I = Infer
 module F = NomosFlags
 
 let error = ErrorMsg.error ErrorMsg.Type;;
-let error1 = ErrorMsg.error1 ErrorMsg.Type;;
 
 let postponed dcl = match dcl with
     A.Exec _ -> "% "
@@ -178,17 +177,62 @@ let elab_decls env dcls ext =
  let is_tpdef env a = match A.lookup_tp env a with None -> false | Some _ -> true;;
  let is_expdecdef env f = match A.lookup_expdef env f with None -> false | Some _ -> true;;
 
-let rec check_redecl env dcls = match dcls with
+let rec check_redecl dcls = match dcls with
     [] -> ()
   | (A.TpDef(v,_), ext)::dcls' ->
-      if is_tpdef env v || is_tpdef dcls' v
+      if is_tpdef dcls' v
       then error ext ("type name " ^ v ^ " defined more than once")
-      else check_redecl env dcls'
-  | (A.ExpDecDef(f,_,_,_), ext')::dcls' ->
-      if is_expdecdef env f || is_expdecdef dcls' f
-      then error ext' ("process name " ^ f ^ " defined more than once")
-      else check_redecl env dcls'
-  | ((A.Exec _), _)::dcls' -> check_redecl env dcls';;
+      else check_redecl dcls'
+  | (A.ExpDecDef(f,_,_,_), ext)::dcls' ->
+      if is_expdecdef dcls' f
+      then error ext ("process name " ^ f ^ " defined more than once")
+      else check_redecl dcls'
+  | (A.Exec(_), _)::dcls' -> check_redecl dcls';;
+
+let rec check_declared env ext a = match a with
+    A.Plus(choices) | A.With(choices) -> check_declared_choices env ext choices
+  | A.Tensor(a1,a2,_m) | A.Lolli(a1,a2,_m) ->
+      let () = check_declared env ext a1 in
+      check_declared env ext a2
+  | A.One -> ()
+  | A.PayPot(_pot,a') | A.GetPot(_pot,a') -> check_declared env ext a'
+  | A.TpName(v) ->
+      if is_tpdef env v
+      then ()
+      else error ext ("type name " ^ v ^ " undeclared")
+  | A.Up(a') | A.Down(a') -> check_declared env ext a'
+  | A.FArrow(_t,a') | A.FProduct(_t,a') -> check_declared env ext a'
+
+and check_declared_choices env ext cs = match cs with
+    [] -> ()
+  | (l,a)::cs' ->
+      let () = check_declared env ext a in
+      check_declared_choices env ext cs';;
+
+let rec check_declared_list env ext args = match args with
+    A.Functional _::args' -> check_declared_list env ext args'
+  | A.STyped(_c,a)::args' ->
+      let () = check_declared env ext a in
+      check_declared_list env ext args'
+  | [] -> ();;
+
+let check_declared_ctx env ext ctx =
+  let {A.shared = _s ; A.linear = _l ; A.ordered = ord} = ctx in
+  check_declared_list env ext ord;;
+
+let rec check_valid env dcls = match dcls with
+    [] -> ()
+  | (A.TpDef(_v,a), ext)::dcls' ->
+      let () = check_declared env ext a in
+      check_valid env dcls'
+  | (A.ExpDecDef(_f,_m,(ctx,_pot,(_x,a)),_p), ext)::dcls' ->
+      let () = check_declared_ctx env ext ctx in
+      let () = check_declared env ext a in
+      check_valid env dcls'
+  | (A.Exec(f), ext)::dcls' ->
+      if is_expdecdef env f
+      then check_valid env dcls'
+      else error ext ("process " ^ f ^ " undeclared");;
 
 (* separates channels into shared and linear *)
 
@@ -202,8 +246,7 @@ let rec commit env ctx octx = match ctx with
           then {A.shared = (c,t)::s ; A.linear = l ; A.ordered = o}
           else {A.shared = s ; A.linear = (c,t)::l ; A.ordered = o}
         with A.UndeclaredTp ->
-        let _ = Printf.printf "hi!" in
-        error1 ("type " ^ PP.pp_tp_compact env t ^ " undeclared");;
+          error None ("type " ^ PP.pp_tp_compact env t ^ " undeclared");;
 
 let rec commit_channels env dcls = match dcls with
     [] -> []

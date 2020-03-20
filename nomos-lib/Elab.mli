@@ -6,7 +6,6 @@ module E = TpError
 module I = Infer
 module F = NomosFlags
 val error : ((int * int) * (int * int) * string) option -> string -> 'a
-val error1 : string -> 'a
 val postponed : A.decl -> string
 val pp_costs : unit -> string
 val dups : ('a * 'b) list -> bool
@@ -29,6 +28,8 @@ val elab_decls :
 val is_tpdef : (A.decl * 'a) list -> A.tpname -> bool
 val is_expdecdef : (A.decl * 'a) list -> A.expname -> bool
 val check_redecl :
+  (A.decl * ((int * int) * (int * int) * string) option) list -> unit
+val check_valid :
   (A.decl * 'a) list ->
   (A.decl * ((int * int) * (int * int) * string) option) list -> unit
 val commit :

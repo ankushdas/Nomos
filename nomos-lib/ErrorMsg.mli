@@ -13,7 +13,3 @@ val warn :
 exception Error
 val error :
   error_cat -> ((int * int) * (int * int) * string) option -> string -> 'a
-val pmsg1 : string -> string -> unit
-val error_msg1 : error_cat -> string -> unit
-val warn1 : error_cat -> string -> unit
-val error1 : error_cat -> string -> 'a
