@@ -161,6 +161,10 @@ let nomos_command =
           ~doc:"work-cost-model: none, recv, send, recvsend, free"
         and syntax_flag = flag "-s" (optional string)
           ~doc:"syntax: implicit, explicit"
+        and config_in_flag = flag "-i" (optional string)
+          ~doc:"path initial configuration"
+        and config_out_flag = flag "-o" (optional string)
+          ~doc:"path output configuration"
         and file = anon("filename" %: nomos_file) in
         fun () ->
           let vlevel =
@@ -185,6 +189,8 @@ let nomos_command =
             end
           in
           let () = F.reset () in
+          let () = F.config_in := config_in_flag in
+          let () = F.config_out := config_out_flag in
           let () = List.iter (process_option cmd_ext) [vlevel; work_cm; syntax] in
           let env = try load file
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1

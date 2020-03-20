@@ -3,6 +3,7 @@ module A = Ast
 module PP = Pprint
 module C = Core
 module M = C.Map
+module F = NomosFlags
 
 exception InsufficientPotential (* not enough potential to work or pay *)
 
@@ -1172,11 +1173,6 @@ and iterate_and_one_step env sems config stepped =
 
 let error = ErrorMsg.error_msg ErrorMsg.Runtime None;;
 
-let create_config sem =
-  let config = (M.empty (module Chan), M.empty (module Chan), M.empty (module Chan)) in
-  let config = add_sem sem config in
-  config;;
-
 type state =
   { energy : int;
     gamma : A.chan list;
@@ -1224,7 +1220,7 @@ let check_and_add (top : Chan.t) (sem : sem) (st : state): state option =
       match m with
           A.Transaction ->
             if eq_name c top
-            then Some st
+            then Some { st with config = remove_sem c st.config }
             else (error "transaction message not for main transaction";
                   raise RuntimeError)
         | A.Pure -> (
@@ -1259,11 +1255,25 @@ let verify_final_configuration top config =
     if changed then st_fixpoint st' sems' else (st', sems') in
   let sems0 = get_sems config in
   let st0 = { energy = 0; delta = []; gamma = []; config } in
-  let (_st_final, sems_final) = st_fixpoint st0 sems0 in
+  let (st_final, sems_final) = st_fixpoint st0 sems0 in
+  let config' = st_final.config in
   if List.length sems_final > 0
     then (error "could not add some sems to final configuration";
           raise RuntimeError)
-    else config
+    else config'
+
+(* transaction num * channel num * configuration *)
+type full_configuration = int * int * configuration
+[@@deriving sexp]
+
+let get_initial_config () =
+  match !F.config_in with
+  | None -> (M.empty (module Chan), M.empty (module Chan), M.empty (module Chan))
+  | Some(path) ->
+      let (tx, ch, conf) = Sexplib__Sexp.load_sexp_conv_exn path full_configuration_of_sexp in
+      let () = txnNum := tx in
+      let () = chan_num := ch in
+      conf
 
 (* exec env C = C'
  * C is a process configuration
@@ -1271,25 +1281,34 @@ let verify_final_configuration top config =
  * C' is final, poised configuration
  *)
 let exec env f =
+  let initial_config = get_initial_config () in
   let m = chan_mode env f in
   let c = cfresh m in
   let pot = try_evaluate (get_pot env f) in
   let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,[])) in
-  try verify_final_configuration c (step env (create_config sem))
-  with
-    | InsufficientPotential -> error "insufficient potential during execution"
+  let config = add_sem sem initial_config in
+  let final_config =
+    try verify_final_configuration c (step env config)
+    with
+      | InsufficientPotential -> error "insufficient potential during execution"
+                                 ; raise RuntimeError
+      | UnconsumedPotential -> error "unconsumed potential during execution"
                                ; raise RuntimeError
-    | UnconsumedPotential -> error "unconsumed potential during execution"
+      | PotentialMismatch -> error "potential mismatch during execution"
                              ; raise RuntimeError
-    | PotentialMismatch -> error "potential mismatch during execution"
-                           ; raise RuntimeError
-    | MissingBranch -> error "missing branch during execution"
-                       ; raise RuntimeError
-    | ProgressError -> error "final configuration inconsistent"
-                       ; raise RuntimeError
-    | ChannelMismatch -> error "channel name mismatch found at runtime"
+      | MissingBranch -> error "missing branch during execution"
                          ; raise RuntimeError
-    | UndefinedProcess -> error "undefined process found at runtime"
-                          ; raise RuntimeError
-    | StarPotential -> error "potential * found at runtime"
-                       ; raise RuntimeError
+      | ProgressError -> error "final configuration inconsistent"
+                         ; raise RuntimeError
+      | ChannelMismatch -> error "channel name mismatch found at runtime"
+                           ; raise RuntimeError
+      | UndefinedProcess -> error "undefined process found at runtime"
+                            ; raise RuntimeError
+      | StarPotential -> error "potential * found at runtime"
+                         ; raise RuntimeError
+      in
+  let () =
+    match !F.config_out with
+    | None -> ()
+    | Some(path) -> Sexplib__Sexp.save path (sexp_of_full_configuration (!txnNum + 1, !chan_num, final_config)) in
+  final_config
