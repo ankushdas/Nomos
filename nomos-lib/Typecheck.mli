@@ -17,6 +17,9 @@ val esync_choices :
 val esync_tp :
   (A.decl * 'a) list ->
   PP.A.stype -> ((int * int) * (int * int) * string) option -> unit
+val ssync_tp :
+  (A.decl * 'a) list ->
+  PP.A.stype -> ((int * int) * (int * int) * string) option -> unit
 val contractive : A.stype -> bool
 val zero : A.potential
 val eq : A.potential -> A.potential -> bool
