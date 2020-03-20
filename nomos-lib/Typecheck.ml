@@ -202,7 +202,7 @@ let rec mem_seen env seen a a' = match seen with
   | [] -> false;;
 
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
- let rec eq_tp' env seen a a' =
+let rec eq_tp' env seen a a' =
   if !F.verbosity >= 3
   then print_string ("comparing " ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
   else ()
@@ -305,27 +305,26 @@ and sub_tp env seen tp tp' = match tp, tp' with
 and sub_ichoice env seen cs cs' = match cs with
     [] -> true
   | (l,a)::choice -> 
-  let lab_match = List.find_all (fun (l', _) -> l = l') cs' in
-  if (List.length lab_match != 1)
-  then false
-  else let (l', a') = List.nth lab_match 0 in 
-  sub_tp' env seen a a' && sub_ichoice env seen choice cs'
+      let lab_match = List.find_all (fun (l', _) -> l = l') cs' in
+      if (List.length lab_match != 1)
+      then false
+      else let (l', a') = List.nth lab_match 0 in 
+      sub_tp' env seen a a' && sub_ichoice env seen choice cs'
 
 and sub_echoice env seen cs cs' = match cs' with
     [] -> true
   | (l',a')::choice -> 
-  let lab_match = List.find_all (fun (l, _) -> l = l') cs in
-  if (List.length lab_match != 1)
-  then false
-  else let (l, a) = List.nth lab_match 0 in 
-  sub_tp' env seen a a' && sub_echoice env seen cs choice
+      let lab_match = List.find_all (fun (l, _) -> l = l') cs in
+      if (List.length lab_match != 1)
+      then false
+      else let (l, a) = List.nth lab_match 0 in 
+      sub_tp' env seen a a' && sub_echoice env seen cs choice
 
 and sub_name_name env seen a a' =
   if mem_seen env seen a a' then true
   else sub_tp' env ((a,a')::seen) (A.expd_tp env a) (A.expd_tp env a');;
 
 let subtp env tp tp' = sub_tp' env [] tp tp';;
-
 
 (*
   Sub-Synchronizing Session Types
