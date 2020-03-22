@@ -30,9 +30,13 @@ module Chan :
       end
   end
 
-type map_chan_sem = sem Chan.Map.t;;
-type map_chan_chan = A.chan Chan.Map.t;;
-type configuration = map_chan_sem * map_chan_chan * map_chan_chan;;
+type map_chan_sem = sem Chan.Map.t
+type map_chan_chan = A.chan Chan.Map.t
+type configuration = map_chan_sem * map_chan_chan * map_chan_chan
+
+type full_configuration = int * int * configuration [@@deriving sexp]
+val empty_full_configuration : full_configuration
+
 
 val pp_sem : sem -> string
 
@@ -44,5 +48,8 @@ exception ProgressError
 
 val pp_maps : (A.chan * A.chan) list -> string
 
-val exec : (A.decl * 'a) list -> string -> configuration
-
+val exec :
+     (A.decl * 'a) list
+  -> full_configuration
+  -> (string * (A.ext A.arg list))
+  -> full_configuration

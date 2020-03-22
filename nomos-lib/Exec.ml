@@ -1266,49 +1266,38 @@ let verify_final_configuration top config =
 type full_configuration = int * int * configuration
 [@@deriving sexp]
 
-let get_initial_config () =
-  match !F.config_in with
-  | None -> (M.empty (module Chan), M.empty (module Chan), M.empty (module Chan))
-  | Some(path) ->
-      let (tx, ch, conf) = Sexplib__Sexp.load_sexp_conv_exn path full_configuration_of_sexp in
-      let () = txnNum := tx in
-      let () = chan_num := ch in
-      conf
+let empty_full_configuration =
+  (0, 0, (M.empty (module Chan), M.empty (module Chan), M.empty (module Chan)))
 
-(* exec env C = C'
- * C is a process configuration
+(* exec env C (f, args) = C'
  * env is the elaborated environment
+ * C is a full configuration
  * C' is final, poised configuration
  *)
-let exec env f =
-  let initial_config = get_initial_config () in
+let exec env (full_config : full_configuration) (f, args) =
+  let (tx, ch, initial_config) = full_config in
+  let () = txnNum := tx in
+  let () = chan_num := ch in
   let m = chan_mode env f in
   let c = cfresh m in
   let pot = try_evaluate (get_pot env f) in
-  let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,[])) in
+  let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
   let config = add_sem sem initial_config in
-  let final_config =
-    try verify_final_configuration c (step env config)
-    with
-      | InsufficientPotential -> error "insufficient potential during execution"
-                                 ; raise RuntimeError
-      | UnconsumedPotential -> error "unconsumed potential during execution"
+  try (!txnNum + 1, !chan_num, verify_final_configuration c (step env config))
+  with
+    | InsufficientPotential -> error "insufficient potential during execution"
                                ; raise RuntimeError
-      | PotentialMismatch -> error "potential mismatch during execution"
+    | UnconsumedPotential -> error "unconsumed potential during execution"
                              ; raise RuntimeError
-      | MissingBranch -> error "missing branch during execution"
-                         ; raise RuntimeError
-      | ProgressError -> error "final configuration inconsistent"
-                         ; raise RuntimeError
-      | ChannelMismatch -> error "channel name mismatch found at runtime"
+    | PotentialMismatch -> error "potential mismatch during execution"
                            ; raise RuntimeError
-      | UndefinedProcess -> error "undefined process found at runtime"
-                            ; raise RuntimeError
-      | StarPotential -> error "potential * found at runtime"
+    | MissingBranch -> error "missing branch during execution"
+                       ; raise RuntimeError
+    | ProgressError -> error "final configuration inconsistent"
+                       ; raise RuntimeError
+    | ChannelMismatch -> error "channel name mismatch found at runtime"
                          ; raise RuntimeError
-      in
-  let () =
-    match !F.config_out with
-    | None -> ()
-    | Some(path) -> Sexplib__Sexp.save path (sexp_of_full_configuration (!txnNum + 1, !chan_num, final_config)) in
-  final_config
+    | UndefinedProcess -> error "undefined process found at runtime"
+                          ; raise RuntimeError
+    | StarPotential -> error "potential * found at runtime"
+                       ; raise RuntimeError;;

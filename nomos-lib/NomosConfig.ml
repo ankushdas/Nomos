@@ -9,6 +9,7 @@ module I = Infer
 module TC = Typecheck
 module F = NomosFlags
 module E = Exec
+module T = Transaction
 open Lexer
 open Lexing
 
@@ -116,17 +117,25 @@ let load file =
 (* Executing Programs *)
 (**********************)
 
-let rec run env dcls =
+let get_initial_config () =
+  match !F.config_in with
+  | None -> E.empty_full_configuration
+  | Some(path) -> C.Sexp.load_sexp_conv_exn path E.full_configuration_of_sexp
+
+let rec run env config dcls txns =
   match dcls with
       (A.Exec(f), _ext)::dcls' ->
         let () = if !F.verbosity >= 1
                  then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
                  else () in
-        let _config = E.exec env f in
+        let config' = E.exec env config (f, []) in
         (* may raise Exec.RuntimeError *)
-        run env dcls'
-    | _dcl::dcls' -> run env dcls'
-    | [] -> ();;
+        run env config' dcls' txns
+    | _dcl::dcls' -> run env config dcls' txns
+    | [] -> (List.fold_left
+              (fun config txn -> E.exec env config txn)
+              config
+              txns);;
 
 
 let cmd_ext = None;;
@@ -158,13 +167,15 @@ let nomos_command =
         verbosity_flag = flag "-v" (optional int)
           ~doc:"verbosity 0: quiet, 1: default, 2: verbose, 3: debugging mode"
         and work_flag = flag "-w" (optional string)
-          ~doc:"work-cost-model: none, recv, send, recvsend, free"
+          ~doc:"work-cost-model none, recv, send, recvsend, free"
         and syntax_flag = flag "-s" (optional string)
-          ~doc:"syntax: implicit, explicit"
+          ~doc:"syntax implicit, explicit"
         and config_in_flag = flag "-i" (optional string)
           ~doc:"path initial configuration"
         and config_out_flag = flag "-o" (optional string)
           ~doc:"path output configuration"
+        and trans_path = flag "-t" (optional string)
+          ~doc:"path transactions"
         and file = anon("filename" %: nomos_file) in
         fun () ->
           let vlevel =
@@ -197,5 +208,15 @@ let nomos_command =
           in
           let () = print_string ("% compilation successful!\n") in
 
-          let () = run env env in
-          print_string ("% runtime successful!\n"));;
+          let config = get_initial_config () in
+          let txns: (string * (A.ext A.arg list)) list =
+            match trans_path with
+            | None -> []
+            | (Some path) -> [T.load_transaction path] in
+          let final_config = run env config env txns in
+
+          let () = print_string ("% runtime successful!\n") in
+
+          match !F.config_out with
+          | None -> ()
+          | Some(path) -> C.Sexp.save path (E.sexp_of_full_configuration final_config));;
