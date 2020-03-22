@@ -30,7 +30,6 @@ let rec esync env seen tp c ext is_shared =
     | A.With(choice) -> esync_choices env seen choice c ext is_shared
     | A.Tensor(_a,b,_m) -> esync env seen b c ext is_shared
     | A.Lolli(_a,b,_m) -> esync env seen b c ext is_shared
-     (* Ask Ankush *)
     | A.One -> if is_shared then error ext ("type not equi-synchronizing") else ()
     | A.PayPot(_pot,a) -> esync env seen a c ext is_shared
     | A.GetPot(_pot,a) -> esync env seen a c ext is_shared
@@ -41,11 +40,10 @@ let rec esync env seen tp c ext is_shared =
             then ()
             else esync env (v::seen) (A.expd_tp env v) c ext is_shared
           with
-          (* Ask Ankush *)
-            | A.UndeclaredTp -> error ext ("type " ^ v ^ " undeclared")
+            A.UndeclaredTp -> error ext ("type " ^ v ^ " undeclared")
         end
     | A.Up(a) -> esync env seen a c ext true
-    | A.Down(a) -> esync env seen a c ext false
+    | A.Down(a) -> esync env seen a c ext true
     | A.FArrow(_t,a) -> esync env seen a c ext is_shared
     | A.FProduct(_t,a) -> esync env seen a c ext is_shared
 
@@ -330,39 +328,50 @@ let subtp env tp tp' = sub_tp' env [] tp tp';;
   Sub-Synchronizing Session Types
   Purely linear types are always sub-synchronizing
 *)
-let rec ssync env seen tp c ext is_shared =
-  if !F.verbosity >= 3
-  then print_string ("checking ssync: \n" ^ PP.pp_tp env tp ^ "\n" ^ PP.pp_tp env c ^ "\n") ;
+let rec ssync env seen tp c_opt ext =
+  let _ = if !F.verbosity >= 3
+          then match c_opt with
+              None -> print_string ("checking ssync: " ^ PP.pp_tp env tp ^ "\n")
+            | Some c -> print_string ("checking ssync: " ^ PP.pp_tp env tp ^ " " ^ PP.pp_tp env c ^ "\n")
+          else ()
+  in
   match tp with
-      A.Plus(choice) -> ssync_choices env seen choice c ext is_shared
-    | A.With(choice) -> ssync_choices env seen choice c ext is_shared
-    | A.Tensor(_a,b,_m) -> ssync env seen b c ext is_shared
-    | A.Lolli(_a,b,_m) -> ssync env seen b c ext is_shared
-     (* Ask Ankush *)
-    | A.One -> if is_shared then error ext ("type not sub-synchronizing") else ()
-    | A.PayPot(_pot,a) -> ssync env seen a c ext is_shared
-    | A.GetPot(_pot,a) -> ssync env seen a c ext is_shared
+      A.Plus(choice) -> ssync_choices env seen choice c_opt ext
+    | A.With(choice) -> ssync_choices env seen choice c_opt ext
+    | A.Tensor(_a,b,_m) -> ssync env seen b c_opt ext
+    | A.Lolli(_a,b,_m) -> ssync env seen b c_opt ext
+    | A.One ->
+        begin
+          match c_opt with
+              None -> ()
+            | Some c -> error ext ("type not sub-synchronizing")
+        end
+    | A.PayPot(_pot,a) -> ssync env seen a c_opt ext
+    | A.GetPot(_pot,a) -> ssync env seen a c_opt ext
     | A.TpName(v) ->
         begin
-          try
-            let seen' = List.exists (fun x -> subtp env tp (A.TpName(x))) seen in
-            if seen'
-            then ()
-            else ssync env (v::seen) (A.expd_tp env v) c ext is_shared
-          with
-          
-            | A.UndeclaredTp -> error ext ("type " ^ v ^ " undeclared")
+          if List.exists (fun x -> x = v) seen
+          then ()
+          else ssync env (v::seen) (A.expd_tp env v) c_opt ext
         end
-    | A.Up(a) -> ssync env seen a c ext true
-    | A.Down(a) -> ssync env seen a c ext false
-    | A.FArrow(_t,a) -> ssync env seen a c ext is_shared
-    | A.FProduct(_t,a) -> ssync env seen a c ext is_shared
+    | A.Up(a) -> ssync env seen a (Some tp) ext
+    | A.Down(a) ->
+        begin
+          match c_opt with
+              None -> error ext ("type not sub-synchronizing")
+            | Some c -> 
+                if subtp env a c
+                then ()
+                else error ext ("type not sub-synchronizing")
+        end
+    | A.FArrow(_t,a) -> ssync env seen a c_opt ext
+    | A.FProduct(_t,a) -> ssync env seen a c_opt ext
 
-and ssync_choices env seen cs c ext is_shared = match cs with
-    (_l,a)::as' -> ssync env seen a c ext is_shared ; ssync_choices env seen as' c ext is_shared
+and ssync_choices env seen cs c ext = match cs with
+    (_l,a)::cs' -> ssync env seen a c ext ; ssync_choices env seen cs' c ext
   | [] -> ();;
 
-let ssync_tp env tp ext = ssync env [] tp tp ext false;;
+let ssync_tp env tp ext = ssync env [] tp None ext;;
 
 (*************************************)
 (* Type checking process expressions *)
