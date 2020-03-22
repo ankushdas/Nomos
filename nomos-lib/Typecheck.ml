@@ -331,8 +331,8 @@ let subtp env tp tp' = sub_tp' env [] tp tp';;
 let rec ssync env seen tp c_opt ext =
   let _ = if !F.verbosity >= 3
           then match c_opt with
-              None -> print_string ("checking ssync: " ^ PP.pp_tp env tp ^ "\n")
-            | Some c -> print_string ("checking ssync: " ^ PP.pp_tp env tp ^ " " ^ PP.pp_tp env c ^ "\n")
+              None -> ()
+            | Some c -> print_string ("checking ssync:\n" ^ PP.pp_tp env tp ^ "\nwith\n" ^ PP.pp_tp env c ^ "\n")
           else ()
   in
   match tp with
