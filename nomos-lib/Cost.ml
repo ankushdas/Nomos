@@ -59,7 +59,7 @@ and cost_tick fexp = match fexp with
   | A.Command(p) -> A.Command(apply_cost_work p)
 
 and cost_model f flag exp = match flag with
-    F.None -> exp
+    F.Nil -> exp
   | F.Free -> exp
   | F.Recv -> cost_recv f exp
   | F.RecvSend -> cost_send f (cost_recv f exp)
@@ -104,6 +104,5 @@ and cost_send_branches f bs = match bs with
   | (l,p)::branches ->
       (l, cost_send_aug f p)::(cost_send_branches f branches);;
 
-(* structure Cost *)
 let apply_cost {A.func_data = d; A.func_structure = fexp} =
   {A.func_data = d; A.func_structure = cost_tick fexp};;

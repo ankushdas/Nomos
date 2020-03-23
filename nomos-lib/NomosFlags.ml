@@ -1,12 +1,12 @@
 (* Cost Model *)
-type cost = None                   (* none *)
+type cost = Nil                   (* none *)
           | Free                   (* only explicit work or delay constructs *)
           | Recv                   (* each receive costs 1 unit  *)
           | RecvSend               (* each receive and send costs 1 unit *)
           | Send                   (* each send costs 1 unit *)
 
 let parseCost s = match s with
-    "none" -> Some None
+    "none" -> Some Nil
   | "recv" -> Some Recv
   | "recvsend" -> Some RecvSend
   | "send" -> Some Send
@@ -14,7 +14,7 @@ let parseCost s = match s with
   | _ -> None;;
 
 let pp_cost c = match c with
-    None -> "none"
+    Nil -> "none"
   | Recv -> "recv"
   | RecvSend -> "recvsend"
   | Send -> "send"
@@ -37,17 +37,17 @@ let pp_syntax syn = match syn with
   | Explicit -> "explicit";;
 
 (* Default values *)
-let time = ref None;;
-let work = ref None;;
+let time = ref Nil;;
+let work = ref Nil;;
 let syntax = ref Explicit;;
 let verbosity = ref 1;;           (* -1 = print nothing, 0 = quiet, 1 = normal, 2 = verbose, 3 = debug *)
-let config_in = ref Option.None;;
-let config_out = ref Option.None;;
+let config_in = ref None;;
+let config_out = ref None;;
 let help = ref false;;
 
 let reset () =
-    time := None
-  ; work := None
+    time := Nil
+  ; work := Nil
   ; syntax := Explicit
   ; verbosity := 1
   ; help := false;;
