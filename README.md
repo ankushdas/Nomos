@@ -21,8 +21,8 @@ Clone the repository and obtain the source code, and install the necessary libra
 $ git clone https://github.com/ankushdas/Nomos.git
 $ cd Nomos
 $ opam update
-$ opam pin add -y nomos .    # only the first time you build
-$ opam upgrade              # after packages upgrade
+$ opam pin add -y nomos-rast .    # only the first time you build
+$ opam upgrade                    # after packages upgrade
 ```
 The next step is installing the [Coin-Or LP solver](https://projects.coin-or.org/Clp). Use the instructions below.
 ```
@@ -47,14 +47,14 @@ $ make
 ```
 
 ### Executing
-The make command creates an executable for nomos at `_build/default/nomos-src/nomos.exe`. To typecheck a file with nomos, run
+The make command creates an executable for nomos at `_build/default/nomos-bin/nomos.exe`. To typecheck a file with nomos, run
 ```
-$ _build/default/nomos-src/nomos.exe <file-path>
+$ _build/default/nomos-bin/nomos.exe <file-path>
 ```
 
 To test whether your nomos build is successful, I have created a test file in the repository. Run it using
 ```
-$ ./_build/default/nomos-src/nomos.exe nomos-tests/auction-dict.nom
+$ ./_build/default/nomos-bin/nomos.exe nomos-tests/auction-dict.nom
 ```
 It should produce the output "% runtime successful!" at the end.
 
