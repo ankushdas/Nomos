@@ -2,43 +2,7 @@ module R = Arith
 module A = Ast
 module F = NomosFlags
 
-let rec cost_recv f exp = match exp with
-    A.Fwd(x,y) -> A.Fwd(x,y)
-  | A.Spawn(x,g,xs,q) -> A.Spawn(x,g,xs, cost_recv_aug f q)
-  | A.ExpName(x,f,xs) -> A.ExpName(x,f,xs)
-
-  | A.Lab(x,k,p) -> A.Lab(x,k, cost_recv_aug f p)
-  | A.Case(x,branches) -> f (A.Case(x, cost_recv_branches f branches))
-
-  | A.Send(x,w,p) -> A.Send(x,w,cost_recv_aug f p)
-  | A.Recv(x,y,p) -> f (A.Recv(x,y, cost_recv_aug f p))
-
-  | A.Close(x) -> A.Close(x)
-  | A.Wait(x,p) -> f (A.Wait(x, cost_recv_aug f p))
-
-  | A.Work(pot,p) -> A.Work(pot,cost_recv_aug f p)
-  | A.Pay(x,pot,p) -> A.Pay(x,pot,cost_recv_aug f p)
-  | A.Get(x,pot,p) -> A.Get(x,pot,cost_recv_aug f p)
-
-  | A.Acquire(x,y,p) -> A.Acquire(x,y,cost_recv_aug f p)
-  | A.Accept(x,y,p) -> A.Accept(x,y,cost_recv_aug f p)
-  | A.Release(x,y,p) -> A.Release(x,y,cost_recv_aug f p)
-  | A.Detach(x,y,p) -> A.Detach(x,y,cost_recv_aug f p)
-
-  | A.RecvF(x,y,p) -> f (A.RecvF(x,y,cost_recv_aug f p))
-  | A.SendF(x,e,p) -> A.SendF(x, cost_tick_aug e, cost_recv_aug f p)
-
-  | A.Let(x,e,p) -> A.Let(x, cost_tick_aug e, cost_recv_aug f p)
-  | A.IfS(e,p1,p2) -> A.IfS(cost_tick_aug e, cost_recv_aug f p1, cost_recv_aug f p2)
-
-and cost_recv_aug f {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_recv f p}
-
-and cost_recv_branches f bs = match bs with
-    [] -> []
-  | (l,p)::branches ->
-      (l, cost_recv_aug f p)::(cost_recv_branches f branches)
-
-and cost_tick_aug {A.func_data = d; A.func_structure = e} = {A.func_data = d; A.func_structure = A.Tick(A.Arith (R.Int 1), {A.func_data = d; A.func_structure = cost_tick e})}
+let rec cost_tick_aug {A.func_data = d; A.func_structure = e} = {A.func_data = d; A.func_structure = A.Tick(A.Arith (R.Int 1), {A.func_data = d; A.func_structure = cost_tick e})}
 
 and cost_tick fexp = match fexp with
     A.If(e1,e2,e3) -> A.If(cost_tick_aug e1, cost_tick_aug e2, cost_tick_aug e3)
@@ -56,53 +20,88 @@ and cost_tick fexp = match fexp with
   | A.Tick(pot,e) -> A.Tick(pot, cost_tick_aug e)
   | A.GetTxnNum -> A.GetTxnNum
   | A.GetTxnSender -> A.GetTxnSender
-  | A.Command(p) -> A.Command(apply_cost_work p)
+  | A.Command(p) -> A.Command(cost_work !F.work p)
 
-and cost_model f flag exp = match flag with
+and cost_work flag exp = match flag with
     F.Nil -> exp
   | F.Free -> exp
-  | F.Recv -> cost_recv f exp
-  | F.RecvSend -> cost_send f (cost_recv f exp)
-  | F.Send -> cost_send f exp
+  | F.Recv -> cost_recv_aug exp
+  | F.RecvSend -> cost_send_aug (cost_recv_aug exp)
+  | F.Send -> cost_send_aug exp
 
-and apply_cost_work {A.st_data = d; A.st_structure = exp} =
-  {A.st_data = d; A.st_structure = cost_model (fun k -> A.Work(A.Arith (R.Int 1),{A.st_data = d; A.st_structure = k})) (!F.work) exp}
+and work d p = A.Work(A.Arith (R.Int 1), {A.st_data = d; A.st_structure = p})
 
-and cost_send f exp = match exp with
+and cost_recv d exp = match exp with
     A.Fwd(x,y) -> A.Fwd(x,y)
-  | A.Spawn(x,g,xs,p) -> A.Spawn(x,g,xs, cost_send_aug f p)
+  | A.Spawn(x,g,xs,q) -> A.Spawn(x,g,xs, cost_recv_aug q)
   | A.ExpName(x,f,xs) -> A.ExpName(x,f,xs)
 
-  | A.Lab(x,k,p) -> f (A.Lab(x,k, cost_send_aug f p))
-  | A.Case(x,branches) -> A.Case(x, cost_send_branches f branches)
+  | A.Lab(x,k,p) -> A.Lab(x,k, cost_recv_aug p)
+  | A.Case(x,branches) -> work d (A.Case(x, cost_recv_branches branches))
 
-  | A.Send(x,w,p) -> f (A.Send(x,w, cost_send_aug f p))
-  | A.Recv(x,y,p) -> A.Recv(x,y, cost_send_aug f p)
+  | A.Send(x,w,p) -> A.Send(x,w,cost_recv_aug p)
+  | A.Recv(x,y,p) -> work d (A.Recv(x,y, cost_recv_aug p))
 
-  | A.Close(x) -> f (A.Close(x)) (* no continuation here to delay *)
-  | A.Wait(x,p) -> A.Wait(x, cost_send_aug f p)
+  | A.Close(x) -> A.Close(x)
+  | A.Wait(x,p) -> work d (A.Wait(x, cost_recv_aug p))
 
-  | A.Work(pot,p) -> A.Work(pot, cost_send_aug f p)   (* allow in source *)
-  | A.Pay(x,pot,p) -> A.Pay(x,pot, cost_send_aug f p)
-  | A.Get(x,pot,p) -> A.Get(x,pot, cost_send_aug f p)
+  | A.Work(pot,p) -> A.Work(pot,cost_recv_aug p)
+  | A.Pay(x,pot,p) -> A.Pay(x,pot,cost_recv_aug p)
+  | A.Get(x,pot,p) -> A.Get(x,pot,cost_recv_aug p)
 
-  | A.Acquire(x,y,p) -> A.Acquire(x,y,cost_send_aug f p)
-  | A.Accept(x,y,p) -> A.Accept(x,y,cost_send_aug f p)
-  | A.Release(x,y,p) -> A.Release(x,y,cost_send_aug f p)
-  | A.Detach(x,y,p) -> A.Detach(x,y,cost_send_aug f p)
+  | A.Acquire(x,y,p) -> A.Acquire(x,y,cost_recv_aug p)
+  | A.Accept(x,y,p) -> A.Accept(x,y,cost_recv_aug p)
+  | A.Release(x,y,p) -> A.Release(x,y,cost_recv_aug p)
+  | A.Detach(x,y,p) -> A.Detach(x,y,cost_recv_aug p)
 
-  | A.RecvF(x,y,p) -> A.RecvF(x,y,cost_send_aug f p)
-  | A.SendF(x,e,p) -> f (A.SendF(x, cost_tick_aug e, cost_send_aug f p))
+  | A.RecvF(x,y,p) -> work d (A.RecvF(x,y,cost_recv_aug p))
+  | A.SendF(x,e,p) -> A.SendF(x, cost_tick_aug e, cost_recv_aug p)
 
-  | A.Let(x,e,p) -> f (A.Let(x, cost_tick_aug e, cost_send_aug f p))
-  | A.IfS(e,p1,p2) -> f (A.IfS(cost_tick_aug e, cost_send_aug f p1, cost_send_aug f p2))
+  | A.Let(x,e,p) -> work d (A.Let(x, cost_tick_aug e, cost_recv_aug p))
+  | A.IfS(e,p1,p2) -> work d (A.IfS(cost_tick_aug e, cost_recv_aug p1, cost_recv_aug p2))
 
-and cost_send_aug f {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_send f p}
+and cost_recv_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_recv d p}
 
-and cost_send_branches f bs = match bs with
+and cost_recv_branches bs = match bs with
     [] -> []
   | (l,p)::branches ->
-      (l, cost_send_aug f p)::(cost_send_branches f branches);;
+      (l, cost_recv_aug p)::(cost_recv_branches branches)
+
+and cost_send d exp = match exp with
+    A.Fwd(x,y) -> A.Fwd(x,y)
+  | A.Spawn(x,g,xs,p) -> A.Spawn(x,g,xs, cost_send_aug p)
+  | A.ExpName(x,f,xs) -> A.ExpName(x,f,xs)
+
+  | A.Lab(x,k,p) -> work d (A.Lab(x,k, cost_send_aug p))
+  | A.Case(x,branches) -> A.Case(x, cost_send_branches branches)
+
+  | A.Send(x,w,p) -> work d (A.Send(x,w, cost_send_aug p))
+  | A.Recv(x,y,p) -> A.Recv(x,y, cost_send_aug p)
+
+  | A.Close(x) -> work d (A.Close(x))
+  | A.Wait(x,p) -> A.Wait(x, cost_send_aug p)
+
+  | A.Work(pot,p) -> A.Work(pot, cost_send_aug p)
+  | A.Pay(x,pot,p) -> A.Pay(x,pot, cost_send_aug p)
+  | A.Get(x,pot,p) -> A.Get(x,pot, cost_send_aug p)
+
+  | A.Acquire(x,y,p) -> A.Acquire(x,y,cost_send_aug p)
+  | A.Accept(x,y,p) -> A.Accept(x,y,cost_send_aug p)
+  | A.Release(x,y,p) -> A.Release(x,y,cost_send_aug p)
+  | A.Detach(x,y,p) -> A.Detach(x,y,cost_send_aug p)
+
+  | A.RecvF(x,y,p) -> A.RecvF(x,y,cost_send_aug p)
+  | A.SendF(x,e,p) -> work d (A.SendF(x, cost_tick_aug e, cost_send_aug p))
+
+  | A.Let(x,e,p) -> work d (A.Let(x, cost_tick_aug e, cost_send_aug p))
+  | A.IfS(e,p1,p2) -> work d (A.IfS(cost_tick_aug e, cost_send_aug p1, cost_send_aug p2))
+
+and cost_send_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_send d p}
+
+and cost_send_branches bs = match bs with
+    [] -> []
+  | (l,p)::branches ->
+      (l, cost_send_aug p)::(cost_send_branches branches);;
 
 let apply_cost {A.func_data = d; A.func_structure = fexp} =
   {A.func_data = d; A.func_structure = cost_tick fexp};;
