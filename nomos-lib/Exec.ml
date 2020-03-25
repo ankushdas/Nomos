@@ -1174,7 +1174,8 @@ and iterate_and_one_step env sems config stepped =
 let error = ErrorMsg.error_msg ErrorMsg.Runtime None;;
 
 type state =
-  { energy : int;
+  {
+    energy : int;
     gamma : A.chan list;
     delta : A.chan list;
     config : configuration;
