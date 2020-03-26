@@ -943,7 +943,10 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             None -> E.error_undeclared (f) (exp.A.st_data)
           | Some (ctx,lpot,(x',a'),mdef) ->
               let (_s,_x,mx) = x in
-              if not (ge pot lpot)
+              let (z,c) = zc in
+              if eq_name x z
+              then error (exp.A.st_data) ("channel " ^ PP.pp_chan x ^ " already on the right\n")
+              else if not (ge pot lpot)
               then error (exp.A.st_data) ("insufficient potential to spawn: " ^ pp_lt pot lpot)
               else if not (eq_mode x x')
               then E.error_mode_mismatch (x, x') (exp.A.st_data)
