@@ -160,7 +160,7 @@ let nomos_file =
 
 let nomos_command =
   C.Command.basic
-    ~summary:"Typechecking Nomos files"
+    ~summary:"Typechecking and Executing Nomos files"
     ~readme:(fun () -> "More detailed information")
     C.Command.Let_syntax.(
       let%map_open
@@ -171,11 +171,11 @@ let nomos_command =
         and syntax_flag = flag "-s" (optional string)
           ~doc:"syntax implicit, explicit"
         and config_in_flag = flag "-i" (optional string)
-          ~doc:"path initial configuration"
+          ~doc:"input configuration path"
         and config_out_flag = flag "-o" (optional string)
-          ~doc:"path output configuration"
+          ~doc:"output configuration path"
         and trans_path = flag "-t" (optional string)
-          ~doc:"path transactions"
+          ~doc:"transaction file path"
         and file = anon("filename" %: nomos_file) in
         fun () ->
           let vlevel =
