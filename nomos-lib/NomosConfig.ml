@@ -122,7 +122,7 @@ let get_initial_config () =
   | None -> E.empty_full_configuration
   | Some(path) -> C.Sexp.load_sexp_conv_exn path E.full_configuration_of_sexp
 
-let rec run env config dcls txns =
+let rec run env config dcls txn_opt =
   match dcls with
       (A.Exec(f), _ext)::dcls' ->
         let () = if !F.verbosity >= 1
@@ -130,13 +130,12 @@ let rec run env config dcls txns =
                  else () in
         let config' = E.exec env config (f, []) in
         (* may raise Exec.RuntimeError *)
-        run env config' dcls' txns
-    | _dcl::dcls' -> run env config dcls' txns
-    | [] -> (List.fold_left
-              (fun config txn -> E.exec env config txn)
-              config
-              txns);;
-
+        run env config' dcls' txn_opt
+    | _dcl::dcls' -> run env config dcls' txn_opt
+    | [] ->
+      match txn_opt with
+          None -> config
+        | Some txn -> E.exec env config txn;;
 
 let cmd_ext = None;;
 
@@ -158,6 +157,53 @@ let nomos_file =
                 exit 1
               end);;
 
+let in_conf_file =
+  C.Command.Arg_type.create
+    (fun filename ->
+      match C.Sys.is_file filename with
+          `No | `Unknown ->
+            begin
+              C.eprintf "'%s' is not a regular file.\n%!" filename;
+              exit 1
+            end
+        | `Yes ->
+            if Filename.check_suffix filename ".conf"
+            then filename
+            else
+              begin
+                C.eprintf "'%s' does not have conf extension.\n%!" filename;
+                exit 1
+              end);;
+
+let out_conf_file =
+  C.Command.Arg_type.create
+    (fun filename ->
+      if Filename.check_suffix filename ".conf"
+      then filename
+      else
+      begin
+        C.eprintf "'%s' does not have conf extension.\n%!" filename;
+        exit 1
+      end);;
+
+let txn_file =
+  C.Command.Arg_type.create
+    (fun filename ->
+      match C.Sys.is_file filename with
+          `No | `Unknown ->
+            begin
+              C.eprintf "'%s' is not a regular file.\n%!" filename;
+              exit 1
+            end
+        | `Yes ->
+            if Filename.check_suffix filename ".txn"
+            then filename
+            else
+              begin
+                C.eprintf "'%s' does not have txn extension.\n%!" filename;
+                exit 1
+              end);;
+
 let nomos_command =
   C.Command.basic
     ~summary:"Typechecking and Executing Nomos files"
@@ -170,11 +216,11 @@ let nomos_command =
           ~doc:"work-cost-model none, recv, send, recvsend, free"
         and syntax_flag = flag "-s" (optional string)
           ~doc:"syntax implicit, explicit"
-        and config_in_flag = flag "-i" (optional string)
+        and input_config_path = flag "-i" (optional in_conf_file)
           ~doc:"input configuration path"
-        and config_out_flag = flag "-o" (optional string)
+        and output_config_path = flag "-o" (optional out_conf_file)
           ~doc:"output configuration path"
-        and trans_path = flag "-t" (optional string)
+        and txn_path = flag "-t" (optional txn_file)
           ~doc:"transaction file path"
         and file = anon("filename" %: nomos_file) in
         fun () ->
@@ -200,8 +246,8 @@ let nomos_command =
             end
           in
           let () = F.reset () in
-          let () = F.config_in := config_in_flag in
-          let () = F.config_out := config_out_flag in
+          let () = F.config_in := input_config_path in
+          let () = F.config_out := output_config_path in
           let () = List.iter (process_option cmd_ext) [vlevel; work_cm; syntax] in
           let env = try load file
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
@@ -209,14 +255,14 @@ let nomos_command =
           let () = print_string ("% compilation successful!\n") in
 
           let config = get_initial_config () in
-          let txns: (string * (A.ext A.arg list)) list =
-            match trans_path with
-            | None -> []
-            | (Some path) -> [T.load_transaction path] in
-          let final_config = run env config env txns in
+          let txn =
+            match txn_path with
+                None -> None
+              | Some(path) -> Some (T.load_transaction path) in
+          let final_config = run env config env txn in
 
           let () = print_string ("% runtime successful!\n") in
 
           match !F.config_out with
-          | None -> ()
-          | Some(path) -> C.Sexp.save path (E.sexp_of_full_configuration final_config));;
+              None -> ()
+            | Some(path) -> C.Sexp.save path (E.sexp_of_full_configuration final_config));;

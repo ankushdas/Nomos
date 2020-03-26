@@ -154,6 +154,8 @@ proc main =
 proc transaction main : . |- ($d : 1) =
 {
   #sw <- create_wallet <- 1000 ;
+  print ("wallet created at channel ");
+  print_channel(#sw);
   close $d
 }
 
