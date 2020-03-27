@@ -14,17 +14,17 @@ val check_nonneg :
 val elab_tps :
   (TC.A.decl * 'a) list ->
   (A.decl * ((int * int) * (int * int) * string) option) list ->
-  'b -> (A.decl * ((int * int) * (int * int) * string) option) list
+  (A.decl * ((int * int) * (int * int) * string) option) list
 exception ElabImpossible
 val elab_exps' :
   (A.decl * 'a) list ->
-  (A.decl * TC.A.ext) list -> 'b -> (A.decl * TC.A.ext) list
+  (A.decl * TC.A.ext) list -> (A.decl * TC.A.ext) list
 val elab_exps :
   (A.decl * 'a) list ->
-  (A.decl * TC.A.ext) list -> 'b -> (A.decl * TC.A.ext) list
+  (A.decl * TC.A.ext) list -> (A.decl * TC.A.ext) list
 val elab_decls :
   (TC.A.decl * 'a) list ->
-  (A.decl * TC.A.ext) list -> 'b -> (A.decl * TC.A.ext) list option
+  (A.decl * TC.A.ext) list -> (A.decl * TC.A.ext) list option
 val is_tpdef : (A.decl * 'a) list -> A.tpname -> bool
 val is_expdecdef : (A.decl * 'a) list -> A.expname -> bool
 val check_redecl :
@@ -50,7 +50,7 @@ val well_formedness :
   TC.PP.A.str * string * TC.PP.A.mode ->
   ((int * int) * (int * int) * string) option -> unit
 val gen_constraints :
-  (TC.A.decl * 'a) list -> A.decl list -> TC.A.ext -> unit
+  (TC.A.decl * 'a) list -> (TC.A.decl * A.ext) list -> unit
 val substitute :
   (A.decl * 'a) list ->
   (string * int) list -> (string * I.A.mode) list -> (A.decl * 'a) list

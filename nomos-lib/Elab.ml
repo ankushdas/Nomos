@@ -70,14 +70,14 @@ let check_nonneg pot ext =
  * Expressions are passed through unchanged, but process declarations
  * are checked for the validity of the types used.
  *)
-let rec elab_tps env dcls ext = match dcls with
+let rec elab_tps env dcls = match dcls with
     [] -> []
   | ((A.TpDef(v,a), ext') as dcl)::dcls' ->
       let () = if TC.contractive a then ()
                else error ext' ("type " ^ PP.pp_tp env a ^ " not contractive") in
       (*let () = TC.valid env TC.Zero a ext in*)
       let () = TC.ssync_tp env (A.TpName(v)) ext' in
-      dcl::(elab_tps env dcls' ext)
+      dcl::(elab_tps env dcls')
   | ((A.ExpDecDef(_f,_m,(delta,pot,(x,a)),_), ext') as dcl)::dcls' ->
       (* do not print process declaration so they are printed close to their use *)
       let () = if dups ((x,a)::delta.linear) then error ext' ("duplicate variable in process declaration") else () in
@@ -85,8 +85,8 @@ let rec elab_tps env dcls ext = match dcls with
       (*let () = TC.valid env TC.Zero a ext in*)
       let () = TC.ssync_tp env a ext' in
       let () = check_nonneg pot ext' in
-      dcl::(elab_tps env dcls' ext)
-  | dcl::dcls' -> dcl::(elab_tps env dcls' ext);;
+      dcl::(elab_tps env dcls')
+  | dcl::dcls' -> dcl::(elab_tps env dcls');;
 
 (****************************)
 (* Elaboration, Second Pass *)
@@ -99,17 +99,17 @@ exception ElabImpossible;;
  * raises exception otherwise.
  * Assumes that types have already been elaborated in the first pass
  *)
-let rec elab_exps' env dcls ext = match dcls with
+let rec elab_exps' env dcls = match dcls with
     [] -> []
   | ((A.TpDef _), _)::_ -> (* do not print type definition again *)
-      elab_exps env dcls ext
+      elab_exps env dcls
   | (dcl, _)::_ ->
-      elab_exps env dcls ext
-and elab_exps env dcls ext = match dcls with
+      elab_exps env dcls
+and elab_exps env dcls = match dcls with
     [] -> []
   | ((A.TpDef _, _) as dcl)::dcls' ->
     (* already checked validity during first pass *)
-      dcl::(elab_exps' env dcls' ext)
+      dcl::(elab_exps' env dcls')
   | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p), ext')::dcls' ->
       let p' = Cost.apply_cost p in (* applying the cost model *)
       let () =
@@ -135,14 +135,14 @@ and elab_exps env dcls ext = match dcls with
                         ; TC.checkfexp true env delta pot p' (x,a) ext' m
                       end (* will re-raise ErrorMsg.Error *)
                   else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
-      (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'), ext')::(elab_exps' env dcls' ext)
+      (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'), ext')::(elab_exps' env dcls')
   | ((A.Exec(f), ext') as dcl)::dcls' ->
       begin
         match A.lookup_expdec env f with
             Some (ctx,_pot,_zc,_m) ->
               if List.length ctx.A.ordered > 0
               then error ext' ("process " ^ f ^ " has a non-empty context, cannot be executed")
-              else dcl::elab_exps' env dcls' ext
+              else dcl::elab_exps' env dcls'
           | None -> error ext' ("process " ^ f ^ " undefined")
       end;;
 
@@ -150,12 +150,12 @@ and elab_exps env dcls ext = match dcls with
  * if elaboration of decls succeeds with respect to env, yielding env'
  * Returns NONE if there is a static error
  *)
-let elab_decls env dcls ext =
+let elab_decls env dcls =
   (* first pass: check validity of types and create internal names *)
   try
-  let env' = elab_tps env dcls ext in
+  let env' = elab_tps env dcls in
   (* second pass: perform reconstruction and type checking *)
-  let env'' = elab_exps' env' env' ext in
+  let env'' = elab_exps' env' env' in
   Some env''
 
   with ErrorMsg.Error -> None;;
@@ -322,14 +322,14 @@ let well_formedness env f m delta x ext = match m with
   | A.Unknown
   | A.MVar _ -> raise ElabImpossible
 
-let rec gen_constraints env dcls ext = match dcls with
+let rec gen_constraints env dcls = match dcls with
     [] -> ()
-  | A.ExpDecDef(f,m,(delta,pot,(x,a)),p)::dcls' ->
+  | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p),ext)::dcls' ->
       let () = well_formedness env f m delta x ext in
       let () = TC.checkfexp false env delta pot p (x,a) ext m in
-      gen_constraints env dcls' ext
-  | A.TpDef _::dcls' -> gen_constraints env dcls' ext
-  | A.Exec _::dcls' -> gen_constraints env dcls' ext;;
+      gen_constraints env dcls'
+  | (A.TpDef _,_ext)::dcls' -> gen_constraints env dcls'
+  | (A.Exec _,_ext)::dcls' -> gen_constraints env dcls';;
 
 let rec substitute dcls psols msols = match dcls with
     [] -> []
