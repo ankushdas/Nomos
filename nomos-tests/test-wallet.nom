@@ -92,30 +92,6 @@ type wallet = /\ <{*}| &{add : money -o |{*}> \/ wallet,
                                         insufficient : |{*}> \/ wallet},
                          val : int ^ |{*}> \/ wallet}
 
-proc transaction transfer : (#sender : wallet), (#receiver : wallet), (amt : int) |{*}- ($d : 1) =
-{
-  $ls <- acquire #sender ;
-  pay $ls {*} ;
-  $ls.sub ;
-  send $ls amt ;
-  case $ls (
-    sufficient => $subm <- recv $ls ;
-                  get $ls {*} ;
-                  #sender <- release $ls ;
-                  $lr <- acquire #receiver ;
-                  pay $lr {*} ;
-                  $lr.add ;
-                  send $lr $subm ;
-                  get $lr {*} ;
-                  #receiver <- release $lr ;
-                  work {*} ;
-                  close $d
-  | insufficient => get $ls {*} ;
-                    #sender <- release $ls ;
-                    work {*} ;
-                    close $d
-  )
-}
 
 (*
 proc transaction main : . |{*}- ($d : 1) =
