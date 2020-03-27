@@ -81,6 +81,7 @@ rule token = parse
   (* nomos specific *)
   | "Nomos.GetTxnNum()"       { GETTXNNUM }
   | "Nomos.GetTxnSender()"    { GETTXNSENDER }
+  | "Nomos.MakeChannel"       { MAKECHAN }
 
   (* session type channels *)
   | "#"                 { HASH }

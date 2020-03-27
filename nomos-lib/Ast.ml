@@ -14,6 +14,7 @@ type potential =
 (* Session Types *)
 type label = string [@@deriving sexp] (* l,k for internal and external choice *)
 type tpname = string            (* v, for types defined with v = A *)
+[@@deriving sexp]
 type expname = string [@@deriving sexp] (* f, for processes defined with f = P *)
 
 
@@ -23,7 +24,8 @@ type func_tp =
   | Address
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
-  | VarT of string;;
+  | VarT of string
+[@@deriving sexp]
 
 type mode =
     Shared
@@ -55,6 +57,7 @@ type stype =
   | Down of stype                     (* \/ A *)
   | FArrow of func_tp * stype         (* t -> A *)
   | FProduct of func_tp * stype       (* t ^ A *)
+[@@deriving sexp]
 
 and choices = (label * stype) list
 
@@ -154,6 +157,9 @@ and 'a st_expr =
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr           (* send x (M) ; P *)
   | Let of string * 'a func_aug_expr * 'a st_aug_expr           (* let x = M ; P *)
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr   (* if e then P else Q *)
+
+  (* Nomos specific, get channel from id *)
+  | MakeChan of chan * stype * int * 'a st_aug_expr             (* #c : A <- Nomos.MakeChan(n) ; P *)
 and 'a branch = label * 'a st_aug_expr
 
 and 'a branches = 'a branch list                          (* (l1 => P1 | ... | ln => Pn) *)
@@ -291,6 +297,7 @@ let rec subst c' c expr = match expr with
   | SendF(x,m,p) -> SendF(sub c' c x, m, subst_aug c' c p)
   | Let(x,e,p) -> Let(x, fsubst_aug c' c e, subst_aug c' c p)
   | IfS(e,p1,p2) -> IfS(fsubst_aug c' c e, subst_aug c' c p1, subst_aug c' c p2)
+  | MakeChan(x,a,n,p) -> MakeChan(x, a, n, subst_aug c' c p)
 
 and subst_branches c' c bs = match bs with
     [] -> []
@@ -378,6 +385,7 @@ and esubstv v' v exp = match exp with
   | SendF(x,m,p) -> SendF(x, substv_aug v' v m, esubstv_aug v' v p)
   | Let(x,e,p) -> Let(x, substv_aug v' v e, esubstv_aug v' v p)
   | IfS(e,p1,p2) -> IfS(substv_aug v' v e, esubstv_aug v' v p1, esubstv_aug v' v p2)
+  | MakeChan(x,a,n,p) -> MakeChan(x, a, n, esubstv_aug v' v p)
 
 and esubstv_branches v' v bs = match bs with
     [] -> []

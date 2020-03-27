@@ -821,7 +821,7 @@ let find_acquiring_procs ch config =
 let pick_random l =
   match l with
       [] -> None
-    | l -> Some(List.nth l (Random.int (List.length l)));;
+    | l -> Some(List.nth l 0);;
 
 let up ch config =
   let s = find_sem ch config in
@@ -1025,6 +1025,19 @@ let ifS ch config =
         end
     | _s -> raise ExecImpossible;;
 
+let makechan ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func,c,in_use,t,(w,pot),A.MakeChan(x,a,n,p)) ->
+        let newch = (A.Hash, "ch" ^ string_of_int n, A.Shared) in
+        let in_use' = add_chan newch in_use in
+        let p = A.subst_aug newch x p in
+        let newproc = Proc(func,c,in_use',t+1,(w,pot),p.A.st_structure) in
+        let config = add_sem newproc config in
+        Changed config
+    | _s -> raise ExecImpossible;;
+
 (*
 obsolete code
 -------------
@@ -1124,6 +1137,9 @@ let match_and_one_step env sem config =
             
             | A.IfS _ ->
                 ifS c config
+            
+            | A.MakeChan _ ->
+                makechan c config
             
         end
     | Msg _ -> Unchanged config;;

@@ -16,8 +16,7 @@
 %token ANDALSO ORELSE
 %token TYPE PROC ASSET CONTRACT TRANSACTION TURNSTILE EXEC COLON
 (* Nomos specific *)
-%token GETTXNNUM
-%token GETTXNSENDER
+%token GETTXNNUM GETTXNSENDER MAKECHAN
 (* session type layer *)
 %token LOLLI AMPERSAND UP DOWN PRODUCT
 %token LBRACE RBRACE
@@ -368,7 +367,10 @@ st:
     |  LET; x = ID; EQUALS; e = expr; s = SEMI; p = st                       { {st_structure = Ast.Let(x,e,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }   
-    |  IF; ifE = expr; THEN; thenE = st; ELSE; elseE = st                { {Ast.st_structure = Ast.IfS (ifE, thenE, elseE); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  IF; ifE = expr; THEN; thenE = st; ELSE; elseE = st                    { {Ast.st_structure = Ast.IfS(ifE, thenE, elseE); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  x = mid; COLON; t = stype; LARROW; MAKECHAN; n = INT; SEMI; p = st     { {Ast.st_structure = Ast.MakeChan(x, t, n, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }
     ;

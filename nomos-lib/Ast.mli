@@ -1,8 +1,8 @@
 module R = Arith
 type ext = Mark.ext option [@@deriving sexp]
-type potential = Arith of R.arith | Star
+type potential = Arith of R.arith | Star [@@deriving sexp]
 type label = string
-type tpname = string
+type tpname = string [@@deriving sexp]
 type expname = string
 type func_tp =
     Integer
@@ -11,6 +11,7 @@ type func_tp =
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string
+[@@deriving sexp]
 type mode =
     Shared
   | Linear
@@ -35,6 +36,7 @@ type stype =
   | FArrow of func_tp * stype
   | FProduct of func_tp * stype
 and choices = (label * stype) list
+[@@deriving sexp]
 type arglist = Single of string * ext | Curry of (string * ext) * arglist
 [@@deriving sexp]
 type arith_operator = Add | Sub | Mult | Div
@@ -84,6 +86,7 @@ and 'a st_expr =
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr
   | Let of string * 'a func_aug_expr * 'a st_aug_expr
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
+  | MakeChan of chan * stype * int * 'a st_aug_expr 
   [@@deriving sexp]
 and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list
