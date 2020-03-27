@@ -361,7 +361,7 @@ let rec ssync env seen tp c_opt ext =
               None -> error ext ("type not sub-synchronizing")
             | Some c -> 
                 if subtp env a c
-                then ()
+                then ssync env seen a None ext
                 else error ext ("type not sub-synchronizing")
         end
     | A.FArrow(_t,a) -> ssync env seen a c_opt ext
