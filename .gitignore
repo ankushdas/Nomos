@@ -1,3 +1,4 @@
+# ocaml files
 *.annot
 *.cmo
 *.cma
@@ -7,6 +8,9 @@
 *.cmx
 *.cmxs
 *.cmxa
+
+# executables
+*.out
 
 # ocamlbuild working directory
 _build/
@@ -24,3 +28,6 @@ setup.log
 
 # temp emacs file
 *~
+
+# Nomos specific files
+*.conf
