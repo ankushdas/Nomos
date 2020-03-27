@@ -42,9 +42,9 @@ let parse_with_error lexbuf =
   try Parser.file Lexer.token lexbuf with
   | SyntaxError msg ->
       (C.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg;
-      ([], None))
+      exit 1)
   | Parser.Error ->
-      (C.printf "PARSING FAILURE: %a\n" print_position lexbuf; ([], None))
+      (C.printf "PARSING FAILURE: %a\n" print_position lexbuf; exit 1)
 
 (* use the parser created by Menhir and return the list of declarations *)
 let parse lexbuf =
@@ -74,24 +74,27 @@ let process_option _ext op = match op with
 let reset () =
   ErrorMsg.reset ();;
 
-
-let load file =
+(* open file and parse into environment *)
+let read file =
   let () = reset () in                        (* internal lexer and parser state *)
   (*
   let () = I.reset () in                      (* resets the LP solver *)
   *)
-  let t0 = Unix.gettimeofday () in
   let inx = C.In_channel.read_all file in     (* read file *)
   let lexbuf = Lexing.from_string inx in      (* lex file *)
   let _ = init lexbuf file in
-  let (decls, ext) = parse lexbuf in          (* parse file *)
+  parse lexbuf;;                              (* parse file *)
+
+(* check validity and typecheck environment *)
+let validate decls =
+  let t0 = Unix.gettimeofday () in
   let () = EL.check_redecl decls in           (* may raise ErrorMsg.Error *)
   let () = EL.check_valid decls decls in
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
   let decls' = EL.commit_channels decls decls in
   (* allow for mutually recursive definitions in the same file *)
-  let env = match EL.elab_decls decls' decls' ext with
+  let env = match EL.elab_decls decls' decls' with
                 Some env' -> env'
               | None -> raise ErrorMsg.Error  (* error during elaboration *)
   in
@@ -101,7 +104,7 @@ let load file =
   let () = if !F.verbosity >= 2 then print_string ("========================================================\n") in
   let () = if !F.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") ""
     (List.map (fun (x,_) -> x) env)) in
-  let () = EL.gen_constraints env (List.map (fun (x,_) -> x) env) ext in
+  let () = EL.gen_constraints env env in
   let (psols,msols) = I.solve_and_print () in
   let env = EL.substitute env psols msols in
   let t2 = Unix.gettimeofday () in
@@ -110,7 +113,7 @@ let load file =
   let () = print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
   let () = print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
   let () = I.print_stats () in
-  env;;
+  env;;  
 
 
 (**********************)
@@ -122,7 +125,7 @@ let get_initial_config () =
   | None -> E.empty_full_configuration
   | Some(path) -> C.Sexp.load_sexp_conv_exn path E.full_configuration_of_sexp
 
-let rec run env config dcls txn_opt =
+let rec run env config dcls =
   match dcls with
       (A.Exec(f), _ext)::dcls' ->
         let () = if !F.verbosity >= 1
@@ -130,12 +133,9 @@ let rec run env config dcls txn_opt =
                  else () in
         let config' = E.exec env config (f, []) in
         (* may raise Exec.RuntimeError *)
-        run env config' dcls' txn_opt
-    | _dcl::dcls' -> run env config dcls' txn_opt
-    | [] ->
-      match txn_opt with
-          None -> config
-        | Some txn -> E.exec env config txn;;
+        run env config' dcls'
+    | _dcl::dcls' -> run env config dcls'
+    | [] -> config;;
 
 let cmd_ext = None;;
 
@@ -249,18 +249,20 @@ let nomos_command =
           let () = F.config_in := input_config_path in
           let () = F.config_out := output_config_path in
           let () = List.iter (process_option cmd_ext) [vlevel; work_cm; syntax] in
-          let env = try load file
+          let (contract_env,_ext) = read file in
+          let () = print_string ("% contract parsing successful!\n") in
+          let config = get_initial_config () in
+          let (txn_env, _ext) =
+            match txn_path with
+                None -> ([], None)
+              | Some(txn_file) -> read txn_file
+          in
+          let () = print_string ("% transaction parsing successful!\n") in
+          let env = try validate (contract_env @ txn_env)
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
           in
           let () = print_string ("% compilation successful!\n") in
-
-          let config = get_initial_config () in
-          let txn =
-            match txn_path with
-                None -> None
-              | Some(path) -> Some (T.load_transaction path) in
-          let final_config = run env config env txn in
-
+          let final_config = run env config env in
           let () = print_string ("% runtime successful!\n") in
 
           match !F.config_out with
