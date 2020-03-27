@@ -86,12 +86,6 @@ proc contract wallet_proc : ($m : money) |{*}- (#sw : wallet) =
   )
 }
 
-proc transaction create_wallet : (n : int) |{*}- ($d : 1) =
-{
-  $m <- money_proc <- n ;
-  #sw <- wallet_proc <- $m ;
-  close $d
-}
 
 type wallet = /\ <{*}| &{add : money -o |{*}> \/ wallet,
                          sub : int -> +{sufficient : money * |{*}> \/ wallet,
@@ -124,16 +118,22 @@ proc transaction transfer : (#sender : wallet), (#receiver : wallet), (amt : int
 }
 
 (*
-proc main =
+proc transaction main : . |{*}- ($d : 1) =
 {
-  bs = read_blockchain_state() ;
-  while ()
-  {
-    t = read_transaction() ;
-    bs = exec (bs + t)
-  }
-  write_blockchain_state() ;
+  let n1 = 1000 ;
+  let n2 = 100 ;
+  let t = 100 ;
+  $m1 <- money_proc <- n1 ;
+  #w1 <- wallet_proc <- $m1 ;
+  $m2 <- money_proc <- n2 ;
+  #w2 <- wallet_proc <- $m2 ;
+  $d <- create_wallet <- t ;
+  $c <- transfer <- #w1 #w2 t ;
+  wait $d ;
+  wait $c ;
+  close $d
 }
+
 *)
 (*
  * start with an empty configuration
@@ -148,16 +148,4 @@ proc main =
  * wallet.trans -> 2: transfer(#ch1, #ch2, 20)
  * ./run.exe -input blockchain0.state -trans wallet0.trans -output blockchain1.state -src test-wallet.nom
  * ./run.exe -input blockchain1.state -trans wallet1.trans -output blockchain2.state -src test-wallet.nom
-*)
-
-(*
-proc transaction main : . |- ($d : 1) =
-{
-  #sw <- create_wallet <- 1000 ;
-  print ("wallet created at channel ");
-  print_channel(#sw);
-  close $d
-}
-
-exec main
 *)
