@@ -9,7 +9,6 @@ module I = Infer
 module TC = Typecheck
 module F = NomosFlags
 module E = Exec
-module T = Transaction
 open Lexer
 open Lexing
 
