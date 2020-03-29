@@ -41,8 +41,6 @@ let time = ref Nil;;
 let work = ref Nil;;
 let syntax = ref Explicit;;
 let verbosity = ref 1;;           (* -1 = print nothing, 0 = quiet, 1 = normal, 2 = verbose, 3 = debug *)
-let config_in = ref None;;
-let config_out = ref None;;
 let help = ref false;;
 
 let reset () =

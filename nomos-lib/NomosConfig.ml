@@ -12,6 +12,11 @@ module E = Exec
 open Lexer
 open Lexing
 
+
+(*********************************)
+(* Loading and Elaborating Files *)
+(*********************************)
+
 let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
   let open Lexing in
   lexbuf.lex_curr_p <- {
@@ -20,16 +25,8 @@ let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
     pos_bol = 0;
     pos_cnum = 0;
   }
-  ;
 
-(************************)
-(* Command Line Options *)
-(************************)
-
-type option =
-    Work of string
-  | Syntax of string
-  | Verbose of int;;
+let reset () = ErrorMsg.reset ()
 
 let print_position _outx lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -49,29 +46,6 @@ let parse_with_error lexbuf =
 let parse lexbuf =
   let env = parse_with_error lexbuf in
   env;;
-
-
-let process_option _ext op = match op with
-    Work(s) ->
-      begin
-        match F.parseCost s with
-            None -> C.eprintf "%% cost model %s not recognized\n" s; exit 1
-          | Some cm -> F.work := cm
-      end
-  | Syntax(s) ->
-      begin
-        match F.parseSyntax s with
-            None -> C.eprintf "%% syntax %s not recognized\n" s; exit 1
-          | Some syn -> F.syntax := syn
-      end
-  | Verbose(level) -> F.verbosity := level;;
-
-(*********************************)
-(* Loading and Elaborating Files *)
-(*********************************)
-
-let reset () =
-  ErrorMsg.reset ();;
 
 (* open file and parse into environment *)
 let read file =
@@ -119,8 +93,8 @@ let validate decls =
 (* Executing Programs *)
 (**********************)
 
-let get_initial_config () =
-  match !F.config_in with
+let load_config config_in =
+  match config_in with
   | None -> E.empty_full_configuration
   | Some(path) -> C.Sexp.load_sexp_conv_exn path E.full_configuration_of_sexp
 
@@ -136,9 +110,30 @@ let rec run env config dcls =
     | _dcl::dcls' -> run env config dcls'
     | [] -> config;;
 
-let cmd_ext = None;;
+(************************)
+(* Command Line Options *)
+(************************)
 
-let nomos_file =
+let set_cost_model s =
+  match F.parseCost s with
+      None -> (C.eprintf "%% cost model %s not recognized\n" s; exit 1)
+    | Some cm -> F.work := cm
+
+let set_syntax s =
+  match F.parseSyntax s with
+      None -> (C.eprintf "%% syntax %s not recognized\n" s; exit 1)
+    | Some syn -> F.syntax := syn
+
+let check_extension filename ext =
+  if Filename.check_suffix filename ext
+  then filename
+  else
+    begin
+      C.eprintf "'%s' does not have %s extension.\n%!" filename ext;
+      exit 1
+    end
+    
+let file (ext : string) =
   C.Command.Arg_type.create
     (fun filename ->
       match C.Sys.is_file filename with
@@ -147,123 +142,65 @@ let nomos_file =
               C.eprintf "'%s' is not a regular file.\n%!" filename;
               exit 1
             end
-        | `Yes ->
-            if Filename.check_suffix filename ".nom"
-            then filename
-            else
-              begin
-                C.eprintf "'%s' does not have nom extension.\n%!" filename;
-                exit 1
-              end);;
+        | `Yes -> check_extension filename ext)
 
-let in_conf_file =
-  C.Command.Arg_type.create
-    (fun filename ->
-      match C.Sys.is_file filename with
-          `No | `Unknown ->
-            begin
-              C.eprintf "'%s' is not a regular file.\n%!" filename;
-              exit 1
-            end
-        | `Yes ->
-            if Filename.check_suffix filename ".conf"
-            then filename
-            else
-              begin
-                C.eprintf "'%s' does not have conf extension.\n%!" filename;
-                exit 1
-              end);;
+let nomos_file = file ".nom"
+
+let in_conf_file = file ".conf"
 
 let out_conf_file =
   C.Command.Arg_type.create
-    (fun filename ->
-      if Filename.check_suffix filename ".conf"
-      then filename
-      else
-      begin
-        C.eprintf "'%s' does not have conf extension.\n%!" filename;
-        exit 1
-      end);;
+    (fun filename -> check_extension filename ".conf")
 
-let txn_file =
-  C.Command.Arg_type.create
-    (fun filename ->
-      match C.Sys.is_file filename with
-          `No | `Unknown ->
-            begin
-              C.eprintf "'%s' is not a regular file.\n%!" filename;
-              exit 1
-            end
-        | `Yes ->
-            if Filename.check_suffix filename ".txn"
-            then filename
-            else
-              begin
-                C.eprintf "'%s' does not have txn extension.\n%!" filename;
-                exit 1
-              end);;
+let txn_file = file ".txn"
 
 let nomos_command =
   C.Command.basic
     ~summary:"Typechecking and Executing Nomos files"
-    ~readme:(fun () -> "More detailed information")
     C.Command.Let_syntax.(
       let%map_open
-        verbosity_flag = flag "-v" (optional int)
+        verbosity = flag "-v" (optional_with_default 1 int)
           ~doc:"verbosity 0: quiet, 1: default, 2: verbose, 3: debugging mode"
-        and work_flag = flag "-w" (optional string)
+        and cost_model = flag "-w" (optional_with_default "none" string)
           ~doc:"work-cost-model none, recv, send, recvsend, free"
-        and syntax_flag = flag "-s" (optional string)
+        and syntax = flag "-s" (optional_with_default "explicit" string)
           ~doc:"syntax implicit, explicit"
-        and input_config_path = flag "-i" (optional in_conf_file)
+        and config_in = flag "-i" (optional in_conf_file)
           ~doc:"input configuration path"
-        and output_config_path = flag "-o" (optional out_conf_file)
+        and config_out = flag "-o" (optional out_conf_file)
           ~doc:"output configuration path"
         and txn_path = flag "-t" (optional txn_file)
           ~doc:"transaction file path"
         and file = anon("filename" %: nomos_file) in
         fun () ->
-          let vlevel =
-            begin
-              match verbosity_flag with
-                  None -> Verbose(1)
-                | Some n -> Verbose(n)
-            end
-          in
-          let work_cm =
-            begin
-              match work_flag with
-                  None -> Work("none")
-                | Some s -> Work(s)
-            end
-          in
-          let syntax =
-            begin
-              match syntax_flag with
-                  None -> Syntax("explicit")
-                | Some s -> Syntax(s)
-            end
-          in
+          (* set global flags *)
           let () = F.reset () in
-          let () = F.config_in := input_config_path in
-          let () = F.config_out := output_config_path in
-          let () = List.iter (process_option cmd_ext) [vlevel; work_cm; syntax] in
+          let () = F.verbosity := verbosity in
+          let () = set_cost_model cost_model in
+          let () = set_syntax syntax in
+
+          (* parse *)
           let (contract_env,_ext) = read file in
           let () = print_string ("% contract parsing successful!\n") in
-          let config = get_initial_config () in
           let (txn_env, _ext) =
             match txn_path with
                 None -> ([], None)
               | Some(txn_file) -> read txn_file
           in
           let () = print_string ("% transaction parsing successful!\n") in
+
+          (* typecheck *)
           let env = try validate (contract_env @ txn_env)
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
           in
           let () = print_string ("% compilation successful!\n") in
-          let final_config = run env config env in
+
+          (* run transaction *)
+          let initial_config = load_config config_in in
+          let final_config = run env initial_config env in
           let () = print_string ("% runtime successful!\n") in
 
-          match !F.config_out with
+          (* save final configuration *)
+          match config_out with
               None -> ()
             | Some(path) -> C.Sexp.save path (E.sexp_of_full_configuration final_config));;
