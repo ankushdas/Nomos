@@ -1,4 +1,4 @@
-(* Configuration for running rast files *)
+(* Nomos command-line tool entry point *)
 
 module R = Arith
 module A = Ast
@@ -11,7 +11,6 @@ module F = NomosFlags
 module E = Exec
 open Lexer
 open Lexing
-
 
 (*********************************)
 (* Loading and Elaborating Files *)
