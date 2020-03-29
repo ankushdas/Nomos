@@ -210,14 +210,19 @@ type map_chan_sem = sem Chan.Map.t [@@deriving sexp]
 (* map from channel to its continuation *)
 type map_chan_chan = A.chan Chan.Map.t [@@deriving sexp]
 
+(* map from channel to its type *)
+type map_chan_tp = A.stype Chan.Map.t [@@deriving sexp]
+
 (* configuration type *)
 (* map from offered channel to semantic object *)
 (* map from channel to its continuation channel *)
 (* map from linear channel to its shared counterpart *)
+(* map from shared channels to their types *)
 type configuration =
   { conf   : map_chan_sem;
     conts  : map_chan_chan;
     shared : map_chan_chan;
+    types  : map_chan_tp;
   } [@@deriving sexp]
 
 type stepped_config =
@@ -321,6 +326,9 @@ let get_cont c config =
       None -> raise ExecImpossible
     | Some c' -> c'
 
+let add_chan_tp c t config =
+  { config with types = M.add_exn config.types ~key:c ~data:t }
+
 let get_pot env f =
   match A.lookup_expdec env f with
       None -> raise UndefinedProcess
@@ -389,6 +397,11 @@ let chan_mode env f =
       None -> raise UndefinedProcess
     | Some(_ctx,_pot,_zc,m) -> m
 
+let chan_tp env f =
+  match A.lookup_expdec env f with
+      None -> raise UndefinedProcess
+    | Some(_ctx,_pot,zc,_m) -> let (_c, t) = zc in t 
+
 let add_chan ch in_use = ch::in_use
 
 let replace_chan ch' ch l =
@@ -442,7 +455,11 @@ let spawn env ch config =
           let proc2 = Proc(func,d,func_in_use,t+1,(w,pot-pot'),A.subst c' x q.A.st_structure) in
           let config = add_sem proc1 config in
           let config = add_sem proc2 config in
-          Changed config
+          begin
+            match m with
+            | A.Shared -> Changed (add_chan_tp c' (chan_tp env f) config)
+            | _ -> Changed config
+          end
     | _s -> raise ExecImpossible;;
 
 let get_stexp fexp = match fexp.A.func_structure with
@@ -1243,7 +1260,9 @@ let empty_full_configuration =
   (0, 0, {
     conf = M.empty (module Chan);
     conts = M.empty (module Chan);
-    shared = M.empty (module Chan); })
+    shared = M.empty (module Chan);
+    types = M.empty (module Chan);
+  })
 
 (* exec env C (f, args) = C'
  * env is the elaborated environment

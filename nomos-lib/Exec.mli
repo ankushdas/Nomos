@@ -32,10 +32,13 @@ module Chan :
 
 type map_chan_sem = sem Chan.Map.t
 type map_chan_chan = A.chan Chan.Map.t
+type map_chan_tp = A.stype Chan.Map.t
 type configuration =
-  { conf: map_chan_sem;
-    conts: map_chan_chan;
-    shared: map_chan_chan; }
+  { conf   : map_chan_sem;
+    conts  : map_chan_chan;
+    shared : map_chan_chan;
+    types  : map_chan_tp;
+  }
 
 type full_configuration = int * int * configuration [@@deriving sexp]
 val empty_full_configuration : full_configuration
