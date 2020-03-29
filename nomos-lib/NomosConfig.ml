@@ -164,6 +164,8 @@ let nomos_command =
           ~doc:"work-cost-model none, recv, send, recvsend, free"
         and syntax = flag "-s" (optional_with_default "explicit" string)
           ~doc:"syntax implicit, explicit"
+        and tc_only = flag "-tc" no_arg
+          ~doc:"tc only"
         and config_in = flag "-i" (optional in_conf_file)
           ~doc:"input configuration path"
         and config_out = flag "-o" (optional out_conf_file)
@@ -177,6 +179,15 @@ let nomos_command =
           let () = F.verbosity := verbosity in
           let () = set_cost_model cost_model in
           let () = set_syntax syntax in
+          let () =
+            if tc_only && List.exists Option.is_some [config_in; config_out; txn_path]
+              then
+                begin
+                  C.eprintf "cannot use execution options with -tc flag";
+                  exit 1
+                end
+              else
+                () in
 
           (* parse *)
           let (contract_env,_ext) = read file in
@@ -184,9 +195,13 @@ let nomos_command =
           let (txn_env, _ext) =
             match txn_path with
                 None -> ([], None)
-              | Some(txn_file) -> read txn_file
+              | Some(txn_file) -> 
+                  let e = read txn_file in
+                  begin
+                    print_string "% transaction parsing successful!\n";
+                    e
+                  end
           in
-          let () = print_string ("% transaction parsing successful!\n") in
 
           (* typecheck *)
           let env = try validate (contract_env @ txn_env)
@@ -194,12 +209,15 @@ let nomos_command =
           in
           let () = print_string ("% compilation successful!\n") in
 
-          (* run transaction *)
-          let initial_config = load_config config_in in
-          let final_config = run env initial_config env in
-          let () = print_string ("% runtime successful!\n") in
+          if tc_only
+            then ()
+            else
+              (* run transaction *)
+              let initial_config = load_config config_in in
+              let final_config = run env initial_config env in
+              let () = print_string ("% runtime successful!\n") in
 
-          (* save final configuration *)
-          match config_out with
-              None -> ()
-            | Some(path) -> C.Sexp.save path (E.sexp_of_full_configuration final_config));;
+              (* save final configuration *)
+              match config_out with
+                  None -> ()
+                | Some(path) -> C.Sexp.save path (E.sexp_of_full_configuration final_config));;
