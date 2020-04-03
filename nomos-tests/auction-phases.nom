@@ -108,6 +108,56 @@ proc contract run : (T : int), (w : int), (v : int), ($b : dictionary), ($l : lo
   )
 }
 
+type maybe_money = +{none: 1, some: money * 1}
+
+proc transaction bid_client : (a : int), ($m : money), (#sa : running_auction) |{*}- ($d : maybe_money) =
+{
+  $la <- acquire #sa ;
+  pay $la {*} ;
+  case $la (
+    running => $la.bid ;
+               send $la a ;
+               send $la $m ;
+               get $la {*} ;
+               #sa <- release $la ;
+               work {*} ;
+               $d.none;
+               close $d
+  | ended => $la.cancel ;
+             get $la {*} ;
+             #sa <- release $la ;
+             $d.some;
+             send $d $m ;
+             close $d
+  )
+}
+
+proc transaction collect_client : (a : int), (#sa : ended_auction) |{*}- ($d : 1) =
+{
+  $la <- acquire #sa ;
+  pay $la {*} ;
+  case $la (
+    ended => $la.collect ;
+             send $la a ;
+             case $la (
+               won => $l <- recv $la ;
+                      get $la {*} ;
+                      #sa <- release $la ;
+                      wait $l ;
+                      work {*} ;
+                      close $d
+              | lost => $m <- recv $la ;
+                        get $la {*} ;
+                        #sa <- release $la ;
+                        $m.coins ;
+                        pay $m {*} ;
+                        wait $m ;
+                        work {*} ;
+                        close $d
+             )
+  )
+}
+
 proc contract check : (T : int), (w : int), (v : int), ($b : dictionary), ($l : lot) |{*}- (#sa : running_auction) =
 {
   $b.size ;
