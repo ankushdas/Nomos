@@ -25,10 +25,6 @@ exception StarPotential (* star potential encountered at runtime *)
 
 exception RuntimeError (* should never happen at runtime *)
 
-let debug = false
-
-let print_debug s = if debug then print_string (s ^ "\n") else ()
-
 open Sexplib.Std
 type sem =
     (* Proc(chan, in_use, time, (work, pot), P) *)
@@ -214,12 +210,20 @@ type map_chan_sem = sem Chan.Map.t [@@deriving sexp]
 (* map from channel to its continuation *)
 type map_chan_chan = A.chan Chan.Map.t [@@deriving sexp]
 
+(* map from channel to its type *)
+type map_chan_tp = A.stype Chan.Map.t [@@deriving sexp]
+
 (* configuration type *)
 (* map from offered channel to semantic object *)
 (* map from channel to its continuation channel *)
 (* map from linear channel to its shared counterpart *)
-type configuration = map_chan_sem * map_chan_chan * map_chan_chan
-[@@deriving sexp]
+(* map from shared channels to their types *)
+type configuration =
+  { conf   : map_chan_sem;
+    conts  : map_chan_chan;
+    shared : map_chan_chan;
+    types  : map_chan_tp;
+  } [@@deriving sexp]
 
 type stepped_config =
     Changed of configuration
@@ -258,14 +262,14 @@ let rec find_branch l bs =
         else find_branch l bs'
     | [] -> raise MissingBranch;;
 
-let find_sem c (conf,_conts,_shared) =
-  match M.find conf c with
-      None -> (print_debug (PP.pp_chan c); raise ExecImpossible)
-    | Some v -> v;;
+let find_sem c config =
+  match M.find config.conf c with
+      None -> raise ExecImpossible
+    | Some v -> v
 
-type pol = Pos | Neg;;
+type pol = Pos | Neg
 
-let find_msg c (conf,conts,_shared) dual =
+let find_msg c { conf; conts; _ } dual =
   match dual with
       Neg ->
         begin
@@ -285,44 +289,45 @@ let find_msg c (conf,conts,_shared) dual =
           | Some (Proc _) -> None
           | Some (Msg _) -> sem_obj;;
 
-let remove_sem c (conf,conts,shared) =
-  (M.remove conf c, conts, shared);;
+let remove_sem c config =
+  { config with conf = M.remove config.conf c }
 
-let add_sem sem (conf,conts,shared) =
+let add_sem sem config =
   match sem with
       Proc(_f,c,_in_use,_t,_wp,_p) ->
-        (M.add_exn conf ~key:c ~data:sem, conts, shared)
+        { config with conf = M.add_exn config.conf ~key:c ~data:sem }
     | Msg(c,_t,_wp,_p) ->
-        (M.add_exn conf ~key:c ~data:sem, conts, shared);;
+        { config with conf = M.add_exn config.conf ~key:c ~data:sem }
 
-let add_shared_map (c,c') (conf,conts,shared) =
-  (conf, conts, M.add_exn shared ~key:c ~data:c');;
+let add_shared_map (c,c') config =
+  { config with shared = M.add_exn config.shared ~key:c ~data:c' }
 
-let get_shared_chan c (_conf,_conts,shared) =
-  match M.find shared c with
+let get_shared_chan c config =
+  match M.find config.shared c with
       None -> raise ExecImpossible
-    | Some c' -> c';;
+    | Some c' -> c'
 
-let remove_shared_map c (conf,conts,shared) =
-  (conf, conts, M.remove shared c);;
+let remove_shared_map c config =
+  { config with shared = M.remove config.shared c }
 
-let add_cont (c,c') (conf,conts,shared) =
-  match M.find shared c with
-      None -> (conf, M.add_exn conts ~key:c ~data:c', shared)
+let add_cont (c,c') config =
+  match M.find config.shared c with
+      None -> { config with conts = M.add_exn config.conts ~key:c ~data:c' }
     | Some cs ->
-        let config = (conf,conts,shared) in
         let config = remove_shared_map c config in
         let config = add_shared_map (c',cs) config in
-        let (conf,conts,shared) = config in
-        (conf, M.add_exn conts ~key:c ~data:c', shared);;
+        { config with conts = M.add_exn config.conts ~key:c ~data:c' }
 
-let remove_cont c (conf,conts,shared) =
-  (conf, M.remove conts c,shared);;
+let remove_cont c config =
+  { config with conts = M.remove config.conts c }
 
-let get_cont c (_conf,conts,_shared) =
-  match M.find conts c with
+let get_cont c config =
+  match M.find config.conts c with
       None -> raise ExecImpossible
-    | Some c' -> c';;
+    | Some c' -> c'
+
+let add_chan_tp c t config =
+  { config with types = M.add_exn config.types ~key:c ~data:t }
 
 let get_pot env f =
   match A.lookup_expdec env f with
@@ -392,11 +397,16 @@ let chan_mode env f =
       None -> raise UndefinedProcess
     | Some(_ctx,_pot,_zc,m) -> m
 
+let chan_tp env f =
+  match A.lookup_expdec env f with
+      None -> raise UndefinedProcess
+    | Some(_ctx,_pot,zc,_m) -> let (_c, t) = zc in t 
+
 let add_chan ch in_use = ch::in_use
 
 let replace_chan ch' ch l =
   if not (List.exists (eq_name ch) l)
-  then (print_debug (PP.pp_chan ch); raise ExecImpossible)
+  then raise ExecImpossible
   else
     List.map
       (fun other -> if eq_name ch other then ch' else other)
@@ -404,7 +414,7 @@ let replace_chan ch' ch l =
 
 let remove_chan ch l =
   if not (List.exists (eq_name ch) l)
-  then (print_debug (PP.pp_chan ch); raise ExecImpossible)
+  then raise ExecImpossible
   else List.filter (uneq_name ch) l
 
 let chans_diff chs1 chs2 =
@@ -445,7 +455,11 @@ let spawn env ch config =
           let proc2 = Proc(func,d,func_in_use,t+1,(w,pot-pot'),A.subst c' x q.A.st_structure) in
           let config = add_sem proc1 config in
           let config = add_sem proc2 config in
-          Changed config
+          begin
+            match m with
+            | A.Shared -> Changed (add_chan_tp c' (chan_tp env f) config)
+            | _ -> Changed config
+          end
     | _s -> raise ExecImpossible;;
 
 let get_stexp fexp = match fexp.A.func_structure with
@@ -802,8 +816,7 @@ let getpot_R ch config =
           end
     | _s -> raise ExecImpossible;;
 
-let get_sems (conf,_conts,_shared) =
-  M.fold_right conf ~init:[] ~f:(fun ~key:_k ~data:v l -> v::l);;
+let get_sems config = M.data config.conf
 
 let rec find_procs ch sems =
   match sems with
@@ -1038,36 +1051,6 @@ let makechan ch config =
         Changed config
     | _s -> raise ExecImpossible;;
 
-(*
-obsolete code
--------------
-let getCaller ch config =
-  let s = find_sem ch config in
-  let config = remove_sem ch config in
-  match s with
-      Proc(func,c,in_use,t,(w,pot),A.GetCaller(x,p)) ->
-        let cs = get_shared_chan c config in
-        let p = A.subst_aug cs x p in
-        let in_use' = add_chan cs in_use in
-        let proc = Proc(func,c,in_use',t+1, (w,pot), p.A.st_structure) in
-        let config = add_sem proc config in
-        Changed config
-    | _s -> raise ExecImpossible;;
-
-let getTxnSender ch config =
-  let s = find_sem ch config in
-  let config = remove_sem ch config in
-  match s with
-      Proc(func,c,in_use,t,(w,pot),A.GetTxnSender(x,p)) ->
-        let cs = get_shared_chan c config in
-        let p = A.subst_aug cs x p in
-        let in_use' = add_chan cs in_use in
-        let proc = Proc(func,c,in_use',t+1, (w,pot), p.A.st_structure) in
-        let config = add_sem proc config in
-        Changed config
-    | _s -> raise ExecImpossible;;
-*)
-
 let match_and_one_step env sem config =
   match sem with
       Proc(_func,c,_in_use,_t,_wp,p) ->
@@ -1149,22 +1132,12 @@ let rec pp_sems sems =
       [] -> "---------------------------------------\n"
     | sem::sems' -> pp_sem sem ^ "\n" ^ pp_sems sems';;
 
-let get_maps (_conf,_conts,shared) =
-  M.fold_right shared ~init:[] ~f:(fun ~key:k ~data:v l -> (k,v)::l);;
-
-let get_conts (_conf,conts,_shared) =
-  M.fold_right conts ~init:[] ~f:(fun ~key:k ~data:v l -> (k,v)::l);;
-
 let rec pp_maps maps =
   match maps with
       [] -> "=======================================\n"
     | (c,c')::maps' -> PP.pp_chan c ^ " -> " ^ PP.pp_chan c' ^ "\n" ^ pp_maps maps';; 
 
-let pp_config config =
-  let sems = get_sems config in
-  let _maps = get_maps config in
-  let _conts = get_conts config in
-  (pp_sems sems);;
+let pp_config config = pp_sems (get_sems config)
 
 let rec step env config =
   let sems = get_sems config in
@@ -1284,7 +1257,12 @@ type full_configuration = int * int * configuration
 [@@deriving sexp]
 
 let empty_full_configuration =
-  (0, 0, (M.empty (module Chan), M.empty (module Chan), M.empty (module Chan)))
+  (0, 0, {
+    conf = M.empty (module Chan);
+    conts = M.empty (module Chan);
+    shared = M.empty (module Chan);
+    types = M.empty (module Chan);
+  })
 
 (* exec env C (f, args) = C'
  * env is the elaborated environment
