@@ -227,7 +227,8 @@ type configuration =
 
 type stepped_config =
     Changed of configuration
-  | Unchanged of configuration;;
+  | Unchanged of configuration
+  | Aborted;;
 
 let chan_num = ref 0;;
 
@@ -1124,6 +1125,9 @@ let match_and_one_step env sem config =
             | A.MakeChan _ ->
                 makechan c config
             
+            | A.Abort ->
+                Aborted
+            
         end
     | Msg _ -> Unchanged config;;
 
@@ -1137,7 +1141,11 @@ let rec pp_maps maps =
       [] -> "=======================================\n"
     | (c,c')::maps' -> PP.pp_chan c ^ " -> " ^ PP.pp_chan c' ^ "\n" ^ pp_maps maps';; 
 
-let pp_config config = pp_sems (get_sems config)
+let pp_config config = pp_sems (get_sems config);;
+
+type config_outcome =
+    Fail
+  | Success of configuration;;
 
 let rec step env config =
   let sems = get_sems config in
@@ -1153,12 +1161,13 @@ let rec step env config =
 
 and iterate_and_one_step env sems config stepped =
   match sems with
-      [] -> if stepped then step env config else config
+      [] -> if stepped then step env config else Success config
     | sem::sems' ->
         let stepped_config = match_and_one_step env sem config in
         match stepped_config with
             Changed config -> iterate_and_one_step env sems' config true
-          | Unchanged config -> iterate_and_one_step env sems' config stepped;;
+          | Unchanged config -> iterate_and_one_step env sems' config stepped
+          | Aborted -> Fail;;
 
 let error = ErrorMsg.error_msg ErrorMsg.Runtime None;;
 
@@ -1280,21 +1289,26 @@ let exec env (full_config : full_configuration) (f, args) =
   let pot = try_evaluate (get_pot env f) in
   let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
   let config = add_sem sem initial_config in
-  try (!txnNum + 1, !chan_num, types, verify_final_configuration c (step env config))
-  with
-    | InsufficientPotential -> error "insufficient potential during execution"
-                               ; raise RuntimeError
-    | UnconsumedPotential -> error "unconsumed potential during execution"
-                             ; raise RuntimeError
-    | PotentialMismatch -> error "potential mismatch during execution"
-                           ; raise RuntimeError
-    | MissingBranch -> error "missing branch during execution"
-                       ; raise RuntimeError
-    | ProgressError -> error "final configuration inconsistent"
-                       ; raise RuntimeError
-    | ChannelMismatch -> error "channel name mismatch found at runtime"
-                         ; raise RuntimeError
-    | UndefinedProcess -> error "undefined process found at runtime"
-                          ; raise RuntimeError
-    | StarPotential -> error "potential * found at runtime"
-                       ; raise RuntimeError;;
+  match step env config with
+      Fail -> full_config
+    | Success final_config ->
+        begin
+          try (!txnNum + 1, !chan_num, types, verify_final_configuration c final_config)
+        with
+          | InsufficientPotential -> error "insufficient potential during execution"
+                                    ; raise RuntimeError
+          | UnconsumedPotential -> error "unconsumed potential during execution"
+                                  ; raise RuntimeError
+          | PotentialMismatch -> error "potential mismatch during execution"
+                                ; raise RuntimeError
+          | MissingBranch -> error "missing branch during execution"
+                            ; raise RuntimeError
+          | ProgressError -> error "final configuration inconsistent"
+                            ; raise RuntimeError
+          | ChannelMismatch -> error "channel name mismatch found at runtime"
+                              ; raise RuntimeError
+          | UndefinedProcess -> error "undefined process found at runtime"
+                                ; raise RuntimeError
+          | StarPotential -> error "potential * found at runtime"
+                            ; raise RuntimeError
+      end;;
