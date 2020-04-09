@@ -270,6 +270,7 @@ let rec pp_exp env i exp = match exp with
   | A.Let(v,e,p) -> "let " ^ v ^ " = " ^ pp_fexp env i e.A.func_structure ^ " ;\n" ^ pp_exp_indent env i p
   | A.IfS(e,p1,p2) -> "if " ^ pp_fexp env i e.A.func_structure ^ "\n" ^ pp_then i ^ pp_exp_indent env (i+2) p1 ^ "\n" ^ pp_else i ^ pp_exp_indent env (i+2) p2
   | A.MakeChan(x,a,n,p) -> pp_chan x ^ " : " ^ pp_tp env a ^ " <- Nomos.MakeChan " ^ string_of_int n ^ " ;\n" ^ pp_exp_indent env i p
+  | A.Abort -> "abort"
 
 and pp_exp_indent env i p = spaces i ^ pp_exp env i p.A.st_structure
 and pp_exp_after env i s p = s ^ pp_exp env (i+len(s)) p
@@ -399,6 +400,7 @@ let pp_exp_prefix exp = match exp with
   | A.Let(v,e,_p) -> "let " ^ v ^ " = " ^ pp_fexp () 0 e.A.func_structure ^ " ; ..."
   | A.IfS(e,_p1,_p2) -> "if " ^ pp_fexp () 0 e.A.func_structure ^ " ... "
   | A.MakeChan(x,a,n,p) -> pp_chan x ^ " : " ^ pp_tp_simple a ^ " <- Nomos.MakeChan " ^ string_of_int n ^ " ... "
+  | A.Abort -> "abort"
 
 let rec pp_val_list l = 
   match l with

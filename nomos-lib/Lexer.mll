@@ -108,6 +108,7 @@ rule token = parse
   | "accept"            { ACCEPT }
   | "release"           { RELEASE }
   | "detach"            { DETACH }
+  | "abort"             { ABORT }
 
   (* identifier *)
   | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']* as word { ID (word) }

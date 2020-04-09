@@ -76,7 +76,7 @@ proc asset addbid : (r : int), ($m : money), ($bs : dictionary) |{*}- ($newbs : 
 type auction = /\ <{*}| +{running : &{bid : int -> money -o |{*}> \/ auction,
                                       cancel : |{*}> \/ auction},
                           ended : &{collect : int -> +{won : lot * |{*}> \/ auction,
-                                                 lost : money * |{*}> \/ auction},
+                                                       lost : money * |{*}> \/ auction},
                                     cancel : |{*}> \/ auction}}
 
 proc contract run : (T : int), (w : int), (v : int), ($b : dictionary), ($l : lot) |{*}- (#sa : auction) =

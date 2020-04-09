@@ -61,6 +61,7 @@ and cost_recv d exp = match exp with
   | A.IfS(e,p1,p2) -> work d (A.IfS(cost_tick_aug e, cost_recv_aug p1, cost_recv_aug p2))
 
   | A.MakeChan(x,a,n,p) -> work d (A.MakeChan(x, a, n, cost_recv_aug p))
+  | A.Abort -> work d (A.Abort)
 
 and cost_recv_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_recv d p}
 
@@ -99,6 +100,7 @@ and cost_send d exp = match exp with
   | A.IfS(e,p1,p2) -> work d (A.IfS(cost_tick_aug e, cost_send_aug p1, cost_send_aug p2))
 
   | A.MakeChan(x,a,n,p) -> work d (A.MakeChan(x, a, n, cost_send_aug p))
+  | A.Abort -> work d (A.Abort)
 
 and cost_send_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_send d p}
 

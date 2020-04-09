@@ -77,6 +77,7 @@ let rec remove_stars_exp exp = match exp with
   | A.Let(x,e,p) -> A.Let(x,e, remove_stars_aug p)
   | A.IfS(e,p1,p2) -> A.IfS(e, remove_stars_aug p1, remove_stars_aug p2)
   | A.MakeChan(x,a,n,p) -> A.MakeChan(x, a, n, remove_stars_aug p)
+  | A.Abort -> A.Abort
 
 and remove_stars_branches bs = match bs with
     [] -> []
@@ -197,6 +198,7 @@ let rec substitute_exp exp psols msols = match exp with
   | A.Let(x,e,p) -> A.Let(x,e, substitute_aug p psols msols)
   | A.IfS(e,p1,p2) -> A.IfS(e, substitute_aug p1 psols msols, substitute_aug p2 psols msols)
   | A.MakeChan(x,a,n,p) -> A.MakeChan(x, a, n, substitute_aug p psols msols)
+  | A.Abort -> A.Abort
 
 and substitute_branches bs psols msols = match bs with
     [] -> []
@@ -290,6 +292,7 @@ let rec removeU_exp exp = match exp with
   | A.Let(x,e,p) -> A.Let(x,e, removeU_aug p)
   | A.IfS(e,p1,p2) -> A.IfS(e, removeU_aug p1, removeU_aug p2)
   | A.MakeChan(x,a,n,p) -> A.MakeChan(removeU x, a, n, removeU_aug p)
+  | A.Abort -> A.Abort
 
 and removeU_branches bs = match bs with
     [] -> []

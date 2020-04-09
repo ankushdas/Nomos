@@ -22,7 +22,7 @@
 %token LBRACE RBRACE
 %token HASH DOLLAR
 %token LARROW SEMI RRARROW
-%token RECV SEND CASE DOT CLOSE WAIT WORK PAY GET ACQUIRE ACCEPT RELEASE DETACH
+%token RECV SEND CASE DOT CLOSE WAIT WORK PAY GET ACQUIRE ACCEPT RELEASE DETACH ABORT
 %right ANDALSO ORELSE
 %left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
 %right CONS
@@ -333,7 +333,10 @@ st:
                                                                                                                     $startpos.Lexing.pos_fname)} }
     |  CLOSE; x = linid                                                  { {st_structure = Ast.Close(x); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
-                                                                                                                    $startpos.Lexing.pos_fname)} }     
+                                                                                                                    $startpos.Lexing.pos_fname)} }
+    |  ABORT                                                            { {st_structure = Ast.Abort; st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                    $startpos.Lexing.pos_fname)} } 
     |  WAIT; x = linid; s = SEMI; p = st                                     { {st_structure = Ast.Wait(x,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(s).Lexing.pos_lnum, $endpos(s).Lexing.pos_cnum - $endpos(s).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }   

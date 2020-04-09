@@ -87,6 +87,7 @@ and 'a st_expr =
   | Let of string * 'a func_aug_expr * 'a st_aug_expr
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
   | MakeChan of chan * stype * int * 'a st_aug_expr 
+  | Abort
   [@@deriving sexp]
 and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list

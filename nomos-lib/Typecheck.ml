@@ -1576,6 +1576,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         then error (exp.A.st_data) (PP.pp_chan x ^ "not shared; can only create shared channels")
         else check_exp' trace env (add_chan env (x,a) delta) pot p zc ext mode
       end
+  | A.Abort -> ()
 
 and check_branchesR trace env delta pot branches z choices ext mode = match branches, choices with
     (l1,p)::branches', (l2,c)::choices' ->
