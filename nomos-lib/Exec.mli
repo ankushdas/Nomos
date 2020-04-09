@@ -40,7 +40,8 @@ type configuration =
     types  : map_chan_tp;
   }
 
-type full_configuration = int * int * configuration [@@deriving sexp]
+type type_map = A.stype M.M(C.String).t [@@deriving sexp]
+type full_configuration = int * int * type_map * configuration [@@deriving sexp]
 val empty_full_configuration : full_configuration
 
 

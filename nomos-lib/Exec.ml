@@ -1,7 +1,7 @@
+module C = Core
 module R = Arith
 module A = Ast
 module PP = Pprint
-module C = Core
 module M = C.Map
 module F = NomosFlags
 
@@ -1252,12 +1252,14 @@ let verify_final_configuration top config =
           raise RuntimeError)
     else config'
 
-(* transaction num * channel num * configuration *)
-type full_configuration = int * int * configuration
+type type_map = A.stype M.M(C.String).t [@@deriving sexp]
+
+(* transaction num * channel num * type names * configuration *)
+type full_configuration = int * int * type_map * configuration
 [@@deriving sexp]
 
 let empty_full_configuration =
-  (0, 0, {
+  (0, 0, M.empty (module C.String), {
     conf = M.empty (module Chan);
     conts = M.empty (module Chan);
     shared = M.empty (module Chan);
@@ -1270,7 +1272,7 @@ let empty_full_configuration =
  * C' is final, poised configuration
  *)
 let exec env (full_config : full_configuration) (f, args) =
-  let (tx, ch, initial_config) = full_config in
+  let (tx, ch, types, initial_config) = full_config in
   let () = txnNum := tx in
   let () = chan_num := ch in
   let m = chan_mode env f in
@@ -1278,7 +1280,7 @@ let exec env (full_config : full_configuration) (f, args) =
   let pot = try_evaluate (get_pot env f) in
   let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
   let config = add_sem sem initial_config in
-  try (!txnNum + 1, !chan_num, verify_final_configuration c (step env config))
+  try (!txnNum + 1, !chan_num, types, verify_final_configuration c (step env config))
   with
     | InsufficientPotential -> error "insufficient potential during execution"
                                ; raise RuntimeError

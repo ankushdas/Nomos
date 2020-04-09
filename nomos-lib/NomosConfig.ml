@@ -9,6 +9,7 @@ module I = Infer
 module TC = Typecheck
 module F = NomosFlags
 module E = Exec
+module Map = C.Map
 open Lexer
 open Lexing
 
@@ -106,6 +107,9 @@ let rec run env config dcls =
         let config' = E.exec env config (f, []) in
         (* may raise Exec.RuntimeError *)
         run env config' dcls'
+    | (A.TpDef(n, t), _ext)::dcls' ->
+        let (tx, ch, types, conf) = config in
+        run env (tx, ch, Map.set types ~key:n ~data:t, conf) dcls'
     | _dcl::dcls' -> run env config dcls'
     | [] -> config;;
 
@@ -220,4 +224,4 @@ let nomos_command =
               (* save final configuration *)
               match config_out with
                   None -> ()
-                | Some(path) -> C.Sexp.save path (E.sexp_of_full_configuration final_config));;
+                | Some(path) -> C.Sexp.save_hum path (E.sexp_of_full_configuration final_config));;
