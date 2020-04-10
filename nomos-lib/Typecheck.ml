@@ -185,6 +185,7 @@ let mode_recv m1 m2 = match m1, m2 with
 let rec eq_ftp tp tp' = match tp, tp' with
     A.Integer, A.Integer -> true
   | A.Boolean, A.Boolean -> true
+  | A.String, A.String -> true
   | A.Address, A.Address -> true
   | A.ListTP(t,pot), A.ListTP(t',pot') -> eq_ftp t t' && eq pot pot'
   | A.Arrow(t1,t2), A.Arrow(t1',t2') -> eq_ftp t1 t1' && eq_ftp t2 t2'
@@ -594,7 +595,7 @@ let remove_var x delta =
   {A.shared = delta.A.shared; A.linear = delta.A.linear; A.ordered = removevar x delta.A.ordered};;
 
 let rec consume_pot tp = match tp with
-    A.Integer | A.Boolean | A.Address | A.VarT _ -> tp
+    A.Integer | A.Boolean | A.String | A.Address | A.VarT _ -> tp
   | A.ListTP(t,_pot) -> A.ListTP(consume_pot t, A.Arith (R.Int(0)))
   | A.Arrow(t1,t2) -> A.Arrow(consume_pot t1, consume_pot t2);;
 
@@ -657,6 +658,12 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
         match tp with
             A.Integer -> (delta, pot)
           | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected integer, found: " ^ PP.pp_ftp_simple tp)
+      end
+  | A.Str(_) ->
+      begin
+        match tp with
+            A.String -> (delta, pot)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected string, found: " ^ PP.pp_ftp_simple tp)
       end
   | A.Addr(_) ->
       begin
@@ -794,6 +801,7 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
   | A.LetIn _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
   | A.Bool _ -> (delta, pot, A.Boolean)
   | A.Int _ -> (delta, pot, A.Integer)
+  | A.Str _ -> (delta, pot, A.String)
   | A.Addr _ -> (delta, pot, A.Address)
   | A.Var(x) ->
       begin

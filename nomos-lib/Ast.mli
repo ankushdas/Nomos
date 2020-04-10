@@ -7,6 +7,7 @@ type expname = string
 type func_tp =
     Integer
   | Boolean
+  | String
   | Address
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
@@ -49,6 +50,7 @@ and 'a func_expr =
   | LetIn of string * 'a func_aug_expr * 'a func_aug_expr
   | Bool of bool
   | Int of int
+  | Str of string
   | Addr of string
   | Var of string
   | ListE of 'a func_aug_expr list
@@ -110,6 +112,7 @@ type program = (decl * ext) list * ext
 type 'a value =
     IntV of int
   | BoolV of bool
+  | StrV of string
   | AddrV of string
   | ListV of 'a value list
   | LambdaV of arglist * 'a func_aug_expr

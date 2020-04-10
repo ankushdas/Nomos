@@ -90,6 +90,7 @@ let pp_mode m = match m with
 let rec pp_ftp_simple t = match t with
     A.Integer -> "int"
   | A.Boolean -> "bool"
+  | A.String -> "string"
   | A.Address -> "address"
   | A.ListTP(t,pot) -> pp_ftp_simple t ^ " list " ^ pp_pot pot
   | A.Arrow(t1,t2) -> pp_ftp_simple t1 ^ " -> " ^ pp_ftp_simple t2
@@ -308,6 +309,7 @@ and pp_fexp env i e =
     | A.Var(x)  -> x
     | A.Bool(b) -> string_of_bool b
     | A.Int(i)  -> string_of_int i
+    | A.Str(s) -> s
     | A.Addr(s) -> s
     | A.LetIn(x, e1, e2) ->
         let a = pp_fexp env i e1.A.func_structure in
@@ -402,7 +404,7 @@ let pp_exp_prefix exp = match exp with
   | A.MakeChan(x,a,n,p) -> pp_chan x ^ " : " ^ pp_tp_simple a ^ " <- Nomos.MakeChan " ^ string_of_int n ^ " ... "
   | A.Abort -> "abort"
 
-let rec pp_val_list l = 
+let rec pp_val_list l =
   match l with
     [] -> ""
   | x::xs ->
@@ -415,6 +417,7 @@ and pp_val v =
   match v with 
       A.IntV(v1) -> string_of_int v1 
     | A.BoolV(v1) -> string_of_bool v1
+    | A.StrV(s) -> s
     | A.AddrV(a) -> a
     | A.ListV(l) -> "[" ^ pp_val_list l ^ "]"
     | A.LambdaV(args, v1) -> "fun " ^ pp_args args ^ " -> " ^ pp_fexp () 0 v1.A.func_structure;;

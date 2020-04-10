@@ -21,6 +21,7 @@ type expname = string [@@deriving sexp] (* f, for processes defined with f = P *
 type func_tp =
   | Integer
   | Boolean
+  | String
   | Address
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
@@ -102,6 +103,7 @@ and 'a func_expr =
   | LetIn of string * 'a func_aug_expr * 'a func_aug_expr
   | Bool of bool
   | Int of int
+  | Str of string
   | Addr of string
   | Var of string
   | ListE of 'a func_aug_expr list
@@ -199,6 +201,7 @@ type program = (decl * ext) list * ext
 type 'a value =
   | IntV of int
   | BoolV of bool
+  | StrV of string
   | AddrV of string
   | ListV of 'a value list
   | LambdaV of arglist * 'a func_aug_expr
@@ -313,7 +316,7 @@ and subst_aug c' c {st_structure = exp; st_data = d} =
 and fsubst c' c fexp = match fexp with
     If(e1,e2,e3) -> If(fsubst_aug c' c e1, fsubst_aug c' c e2, fsubst_aug c' c e3)
   | LetIn(x,e1,e2) -> LetIn(x, fsubst_aug c' c e1, fsubst_aug c' c e2)
-  | Bool _ | Int _ | Addr _ | Var _ -> fexp
+  | Bool _ | Int _ | Str _ | Addr _ | Var _ -> fexp
   | ListE(l) -> ListE(List.map (fsubst_aug c' c) l)
   | App(es) -> App(List.map (fsubst_aug c' c) es)
   | Cons(e1,e2) -> Cons(fsubst_aug c' c e1, fsubst_aug c' c e2)
@@ -334,6 +337,7 @@ and fsubst_aug c' c {func_structure = exp ; func_data = d} =
 let rec toExpr d v = match v with
     IntV i -> Int i
   | BoolV b -> Bool b
+  | StrV s -> Str s
   | AddrV a -> Addr a
   | ListV l -> ListE (List.map (fun x -> {func_structure = toExpr d x ; func_data = d}) l)
   | LambdaV(xs,e) -> Lambda (xs,e);;
@@ -341,7 +345,7 @@ let rec toExpr d v = match v with
 let rec substv v' v fexp = match fexp with
     If(e1,e2,e3) -> If(substv_aug v' v e1, substv_aug v' v e2, substv_aug v' v e3)
   | LetIn(x,e1,e2) -> LetIn(x, substv_aug v' v e1, substv_aug v' v e2)
-  | Bool _ | Int _ | Addr _ -> fexp
+  | Bool _ | Str _ | Int _ | Addr _ -> fexp
   | Var x -> if x = v then v' else Var x
   | ListE(l) -> ListE(List.map (substv_aug v' v) l)
   | App(es) -> App(List.map (substv_aug v' v) es)

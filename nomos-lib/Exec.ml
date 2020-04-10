@@ -95,6 +95,7 @@ let rec eval fexp = match fexp.A.func_structure with
       end
   | A.Bool b -> (A.BoolV b, R.Int 0)
   | A.Int i -> (A.IntV i, R.Int 0)
+  | A.Str s -> (A.StrV s, R.Int 0)
   | A.Addr a -> (A.AddrV a, R.Int 0)
   | A.Var x -> raise RuntimeError
   | A.ListE(l) ->

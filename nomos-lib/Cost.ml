@@ -7,7 +7,7 @@ let rec cost_tick_aug {A.func_data = d; A.func_structure = e} = {A.func_data = d
 and cost_tick fexp = match fexp with
     A.If(e1,e2,e3) -> A.If(cost_tick_aug e1, cost_tick_aug e2, cost_tick_aug e3)
   | A.LetIn(x,e1,e2) -> A.LetIn(x, cost_tick_aug e1, cost_tick_aug e2)
-  | A.Bool _ | A.Int _ | A.Addr _ | A.Var _ -> fexp
+  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.Var _ -> fexp
   | A.ListE(l) -> A.ListE(List.map cost_tick_aug l)
   | A.App(es) -> A.App(List.map cost_tick_aug es)
   | A.Cons(e1,e2) -> A.Cons(cost_tick_aug e1, cost_tick_aug e2)

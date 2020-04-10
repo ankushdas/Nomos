@@ -46,7 +46,7 @@ and remove_stars_choices choices = match choices with
 
 and remove_stars_ftp ftp = match ftp with
     A.ListTP(t,pot) -> A.ListTP(t, remove_star pot)
-  | A.Integer | A.Boolean | A.Address | A.VarT _ -> ftp
+  | A.Integer | A.Boolean | A.String | A.Address | A.VarT _ -> ftp
   | A.Arrow(t1,t2) -> A.Arrow(remove_stars_ftp t1, remove_stars_ftp t2);;
 
 let rec remove_stars_exp exp = match exp with
@@ -92,7 +92,7 @@ and remove_stars_faug {A.func_data = d; A.func_structure = e} = {A.func_data = d
 and remove_stars_fexp fexp = match fexp with
     A.If(e1,e2,e3) -> A.If(remove_stars_faug e1, remove_stars_faug e2, remove_stars_faug e3)
   | A.LetIn(x,e1,e2) -> A.LetIn(x, remove_stars_faug e1, remove_stars_faug e2)
-  | A.Bool _ | A.Int _ | A.Addr _ | A.Var _ -> fexp
+  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.Var _ -> fexp
   | A.ListE(l) -> A.ListE(List.map remove_stars_faug l)
   | A.App(es) -> A.App(List.map remove_stars_faug es)
   | A.Cons(e1,e2) -> A.Cons(remove_stars_faug e1, remove_stars_faug e2)
@@ -165,7 +165,7 @@ and substitute_choices choices psols msols = match choices with
 
 and substitute_ftp ftp psols msols = match ftp with
     A.ListTP(t,pot) -> A.ListTP(t, substitute_pot pot psols)
-  | A.Integer | A.Boolean | A.Address | A.VarT _ -> ftp
+  | A.Integer | A.Boolean | A.String | A.Address | A.VarT _ -> ftp
   | A.Arrow(t1,t2) -> A.Arrow(substitute_ftp t1 psols msols, substitute_ftp t2 psols msols);;
 
 let substitute_mode_list xs sols = List.map (fun c -> substitute_argmode c sols) xs;;
@@ -213,7 +213,7 @@ and substitute_faug {A.func_data = d; A.func_structure = e} psols msols = {A.fun
 and substitute_fexp fexp psols msols = match fexp with
     A.If(e1,e2,e3) -> A.If(substitute_faug e1 psols msols, substitute_faug e2 psols msols, substitute_faug e3 psols msols)
   | A.LetIn(x,e1,e2) -> A.LetIn(x, substitute_faug e1 psols msols, substitute_faug e2 psols msols)
-  | A.Bool _ | A.Int _ | A.Addr _ | A.Var _ -> fexp
+  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.Var _ -> fexp
   | A.ListE(l) -> A.ListE(List.map (fun e -> substitute_faug e psols msols) l)
   | A.App(es) -> A.App(List.map (fun e -> substitute_faug e psols msols) es)
   | A.Cons(e1,e2) -> A.Cons(substitute_faug e1 psols msols, substitute_faug e2 psols msols)
@@ -307,7 +307,7 @@ and removeU_faug {A.func_data = d; A.func_structure = e} = {A.func_data = d; A.f
 and removeU_fexp fexp = match fexp with
     A.If(e1,e2,e3) -> A.If(removeU_faug e1, removeU_faug e2, removeU_faug e3)
   | A.LetIn(x,e1,e2) -> A.LetIn(x, removeU_faug e1, removeU_faug e2)
-  | A.Bool _ | A.Int _ | A.Addr _ | A.Var _ -> fexp
+  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.Var _ -> fexp
   | A.ListE(l) -> A.ListE(List.map removeU_faug l)
   | A.App(es) -> A.App(List.map removeU_faug es)
   | A.Cons(e1,e2) -> A.Cons(removeU_faug e1, removeU_faug e2)
