@@ -1,3 +1,5 @@
+module P = Print
+
 type valContext = (string * Ast.value) list
 exception EvaluationError of string
 
@@ -24,6 +26,7 @@ let rec addValue (e : Ast.typed_expr) : Ast.valued_expr =
         |       Op(e1, o, e2) -> {structure = Op(addValue e1, o, addValue e2); data =  valVar}
         |       CompOp(e1, o, e2) -> {structure = CompOp(addValue e1, o, addValue e2); data =  valVar} 
         |       RelOp(e1, o, e2) -> {structure = RelOp(addValue e1, o, addValue e2); data = valVar} 
+        |       Print(id, args) -> {structure = Print(id, List.map addValue args); data = valVar}
 
 
 
@@ -96,7 +99,8 @@ let rec evaluate (ctx : valContext) (e : Ast.valued_expr) : Ast.valued_expr =
                               | "<>" ->  Ast.BoolV(f <> s)
                               | _   -> raise (EvaluationError "undefined operation"))
                             | _   -> raise (EvaluationError "impossible"))
-        | Ast.RelOp (e1, op, e2) -> let firstArg = (evaluate ctx e1).data in
+        | Ast.RelOp (e1, op, e2) -> begin
+                            let firstArg = (evaluate ctx e1).data in
                             let secondArg = (evaluate ctx e2).data in
                             match (firstArg, secondArg) with
                               (Ast.BoolV(f), Ast.BoolV(s)) ->
@@ -105,6 +109,21 @@ let rec evaluate (ctx : valContext) (e : Ast.valued_expr) : Ast.valued_expr =
                               | "||"  ->  Ast.BoolV(f || s)
                               | _   -> raise (EvaluationError "undefined operation"))
                             | _   -> raise (EvaluationError "impossible")
+        end
+        | Ast.Print (ids, args) -> match ids with
+                                        [] -> Ast.IntV(0)
+                                | id::ids' -> let cont = 
+                                                  match id with
+                                                Ast.Word(s) -> if (List.length ids' = 0)
+                                                               then (Printf.printf "%s" s; args)
+                                                               else (Printf.printf "%s " s; args)
+                                        |    Ast.Newline(_) -> Printf.printf "\n"; args 
+                                        |                 _ -> let value = evaluate ctx (List.hd args) in
+                                                               if (List.length ids' = 0)
+                                                               then (Printf.printf "%s" (P.print_value value.data); List.tl args)
+                                                               else (Printf.printf "%s " (P.print_value value.data); List.tl args)  
+                                                               in
+                                              (evaluate ctx ({structure = Ast.Print(ids', cont); data = e.data})).data
         in
                 {structure = e.structure; data = value}
 

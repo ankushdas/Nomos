@@ -8,6 +8,11 @@ type ocamlTP =
 type arglist = Single of string 
              | Curry of string * arglist
 
+type print_id =   Word of string 
+                | Int of unit 
+                | Bool of unit
+                | Newline of unit
+
 type 'a aug_expr = 
         {
                 structure : 'a expr;
@@ -27,6 +32,7 @@ and 'a expr =
         | Op of 'a aug_expr * string * 'a aug_expr
         | CompOp of 'a aug_expr * string * 'a aug_expr
         | RelOp of 'a aug_expr * string * 'a aug_expr
+        | Print of print_id list * 'a aug_expr list
 
 type untyped_expr = unit aug_expr
 type typed_expr = ocamlTP aug_expr

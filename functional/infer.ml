@@ -34,6 +34,7 @@ let rec addType (e : Ast.untyped_expr) : Ast.typed_expr =
         |       Op(e1, o, e2) -> {structure = Op(addType e1, o, addType e2); data =  typeVar}
         |       CompOp(e1, o, e2) -> {structure = CompOp(addType e1, o, addType e2); data =  typeVar} 
         |       RelOp(e1, o, e2) -> {structure = RelOp(addType e1, o, addType e2); data = typeVar} 
+        |       Print(id, args) -> {structure = Print(id, List.map addType args); data = typeVar}
 
 
        
@@ -69,6 +70,15 @@ let rec unify_exp (ctx : T.context) (e : Ast.typed_expr) : (Ast.ocamlTP * Ast.oc
         |       Op(e1, _, e2) -> [(t, Ast.Integer); (e1.data, Ast.Integer); (e2.data, Ast.Integer)] @ (unify_exp ctx e1) @ (unify_exp ctx e2)
         |       CompOp(e1, _, e2) -> [(t, Ast.Boolean); (e1.data, Ast.Integer); (e2.data, Ast.Integer)] @ (unify_exp ctx e1) @ (unify_exp ctx e2)
         |       RelOp(e1, _, e2) -> [(t, Ast.Boolean); (e1.data, Ast.Boolean); (e2.data, Ast.Boolean)] @ (unify_exp ctx e1) @ (unify_exp ctx e2)
+        |       Print(l, args) -> (t, Ast.Integer) :: (constrain_print ctx l args) 
+
+and constrain_print ctx l args = match (l, args) with
+                                (Ast.Word(_)::l', _) -> constrain_print ctx l' args
+                   |         (Ast.Int(_)::l', e::es') -> [(e.data, Ast.Integer)] @ (unify_exp ctx e) @ (constrain_print ctx l' es')
+                   |        (Ast.Bool(_)::l', e::es') -> [(e.data, Ast.Boolean)] @ (unify_exp ctx e) @ (constrain_print ctx l' es')
+                     |       (Ast.Newline(_)::l', _) -> constrain_print ctx l' args
+                     |                      ([], []) -> []
+                     |                             _ -> raise (T.TypeError "insufficient identifiers/arguments")
 
 
 and constrain_list l t ctx = 
@@ -107,3 +117,4 @@ let rec apply_sub (s : (string * Ast.ocamlTP) list) (e : Ast.typed_expr) : Ast.t
         |       Op(e1, o, e2) -> {structure = Op(apply_sub s e1, o, apply_sub s e2); data =  t}
         |       CompOp(e1, o, e2) -> {structure = CompOp(apply_sub s e1, o, apply_sub s e2); data =  t} 
         |       RelOp(e1, o, e2) -> {structure = RelOp(apply_sub s e1, o, apply_sub s e2); data = t} 
+        |         Print(l, args) -> {structure = Print(l, List.map (apply_sub s) args); data = t}

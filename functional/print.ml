@@ -85,6 +85,15 @@ and print_ast (t : 'a Ast.expr) =
                                    p q
            | App l -> let a : string = print_list(l) in
                            Printf.sprintf "[%s]" a
+           | Print (l, arg) -> let s1 = List.map (fun x -> match x with
+                                                                Ast.Word(s) -> Printf.sprintf "%s " s 
+                                                           |       Ast.Int(_) -> Printf.sprintf "int "
+                                                           |      Ast.Bool(_) -> Printf.sprintf "bool "
+                                                           |       Ast.Newline(_) -> Printf.sprintf "newline ") l in
+                                 let s1'  = List.fold_left (fun x y -> x^y) "" s1 in
+                                 let s2 = print_list(arg) in
+                                 Printf.sprintf "%s %s" s1' s2
+
 
 
 

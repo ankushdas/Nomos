@@ -10,6 +10,8 @@
 %token FUN RIGHTARROW
 %token PLUS MINUS TIMES DIV
 %token EOF
+%token PINT PBOOL 
+%token NEWLINE LQUOTE PRINT
 %token NEQ GREATER LESS GREATEREQ LESSEQ
 %token ANDALSO ORELSE
 %token DOUBLESEMI
@@ -48,6 +50,7 @@ expr :
     | o = op                          { {structure = o; data = ()} }
     | c = compOp                      { {structure = c; data = ()} }
     | r = relOp                       { {structure = r; data = ()} }
+    | p = printSt                     { {structure = p; data = ()} }
     ;
 
 cond :
@@ -129,4 +132,16 @@ id_list:
 lambdaExp :
     | FUN;  args = id_list; RIGHTARROW; body = expr 
                                         { Ast.Lambda(args, body)  } %prec statement
+    ;
+
+print_id:
+    | x = ID                    { Ast.Word(x) }
+    | PINT                      { Ast.Int () }
+    | PBOOL                     { Ast.Bool () }
+    | NEWLINE                   { Ast.Newline () }
+    ;
+
+printSt:
+    | PRINT; LPAREN; LQUOTE; l = list(print_id); LQUOTE; RPAREN                                                   { Ast.Print(l, []) }
+    | PRINT; LPAREN; LQUOTE; l = list(print_id); LQUOTE; COMMA; arg = separated_list(COMMA, expr); RPAREN         { Ast.Print(l, arg) }
     ;

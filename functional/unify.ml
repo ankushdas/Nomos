@@ -30,6 +30,8 @@ let apply (s : substitution) (t : Ast.ocamlTP) : Ast.ocamlTP =
 
 
 let rec unify_one (s : Ast.ocamlTP) (t : Ast.ocamlTP) = 
+        let _ = P.print_type s in 
+        let _ = P.print_type t in 
         match (s,t) with
                 (Integer, Integer) -> []
             |   (Boolean, Boolean) -> []

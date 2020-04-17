@@ -31,6 +31,11 @@ rule token = parse
   | ')'                 { RPAREN }
   | "["                 { LSQUARE }
   | "]"                 { RSQUARE }
+  | "print"             { PRINT }
+  | "\""                { LQUOTE }            
+  | "%d"                { PINT }
+  | "%b"                { PBOOL }
+  | "\\n"                { NEWLINE }
   | "match"             { MATCH }
   | "fun"               { FUN   }
   | "with"              { WITH  }

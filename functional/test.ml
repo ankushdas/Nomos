@@ -12,4 +12,5 @@ let x = [5,6] in match x with [] -> true | y::ys -> false;;
 (fun a b c -> match a with [] -> [] | y::ys -> ys);;
 []::[]::[];;
 let fun f x = 1 in f;;
-if (fun p -> match p with [] -> true | x::xs -> false) ([]) then 5 else 6
+if (fun p -> match p with [] -> true | x::xs -> false) ([]) then 5 else 6;;
+print("this is a test to see that I can output the number %d and the boolean %b and the other number %d correctly\n", 2, if 12 < 13 then true else false, 5+6) 
