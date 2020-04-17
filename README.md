@@ -47,16 +47,34 @@ $ make
 ```
 
 ### Executing
-The make command creates an executable for nomos at `_build/default/nomos-bin/nomos.exe`. To typecheck a file with nomos, run
+The make command creates an executable for nomos at `_build/default/nomos-bin/nomos.exe`.
+To typecheck a file with nomos, run
 ```
-$ _build/default/nomos-bin/nomos.exe <file-path>
+$ _build/default/nomos-bin/nomos.exe -tc <file-path>
 ```
+The `-tc` flag tells Nomos to only typecheck the target file. It ignores any `exec` statements.
 
-To test whether your nomos build is successful, I have created a test file in the repository. Run it using
+You can also omit `-tc` to run the `exec` statements.
+For example, the `wallet-demo.nom` file has an example transactions as well as the
+necessary support code. You typecheck and run this with
 ```
-$ ./_build/default/nomos-bin/nomos.exe nomos-tests/auction-dict.nom
+$ ./_build/default/nomos-bin/nomos.exe nomos-tests/wallet-demo.nom
 ```
 It should produce the output "% runtime successful!" at the end.
+
+Transactions can also be specified separately from the main file containing the Nomos definitions in a `.txn` file.
+A configuration is a description of the state of the all contracts we have running at a specific time. When we run a
+transaction, the configuration is perturbed but will reach final state, which is where execution stops until the next
+transaction is run.
+Use the `-t` flag to specify which transactions to run.
+You can run transactions on a specific configuration using the -i flag and can save the resulting configuration with
+the -o flag. If you don't use the -i flag, your transaction will be run on an empty configuration.
+
+For example,
+```
+$ _build/default/nomos-bin/nomos.exe -o s1.conf -t some_transaction.txn defns.nom
+$ _build/default/nomos-bin/nomos.exe -i s1.conf -o s2.conf -t another_transaction.txn defns.nom
+```
 
 ### Troubleshooting
 1. Sometimes, your `$ make` command may fail with the error "dune: command not found". In this case, try restarting your terminal and running `$ make` again.
