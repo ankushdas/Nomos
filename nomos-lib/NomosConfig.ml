@@ -1,5 +1,6 @@
 (* Nomos command-line tool entry point *)
 
+open TopLevel
 module R = Arith
 module A = Ast
 module PP = Pprint
@@ -10,108 +11,6 @@ module TC = Typecheck
 module F = NomosFlags
 module E = Exec
 module Map = C.Map
-open Lexer
-open Lexing
-
-(*********************************)
-(* Loading and Elaborating Files *)
-(*********************************)
-
-let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
-  let open Lexing in
-  lexbuf.lex_curr_p <- {
-    pos_fname = fname;
-    pos_lnum = 1;
-    pos_bol = 0;
-    pos_cnum = 0;
-  }
-
-let reset () = ErrorMsg.reset ()
-
-let print_position _outx lexbuf =
-  let pos = lexbuf.lex_curr_p in
-  C.printf "%s:%d:%d" pos.pos_fname
-    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
-
-(* try lexing and parsing *)
-let parse_with_error lexbuf =
-  try Parser.file Lexer.token lexbuf with
-  | SyntaxError msg ->
-      (C.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg;
-      exit 1)
-  | Parser.Error ->
-      (C.printf "PARSING FAILURE: %a\n" print_position lexbuf; exit 1)
-
-(* use the parser created by Menhir and return the list of declarations *)
-let parse lexbuf =
-  let env = parse_with_error lexbuf in
-  env;;
-
-(* open file and parse into environment *)
-let read file =
-  let () = reset () in                        (* internal lexer and parser state *)
-  (*
-  let () = I.reset () in                      (* resets the LP solver *)
-  *)
-  let inx = C.In_channel.read_all file in     (* read file *)
-  let lexbuf = Lexing.from_string inx in      (* lex file *)
-  let _ = init lexbuf file in
-  parse lexbuf;;                              (* parse file *)
-
-(* check validity and typecheck environment *)
-let validate decls =
-  let t0 = Unix.gettimeofday () in
-  let () = EL.check_redecl decls in           (* may raise ErrorMsg.Error *)
-  let () = EL.check_valid decls decls in
-  (* pragmas apply only to type-checker and execution *)
-  (* may only be at beginning of file; apply now *)
-  let decls' = EL.commit_channels decls decls in
-  (* allow for mutually recursive definitions in the same file *)
-  let env = match EL.elab_decls decls' decls' with
-                Some env' -> env'
-              | None -> raise ErrorMsg.Error  (* error during elaboration *)
-  in
-  let t1 = Unix.gettimeofday () in
-  let env = EL.remove_stars env in
-  let env = EL.removeU env in
-  let () = if !F.verbosity >= 2 then print_string ("========================================================\n") in
-  let () = if !F.verbosity >= 2 then print_string (List.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") ""
-    (List.map (fun (x,_) -> x) env)) in
-  let () = EL.gen_constraints env env in
-  let (psols,msols) = I.solve_and_print () in
-  let env = EL.substitute env psols msols in
-  let t2 = Unix.gettimeofday () in
-  let () = if !F.verbosity >= 1 then print_string ("========================================================\n") in
-  let () = if !F.verbosity >= 0 then print_string (List.fold_left (fun str (dcl, _) -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in
-  let () = print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
-  let () = print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
-  let () = I.print_stats () in
-  env;;  
-
-
-(**********************)
-(* Executing Programs *)
-(**********************)
-
-let load_config config_in =
-  match config_in with
-  | None -> E.empty_full_configuration
-  | Some(path) -> C.Sexp.load_sexp_conv_exn path E.full_configuration_of_sexp
-
-let rec run env config dcls =
-  match dcls with
-      (A.Exec(f), _ext)::dcls' ->
-        let () = if !F.verbosity >= 1
-                 then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
-                 else () in
-        let config' = E.exec env config (f, []) in
-        (* may raise Exec.RuntimeError *)
-        run env config' dcls'
-    | (A.TpDef(n, t), _ext)::dcls' ->
-        let (tx, ch, types, conf) = config in
-        run env (tx, ch, Map.set types ~key:n ~data:t, conf) dcls'
-    | _dcl::dcls' -> run env config dcls'
-    | [] -> config;;
 
 (************************)
 (* Command Line Options *)
@@ -157,6 +56,15 @@ let out_conf_file =
 
 let txn_file = file ".txn"
 
+(*********************)
+(* Utility Functions *)
+(*********************)
+let maybe_load_config config_in_opt =
+  match config_in_opt with
+  | None -> E.empty_full_configuration
+  | Some(path) -> load_config path
+
+
 let nomos_command =
   C.Command.basic
     ~summary:"Typechecking and Executing Nomos files"
@@ -194,11 +102,11 @@ let nomos_command =
                 () in
 
           (* parse *)
-          let (contract_env,_ext) = read file in
+          let contract_env = read file in
           let () = print_string ("% contract parsing successful!\n") in
-          let (txn_env, _ext) =
+          let txn_env =
             match txn_path with
-                None -> ([], None)
+                None -> []
               | Some(txn_file) -> 
                   let e = read txn_file in
                   begin
@@ -208,7 +116,7 @@ let nomos_command =
           in
 
           (* typecheck *)
-          let env = try validate (contract_env @ txn_env)
+          let env = try infer (contract_env @ txn_env)
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
           in
           let () = print_string ("% compilation successful!\n") in
@@ -217,11 +125,11 @@ let nomos_command =
             then ()
             else
               (* run transaction *)
-              let initial_config = load_config config_in in
+              let initial_config = maybe_load_config config_in in
               let final_config = run env initial_config env in
               let () = print_string ("% runtime successful!\n") in
 
               (* save final configuration *)
               match config_out with
                   None -> ()
-                | Some(path) -> C.Sexp.save_hum path (E.sexp_of_full_configuration final_config));;
+                | Some(path) -> save_config final_config path)
