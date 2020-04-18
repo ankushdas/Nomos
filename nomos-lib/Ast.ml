@@ -180,8 +180,8 @@ and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list                          (* (l1 => P1 | ... | ln => Pn) *)
 
 and 'a arg =
-  STArg of chan
-| FArg of 'a func_expr
+    STArg of chan
+  | FArg of 'a func_expr
 [@@deriving sexp]
 
 

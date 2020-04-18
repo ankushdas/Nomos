@@ -1053,6 +1053,38 @@ let makechan ch config =
         Changed config
     | _s -> raise ExecImpossible;;
 
+let toString arg = match arg with
+    A.FArg e -> PP.pp_fexp () 0 e
+  | A.STArg c -> PP.pp_chan c;;
+
+let generate_string p args = match p with
+    A.Word(s) -> (s, args)
+  | A.PNewline -> ("\n", args)
+  | PInt | PBool | PStr | PAddr | PChan ->
+      match args with
+          [] -> raise ExecImpossible
+        | arg::args' -> (toString arg, args');;
+
+let rec get_printable_string l args =
+  match l with
+      [] -> ""
+    | p::ps ->
+        let (s, args') = generate_string p args in
+        let tl = get_printable_string ps args' in
+        s ^ " " ^ tl;;
+
+let print ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func,c,in_use,t,(w,pot),A.Print(l,args,p)) ->
+        let pl = get_printable_string l args in
+        let () = print_string pl in
+        let newproc = Proc(func,c,in_use,t+1,(w,pot),p.A.st_structure) in
+        let config = add_sem newproc config in
+        Changed config
+    | _s -> raise ExecImpossible;;
+
 let match_and_one_step env sem config =
   match sem with
       Proc(_func,c,_in_use,_t,_wp,p) ->
@@ -1128,6 +1160,9 @@ let match_and_one_step env sem config =
             
             | A.Abort ->
                 Aborted
+            
+            | A.Print _ ->
+                print c config
             
         end
     | Msg _ -> Unchanged config;;

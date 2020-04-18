@@ -440,17 +440,17 @@ let rec findtp c delta ext = match delta with
       if eq_chan x c then t
       else findtp c delta' ext;;
 
-let rec findftp v delta ext = match delta with
+let rec findftp v delta = match delta with
     [] -> raise UnknownTypeError
   | (A.Functional (w,t))::delta' ->
       if v = w then t
-      else findftp v delta' ext
+      else findftp v delta'
   | (A.STyped _)::delta' ->
-      findftp v delta' ext;;
+      findftp v delta';;
 
-let find_ftp v delta ext =
+let find_ftp v delta =
   let {A.shared = _sdelta ; A.linear = _ldelta ; A.ordered = odelta} = delta in
-  findftp v odelta ext;;
+  findftp v odelta;;
 
 let find_stp c delta ext =
   let {A.shared = sdelta ; A.linear = _ldelta ; A.ordered = _odelta} = delta in
@@ -534,7 +534,7 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
         if not (check_ftp v delta)
         then error ext ("unknown or duplicate variable: " ^ v)
         else
-          let t = find_ftp v delta ext in
+          let t = find_ftp v delta in
           if eq_ftp st t
           then match_ctx env sig_ctx' ctx' delta sig_len len ext
           else error ext ("functional type mismatch: type of " ^ v ^ " : " ^ PP.pp_ftp_simple t ^
@@ -615,6 +615,47 @@ let rec consify l = match l with
   | e::es ->
       let d = e.A.func_data in
       A.Cons(e, {A.func_data = d; A.func_structure = consify es});;
+  
+let tc_printable_arg arg t_exp delta ext =
+  match arg with
+      A.FArg (A.Var v) ->
+        if not (check_ftp v delta)
+        then error ext ("unknown or duplicate variable: " ^ v)
+        else
+        let t = find_ftp v delta in
+        if eq_ftp A.Integer t
+        then ()
+        else error ext ("invalid type of " ^ v ^
+                        ", expected " ^ PP.pp_ftp_simple t_exp ^ ", found: " ^ PP.pp_ftp_simple t)
+    | A.FArg _e -> raise UnknownTypeError
+    | A.STArg c ->
+        if not (check_tp c delta)
+        then error ext ("unknown or duplicate variable: " ^ PP.pp_chan c)
+        else ();;
+
+let rec check_printable_list delta ext plist arglist plen arglen =
+  match plist, arglist with
+      [], [] -> ()
+    | A.Word(_)::ps, _ -> check_printable_list delta ext ps arglist plen arglen
+    | A.PInt::ps, arg::args ->
+        let () = tc_printable_arg arg A.Integer delta ext in
+        check_printable_list delta ext ps args plen arglen
+    | A.PBool::ps, arg::args ->
+        let () = tc_printable_arg arg A.Boolean delta ext in
+        check_printable_list delta ext ps args plen arglen
+    | A.PStr::ps, arg::args ->
+        let () = tc_printable_arg arg A.String delta ext in
+        check_printable_list delta ext ps args plen arglen
+    | A.PAddr::ps, arg::args ->
+        let () = tc_printable_arg arg A.Address delta ext in
+        check_printable_list delta ext ps args plen arglen
+    | A.PChan::ps, arg::args ->
+        let () = tc_printable_arg arg A.Address delta ext in
+        check_printable_list delta ext ps args plen arglen
+    | A.PNewline::ps, _ -> check_printable_list delta ext ps arglist plen arglen
+    | _, _ ->
+        error ext ("print string expects " ^ string_of_int plen ^
+                  " arguments but called with " ^ string_of_int arglen ^ " arguments");;
 
 let rec check_fexp_simple' trace env delta pot (e : A.parsed_expr) tp ext mode isSend =
   begin
@@ -1587,74 +1628,9 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
   | A.Abort -> ()
   | A.Print(l,args,p) -> 
       begin
-        
+        let () = check_printable_list delta (exp.A.st_data) l args (List.length l) (List.length args) in
+        check_exp' trace env delta pot p zc ext mode
       end
-
-
-
-let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx with
-      (A.STyped (sc,st))::sig_ctx', (A.STArg c)::ctx' ->
-        begin
-          if not (check_tp c delta)
-          then error ext ("unknown or duplicate variable: " ^ PP.pp_chan c)
-          else if not (eq_mode sc c)
-          then E.error_mode_mismatch (sc, c) ext
-          else
-            let {A.shared = sdelta ; A.linear = _ldelta ; A.ordered = _odelta} = delta in
-            if checktp c sdelta
-            then
-              begin
-                let t = find_stp c delta ext in
-                (* "subtype is sufficient with subsync types" *)
-                if subtp env t st
-                then match_ctx env sig_ctx' ctx' delta sig_len len ext
-                else error ext ("shared type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
-                            " does not match type in declaration: " ^ PP.pp_tp_compact env st)
-              end
-            else
-              begin
-                let t = find_ltp c delta ext in
-                (* "subtype is sufficient with subsync types" *)
-                if subtp env t st
-                then match_ctx env sig_ctx' ctx' (remove_tp c delta) sig_len len ext
-                else error ext ("linear type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
-                            " does not match type in declaration: " ^ PP.pp_tp_compact env st)
-              end
-        end
-    | (A.Functional (_sv,st))::sig_ctx', (A.FArg (A.Var v))::ctx' ->
-        begin
-          if not (check_ftp v delta)
-          then error ext ("unknown or duplicate variable: " ^ v)
-          else
-            let t = find_ftp v delta ext in
-            if eq_ftp st t
-            then match_ctx env sig_ctx' ctx' delta sig_len len ext
-            else error ext ("functional type mismatch: type of " ^ v ^ " : " ^ PP.pp_ftp_simple t ^
-                        " does not match type in declaration: " ^ PP.pp_ftp_simple st)
-        end
-    | [], [] -> delta
-    | _, _ -> error ext ("process defined with " ^ string_of_int sig_len ^
-              " arguments but called with " ^ string_of_int len ^ " arguments");;
-  
-
-
-
-
-
-
-
-
-and check_arg trace env delta pot branches z choices ext mode printable arg = 
-  match printable, arg with
-      A.PInt, A.FArg(e) -> check_fexp_simple' trace env delta pot arg ext mode true 
-
-and check_printable_list trace env delta pot zc ext mode l args = 
-  match l, args with
-    [], [] -> ()
-  | A.Word(_)::ls, _ ->  check_printable_list trace env delta pot branches z choices ext mode ls args
-  | A.PInt::ls, arg::args -> match arg with
-
-
 
 and check_branchesR trace env delta pot branches z choices ext mode = match branches, choices with
     (l1,p)::branches', (l2,c)::choices' ->

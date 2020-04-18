@@ -67,8 +67,8 @@ val check_stp : 'a * string * 'b -> A.context -> bool
 val check_ltp : 'a * string * 'b -> A.context -> bool
 val purelin : A.context -> bool
 val findtp : 'a * 'b * A.mode -> (('a * 'b * A.mode) * 'c) list -> 'd -> 'c
-val findftp : string -> A.argument list -> 'a -> A.func_tp
-val find_ftp : string -> A.context -> 'a -> A.func_tp
+val findftp : string -> A.argument list -> A.func_tp
+val find_ftp : string -> A.context -> A.func_tp
 val find_stp :
   PP.A.str * string * A.mode ->
   A.context -> ((int * int) * (int * int) * string) option -> A.stype

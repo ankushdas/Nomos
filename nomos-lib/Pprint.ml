@@ -230,6 +230,16 @@ let pp_tpj_compact env delta pot (x,a) =
   pp_ctx env delta ^ " |" ^ pp_pot pot ^ "- (" ^
   pp_chan x ^ " : " ^ pp_tp_compact env a ^ ")";;
 
+let pp_printable x = 
+  match x with
+      A.Word(s) -> s 
+    | A.PInt ->  "%d"
+    | A.PBool -> "%b"
+    | A.PStr ->  "%s"
+    | A.PAddr -> "%a"
+    | A.PChan -> "%c"
+    | A.PNewline -> "\n";;
+
 (***********************)
 (* Process expressions *)
 (***********************)
@@ -280,16 +290,6 @@ and pp_printable_list env l args =
   let s1'  = List.fold_left (fun x y -> x ^ " " ^ y) "" s1 in
   let s2 = pp_argnames env args in
   s1' ^ " " ^ s2
-
-and pp_printable x = 
-  match x with
-    A.Word(s) -> s 
-  | A.PInt ->  "%d"
-  | A.PBool -> "%b"
-  | A.PStr ->  "%s"
-  | A.PAddr -> "%a"
-  | A.PChan -> "%c"
-  | A.PNewline -> "\n"
 
 and pp_exp_indent env i p = spaces i ^ pp_exp env i p.A.st_structure
 and pp_exp_after env i s p = s ^ pp_exp env (i+len(s)) p
@@ -419,7 +419,7 @@ let pp_exp_prefix exp = match exp with
   | A.SendF(x,e,_p) -> "send " ^ pp_chan x ^ " (" ^ pp_fexp () 0 e.A.func_structure ^ ") ; ..."
   | A.Let(v,e,_p) -> "let " ^ v ^ " = " ^ pp_fexp () 0 e.A.func_structure ^ " ; ..."
   | A.IfS(e,_p1,_p2) -> "if " ^ pp_fexp () 0 e.A.func_structure ^ " ... "
-  | A.MakeChan(x,a,n,_) -> pp_chan x ^ " : " ^ pp_tp_simple a ^ " <- Nomos.MakeChan " ^ string_of_int n ^ " ... "
+  | A.MakeChan(x,a,n,_p) -> pp_chan x ^ " : " ^ pp_tp_simple a ^ " <- Nomos.MakeChannel " ^ string_of_int n ^ " ... "
   | A.Abort -> "abort"
   | A.Print(l,args,_) -> "print(" ^ pp_printable_list () l args ^ "); ..."
 
