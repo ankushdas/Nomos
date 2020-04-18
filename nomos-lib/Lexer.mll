@@ -83,6 +83,16 @@ rule token = parse
   | "Nomos.GetTxnSender()"    { GETTXNSENDER }
   | "Nomos.MakeChannel"       { MAKECHAN }
 
+  (* printing *)
+  | "print"             { PRINT }
+  | "\""                { LQUOTE }            
+  | "%d"                { PINT }
+  | "%b"                { PBOOL }
+  | "%s"                { PSTR }
+  | "%a"                { PADDR }
+  | "%c"                { PCHAN }
+  | "\\n"               { NEWLINE }
+
   (* session type channels *)
   | "#"                 { HASH }
   | "$"                 { DOLLAR }

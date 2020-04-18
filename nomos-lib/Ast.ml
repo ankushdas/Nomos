@@ -163,6 +163,17 @@ and 'a st_expr =
   (* Nomos specific, get channel from id *)
   | MakeChan of chan * stype * int * 'a st_aug_expr             (* #c : A <- Nomos.MakeChan(n) ; P *)
   | Abort                                                       (* abort *)
+  | Print of printable list * 'a arg list * 'a st_aug_expr
+
+and printable = 
+    Word of string
+  | PInt 
+  | PBool 
+  | PStr 
+  | PAddr 
+  | PChan
+  | PNewline
+[@@deriving sexp]
 
 and 'a branch = label * 'a st_aug_expr
 
@@ -304,6 +315,7 @@ let rec subst c' c expr = match expr with
   | IfS(e,p1,p2) -> IfS(fsubst_aug c' c e, subst_aug c' c p1, subst_aug c' c p2)
   | MakeChan(x,a,n,p) -> MakeChan(x, a, n, subst_aug c' c p)
   | Abort -> Abort
+  | Print(l,args,p) -> Print(l, subst_list c' c args, subst_aug c' c p)
 
 and subst_branches c' c bs = match bs with
     [] -> []
@@ -394,6 +406,7 @@ and esubstv v' v exp = match exp with
   | IfS(e,p1,p2) -> IfS(substv_aug v' v e, esubstv_aug v' v p1, esubstv_aug v' v p2)
   | MakeChan(x,a,n,p) -> MakeChan(x, a, n, esubstv_aug v' v p)
   | Abort -> Abort
+  | Print(l,args,p) -> Print(l, List.map (fun arg -> esubstv_arg v' v arg) args, esubstv_aug v' v p)
 
 and esubstv_branches v' v bs = match bs with
     [] -> []

@@ -90,7 +90,18 @@ and 'a st_expr =
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
   | MakeChan of chan * stype * int * 'a st_aug_expr 
   | Abort
+  | Print of printable list * 'a arg list * 'a st_aug_expr
   [@@deriving sexp]
+and printable = 
+    Word of string
+  | PInt 
+  | PBool 
+  | PStr 
+  | PAddr 
+  | PChan
+  | PNewline
+  [@@deriving sexp]
+
 and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list
 and 'a arg = STArg of chan | FArg of 'a func_expr

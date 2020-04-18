@@ -103,7 +103,7 @@ let rec elab_exps' env dcls = match dcls with
     [] -> []
   | ((A.TpDef _), _)::_ -> (* do not print type definition again *)
       elab_exps env dcls
-  | (dcl, _)::_ ->
+  | (_, _)::_ ->
       elab_exps env dcls
 and elab_exps env dcls = match dcls with
     [] -> []
@@ -199,7 +199,7 @@ let rec check_declared env ext a = match a with
 
 and check_declared_choices env ext cs = match cs with
     [] -> ()
-  | (l,a)::cs' ->
+  | (_,a)::cs' ->
       let () = check_declared env ext a in
       check_declared_choices env ext cs';;
 

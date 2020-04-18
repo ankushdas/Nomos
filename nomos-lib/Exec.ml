@@ -97,7 +97,7 @@ let rec eval fexp = match fexp.A.func_structure with
   | A.Int i -> (A.IntV i, R.Int 0)
   | A.Str s -> (A.StrV s, R.Int 0)
   | A.Addr a -> (A.AddrV a, R.Int 0)
-  | A.Var x -> raise RuntimeError
+  | A.Var _ -> raise RuntimeError
   | A.ListE(l) ->
       begin
         let (vs, cs) = proj (List.map eval l) in
@@ -187,7 +187,7 @@ let rec eval fexp = match fexp.A.func_structure with
       end
   | A.GetTxnNum -> (A.IntV !txnNum, R.Int 0)
   | A.GetTxnSender -> (A.AddrV !txnSender, R.Int 0)
-  | A.Command(p) -> raise RuntimeError;;
+  | A.Command(_) -> raise RuntimeError;;
 
 
 module Chan =
@@ -673,7 +673,7 @@ let one_S ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(func,c1,in_use,t,(w,pot),A.Close(c2)) ->
+      Proc(_,c1,in_use,t,(w,pot),A.Close(c2)) ->
         if uneq_name c1 c2
         then raise ChannelMismatch
         else if pot > 0
@@ -747,7 +747,7 @@ let paypot_S ch config =
 let paypot_R ch config =
   let s = find_sem ch config in
   match s with
-      Proc(func,d,in_use,t,(w,pot),A.Get(c,epot,q)) as f ->
+      Proc(func,d,in_use,t,(w,pot),A.Get(c,epot,q)) ->
         if not (uneq_name d c)
         then raise ChannelMismatch
         else
@@ -823,7 +823,7 @@ let get_sems config = M.data config.conf
 let rec find_procs ch sems =
   match sems with
       [] -> []
-    | (Proc(func,_c,_in_use,_t,_wp,A.Acquire(a,_x,_p)) as proc)::sems' ->
+    | (Proc(_,_c,_in_use,_t,_wp,A.Acquire(a,_x,_p)) as proc)::sems' ->
         if a = ch
         then proc::(find_procs ch sems')
         else find_procs ch sems'
@@ -873,7 +873,7 @@ let up ch config =
 let rec find_proc ch sems =
   match sems with
       [] -> None
-    | (Proc(func,_c,_in_use,_t,_wp,A.Release(a,_x,_p)) as proc)::sems' ->
+    | (Proc(_,_c,_in_use,_t,_wp,A.Release(a,_x,_p)) as proc)::sems' ->
         if a = ch
         then Some proc
         else find_proc ch sems'
@@ -1044,7 +1044,7 @@ let makechan ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(func,c,in_use,t,(w,pot),A.MakeChan(x,a,n,p)) ->
+      Proc(func,c,in_use,t,(w,pot),A.MakeChan(x,_,n,p)) ->
         let newch = (A.Hash, "ch" ^ string_of_int n, A.Shared) in
         let in_use' = add_chan newch in_use in
         let p = A.subst_aug newch x p in
@@ -1156,7 +1156,7 @@ let rec step env config =
     match sem with
       (Proc(_f, _c, in_use, _t, _wp, _p)) ->
         let _ = List.map (fun c -> find_sem c config) (linear_chans in_use) in ()
-    | (Msg(c, t, wp, msg)) -> ()) sems in
+    | (Msg(_, _, _, _)) -> ()) sems in
   let config = iterate_and_one_step env sems config false in
   config
 
@@ -1193,7 +1193,7 @@ let checked_remove ch l =
 
 let check_and_add (top : Chan.t) (sem : sem) (st : state): state option =
   match sem with
-    (Proc(f, c, in_use, _t, (work, pot), p)) -> (
+    (Proc(_, c, in_use, _t, (work, pot), p)) -> (
       let (_, _, m) = c in
       let st' = { st with energy = st.energy + work + pot } in
       match checked_diff st.delta in_use with
@@ -1215,7 +1215,7 @@ let check_and_add (top : Chan.t) (sem : sem) (st : state): state option =
                           raise RuntimeError)
           | A.MVar _ -> (error "process mode MVar during runtime";
                          raise RuntimeError)))
-  | (Msg(c, t, wp, msg)) ->
+  | (Msg(c, _, _, msg)) ->
       let (_, _, m) = c in
       match m with
           A.Transaction ->

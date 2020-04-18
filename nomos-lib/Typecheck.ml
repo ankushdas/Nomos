@@ -307,7 +307,7 @@ and sub_ichoice env seen cs cs' = match cs with
       let lab_match = List.find_all (fun (l', _) -> l = l') cs' in
       if (List.length lab_match != 1)
       then false
-      else let (l', a') = List.nth lab_match 0 in 
+      else let (_, a') = List.nth lab_match 0 in 
       sub_tp' env seen a a' && sub_ichoice env seen choice cs'
 
 and sub_echoice env seen cs cs' = match cs' with
@@ -316,7 +316,7 @@ and sub_echoice env seen cs cs' = match cs' with
       let lab_match = List.find_all (fun (l, _) -> l = l') cs in
       if (List.length lab_match != 1)
       then false
-      else let (l, a) = List.nth lab_match 0 in 
+      else let (_, a) = List.nth lab_match 0 in 
       sub_tp' env seen a a' && sub_echoice env seen cs choice
 
 and sub_name_name env seen a a' =
@@ -345,7 +345,7 @@ let rec ssync env seen tp c_opt ext =
         begin
           match c_opt with
               None -> ()
-            | Some c -> error ext ("type not sub-synchronizing")
+            | Some _ -> error ext ("type not sub-synchronizing")
         end
     | A.PayPot(_pot,a) -> ssync env seen a c_opt ext
     | A.GetPot(_pot,a) -> ssync env seen a c_opt ext
@@ -1576,7 +1576,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         check_exp' trace env delta' pot' p1 zc ext mode;
         check_exp' trace env delta' pot' p2 zc ext mode
       end
-  | A.MakeChan(x,a,n,p) ->
+  | A.MakeChan(x,a,_,p) ->
       begin
         if check_tp x delta || checktp x [zc]
         then error (exp.A.st_data) ("variable " ^ name_of x ^ " is not fresh")
@@ -1585,6 +1585,76 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         else check_exp' trace env (add_chan env (x,a) delta) pot p zc ext mode
       end
   | A.Abort -> ()
+  | A.Print(l,args,p) -> 
+      begin
+        
+      end
+
+
+
+let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx with
+      (A.STyped (sc,st))::sig_ctx', (A.STArg c)::ctx' ->
+        begin
+          if not (check_tp c delta)
+          then error ext ("unknown or duplicate variable: " ^ PP.pp_chan c)
+          else if not (eq_mode sc c)
+          then E.error_mode_mismatch (sc, c) ext
+          else
+            let {A.shared = sdelta ; A.linear = _ldelta ; A.ordered = _odelta} = delta in
+            if checktp c sdelta
+            then
+              begin
+                let t = find_stp c delta ext in
+                (* "subtype is sufficient with subsync types" *)
+                if subtp env t st
+                then match_ctx env sig_ctx' ctx' delta sig_len len ext
+                else error ext ("shared type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
+                            " does not match type in declaration: " ^ PP.pp_tp_compact env st)
+              end
+            else
+              begin
+                let t = find_ltp c delta ext in
+                (* "subtype is sufficient with subsync types" *)
+                if subtp env t st
+                then match_ctx env sig_ctx' ctx' (remove_tp c delta) sig_len len ext
+                else error ext ("linear type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
+                            " does not match type in declaration: " ^ PP.pp_tp_compact env st)
+              end
+        end
+    | (A.Functional (_sv,st))::sig_ctx', (A.FArg (A.Var v))::ctx' ->
+        begin
+          if not (check_ftp v delta)
+          then error ext ("unknown or duplicate variable: " ^ v)
+          else
+            let t = find_ftp v delta ext in
+            if eq_ftp st t
+            then match_ctx env sig_ctx' ctx' delta sig_len len ext
+            else error ext ("functional type mismatch: type of " ^ v ^ " : " ^ PP.pp_ftp_simple t ^
+                        " does not match type in declaration: " ^ PP.pp_ftp_simple st)
+        end
+    | [], [] -> delta
+    | _, _ -> error ext ("process defined with " ^ string_of_int sig_len ^
+              " arguments but called with " ^ string_of_int len ^ " arguments");;
+  
+
+
+
+
+
+
+
+
+and check_arg trace env delta pot branches z choices ext mode printable arg = 
+  match printable, arg with
+      A.PInt, A.FArg(e) -> check_fexp_simple' trace env delta pot arg ext mode true 
+
+and check_printable_list trace env delta pot zc ext mode l args = 
+  match l, args with
+    [], [] -> ()
+  | A.Word(_)::ls, _ ->  check_printable_list trace env delta pot branches z choices ext mode ls args
+  | A.PInt::ls, arg::args -> match arg with
+
+
 
 and check_branchesR trace env delta pot branches z choices ext mode = match branches, choices with
     (l1,p)::branches', (l2,c)::choices' ->
