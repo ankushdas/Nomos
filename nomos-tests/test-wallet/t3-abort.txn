@@ -22,7 +22,7 @@ proc transaction transfer : (#sender : wallet), (#receiver : wallet), (amt : int
 
 proc transaction main3 : . |{*}- ($d : 1) =
 {
-  let n = 100 ;
+  let n = 1000 ;
   #s : wallet <- Nomos.MakeChannel 3 ;
   #r : wallet <- Nomos.MakeChannel 7 ;
   $c <- transfer <- #s #r n ;
