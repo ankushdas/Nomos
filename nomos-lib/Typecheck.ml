@@ -657,6 +657,12 @@ let rec check_printable_list delta ext plist arglist plen arglen =
         error ext ("print string expects " ^ string_of_int plen ^
                   " arguments but called with " ^ string_of_int arglen ^ " arguments");;
 
+let is_argtype p = match p with
+    A.Word _ | A.PNewline -> false
+  | A.PInt | A.PBool | A.PStr | A.PAddr | A.PChan -> true;;
+
+let filter_args l = List.filter (fun p -> is_argtype p) l;;
+
 let rec check_fexp_simple' trace env delta pot (e : A.parsed_expr) tp ext mode isSend =
   begin
     if trace
@@ -1628,7 +1634,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
   | A.Abort -> ()
   | A.Print(l,args,p) -> 
       begin
-        let () = check_printable_list delta (exp.A.st_data) l args (List.length l) (List.length args) in
+        let () = check_printable_list delta (exp.A.st_data) l args (List.length (filter_args l)) (List.length args) in
         check_exp' trace env delta pot p zc ext mode
       end
 

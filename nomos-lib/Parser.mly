@@ -1,6 +1,7 @@
 (* functional layer *)
 %token <int> INT
 %token <string> ID
+%token <Ast.printable list> QUOTED_STRING
 %token INTEGER BOOLEAN ADDRESS LIST
 %token LPAREN RPAREN
 %token TRUE FALSE
@@ -17,7 +18,7 @@
 %token TYPE PROC ASSET CONTRACT TRANSACTION TURNSTILE EXEC COLON
 (* printing *)
 %token PINT PBOOL PSTR PADDR PCHAN
-%token NEWLINE LQUOTE PRINT
+%token NEWLINE PRINT
 (* Nomos specific *)
 %token GETTXNNUM GETTXNSENDER MAKECHAN
 (* session type layer *)
@@ -311,7 +312,7 @@ app_arg :
     | x = mid           { Ast.STArg(x) }
     | x = ID            { Ast.FArg(Ast.Var(x)) }
     ;
-
+(*
 print_id:
     | x = ID                    { Ast.Word(x) }
     | PINT                      { Ast.PInt }
@@ -321,7 +322,7 @@ print_id:
     | PCHAN                     { Ast.PChan }
     | NEWLINE                   { Ast.PNewline }
     ;
-
+*)
 
 st:
     |  x = mid; LARROW; f = ID; LARROW; xs = list(app_arg); SEMI; p = st { {st_structure = Ast.Spawn(x, f, xs, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
@@ -390,10 +391,10 @@ st:
     |  x = mid; COLON; t = stype; LARROW; MAKECHAN; n = INT; SEMI; p = st     { {Ast.st_structure = Ast.MakeChan(x, t, n, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }
-    |  PRINT; LPAREN; l = list(print_id); RPAREN; SEMI; p = st    { {Ast.st_structure = Ast.Print(l, [], p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  PRINT; LPAREN; l = QUOTED_STRING; RPAREN; SEMI; p = st    { {Ast.st_structure = Ast.Print(List.rev l, [], p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(l).Lexing.pos_lnum, $endpos(l).Lexing.pos_cnum - $endpos(l).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }            
-    |  PRINT; LPAREN; l = list(print_id); COMMA; args = separated_list(COMMA, app_arg); RPAREN; SEMI; p = st         { {Ast.st_structure = Ast.Print(l, args, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  PRINT; LPAREN; l = QUOTED_STRING; COMMA; args = separated_list(COMMA, app_arg); RPAREN; SEMI; p = st         { {Ast.st_structure = Ast.Print(List.rev l, args, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(args).Lexing.pos_lnum, $endpos(args).Lexing.pos_cnum - $endpos(args).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }
     ;

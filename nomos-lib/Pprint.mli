@@ -33,6 +33,7 @@ val pp_ctx : 'a -> A.context -> string
 val pp_tpj_compact :
   'a ->
   A.context -> A.potential -> (A.str * string * A.mode) * A.stype -> string
+val pp_printable : A.printable -> string
 val pp_exp_indent : 'a -> int -> 'b A.st_aug_expr -> string
 val pp_exp_after : 'a -> int -> string -> 'b A.st_expr -> string
 val pp_then : int -> string

@@ -1071,7 +1071,7 @@ let rec get_printable_string l args =
     | p::ps ->
         let (s, args') = generate_string p args in
         let tl = get_printable_string ps args' in
-        s ^ " " ^ tl;;
+        s ^ tl;;
 
 let print ch config =
   let s = find_sem ch config in

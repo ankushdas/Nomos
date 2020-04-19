@@ -238,7 +238,7 @@ let pp_printable x =
     | A.PStr ->  "%s"
     | A.PAddr -> "%a"
     | A.PChan -> "%c"
-    | A.PNewline -> "\n";;
+    | A.PNewline -> "\\n";;
 
 (***********************)
 (* Process expressions *)
@@ -287,9 +287,11 @@ let rec pp_exp env i exp = match exp with
 
 and pp_printable_list env l args = 
   let s1 = List.map pp_printable l in
-  let s1'  = List.fold_left (fun x y -> x ^ " " ^ y) "" s1 in
+  let s1'  = List.fold_left (fun x y -> x ^ y) "\"" s1 in
   let s2 = pp_argnames env args in
-  s1' ^ " " ^ s2
+  match args with
+      [] -> s1' ^ "\""
+    | _ -> s1' ^ "\", " ^ s2
 
 and pp_exp_indent env i p = spaces i ^ pp_exp env i p.A.st_structure
 and pp_exp_after env i s p = s ^ pp_exp env (i+len(s)) p
