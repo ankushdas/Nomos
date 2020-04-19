@@ -13,10 +13,14 @@ let next_line lexbuf =
     }
 
 let comment_depth = ref 0
+let quoted_string = ref false
 }
 
 let newline = '\r' | '\n' | "\r\n"
 rule token = parse
+
+  (* white spaces *)
+  | [ ' ' '\t' ]        { print_string ("found top white\n"); if !quoted_string then printable_items lexbuf else token lexbuf }
   
   (* declarations *)
   | "type"              { TYPE }
@@ -42,7 +46,6 @@ rule token = parse
   | "list"              { LIST }
   
   (* functional *)
-  | [ ' ' '\t' ]        { token lexbuf }
   | newline             { next_line lexbuf; token lexbuf }
   | "(*"                { comment_depth := 1; comment lexbuf; token lexbuf }
   | ['0'-'9']+  as i    { INT (int_of_string i) }
@@ -84,14 +87,8 @@ rule token = parse
   | "Nomos.MakeChannel"       { MAKECHAN }
 
   (* printing *)
-  | "print"             { PRINT }
-  | "\""                { LQUOTE }            
-  | "%d"                { PINT }
-  | "%b"                { PBOOL }
-  | "%s"                { PSTR }
-  | "%a"                { PADDR }
-  | "%c"                { PCHAN }
-  | "\\n"               { NEWLINE }
+  | "print"             { PRINT }    
+  | '"'                 { quoted_string := true; printable_items lexbuf }
 
   (* session type channels *)
   | "#"                 { HASH }
@@ -132,3 +129,14 @@ and comment = parse
   | eof                 { raise (SyntaxError "Unterminated comment") }
   | newline             { next_line lexbuf ; comment lexbuf }
   | _                   { comment lexbuf }
+
+and printable_items = parse
+    [ ' ' '\t' ]        { print_string ("found white\n"); printable_items lexbuf }
+  | '"'                 { quoted_string := false; token lexbuf }
+  | "%d"                { print_string ("parsed int\n"); PINT }
+  | "%b"                { print_string ("parsed bool\n"); PBOOL }
+  | "%s"                { print_string ("parsed string\n"); PSTR }
+  | "%a"                { print_string ("parsed address\n"); PADDR }
+  | "%c"                { print_string ("parsed channel\n"); PCHAN }
+  | '\\' 'n'            { print_string ("parsed newline\n"); NEWLINE }
+  | ['a'-'z' 'A'-'Z' '0'-'9' '_']+ as word { print_string (word ^ "\n"); ID (word) }

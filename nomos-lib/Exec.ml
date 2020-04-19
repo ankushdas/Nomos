@@ -1185,7 +1185,7 @@ type config_outcome =
 
 let rec step env config =
   let sems = get_sems config in
-  let () = print_string (pp_config config) in
+  let _ = (*print_string*) (pp_config config) in
   (* check that all in_use linear channels actually exist *)
   let _ = List.map (fun sem ->
     match sem with

@@ -390,10 +390,10 @@ st:
     |  x = mid; COLON; t = stype; LARROW; MAKECHAN; n = INT; SEMI; p = st     { {Ast.st_structure = Ast.MakeChan(x, t, n, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }
-    |  PRINT; LPAREN; LQUOTE; l = list(print_id); LQUOTE; RPAREN; SEMI; p = st    { {Ast.st_structure = Ast.Print(l, [], p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  PRINT; LPAREN; l = list(print_id); RPAREN; SEMI; p = st    { {Ast.st_structure = Ast.Print(l, [], p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(l).Lexing.pos_lnum, $endpos(l).Lexing.pos_cnum - $endpos(l).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }            
-    |  PRINT; LPAREN; LQUOTE; l = list(print_id); LQUOTE; COMMA; args = separated_list(COMMA, app_arg); RPAREN; SEMI; p = st         { {Ast.st_structure = Ast.Print(l, args, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  PRINT; LPAREN; l = list(print_id); COMMA; args = separated_list(COMMA, app_arg); RPAREN; SEMI; p = st         { {Ast.st_structure = Ast.Print(l, args, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(args).Lexing.pos_lnum, $endpos(args).Lexing.pos_cnum - $endpos(args).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }
     ;
