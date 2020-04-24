@@ -92,25 +92,6 @@ type wallet = /\ <{*}| &{add : money -o |{*}> \/ wallet,
                                         insufficient : |{*}> \/ wallet},
                          val : int ^ |{*}> \/ wallet}
 
-
-(*
-proc transaction main : . |{*}- ($d : 1) =
-{
-  let n1 = 1000 ;
-  let n2 = 100 ;
-  let t = 100 ;
-  $m1 <- money_proc <- n1 ;
-  #w1 <- wallet_proc <- $m1 ;
-  $m2 <- money_proc <- n2 ;
-  #w2 <- wallet_proc <- $m2 ;
-  $d <- create_wallet <- t ;
-  $c <- transfer <- #w1 #w2 t ;
-  wait $d ;
-  wait $c ;
-  close $d
-}
-
-*)
 (*
  * start with an empty configuration
  * write the empty configuration to a file -> call this file "blockchain0.state"

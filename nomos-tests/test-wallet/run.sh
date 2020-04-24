@@ -6,5 +6,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 NOMOS="$DIR/../../"
 
 $NOMOS/_build/default/nomos-bin/nomos.exe -w send -o s1.conf -t "$DIR/t1.txn" "$DIR/../test-wallet.nom"
-#$NOMOS/_build/default/nomos-bin/nomos.exe -w send -i s1.conf -o s2.conf -t "$DIR/t2.txn" "$DIR/../test-wallet.nom"
-#$NOMOS/_build/default/nomos-bin/nomos.exe -w send -i s2.conf -o s3.conf -t "$DIR/t3.txn" "$DIR/../test-wallet.nom"
+$NOMOS/_build/default/nomos-bin/nomos.exe -v -1 -w send -i s1.conf -o s2.conf -t "$DIR/t2.txn" "$DIR/../test-wallet.nom"
+$NOMOS/_build/default/nomos-bin/nomos.exe -v -1 -w send -i s2.conf -o s3.conf -t "$DIR/t3.txn" "$DIR/../test-wallet.nom"
+$NOMOS/_build/default/nomos-bin/nomos.exe -v -1 -w send -i s3.conf -o s4.conf -t "$DIR/t4.txn" "$DIR/../test-wallet.nom"

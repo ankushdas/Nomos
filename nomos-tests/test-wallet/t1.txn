@@ -8,9 +8,8 @@ proc transaction main1 : . |{*}- ($d : 1) =
 proc transaction create_wallet : (n : int) |{*}- ($d : 1) =
 {
   $m <- money_proc <- n ;
-  print ("created a money process at %c\n\n", $m);
   #sw <- wallet_proc <- $m ;
-  print ("created a wallet with %d coins\non channel %c\n", n, #sw);
+  print ("created a wallet with %d coins on channel %c\n", n, #sw);
   close $d
 }
 
