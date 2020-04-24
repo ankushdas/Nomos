@@ -1,13 +1,13 @@
-open Core
 module A = Ast
 module C = Core
 module E = Exec
 module EL = Elab
 module F = NomosFlags
 module I = Infer
-module Map = Map
+module Map = C.Map
 module PP = Pprint
 module R = Arith
+module Sexp = C.Sexp
 module TC = Typecheck
 module StdList = Stdlib.List
 open Lexer
@@ -35,17 +35,17 @@ let reset () = ErrorMsg.reset ()
 
 let print_position _outx lexbuf =
   let pos = lexbuf.lex_curr_p in
-  printf "%s:%d:%d" pos.pos_fname
+  C.printf "%s:%d:%d" pos.pos_fname
     pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
 (* try lexing and parsing *)
 let parse_with_error lexbuf =
   try Parser.file Lexer.token lexbuf with
   | SyntaxError msg ->
-      (printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg;
+      (C.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg;
       exit 1)
   | Parser.Error ->
-      (printf "PARSING FAILURE: %a\n" print_position lexbuf; exit 1)
+      (C.printf "PARSING FAILURE: %a\n" print_position lexbuf; exit 1)
 
 (* use the parser created by Menhir and return the list of declarations *)
 let parse lexbuf =
@@ -58,7 +58,7 @@ let read file =
   (*
   let () = I.reset () in                      (* resets the LP solver *)
   *)
-  let inx = In_channel.read_all file in     (* read file *)
+  let inx = C.In_channel.read_all file in     (* read file *)
   let lexbuf = Lexing.from_string inx in      (* lex file *)
   let _ = init lexbuf file in
   let (env, _ext) = parse lexbuf in           (* parse file *)
