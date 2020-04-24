@@ -116,7 +116,7 @@ let nomos_command =
           in
 
           (* typecheck *)
-          let env = try infer (contract_env @ txn_env)
+          let env = try infer (build [contract_env; txn_env])
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
           in
           let () = print_string ("% compilation successful!\n") in
@@ -126,7 +126,7 @@ let nomos_command =
             else
               (* run transaction *)
               let initial_config = maybe_load_config config_in in
-              let final_config = run env initial_config env in
+              let final_config = run env initial_config in
               let () = print_string ("% runtime successful!\n") in
 
               (* save final configuration *)
