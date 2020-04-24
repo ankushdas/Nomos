@@ -120,7 +120,7 @@ rule token = parse
   (* identifier *)
   | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']* as word { ID (word) }
   | eof                 { EOF }
-  | _ { raise (SyntaxError ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
+  | _                   { raise (SyntaxError ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
 
 and comment = parse
     "(*"                { incr comment_depth; comment lexbuf }
@@ -131,12 +131,13 @@ and comment = parse
   | _                   { comment lexbuf }
 
 and printable_items = parse
-    [ ' ' '\t' ]        { quoted_string := (Ast.Word(" "))::(!quoted_string); printable_items lexbuf }
+    ' '                 { quoted_string := (Ast.Word(" "))::(!quoted_string); printable_items lexbuf }
+  | '\t'                { quoted_string := (Ast.Word("\t"))::(!quoted_string); printable_items lexbuf }
   | '"'                 { QUOTED_STRING (!quoted_string) }
-  | "%d"                { print_string ("parsed int\n"); quoted_string := (Ast.PInt)::(!quoted_string); printable_items lexbuf }
-  | "%b"                { print_string ("parsed bool\n"); quoted_string := (Ast.PBool)::(!quoted_string); printable_items lexbuf }
-  | "%s"                { print_string ("parsed string\n"); quoted_string := (Ast.PStr)::(!quoted_string); printable_items lexbuf }
-  | "%a"                { print_string ("parsed address\n"); quoted_string := (Ast.PAddr)::(!quoted_string); printable_items lexbuf }
-  | "%c"                { print_string ("parsed channel\n"); quoted_string := (Ast.PChan)::(!quoted_string); printable_items lexbuf }
-  | '\\' 'n'            { print_string ("parsed newline\n"); quoted_string := (Ast.PNewline)::(!quoted_string); printable_items lexbuf }
-  | ['a'-'z' 'A'-'Z' '0'-'9' '_']+ as word { print_string (word ^ "\n"); quoted_string := (Ast.Word(word))::(!quoted_string); printable_items lexbuf }
+  | "%d"                { quoted_string := (Ast.PInt)::(!quoted_string); printable_items lexbuf }
+  | "%b"                { quoted_string := (Ast.PBool)::(!quoted_string); printable_items lexbuf }
+  | "%s"                { quoted_string := (Ast.PStr)::(!quoted_string); printable_items lexbuf }
+  | "%a"                { quoted_string := (Ast.PAddr)::(!quoted_string); printable_items lexbuf }
+  | "%c"                { quoted_string := (Ast.PChan)::(!quoted_string); printable_items lexbuf }
+  | '\\' 'n'            { quoted_string := (Ast.PNewline)::(!quoted_string); printable_items lexbuf }
+  | ['a'-'z' 'A'-'Z' '0'-'9' '_']+ as word { quoted_string := (Ast.Word(word))::(!quoted_string); printable_items lexbuf }
