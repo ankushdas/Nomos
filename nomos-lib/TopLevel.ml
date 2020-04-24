@@ -1,5 +1,6 @@
 open Core
 module A = Ast
+module C = Core
 module E = Exec
 module EL = Elab
 module F = NomosFlags
@@ -11,6 +12,11 @@ module TC = Typecheck
 module StdList = Stdlib.List
 open Lexer
 open Lexing
+
+type environment = (A.decl * A.ext) list
+
+type raw_transaction = RawTransaction of environment
+type transaction = Transaction of environment
 
 (*********************************)
 (* Loading and Elaborating Files *)
@@ -58,8 +64,10 @@ let read file =
   let (env, _ext) = parse lexbuf in           (* parse file *)
   env
 
+let build envs = RawTransaction (List.concat envs)
+
 (* check validity and typecheck environment *)
-let infer decls =
+let infer (RawTransaction decls) =
   let t0 = Unix.gettimeofday () in
   let () = EL.check_redecl decls in           (* may raise ErrorMsg.Error *)
   let () = EL.check_valid decls decls in
@@ -86,8 +94,7 @@ let infer decls =
   let () = print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
   let () = print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
   let () = I.print_stats () in
-  env;;  
-
+  Transaction env
 
 (**********************)
 (* Executing Programs *)
@@ -99,26 +106,27 @@ let load_config config_in =
 let save_config conf config_out =
   Sexp.save_hum config_out (E.sexp_of_full_configuration conf)
 
-let rec run env config dcls =
-  match dcls with
-      (A.Exec(f), _ext)::dcls' ->
-        let () = if !F.verbosity >= 1
-                 then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
-                 else () in
-        let config' = E.exec env config (f, []) in
-        (* may raise Exec.RuntimeError *)
-        run env config' dcls'
-    | (A.TpDef(n, t), _ext)::dcls' ->
-        let (tx, ch, types, conf) = config in
-        run env (tx, ch, Map.set types ~key:n ~data:t, conf) dcls'
-    | _dcl::dcls' -> run env config dcls'
-    | [] -> config;;
+let run (Transaction env) config =
+  let rec run' config dcls =
+    match dcls with
+        (A.Exec(f), _ext)::dcls' ->
+          let () = if !F.verbosity >= 1
+                   then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
+                   else () in
+          let config' = E.exec env config (f, []) in
+          (* may raise Exec.RuntimeError *)
+          run' config' dcls'
+      | (A.TpDef(n, t), _ext)::dcls' ->
+          let (tx, ch, types, conf) = config in
+          run' (tx, ch, Map.set types ~key:n ~data:t, conf) dcls'
+      | _dcl::dcls' -> run' config dcls'
+      | [] -> config
+  in
+    run' config env
 
 (********************)
 (* Interactive Mode *)
 (********************)
-
-type environment = (A.decl * A.ext) list
 
 let gconfig = ref E.empty_full_configuration
 
@@ -128,9 +136,10 @@ let load path = gconfig := load_config path
 
 let save path = save_config !gconfig path
 
-let exec env = gconfig := run env !gconfig env
+let exec env = gconfig := run env !gconfig
 
 let load_and_exec paths =
-  List.concat_map ~f:read paths
+  C.List.map ~f:read paths
+  |> build
   |> infer
   |> exec
