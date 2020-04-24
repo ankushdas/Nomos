@@ -1,5 +1,5 @@
-open Exec
 module A = Ast
+module E = Exec
 
 type environment = (A.decl * A.ext) list
 
@@ -9,7 +9,7 @@ type transaction = Transaction of environment
 (* flags like cost model, etc should be set by modifying the relevant globals *)
 
 (* holds a full configuration so we don't have to thread it through our commands *)
-val gconfig : full_configuration ref
+val gconfig : E.full_configuration ref
 
 (* resets gconfig to an empty configuration *)
 val reset : unit -> unit
@@ -39,8 +39,8 @@ val load_and_exec : string list -> unit
 (*val show_channels : unit*)
 
 (* used for the command line *)
-val run : transaction -> full_configuration -> full_configuration
+val run : transaction -> E.full_configuration -> E.full_configuration
 
-val load_config : string -> full_configuration
+val load_config : string -> E.full_configuration
 
-val save_config : full_configuration -> string -> unit
+val save_config : E.full_configuration -> string -> unit
