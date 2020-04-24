@@ -616,43 +616,52 @@ let rec consify l = match l with
       let d = e.A.func_data in
       A.Cons(e, {A.func_data = d; A.func_structure = consify es});;
   
-let tc_printable_arg arg t_exp delta ext =
+let tc_printable_arg arg t_exp_opt delta ext =
   match arg with
       A.FArg (A.Var v) ->
-        if not (check_ftp v delta)
-        then error ext ("unknown or duplicate variable: " ^ v)
-        else
-        let t = find_ftp v delta in
-        if eq_ftp A.Integer t
-        then ()
-        else error ext ("invalid type of " ^ v ^
-                        ", expected " ^ PP.pp_ftp_simple t_exp ^ ", found: " ^ PP.pp_ftp_simple t)
+        begin
+          if not (check_ftp v delta)
+          then error ext ("unknown or duplicate variable: " ^ v)
+          else
+          let t = find_ftp v delta in
+          match t_exp_opt with
+              None -> error ext ("invalid type of " ^ v ^ ", expected: channel, found: " ^ PP.pp_ftp_simple t)
+            | Some t_exp ->
+                if eq_ftp t_exp t
+                then ()
+                else error ext ("invalid type of " ^ v ^
+                                ", expected: " ^ PP.pp_ftp_simple t_exp ^ ", found: " ^ PP.pp_ftp_simple t)
+        end
     | A.FArg _e -> raise UnknownTypeError
     | A.STArg c ->
         if not (check_tp c delta)
         then error ext ("unknown or duplicate variable: " ^ PP.pp_chan c)
-        else ();;
+        else
+        match t_exp_opt with
+            None -> ()
+          | Some t_exp -> error ext ("invalid type of " ^ PP.pp_chan c ^ ", expected: " ^
+                                     PP.pp_ftp_simple t_exp ^ ", found: channel");;
 
 let rec check_printable_list delta ext plist arglist plen arglen =
   match plist, arglist with
       [], [] -> ()
     | A.Word(_)::ps, _ -> check_printable_list delta ext ps arglist plen arglen
+    | A.PNewline::ps, _ -> check_printable_list delta ext ps arglist plen arglen
     | A.PInt::ps, arg::args ->
-        let () = tc_printable_arg arg A.Integer delta ext in
+        let () = tc_printable_arg arg (Some A.Integer) delta ext in
         check_printable_list delta ext ps args plen arglen
     | A.PBool::ps, arg::args ->
-        let () = tc_printable_arg arg A.Boolean delta ext in
+        let () = tc_printable_arg arg (Some A.Boolean) delta ext in
         check_printable_list delta ext ps args plen arglen
     | A.PStr::ps, arg::args ->
-        let () = tc_printable_arg arg A.String delta ext in
+        let () = tc_printable_arg arg (Some A.String) delta ext in
         check_printable_list delta ext ps args plen arglen
     | A.PAddr::ps, arg::args ->
-        let () = tc_printable_arg arg A.Address delta ext in
+        let () = tc_printable_arg arg (Some A.Address) delta ext in
         check_printable_list delta ext ps args plen arglen
     | A.PChan::ps, arg::args ->
-        let () = tc_printable_arg arg A.Address delta ext in
+        let () = tc_printable_arg arg None delta ext in
         check_printable_list delta ext ps args plen arglen
-    | A.PNewline::ps, _ -> check_printable_list delta ext ps arglist plen arglen
     | _, _ ->
         error ext ("print string expects " ^ string_of_int plen ^
                   " arguments but called with " ^ string_of_int arglen ^ " arguments");;
