@@ -120,6 +120,7 @@ type decl =
       parsed_expr
   | Exec of expname
 type program = (decl * ext) list * ext
+type file = string list * program
 type 'a value =
     IntV of int
   | BoolV of bool

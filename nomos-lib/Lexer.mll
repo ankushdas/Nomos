@@ -21,6 +21,9 @@ rule token = parse
 
   (* white spaces *)
   | [ ' ' '\t' ]        { token lexbuf }
+
+  (* imports *)
+  | "import " (['a'-'z' 'A'-'Z' '/' '-' ' ' '.' '_']* as s) { IMPORT s }
   
   (* declarations *)
   | "type"              { TYPE }
@@ -48,7 +51,7 @@ rule token = parse
   (* functional *)
   | newline             { next_line lexbuf; token lexbuf }
   | "(*"                { comment_depth := 1; comment lexbuf; token lexbuf }
-  | ['0'-'9']+  as i    { INT (int_of_string i) }
+  | ['0'-'9']+ as i     { INT (int_of_string i) }
   | "let"               { LET }
   | "in"                { IN }
   | "true"              { TRUE }  

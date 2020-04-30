@@ -209,6 +209,8 @@ type decl =
 
 type program = (decl * ext) list * ext
 
+type file = (string list * program) (* imports plus the actual program *)
+
 type 'a value =
   | IntV of int
   | BoolV of bool
