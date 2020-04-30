@@ -53,16 +53,17 @@ let parse lexbuf =
   env;;
 
 (* open file and parse into environment *)
-let read file =
-  let () = reset () in                        (* internal lexer and parser state *)
+let rec read file =
+  let () = reset () in                          (* internal lexer and parser state *)
   (*
-  let () = I.reset () in                      (* resets the LP solver *)
+  let () = I.reset () in                        (* resets the LP solver *)
   *)
-  let inx = C.In_channel.read_all file in     (* read file *)
-  let lexbuf = Lexing.from_string inx in      (* lex file *)
+  let inx = C.In_channel.read_all file in       (* read file *)
+  let lexbuf = Lexing.from_string inx in        (* lex file *)
   let _ = init lexbuf file in
-  let (env, _ext) = parse lexbuf in           (* parse file *)
-  env
+  let (imports, (env, _ext)) = parse lexbuf in  (* parse file *)
+  let envs = List.map read imports in
+  (List.concat (envs @ [env]) : environment)
 
 let build envs = RawTransaction (List.concat envs)
 
