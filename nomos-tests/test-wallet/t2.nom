@@ -1,4 +1,4 @@
-import ../test-wallet.nom
+import test-wallet.nom
 
 proc transaction main2 : . |{*}- ($d : 1) =
 {
