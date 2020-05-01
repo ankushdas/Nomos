@@ -92,9 +92,9 @@ let infer (RawTransaction decls) =
   let t2 = Unix.gettimeofday () in
   let () = if !F.verbosity >= 1 then print_string ("========================================================\n") in
   let () = if !F.verbosity >= 0 then print_string (StdList.fold_left (fun str (dcl, _) -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in
-  let () = print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
-  let () = print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
-  let () = I.print_stats () in
+  let () = if !F.verbosity >= 0 then print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
+  let () = if !F.verbosity >= 0 then print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
+  let () = if !F.verbosity >= 0 then I.print_stats () in
   Transaction env
 
 (**********************)

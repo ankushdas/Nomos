@@ -1,6 +1,6 @@
 (* Nomos command-line tool entry point *)
 
-open TopLevel
+module TL = TopLevel
 module R = Arith
 module A = Ast
 module PP = Pprint
@@ -54,7 +54,7 @@ let out_conf_file =
   C.Command.Arg_type.create
     (fun filename -> check_extension filename ".conf")
 
-let txn_file = file ".txn"
+let _txn_file = file ".txn"
 
 (*********************)
 (* Utility Functions *)
@@ -62,7 +62,7 @@ let txn_file = file ".txn"
 let maybe_load_config config_in_opt =
   match config_in_opt with
   | None -> E.empty_full_configuration
-  | Some(path) -> load_config path
+  | Some(path) -> TL.load_config path
 
 
 let nomos_command =
@@ -82,8 +82,6 @@ let nomos_command =
           ~doc:"input configuration path"
         and config_out = flag "-o" (optional out_conf_file)
           ~doc:"output configuration path"
-        and txn_path = flag "-t" (optional txn_file)
-          ~doc:"transaction file path"
         and file = anon("filename" %: nomos_file) in
         fun () ->
           (* set global flags *)
@@ -92,7 +90,7 @@ let nomos_command =
           let () = set_cost_model cost_model in
           let () = set_syntax syntax in
           let () =
-            if tc_only && List.exists Option.is_some [config_in; config_out; txn_path]
+            if tc_only && List.exists Option.is_some [config_in; config_out]
               then
                 begin
                   C.eprintf "cannot use execution options with -tc flag";
@@ -102,34 +100,23 @@ let nomos_command =
                 () in
 
           (* parse *)
-          let contract_env = read file in
-          let () = print_string ("% contract parsing successful!\n") in
-          let txn_env =
-            match txn_path with
-                None -> []
-              | Some(txn_file) -> 
-                  let e = read txn_file in
-                  begin
-                    print_string "% transaction parsing successful!\n";
-                    e
-                  end
-          in
-
+          let contract_env = TL.read file in
+          let () = if !F.verbosity >= 0 then print_string ("% parsing successful!\n") in
           (* typecheck *)
-          let env = try infer (build [contract_env; txn_env])
+          let env = try TL.infer (TL.build [contract_env])
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
           in
-          let () = print_string ("% compilation successful!\n") in
+          let () = if !F.verbosity >= 0 then print_string ("% compilation successful!\n") in
 
           if tc_only
             then ()
             else
               (* run transaction *)
               let initial_config = maybe_load_config config_in in
-              let final_config = run env initial_config in
-              let () = print_string ("% runtime successful!\n") in
+              let final_config = TL.run env initial_config in
+              let () = if !F.verbosity >= 0 then print_string ("% runtime successful!\n") in
 
               (* save final configuration *)
               match config_out with
                   None -> ()
-                | Some(path) -> save_config final_config path)
+                | Some(path) -> TL.save_config final_config path)

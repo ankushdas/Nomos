@@ -19,8 +19,7 @@
 %token ANDALSO ORELSE
 %token TYPE PROC ASSET CONTRACT TRANSACTION TURNSTILE EXEC COLON
 (* printing *)
-%token PINT PBOOL PSTR PADDR PCHAN
-%token NEWLINE PRINT
+%token PRINT
 (* Nomos specific *)
 %token GETTXNNUM GETTXNSENDER MAKECHAN
 (* session type layer *)
