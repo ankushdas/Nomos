@@ -1,8 +1,8 @@
 import ../test-wallet.nom
 
-proc transaction main1 : . |{*}- ($d : 1) =
+proc transaction main2 : . |{*}- ($d : 1) =
 {
-  let n = 1000 ;
+  let n = 100 ;
   $c <- create_wallet <- n ;
   $d <- $c
 }
@@ -15,4 +15,4 @@ proc transaction create_wallet : (n : int) |{*}- ($d : 1) =
   close $d
 }
 
-exec main1
+exec main2

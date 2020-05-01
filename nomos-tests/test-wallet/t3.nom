@@ -1,0 +1,35 @@
+import ../test-wallet.nom
+
+proc transaction transfer : (#sender : wallet), (#receiver : wallet), (amt : int) |{*}- ($d : 1) =
+{
+  $ls <- acquire #sender ;
+  pay $ls {*} ;
+  $ls.sub ;
+  send $ls amt ;
+  case $ls (
+    sufficient => $subm <- recv $ls ;
+                  get $ls {*} ;
+                  #sender <- release $ls ;
+                  $lr <- acquire #receiver ;
+                  pay $lr {*} ;
+                  $lr.add ;
+                  send $lr $subm ;
+                  get $lr {*} ;
+                  #receiver <- release $lr ;
+                  work {*} ;
+                  close $d
+  | insufficient => abort
+  )
+}
+
+proc transaction main3 : . |{*}- ($d : 1) =
+{
+  let n = 100 ;
+  #s : wallet <- Nomos.MakeChannel 3 ;
+  #r : wallet <- Nomos.MakeChannel 7 ;
+  print ("transfer of %d coins from %c to %c successful\n", n, #s, #r);
+  $c <- transfer <- #s #r n ;
+  $d <- $c
+}
+
+exec main3

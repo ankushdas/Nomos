@@ -1,0 +1,28 @@
+import ../test-wallet.nom
+
+proc transaction main : . |{*}- ($d : 1) =
+{
+  #s : wallet <- Nomos.MakeChannel 3 ;
+  #r : wallet <- Nomos.MakeChannel 7 ;
+  $c1 <- check_balance <- #s ;
+  $c2 <- check_balance <- #r ;
+  wait $c1 ;
+  wait $c2 ;
+  work {*} ;
+  close $d
+}
+
+proc transaction check_balance : (#sw : wallet) |{*}- ($d : 1) =
+{
+  $lw <- acquire #sw ;
+  pay $lw {*} ;
+  $lw.val ;
+  n = recv $lw ;
+  get $lw {*} ;
+  #sw <- release $lw ;
+  print ("The balance of %c is %d\n", #sw, n);
+  work {*} ;
+  close $d
+}
+
+exec main
