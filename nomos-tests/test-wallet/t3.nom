@@ -1,4 +1,4 @@
-import test-wallet.nom
+import contract.nom
 
 proc transaction transfer : (#sender : wallet), (#receiver : wallet), (amt : int) |{*}- ($d : 1) =
 {
