@@ -391,7 +391,7 @@ let eq_name (_s1,c1,_m1) (_s2,c2,_m2) = c1 = c2;;
 let eq_mode (_s1,_c1,m1) (_s2,_c2,m2) = eqmode m1 m2;;
 
 let eq_chan c1 c2 =
-  eq_str c1 c2 && eq_name c1 c2 && eq_mode c1 c2;;
+  eq_name c1 c2 && eq_mode c1 c2;;
 
 let rec checktp c delta = match delta with
     [] -> false
