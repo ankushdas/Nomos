@@ -415,9 +415,11 @@ let replace_chan ch' ch l =
       l
 
 let remove_chan ch l =
-  if not (List.exists (eq_name ch) l)
-  then raise ExecImpossible
-  else List.filter (uneq_name ch) l
+  match mode_of ch with
+      A.Shared -> l
+    | _m -> if not (List.exists (eq_name ch) l)
+           then raise ExecImpossible
+           else List.filter (uneq_name ch) l
 
 let chans_diff chs1 chs2 =
   List.filter
@@ -1185,7 +1187,7 @@ type config_outcome =
 
 let rec step env config =
   let sems = get_sems config in
-  let _ = (*print_string*) (pp_config config) in
+  let _ = if !F.verbosity > 1 then print_string (pp_config config) in
   (* check that all in_use linear channels actually exist *)
   let _ = List.map (fun sem ->
     match sem with
