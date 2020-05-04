@@ -36,16 +36,27 @@ let pp_syntax syn = match syn with
     Implicit -> "implicit"
   | Explicit -> "explicit";;
 
+let parseRand s = match s with
+    "no" -> false
+  | "yes" -> true
+  | _ -> true;;
+
+let pp_rand rand = match rand with
+    false -> "yes"
+  | true -> "no";;
+
 (* Default values *)
 let time = ref Nil;;
 let work = ref Nil;;
 let syntax = ref Explicit;;
 let verbosity = ref 1;;           (* -1 = print nothing, 0 = quiet, 1 = normal, 2 = verbose, 3 = debug *)
 let help = ref false;;
+let random = ref true;;
 
 let reset () =
     time := Nil
   ; work := Nil
   ; syntax := Explicit
   ; verbosity := 1
-  ; help := false;;
+  ; help := false
+  ; random := true;;

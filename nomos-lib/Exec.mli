@@ -60,3 +60,5 @@ val exec :
   -> full_configuration
   -> (string * (A.ext A.arg list))
   -> full_configuration
+
+val txnSender : string ref

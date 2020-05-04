@@ -838,7 +838,9 @@ let find_acquiring_procs ch config =
 let pick_random l =
   match l with
       [] -> None
-    | l -> Some(List.nth l 0);;
+    | l ->
+        let x = if !F.random then (Random.int (List.length l)) else 0 in
+        Some(List.nth l x);;
 
 let up ch config =
   let s = find_sem ch config in
@@ -849,10 +851,17 @@ let up ch config =
           then raise ChannelMismatch
           else
             let procs = find_acquiring_procs as1 config in
+            (*
+            let () = print_string ("picking acquiring proc for " ^ PP.pp_chan as1 ^ "\n") in
+            let () = print_string (List.fold_left (fun s x -> s ^ "\n" ^ pp_sem x) "" procs) in
+            *)
             let proc_opt = pick_random procs in
             match proc_opt with
                 None -> Unchanged config
               | Some proc ->
+                  (*
+                  let () = print_string ("\npicked acquiring proc " ^ pp_sem proc ^ "\n") in
+                  *)
                   match proc with
                       Proc(func_acq,c,in_use_acq,t',wp',A.Acquire(aseq,x',q)) ->
                         if uneq_name aseq as1

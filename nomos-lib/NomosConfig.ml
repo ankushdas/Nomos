@@ -71,17 +71,21 @@ let nomos_command =
     C.Command.Let_syntax.(
       let%map_open
         verbosity = flag "-v" (optional_with_default 1 int)
-          ~doc:"verbosity 0: quiet, 1: default, 2: verbose, 3: debugging mode"
+          ~doc:"verbosity:- 0: quiet, 1: default, 2: verbose, 3: debugging mode"
         and cost_model = flag "-w" (optional_with_default "none" string)
-          ~doc:"work-cost-model none, recv, send, recvsend, free"
+          ~doc:"work-cost-model: none, recv, send, recvsend, free"
         and syntax = flag "-s" (optional_with_default "explicit" string)
-          ~doc:"syntax implicit, explicit"
+          ~doc:"syntax: implicit, explicit"
         and tc_only = flag "-tc" no_arg
           ~doc:"tc only"
         and config_in = flag "-i" (optional in_conf_file)
-          ~doc:"input configuration path"
+          ~doc:"input configuration file path"
         and config_out = flag "-o" (optional out_conf_file)
-          ~doc:"output configuration path"
+          ~doc:"output configuration file path"
+        and txn_sender = flag "-ts" (optional_with_default "" string)
+          ~doc:"transaction sender's address"
+        and randomness = flag "-rand" (optional_with_default "yes" string)
+          ~doc:"random semantics: no, yes"
         and file = anon("filename" %: nomos_file) in
         fun () ->
           (* set global flags *)
@@ -89,6 +93,8 @@ let nomos_command =
           let () = F.verbosity := verbosity in
           let () = set_cost_model cost_model in
           let () = set_syntax syntax in
+          let () = E.txnSender := txn_sender in
+          let () = F.random := F.parseRand randomness in
           let () =
             if tc_only && List.exists Option.is_some [config_in; config_out]
               then
