@@ -26,6 +26,11 @@ let set_syntax s =
       None -> (C.eprintf "%% syntax %s not recognized\n" s; exit 1)
     | Some syn -> F.syntax := syn
 
+let set_txn_sender s =
+  match s with
+      None -> (C.eprintf "%% txn sender must be specified\n"; exit 1)
+    | Some s -> E.txnSender := s;;
+
 let check_extension filename ext =
   if Filename.check_suffix filename ext
   then filename
@@ -82,7 +87,7 @@ let nomos_command =
           ~doc:"input configuration file path"
         and config_out = flag "-o" (optional out_conf_file)
           ~doc:"output configuration file path"
-        and txn_sender = flag "-ts" (optional_with_default "" string)
+        and txn_sender = flag "-ts" (optional string)
           ~doc:"transaction sender's address"
         and randomness = flag "-rand" (optional_with_default "yes" string)
           ~doc:"random semantics: no, yes"
@@ -93,23 +98,23 @@ let nomos_command =
           let () = F.verbosity := verbosity in
           let () = set_cost_model cost_model in
           let () = set_syntax syntax in
-          let () = E.txnSender := txn_sender in
           let () = F.random := F.parseRand randomness in
           let () =
-            if tc_only && List.exists Option.is_some [config_in; config_out]
-              then
-                begin
-                  C.eprintf "cannot use execution options with -tc flag";
-                  exit 1
-                end
-              else
-                () in
+            if tc_only && List.exists Option.is_some [config_in; config_out; txn_sender]
+            then
+              begin
+                C.eprintf "cannot use execution options with -tc flag";
+                exit 1
+              end
+            else
+              ()
+          in
 
           (* parse *)
-          let contract_env = TL.read file in
+          let env = TL.read file in
           let () = if !F.verbosity >= 0 then print_string ("% parsing successful!\n") in
           (* typecheck *)
-          let env = try TL.infer (TL.build [contract_env])
+          let env = try TL.infer (TL.build [env])
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
           in
           let () = if !F.verbosity >= 0 then print_string ("% compilation successful!\n") in
@@ -118,6 +123,7 @@ let nomos_command =
             then ()
             else
               (* run transaction *)
+              let () = set_txn_sender txn_sender in
               let initial_config = maybe_load_config config_in in
               let final_config = TL.run env initial_config in
               let () = if !F.verbosity >= 0 then print_string ("% runtime successful!\n") in
