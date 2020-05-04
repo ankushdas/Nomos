@@ -128,6 +128,7 @@ proc transaction bid_client : (a : int), ($m : money), (#sa : running_auction) |
              #sa <- release $la ;
              $d.some;
              send $d $m ;
+             work {*} ;
              close $d
   )
 }

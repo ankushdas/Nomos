@@ -418,8 +418,8 @@ let remove_chan ch l =
   match mode_of ch with
       A.Shared -> l
     | _m -> if not (List.exists (eq_name ch) l)
-           then raise ExecImpossible
-           else List.filter (uneq_name ch) l
+            then raise ExecImpossible
+            else List.filter (uneq_name ch) l
 
 let chans_diff chs1 chs2 =
   List.filter
