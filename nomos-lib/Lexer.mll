@@ -143,4 +143,4 @@ and printable_items = parse
   | "%a"                { quoted_string := (Ast.PAddr)::(!quoted_string); printable_items lexbuf }
   | "%c"                { quoted_string := (Ast.PChan)::(!quoted_string); printable_items lexbuf }
   | '\\' 'n'            { quoted_string := (Ast.PNewline)::(!quoted_string); printable_items lexbuf }
-  | ['a'-'z' 'A'-'Z' '0'-'9' '_']+ as word { quoted_string := (Ast.Word(word))::(!quoted_string); printable_items lexbuf }
+  | [^ '"' '\\' '%']+ as word { quoted_string := (Ast.Word(word))::(!quoted_string); printable_items lexbuf }
