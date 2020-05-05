@@ -1091,6 +1091,7 @@ let print ch config =
       Proc(func,c,in_use,t,(w,pot),A.Print(l,args,p)) ->
         let pl = get_printable_string l args in
         let () = print_string pl in
+        let () = flush_all () in
         let newproc = Proc(func,c,in_use,t+1,(w,pot),p.A.st_structure) in
         let config = add_sem newproc config in
         Changed config
