@@ -1,3 +1,55 @@
+(*
+proc transaction party_recv : (id : int), (T : int), (num_echos : int), (m : int),
+  (#dc : comm),
+  ($unchecked_comms : list_comms),
+  ($checked_comms : list_comms) |- ($d : int ^ 1) =
+{
+  case $unchecked_comms (
+    cons => #sd <- recv $unchecked_comms ;
+            $ld <- acquire #sd ;
+            $ld.RECV ;
+            case $ld (
+              no => #sd <- release $ld ;
+                    $new_checked_comms <- cons <- $checked_comms #sd ;
+                    $d <- party_recv <- id T num_echos m #dc $unchecked_comms $new_checked_comms
+            | yes => $msg <- recv $ld ;
+                     #sd <- release $ld ;
+                     echo_m = recv $msg ;
+                     wait $msg ;
+                     $new_checked_comms <- cons <- $checked_comms #sd ;
+                     if m <> echo_m
+                     then
+                      abort
+                     else
+                      let num_echos = num_echos + 1;
+                      $d <- party_recv <- id T num_echos m #dc $unchecked_comms $new_checked_comms
+            )
+  | nil => wait $unchecked_comms ;
+           if num_echos >= T
+           then
+            send $d m ;
+            $c <- throw <- $checked_comms ;
+            wait $c ;
+            close $d
+           else
+            $new_checked_comms <- nil <- ;
+            $d <- party_recv <- id T num_echos m #dc $checked_comms $new_checked_comms
+  )
+}
+
+proc transaction create_party_communicators : (N : int) |- ($dcs : list_comms * list_comms) =
+{
+  if N = 0
+  then
+    $l1 <- nil <- ;
+    $l2 <- nil <- ;
+    send $dcs $l1 ;
+    $dcs <- $l2
+  else
+    abort
+}
+*)
+
 type msg = int ^ 1
 
 type comm = /\ &{ SEND : msg -o \/ comm,
@@ -42,13 +94,7 @@ proc contract done_communicator : (sid : int), (rid : int) |- (#dc : comm) =
   case $ldc (
     SEND => print ("terminated comm cannot receive messages\n");
             abort
-  | RECV => (*
-            $ldc.no ;
-            print ("%d-%d comm acquired by %d: no message\n", sid, rid, rid);
-            #dc <- detach $ldc ;
-            #dc <- done_communicator <- sid rid
-            *)
-            print ("terminated comm cannot send messages\n");
+  | RECV => print ("terminated comm cannot send messages\n");
             abort
   )
 }
@@ -162,74 +208,36 @@ proc transaction party_recv_comms : (id : int), (T : int), (m : int),
                 $p <- party_recv_comms <- id T m #dc $send_comms $recv_comms_new
   | getid => send $p id ;
              $p <- party_recv_comms <- id T m #dc $send_comms $recv_comms
-  | done => print ("party %d: received all comms, now sending echo messages\n", id);
-            $sent_comms <- nil <- ;
-            $p <- party_send_echos <- id T m #dc $send_comms $sent_comms $recv_comms
+  | done => send $p m ;
+            print ("party %d: received all comms, now sending echo messages\n", id);
+            $tsc <- throw <- $send_comms ;
+            wait $tsc ;
+            $trc <- throw <- $recv_comms ;
+            wait $trc ;
+            close $p
   )
 }
 
+(*
 proc transaction party_send_echos : (id : int), (T : int), (m : int), (#dc : comm),
-  ($unsent_comms : list_comms), ($sent_comms : list_comms), ($recv_comms : list_comms) |- ($p : int ^ 1) =
+  ($unsent_comms : list_comms), ($sent_comms : list_comms), ($recv_comms : list_comms) |- ($d : int ^ 1) =
 {
   case $unsent_comms (
     cons => #sd <- recv $unsent_comms ;
             $ld <- acquire #sd ;
             $ld.SEND ;
-            $msg <- create_msg <- m ;
+            $msg <- create_echo_msg <- m ;
             send $ld $msg ;
             #sd <- release $ld ;
             $new_sent_comms <- cons <- $sent_comms #sd ;
-            $p <- party_send_echos <- id T m #dc $unsent_comms $new_sent_comms $recv_comms
+            $d <- party_send <- id T m #dc $unsent_comms $new_sent_comms
   | nil => wait $unsent_comms ;
            let num_echos = 0;
            $checked_comms <- nil <- ;
-           $received_comms <- nil <- ;
-           $p <- party_recv_echos <- id T m num_echos #dc $sent_comms $received_comms $recv_comms $checked_comms
+           $d <- party_recv <- id T num_echos m #dc $sent_comms $checked_comms
   )
 }
-
-proc transaction party_recv_echos : (id : int), (T : int), (m : int), (num_echos : int),
-  (#dc : comm), ($send_comms : list_comms), ($received_comms : list_comms),
-  ($unchecked_comms : list_comms), ($checked_comms : list_comms) |- ($p : int ^ 1) =
-{
-  case $unchecked_comms (
-    cons => #sd <- recv $unchecked_comms ;
-            $ld <- acquire #sd ;
-            $ld.RECV ;
-            case $ld (
-              no => #sd <- release $ld ;
-                    $new_checked_comms <- cons <- $checked_comms #sd ;
-                    $p <- party_recv_echos <- id T m num_echos #dc $send_comms $received_comms $unchecked_comms $new_checked_comms
-            | yes => $msg <- recv $ld ;
-                     #sd <- release $ld ;
-                     echo_m = recv $msg ;
-                     wait $msg ;
-                     $new_received_comms <- cons <- $received_comms #sd ;
-                     if m <> echo_m
-                     then
-                      print ("party %d received echo message on %c with number %d, does not match with dealer %d\n", id, #sd, echo_m, m);
-                      abort
-                     else
-                      let num_echos_new = num_echos + 1;
-                      $p <- party_recv_echos <- id T m num_echos_new #dc $send_comms $new_received_comms $unchecked_comms $checked_comms
-            )
-  | nil => wait $unchecked_comms ;
-           if num_echos >= T
-           then
-            $dums <- throw <- $send_comms ;
-            $dumr <- throw <- $received_comms ;
-            $dumc <- throw <- $checked_comms ;
-            wait $dums ;
-            wait $dumr ;
-            wait $dumc ;
-            print ("party %d: received %d echo messages, now outputting %d and terminating\n", id, T, m);
-            send $p m ;
-            close $p
-           else
-            $new_checked_comms <- nil <- ;
-            $p <- party_recv_echos <- id T m num_echos #dc $send_comms $received_comms $checked_comms $new_checked_comms
-  )
-}
+*)
 
 type list_parties = +{cons : recv_party_comms * list_parties,
                       nil : 1}
@@ -363,7 +371,7 @@ proc transaction send_done_msgs : ($ps : list_parties) |- ($d : 1) =
 proc transaction main : . |- ($mn : 1) =
 {
   let N = 5 ;
-  let T = 4 ;
+  let T = 3 ;
   let m = 1729 ;
   let dealer_id = 0;
   $d <- dealer_init <- dealer_id m ;
