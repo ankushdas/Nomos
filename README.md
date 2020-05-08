@@ -62,19 +62,48 @@ $ ./_build/default/nomos-bin/nomos.exe nomos-tests/wallet-demo.nom
 ```
 It should produce the output "% runtime successful!" at the end.
 
-Transactions can also be specified separately from the main file containing the Nomos definitions in a `.txn` file.
 A configuration is a description of the state of the all contracts we have running at a specific time. When we run a
 transaction, the configuration is perturbed but will reach final state, which is where execution stops until the next
 transaction is run.
-Use the `-t` flag to specify which transactions to run.
 You can run transactions on a specific configuration using the -i flag and can save the resulting configuration with
 the -o flag. If you don't use the -i flag, your transaction will be run on an empty configuration.
+You must specify the sender of the transaction using the -ts flag.
 
 For example,
 ```
-$ _build/default/nomos-bin/nomos.exe -o s1.conf -t some_transaction.txn defns.nom
-$ _build/default/nomos-bin/nomos.exe -i s1.conf -o s2.conf -t another_transaction.txn defns.nom
+$ _build/default/nomos-bin/nomos.exe -ts someone -o s1.conf some_transaction.nom
+$ _build/default/nomos-bin/nomos.exe -ts someone -i s1.conf -o s2.conf another_transaction.nom
 ```
+
+### Top Level
+It's also possible to parse, typecheck, and interpret Nomos files and transactions from the OCaml interpreter.
+
+First, load the interpreter using `dune utop`.
+
+Now we can try out some transactions interactively:
+```
+utop [0]: load_and_exec "nomos-tests/test-wallet/t1.nom";;
+....
+exec main1
+created a wallet with 1000 coins on channel #ch3[S]
+- : unit = ()
+utop [1]: load_and_exec "nomos-tests/test-wallet/t2.nom";;
+...
+exec main2
+created a wallet with 100 coins on channel #ch7[S]
+- : unit = ()
+utop [3]: load_and_exec "nomos-tests/test-wallet/t3.nom";;
+...
+exec main3
+transfer of 100 coins from #ch3[S] to #ch7[S] successful
+- : unit = () 
+utop [4]: save "final.conf";;
+- : unit = ()
+```
+This saves the final configuration after running t1, t2, and t3 to final.conf.
+
+For a complete listing of available commands at the top level, see `nomos-src/TopLevel.mli`.
+
 
 ### Troubleshooting
 1. Sometimes, your `$ make` command may fail with the error "dune: command not found". In this case, try restarting your terminal and running `$ make` again.

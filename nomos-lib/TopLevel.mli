@@ -21,10 +21,7 @@ val load : string -> unit
 val save : string -> unit
 
 (* read an environment from a file *)
-val read : string -> environment
-
-(* create a raw transaction from a list of environments *)
-val build : environment list -> raw_transaction
+val read : string -> raw_transaction
 
 (* typecheck and eliminate stars *)
 val infer : raw_transaction -> transaction
@@ -32,8 +29,8 @@ val infer : raw_transaction -> transaction
 (* execute all the execs in an environment *)
 val exec : transaction -> unit
 
-(* directly execute a collection of files in an environment *)
-val load_and_exec : string list -> unit
+(* directly execute a file in an environment *)
+val load_and_exec : string -> unit
 
 (* show the shared channels and their types *)
 (*val show_channels : unit*)

@@ -50,23 +50,24 @@ let parse_with_error lexbuf =
 (* try to read a file, or print failure *)
 let read_with_error file =
   try C.In_channel.read_all file with
-  | Sys_error s -> (C.printf "Failed to load file:\n- %s\n" s; exit 1)
+  | Sys_error s -> (C.eprintf "Failed to load file:\n- %s\n" s; exit 1)
 
 (* open file and parse into environment *)
-let rec read file =
-  let () = reset () in                          (* internal lexer and parser state *)
-  (*
-  let () = I.reset () in                        (* resets the LP solver *)
-  *)
-  let inx = read_with_error file in             (* read file *)
-  let lexbuf = Lexing.from_string inx in        (* lex file *)
-  let _ = init lexbuf file in
-  let (imports, (env, _ext)) = parse_with_error lexbuf in  (* parse file *)
-  let imports' = List.map (Filename.concat (Filename.dirname file)) imports in
-  let envs = List.map read imports' in
-  (List.concat (envs @ [env]) : environment)
-
-let build envs = RawTransaction (List.concat envs)
+let read file =
+  let rec read_env file =
+    let () = reset () in                          (* internal lexer and parser state *)
+    (*
+    let () = I.reset () in                        (* resets the LP solver *)
+    *)
+    let inx = read_with_error file in             (* read file *)
+    let lexbuf = Lexing.from_string inx in        (* lex file *)
+    let _ = init lexbuf file in
+    let (imports, (env, _ext)) = parse_with_error lexbuf in  (* parse file *)
+    let imports' = List.map (Filename.concat (Filename.dirname file)) imports in
+    let envs = List.map read_env imports' in
+    (List.concat (envs @ [env]) : environment)
+  in
+    RawTransaction (read_env file)
 
 (* check validity and typecheck environment *)
 let infer (RawTransaction decls) =
@@ -140,8 +141,4 @@ let save path = save_config !gconfig path
 
 let exec env = gconfig := run env !gconfig
 
-let load_and_exec paths =
-  C.List.map ~f:read paths
-  |> build
-  |> infer
-  |> exec
+let load_and_exec path = read path |> infer |> exec
