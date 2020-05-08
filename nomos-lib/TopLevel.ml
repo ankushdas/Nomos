@@ -62,7 +62,8 @@ let rec read file =
   let lexbuf = Lexing.from_string inx in        (* lex file *)
   let _ = init lexbuf file in
   let (imports, (env, _ext)) = parse lexbuf in  (* parse file *)
-  let envs = List.map read imports in
+  let imports' = List.map (Filename.concat (Filename.dirname file)) imports in
+  let envs = List.map read imports' in
   (List.concat (envs @ [env]) : environment)
 
 let build envs = RawTransaction (List.concat envs)
