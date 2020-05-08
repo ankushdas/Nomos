@@ -143,4 +143,8 @@ let set_sender sender = E.txnSender := sender
 
 let exec env = gconfig := run env !gconfig
 
-let load_and_exec path = read path |> infer |> exec
+let read_and_exec path = read path |> infer |> exec
+
+let show_channels () =
+  let (_, _, _, {E.types = types; _}) = !gconfig in
+  C.Map.iteri types ~f:(fun ~key:k ~data:v -> C.printf "%s: %s\n" (PP.pp_chan k) (PP.pp_tp_simple v))

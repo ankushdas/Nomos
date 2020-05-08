@@ -33,10 +33,10 @@ val set_sender : string -> unit
 val exec : transaction -> unit
 
 (* read, typecheck, and execute a file (equiv to exec (infer (read f)))*)
-val load_and_exec : string -> unit
+val read_and_exec : string -> unit
 
 (* show the shared channels and their types *)
-(*val show_channels : unit*)
+val show_channels : unit -> unit
 
 (* used for the command line *)
 val run : transaction -> E.full_configuration -> E.full_configuration
