@@ -26,10 +26,13 @@ val read : string -> raw_transaction
 (* typecheck and eliminate stars *)
 val infer : raw_transaction -> transaction
 
+(* sets the current transaction sender *)
+val set_sender : string -> unit
+
 (* execute all the execs in an environment *)
 val exec : transaction -> unit
 
-(* directly execute a file in an environment *)
+(* read, typecheck, and execute a file (equiv to exec (infer (read f)))*)
 val load_and_exec : string -> unit
 
 (* show the shared channels and their types *)

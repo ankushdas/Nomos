@@ -29,7 +29,7 @@ let set_syntax s =
 let set_txn_sender s =
   match s with
       None -> (C.eprintf "%% txn sender must be specified\n"; exit 1)
-    | Some s -> E.txnSender := s;;
+    | Some s -> TL.set_sender s;;
 
 let check_extension filename ext =
   if Filename.check_suffix filename ext

@@ -139,6 +139,8 @@ let load path = gconfig := load_config path
 
 let save path = save_config !gconfig path
 
+let set_sender sender = E.txnSender := sender
+
 let exec env = gconfig := run env !gconfig
 
 let load_and_exec path = read path |> infer |> exec
