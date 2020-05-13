@@ -21,22 +21,22 @@ val load : string -> unit
 val save : string -> unit
 
 (* read an environment from a file *)
-val read : string -> environment
-
-(* create a raw transaction from a list of environments *)
-val build : environment list -> raw_transaction
+val read : string -> raw_transaction
 
 (* typecheck and eliminate stars *)
 val infer : raw_transaction -> transaction
 
+(* sets the current transaction sender *)
+val set_sender : string -> unit
+
 (* execute all the execs in an environment *)
 val exec : transaction -> unit
 
-(* directly execute a collection of files in an environment *)
-val load_and_exec : string list -> unit
+(* read, typecheck, and execute a file (equiv to exec (infer (read f)))*)
+val read_and_exec : string -> unit
 
 (* show the shared channels and their types *)
-(*val show_channels : unit*)
+val show_channels : unit -> unit
 
 (* used for the command line *)
 val run : transaction -> E.full_configuration -> E.full_configuration

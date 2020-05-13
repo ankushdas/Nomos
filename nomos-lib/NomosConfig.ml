@@ -29,7 +29,7 @@ let set_syntax s =
 let set_txn_sender s =
   match s with
       None -> (C.eprintf "%% txn sender must be specified\n"; exit 1)
-    | Some s -> E.txnSender := s;;
+    | Some s -> TL.set_sender s;;
 
 let check_extension filename ext =
   if Filename.check_suffix filename ext
@@ -59,8 +59,6 @@ let out_conf_file =
   C.Command.Arg_type.create
     (fun filename -> check_extension filename ".conf")
 
-let _txn_file = file ".txn"
-
 (*********************)
 (* Utility Functions *)
 (*********************)
@@ -88,7 +86,7 @@ let nomos_command =
         and config_out = flag "-o" (optional out_conf_file)
           ~doc:"output configuration file path"
         and txn_sender = flag "-ts" (optional string)
-          ~doc:"transaction sender's address"
+          ~doc:"addr transaction sender's address"
         and randomness = flag "-rand" (optional_with_default "yes" string)
           ~doc:"random semantics: no, yes"
         and file = anon("filename" %: nomos_file) in
@@ -111,10 +109,10 @@ let nomos_command =
           in
 
           (* parse *)
-          let env = TL.read file in
+          let trans = TL.read file in
           let () = if !F.verbosity >= 0 then print_string ("% parsing successful!\n") in
           (* typecheck *)
-          let env = try TL.infer (TL.build [env])
+          let env = try TL.infer trans
                     with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
           in
           let () = if !F.verbosity >= 0 then print_string ("% compilation successful!\n") in

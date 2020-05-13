@@ -38,7 +38,7 @@ let print_position _outx lexbuf =
   C.printf "%s:%d:%d" pos.pos_fname
     pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
-(* try lexing and parsing *)
+(* lex and parse using Menhir, then return list of declarations *)
 let parse_with_error lexbuf =
   try Parser.file Lexer.token lexbuf with
   | SyntaxError msg ->
@@ -47,25 +47,27 @@ let parse_with_error lexbuf =
   | Parser.Error ->
       (C.printf "PARSING FAILURE: %a\n" print_position lexbuf; exit 1)
 
-(* use the parser created by Menhir and return the list of declarations *)
-let parse lexbuf =
-  let env = parse_with_error lexbuf in
-  env;;
+(* try to read a file, or print failure *)
+let read_with_error file =
+  try C.In_channel.read_all file with
+  | Sys_error s -> (C.eprintf "Failed to load file:\n- %s\n" s; exit 1)
 
 (* open file and parse into environment *)
-let rec read file =
-  let () = reset () in                          (* internal lexer and parser state *)
-  (*
-  let () = I.reset () in                        (* resets the LP solver *)
-  *)
-  let inx = C.In_channel.read_all file in       (* read file *)
-  let lexbuf = Lexing.from_string inx in        (* lex file *)
-  let _ = init lexbuf file in
-  let (imports, (env, _ext)) = parse lexbuf in  (* parse file *)
-  let envs = List.map read imports in
-  (List.concat (envs @ [env]) : environment)
-
-let build envs = RawTransaction (List.concat envs)
+let read file =
+  let rec read_env file =
+    let () = reset () in                          (* internal lexer and parser state *)
+    (*
+    let () = I.reset () in                        (* resets the LP solver *)
+    *)
+    let inx = read_with_error file in             (* read file *)
+    let lexbuf = Lexing.from_string inx in        (* lex file *)
+    let _ = init lexbuf file in
+    let (imports, (env, _ext)) = parse_with_error lexbuf in  (* parse file *)
+    let imports' = List.map (Filename.concat (Filename.dirname file)) imports in
+    let envs = List.map read_env imports' in
+    (List.concat (envs @ [env]) : environment)
+  in
+    RawTransaction (read_env file)
 
 (* check validity and typecheck environment *)
 let infer (RawTransaction decls) =
@@ -137,10 +139,12 @@ let load path = gconfig := load_config path
 
 let save path = save_config !gconfig path
 
+let set_sender sender = E.txnSender := sender
+
 let exec env = gconfig := run env !gconfig
 
-let load_and_exec paths =
-  C.List.map ~f:read paths
-  |> build
-  |> infer
-  |> exec
+let read_and_exec path = read path |> infer |> exec
+
+let show_channels () =
+  let (_, _, _, {E.types = types; _}) = !gconfig in
+  C.Map.iteri types ~f:(fun ~key:k ~data:v -> C.printf "%s: %s\n" (PP.pp_chan k) (PP.pp_tp_simple v))

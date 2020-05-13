@@ -1,0 +1,6 @@
+#use "topfind";;
+#thread;;
+#require "core.top";;
+#require "core.syntax";;
+#utop_prompt_simple;;
+open Lib.TopLevel;;
