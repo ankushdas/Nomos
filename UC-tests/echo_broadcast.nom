@@ -1,0 +1,429 @@
+type msg = +{ SEND : int ^ 1,
+              ECHO : int ^ int ^ 1,
+              FINAL : int ^ int ^ 1}
+
+type comm = /\ &{ SEND : msg -o \/ comm,
+                  RECV : +{ no : \/ comm,
+                            yes : msg * \/ comm }}
+
+type list_comms = +{cons : comm * list_comms,
+                    nil : 1}
+
+proc contract empty_communicator : (sid : int), (rid : int) |- (#dc : comm) =
+{
+  $ldc <- accept #dc ;
+  case $ldc (
+    SEND => $msg <- recv $ldc ;
+            print ("%d-%d comm acquired by %d: message received\n", sid, rid, sid);
+            #dc <- detach $ldc ;
+            #dc <- full_communicator <- sid rid $msg
+  | RECV => $ldc.no ;
+            print ("%d-%d comm acquired by %d: no message\n", sid, rid, rid);
+            #dc <- detach $ldc ;
+            #dc <- empty_communicator <- sid rid
+  )
+}
+
+proc contract full_communicator : (sid : int), (rid : int), ($msg : msg) |- (#dc : comm) =
+{
+  $ldc <- accept #dc ;
+  case $ldc (
+    SEND => print ("comm cannot receive 2 messages\n");
+            abort
+  | RECV => $ldc.yes ;
+            print ("%d-%d comm acquired by %d: message delivered\n", sid, rid, rid);
+            send $ldc $msg ;
+            #dc <- detach $ldc ;
+            #dc <- empty_communicator <- sid rid
+  )
+}
+
+proc asset create_send_msg : (m : int) |- ($msg : msg) =
+{
+  $msg.SEND ;
+  send $msg m ;
+  close $msg
+}
+
+type recv_party_comms = &{nextsend : comm -o recv_party_comms,
+                          nextrecv : comm -o recv_party_comms,
+                          pubkey : int -> int -> recv_party_comms,
+                          getid : int ^ recv_party_comms,
+                          done : int ^ 1}
+
+proc transaction dealer_init : (id : int), (T : int), (m : int) |- ($d : recv_party_comms) =
+{
+  print ("created dealer with id %d and number %d\n", id, m);
+  $send_comms <- nil <- ;
+  $recv_comms <- nil <- ;
+  $pub_keys <- knil <- ;
+  $d <- dealer_recv_comms <- id T m $send_comms $recv_comms $pub_keys
+}
+
+proc transaction cons : ($tl : list_comms), (#d : comm) |- ($l : list_comms) =
+{
+  $l.cons ;
+  send $l #d ;
+  $l <- $tl
+}
+
+proc transaction nil : . |- ($l : list_comms) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc transaction dealer_recv_comms : (id : int), (T : int), (m : int),
+  ($send_comms : list_comms), ($recv_comms : list_comms), ($pub_keys : list_keys) |- ($d : recv_party_comms) =
+{
+  case $d (
+    nextsend => #c <- recv $d ;
+                $scomms_new <- cons <- $send_comms #c ;
+                $d <- dealer_recv_comms <- id T m $scomms_new $recv_comms $pub_keys
+  | nextrecv => #c <- recv $d ;
+                $rcomms_new <- cons <- $recv_comms #c ;
+                $d <- dealer_recv_comms <- id T m $send_comms $rcomms_new $pub_keys
+  | pubkey => pid = recv $d ;
+              pub_key = recv $d ;
+              $pub_keys_new <- kcons <- pid pub_key $pub_keys ;
+              $d <- dealer_recv_comms <- id T m $send_comms $recv_comms $pub_keys_new
+  | getid => send $d id ;
+             $d <- dealer_recv_comms <- id T m $send_comms $recv_comms $pub_keys
+  | done => $sent_comms <- nil <- ;
+            $d <- dealer_send_msgs_to_parties <- id T m $send_comms $sent_comms $recv_comms $pub_keys
+  )
+}
+
+proc transaction dealer_send_msgs_to_parties : (id : int), (T : int), (m : int),
+  ($send_comms : list_comms), ($sent_comms : list_comms),
+  ($recv_comms : list_comms), ($pub_keys : list_keys) |- ($d : int ^ 1) =
+{
+  case $send_comms (
+    cons => #d2psc <- recv $send_comms ;
+            $d2plc <- acquire #d2psc ;
+            $d2plc.SEND ;
+            $msg <- create_send_msg <- m ;
+            send $d2plc $msg ;
+            #d2psc <- release $d2plc ;
+            print ("dealer: sent number %d to %c\n", m, #d2psc);
+            $new_sent_comms <- cons <- $sent_comms #d2psc ;
+            $d <- dealer_send_msgs_to_parties <- id T m $send_comms $new_sent_comms $recv_comms $pub_keys
+  | nil => wait $send_comms ;
+           $d <- dealer_recv_echos_from_parties <- id T m $sent_comms $recv_comms $pub_keys
+  )
+}
+
+type key = int ^ int ^ 1
+
+type list_keys = +{cons : key * list_keys,
+                   nil : 1}
+
+proc asset knil : . |- ($l : list_keys) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc asset create_key : (id : int), (key : int) |- ($k : key) =
+{
+  send $k id ;
+  send $k key ;
+  close $k
+}
+
+proc asset kcons : (id : int), (key : int), ($tl : list_keys) |- ($l : list_keys) =
+{
+  $l.cons ;
+  $x <- create_key <- id key ;
+  send $l $x ;
+  $l <- $tl
+}
+
+type status = +{valid : 1, invalid : 1}
+
+proc transaction check_validity : (m : int), ($msg : msg), ($pub_keys : list_keys) |- ($s : list_keys * status) =
+{
+  id = recv $msg ;
+  signed_msg = recv $msg ;
+  $new_pubkeys <- get_pubkey <- id $pub_keys ;
+  pkey = recv $new_pubkey ;
+  send $s $new_pubkeys ;
+  let echo_m = signed_msg / pkey ;
+  if m = echo_m
+  then
+    $s.valid ;
+    close $s
+  else
+    $s.invalid ;
+    close $s
+}
+
+proc transaction dealer_recv_echos_from_parties : (id : int), (T : int), (m : int), (num_echos : int),
+  ($send_comms : list_comms), ($received_comms : list_comms), ($pub_keys : list_keys),
+  ($unchecked_comms : list_comms), ($checked_comms : list_comms) |- ($d : int ^ 1) =
+{
+  case $unchecked_comms (
+    cons => #sd <- recv $unchecked_comms ;
+            $ld <- acquire #sd ;
+            $ld.RECV ;
+            case $ld (
+              no => #sd <- release $ld ;
+                    $new_checked_comms <- cons <- $checked_comms #sd ;
+                    $p <- dealer_recv_echos_from_parties <- id T m num_echos $send_comms $received_comms $unchecked_comms $new_checked_comms
+            | yes => $msg <- recv $ld ;
+                     #sd <- release $ld ;
+                     case $msg (
+                       SEND => print ("dealer received SEND message from a party\n") ;
+                               abort
+                     | ECHO => $status <- check_validity <- m $msg $pub_keys ;
+                               $new_received_comms <- cons <- $received_comms #sd ;
+                               $new_pubkeys <- recv $status ;
+                               case $status (
+                                 valid => let num_echos_new = num_echos + 1;
+                                          $d <- dealer_recv_echos_from_parties <- id T m num_echos_new $send_comms $new_received_comms $unchecked_comms $checked_comms
+                               | invalid => print ("dealer received an invalid message from a party\n") ;
+                                            abort
+                               )
+                     | FINAL => print ("dealer received FINAL message from a party\n") ;
+                                abort
+                     )
+            )
+  | nil => wait $unchecked_comms ;
+           if num_echos >= T
+           then
+            $dums <- throw <- $send_comms ;
+            $dumr <- throw <- $received_comms ;
+            $dumc <- throw <- $checked_comms ;
+            wait $dums ;
+            wait $dumr ;
+            wait $dumc ;
+            print ("party %d: received %d echo messages, now outputting %d and terminating\n", id, T, m);
+            send $p m ;
+            close $p
+           else
+            $new_checked_comms <- nil <- ;
+            $p <- party_recv_echos <- id T m num_echos #dc $send_comms $received_comms $checked_comms $new_checked_comms
+  )
+}
+
+type recv_dealer_comms = comm -o comm -o int ^ 1
+
+proc transaction party_init : (id : int), (T : int) |- ($p : recv_dealer_comms) =
+{
+  print ("created party with id %d\n", id);
+  #p2dc <- recv $p ;
+  #d2pc <- recv $p ;
+  $p <- party_recv_from_dealer <- id T #p2dc #d2pc
+}
+
+proc transaction party_recv_from_dealer : (id : int), (T : int), (#p2dc : comm), (#d2pc : comm) |- ($p : int ^ 1) =
+{
+  $lc <- acquire #p2dc ;
+  $lc.RECV ;
+  case $lc (
+    no => #p2dc <- release $lc ;
+          $p <- party_recv_from_dealer <- id T #p2dc #d2pc
+  | yes => $msg <- recv $lc ;
+           #p2dc <- release $lc ;
+           case $msg (
+             SEND => m = recv $msg ;
+                     wait $msg ;
+                     $p <- party_send_echo_to_dealer <- id T m #p2dc #d2pc
+           | ECHO => print ("party %d received ECHO message from dealer\n", id);
+                     abort
+           | FINAL => print ("party %d received FINAL message from dealer\n", id);
+                      abort
+           )
+           
+  )
+}
+
+proc transaction throw : ($l : list_comms) |- ($c : 1) =
+{
+  case $l (
+    cons => #sd <- recv $l ;
+            $c <- throw <- $l
+  | nil => $c <- $l
+  )
+}
+
+proc asset create_echo_message : (id : int), (m : int), (key : int) |- ($msg : msg) =
+{
+  $msg.ECHO ;
+  send $msg id ;
+  let x = m * key ;
+  send $msg x ;
+  close $msg
+}
+
+proc transaction party_send_echo_to_dealer : (id : int), (T : int), (m : int),
+  (#p2dc : comm), (#d2pc : comm) |- ($p : int ^ 1) =
+{
+  $lc <- acquire #p2dc ;
+  $lc.SEND ;
+  let priv_key = id * id ;
+  $msg <- create_echo_message <- id m priv_key ;
+  send $lc $msg ;
+  #p2dc <- release $lc ;
+  $p <- party_recv_final_from_dealer <- id T m #p2dc #d2pc
+}
+
+proc transaction party_recv_final_from_dealer : (id : int), (T : int), (m : int),
+  (#p2dc : comm), (#d2pc : comm) |- ($p : int ^ 1) =
+{
+  abort
+}
+(*
+
+
+type list_parties = +{cons : recv_party_comms * list_parties,
+                      nil : 1}
+
+proc transaction create_parties : (N : int), (T : int),
+  (dealer_id : int), ($d : recv_comms) |- ($ps : list_parties) =
+{
+  if N = 0
+  then
+    print ("all parties created\n");
+    $d.done ;
+    m = recv $d ;
+    wait $d ;
+    $ps.nil ;
+    close $ps
+  else
+    #d2pc <- empty_communicator <- dealer_id N ;
+    $d.nextsend ;
+    send $d #d2pc ;
+    #p2dc <- empty_communicator <- N dealer_id ;
+    $d.nextrecv ;
+    send $d #p2dc ;
+    let M = N-1;
+    $ps_tl <- create_parties <- M T dealer_id $d ;
+    $p <- party_init <- N T ;
+    send $p #dcp ;
+    print ("created %d-%d comm: %c\n", dealer_id, N, #dcp);
+    $ps.cons ;
+    send $ps $p ;
+    $ps <- $ps_tl
+}
+
+proc transaction pcons : ($tl : list_parties), ($p : recv_party_comms) |- ($l : list_parties) =
+{
+  $l.cons ;
+  send $l $p ;
+  $l <- $tl
+}
+
+proc transaction pnil : . |- ($l : list_parties) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc transaction pappend : ($l1 : list_parties), ($l2 : list_parties) |- ($l : list_parties) =
+{
+  case $l1 (
+    cons => $p <- recv $l1 ;
+            $l.cons ;
+            send $l $p ;
+            $l <- pappend <- $l1 $l2
+  | nil => wait $l1 ;
+           $l <- $l2
+  )
+}
+
+proc transaction get_party : ($ps : list_parties), (I : int), ($tl : list_parties) |- ($ips : recv_party_comms * list_parties) =
+{
+  case $ps (
+    cons => $p <- recv $ps ;
+            $p.getid ;
+            id = recv $p ;
+            if I = id
+            then
+              send $ips $p ;
+              $ips <- pappend <- $ps $tl
+            else
+              $newtl <- pcons <- $tl $p ;
+              $ips <- get_party <- $ps I $newtl
+  | nil => print ("could not find party with id: %d\n", I);
+           abort
+  )
+}
+
+proc transaction create_p2p_communicator : (I : int), (J : int), ($ps : list_parties) |- ($pso : list_parties) =
+{
+  #pcp <- empty_communicator <- I J ;
+  print ("created %d-%d comm: %c\n", I, J, #pcp);
+  $nilI <- pnil <- ;
+  $ips <- get_party <- $ps I $nilI ;
+  $i <- recv $ips ;
+  $nilJ <- pnil <- ;
+  $jps <- get_party <- $ips J $nilJ ;
+  $j <- recv $jps ;
+  $i.nextsend ;
+  send $i #pcp ;
+  print ("sent %c comm to sender party %d\n", #pcp, I);
+  $j.nextrecv ;
+  send $j #pcp ;
+  print ("sent %c comm to receiver party %d\n", #pcp, J);
+  $onlyjps <- pcons <- $jps $j ;
+  $bothijps <- pcons <- $onlyjps $i ;
+  $pso <- $bothijps
+}
+
+proc transaction create_all_communicators : (I : int), (J : int), (N : int), ($ps_in : list_parties) |- ($ps_out : list_parties) =
+{
+  if I = N+1
+  then
+    print ("all p2p comms created\n");
+    $ps_out <- $ps_in
+  else
+    if J = N+1
+    then
+      let In = I+1;
+      let Jn = 1;
+      $ps_out <- create_all_communicators <- In Jn N $ps_in
+    else
+      let In = I;
+      let Jn = J+1;
+      if I = J
+      then
+        $ps_out <- create_all_communicators <- In Jn N $ps_in
+      else
+        $ps <- create_p2p_communicator <- I J $ps_in ;
+        $ps_out <- create_all_communicators <- In Jn N $ps
+}
+
+proc transaction send_done_msgs : ($ps : list_parties) |- ($d : 1) =
+{
+  case $ps (
+    cons => $p <- recv $ps ;
+            $dtl <- send_done_msgs <- $ps ;
+            $p.done ;
+            m = recv $p ;
+            wait $p ;
+            wait $dtl ;
+            close $d
+  | nil => wait $ps ;
+           close $d
+  )
+}
+
+proc transaction main : . |- ($mn : 1) =
+{
+  let N = 5 ;
+  let T = 4 ;
+  let m = 1729 ;
+  let dealer_id = 0;
+  $d <- dealer_init <- dealer_id m ;
+  $ps <- create_parties <- N T dealer_id $d ;
+  let I = 1;
+  let J = 1;
+  $ps_out <- create_all_communicators <- I J N $ps ;
+  $dn <- send_done_msgs <- $ps_out ;
+  wait $dn ;
+  close $mn
+}
+
+exec main
+*)
