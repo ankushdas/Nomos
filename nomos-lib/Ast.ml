@@ -292,30 +292,53 @@ let sub_arg c' c a = match a with
     FArg s -> FArg s
   | STArg x -> STArg (sub c' c x);;
 
+let eq_name (_s1,c1,_m1) (_s2,c2,_m2) = (c1 = c2);;
+
 let subst_list c' c l = List.map (fun a -> sub_arg c' c a) l;; 
 
 let rec subst c' c expr = match expr with
     Fwd(x,y) -> Fwd(sub c' c x, sub c' c y)
-  | Spawn(x,f,xs,q) -> Spawn(x,f, subst_list c' c xs, subst_aug c' c q)
+  | Spawn(x,f,xs,q) ->
+      if eq_name c x
+      then Spawn(x,f, subst_list c' c xs, q)
+      else Spawn(x,f, subst_list c' c xs, subst_aug c' c q)
   | ExpName(x,f,xs) -> ExpName(x,f, subst_list c' c xs)
   | Lab(x,k,p) -> Lab(sub c' c x, k, subst_aug c' c p)
   | Case(x,branches) -> Case(sub c' c x, subst_branches c' c branches)
   | Send(x,w,p) -> Send(sub c' c x, sub c' c w, subst_aug c' c p)
-  | Recv(x,y,p) -> Recv(sub c' c x, y, subst_aug c' c p)
+  | Recv(x,y,p) ->
+      if eq_name c y
+      then Recv(sub c' c x, y, p)
+      else Recv(sub c' c x, y, subst_aug c' c p)
   | Close(x) -> Close(sub c' c x)
   | Wait(x,q) -> Wait(sub c' c x, subst_aug c' c q)
   | Work(pot,p) -> Work(pot, subst_aug c' c p)
   | Pay(x,pot,p) -> Pay(sub c' c x, pot, subst_aug c' c p)
   | Get(x,pot,p) -> Get(sub c' c x, pot, subst_aug c' c p)
-  | Acquire(x,y,p) -> Acquire(sub c' c x, y, subst_aug c' c p)
-  | Accept(x,y,p) -> Accept(sub c' c x, y, subst_aug c' c p)
-  | Release(x,y,p) -> Release(sub c' c x, y, subst_aug c' c p)
-  | Detach(x,y,p) -> Detach(sub c' c x, y, subst_aug c' c p)
+  | Acquire(x,y,p) ->
+      if eq_name c y
+      then Acquire(sub c' c x, y, p)
+      else Acquire(sub c' c x, y, subst_aug c' c p)
+  | Accept(x,y,p) ->
+      if eq_name c y
+      then Accept(sub c' c x, y, p)
+      else Accept(sub c' c x, y, subst_aug c' c p)
+  | Release(x,y,p) ->
+      if eq_name c y
+      then Release(sub c' c x, y, p)
+      else Release(sub c' c x, y, subst_aug c' c p)
+  | Detach(x,y,p) ->
+      if eq_name c y
+      then Detach(sub c' c x, y, p)
+      else Detach(sub c' c x, y, subst_aug c' c p)
   | RecvF(x,y,p) -> RecvF(sub c' c x, y, subst_aug c' c p)
   | SendF(x,m,p) -> SendF(sub c' c x, m, subst_aug c' c p)
   | Let(x,e,p) -> Let(x, fsubst_aug c' c e, subst_aug c' c p)
   | IfS(e,p1,p2) -> IfS(fsubst_aug c' c e, subst_aug c' c p1, subst_aug c' c p2)
-  | MakeChan(x,a,n,p) -> MakeChan(x, a, n, subst_aug c' c p)
+  | MakeChan(x,a,n,p) ->
+      if eq_name c x
+      then MakeChan(x, a, n, p)
+      else MakeChan(x, a, n, subst_aug c' c p)
   | Abort -> Abort
   | Print(l,args,p) -> Print(l, subst_list c' c args, subst_aug c' c p)
 
@@ -356,16 +379,29 @@ let rec toExpr d v = match v with
   | ListV l -> ListE (List.map (fun x -> {func_structure = toExpr d x ; func_data = d}) l)
   | LambdaV(xs,e) -> Lambda (xs,e);;
 
+let rec existsIn v xs = match xs with
+    Single(x,_ext) -> v = x
+  | Curry((x,_ext),xs') -> v = x || existsIn v xs';;
+
 let rec substv v' v fexp = match fexp with
     If(e1,e2,e3) -> If(substv_aug v' v e1, substv_aug v' v e2, substv_aug v' v e3)
-  | LetIn(x,e1,e2) -> LetIn(x, substv_aug v' v e1, substv_aug v' v e2)
+  | LetIn(x,e1,e2) ->
+      if v = x
+      then LetIn(x, substv_aug v' v e1, e2)
+      else LetIn(x, substv_aug v' v e1, substv_aug v' v e2)
   | Bool _ | Str _ | Int _ | Addr _ -> fexp
   | Var x -> if x = v then v' else Var x
   | ListE(l) -> ListE(List.map (substv_aug v' v) l)
   | App(es) -> App(List.map (substv_aug v' v) es)
   | Cons(e1,e2) -> Cons(substv_aug v' v e1, substv_aug v' v e2)
-  | Match(e1,e2,x,xs,e3) -> Match(substv_aug v' v e1, substv_aug v' v e2, x, xs, substv_aug v' v e3)
-  | Lambda(xs,e) -> Lambda(xs, substv_aug v' v e)
+  | Match(e1,e2,x,xs,e3) ->
+      if v = x || v = xs
+      then Match(substv_aug v' v e1, substv_aug v' v e2, x, xs, e3)
+      else Match(substv_aug v' v e1, substv_aug v' v e2, x, xs, substv_aug v' v e3)
+  | Lambda(xs,e) ->
+      if existsIn v xs
+      then Lambda(xs, e)
+      else Lambda(xs, substv_aug v' v e)
   | Op(e1,op,e2) -> Op(substv_aug v' v e1, op, substv_aug v' v e2)
   | CompOp(e1,cop,e2) -> CompOp(substv_aug v' v e1, cop, substv_aug v' v e2)
   | EqAddr(e1,e2) -> EqAddr(substv_aug v' v e1, substv_aug v' v e2)
@@ -402,9 +438,15 @@ and esubstv v' v exp = match exp with
   | Accept(x,y,p) -> Accept(x, y, esubstv_aug v' v p)
   | Release(x,y,p) -> Release(x, y, esubstv_aug v' v p)
   | Detach(x,y,p) -> Detach(x, y, esubstv_aug v' v p)
-  | RecvF(x,y,p) -> RecvF(x, y, esubstv_aug v' v p)
+  | RecvF(x,y,p) ->
+      if v = y
+      then RecvF(x, y, p)
+      else RecvF(x, y, esubstv_aug v' v p)
   | SendF(x,m,p) -> SendF(x, substv_aug v' v m, esubstv_aug v' v p)
-  | Let(x,e,p) -> Let(x, substv_aug v' v e, esubstv_aug v' v p)
+  | Let(x,e,p) ->
+      if v = x
+      then Let(x, substv_aug v' v e, p)
+      else Let(x, substv_aug v' v e, esubstv_aug v' v p)
   | IfS(e,p1,p2) -> IfS(substv_aug v' v e, esubstv_aug v' v p1, esubstv_aug v' v p2)
   | MakeChan(x,a,n,p) -> MakeChan(x, a, n, esubstv_aug v' v p)
   | Abort -> Abort
