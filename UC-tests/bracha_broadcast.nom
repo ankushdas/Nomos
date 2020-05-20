@@ -25,6 +25,21 @@ proc asset mcons : ($m : msg), ($tl : list_msgs) |- ($l : list_msgs) =
   $l <- $tl
 }
 
+proc asset mappend : ($m : msg), ($tl : list_msgs) |- ($l : list_msgs) =
+{
+  case $tl (
+    cons => $x <- recv $tl ;
+            $l.cons ;
+            send $l $x ;
+            $l <- mappend <- $m $tl
+  | nil => wait $tl ;
+           $l.cons ;
+           send $l $m ;
+           $l.nil ;
+           close $l
+  )
+}
+
 proc contract communicator : (sid : int), (rid : int), ($l : list_msgs) |- (#dc : comm) =
 {
   $ldc <- accept #dc ;
@@ -32,7 +47,7 @@ proc contract communicator : (sid : int), (rid : int), ($l : list_msgs) |- (#dc 
     SEND => $msg <- recv $ldc ;
             print ("%d-%d comm acquired by %d: message received\n", sid, rid, sid);
             #dc <- detach $ldc ;
-            $lnew <- mcons <- $msg $l ;
+            $lnew <- mappend <- $msg $l ;
             #dc <- communicator <- sid rid $lnew
   
   | RECV => case $l (
