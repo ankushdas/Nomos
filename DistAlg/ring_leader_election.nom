@@ -1,0 +1,274 @@
+(*
+
+$M : Map<kt, vt>
+
+Map<kt, vt> = &{insert : key -> value -o Map<kt, vt>,
+                remove : key -> +{none : Map<kt, vt>,
+                                  some : value * Map<kt, vt>},
+                size : int ^ Map<kt, vt>,
+                close : +{ok : 1,
+                          notok : Map<kt, vt>} }
+
+type value_opt = +{none : 1,
+                   some : vt ^ 1 / vt * 1}
+
+$m <- new Map<kt, vt>() ;     (* declaring a new map *)
+$m.insert(key, value) ;       (* inserting functional value *)
+$m.insert(key, #value) ;      (* inserting shared channel *)
+$m.insert(key, $value) ;      (* inserting linear channel *)
+$value <- $m.remove(key) ;    (* removing a linear channel *)
+value = $m.get(key) ;         (* getter for functional values *)
+$value <- $m.get(key) ;       (* getter for shared channel *)
+n = $m.size ;                 (* size of $m *)
+$m.close ;                    (* terminate the map if empty/shared/functional *)
+case $m (
+  ok => ....
+| notok => ....
+)
+*)
+
+
+(*
+
+This is an implementation of the Chang and Roberts algorithm
+for a ring-based coordinator election, employed in distributed
+computing.
+
+https://en.wikipedia.org/wiki/Chang_and_Roberts_algorithm
+*)
+
+type msg = int ^ 1
+
+type comm = /\ &{ SEND : msg -o \/ comm,
+                  RECV : +{ no : \/ comm,
+                            yes : msg * \/ comm }}
+
+type list_comms = +{cons : comm * list_comms,
+                    nil : 1}
+
+type list_msgs = +{cons : msg * list_msgs,
+                   nil : 1}
+
+proc asset mnil : . |- ($l : list_msgs) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc asset mcons : ($m : msg), ($tl : list_msgs) |- ($l : list_msgs) =
+{
+  $l.cons ;
+  send $l $m ;
+  $l <- $tl
+}
+
+proc asset mappend : ($m : msg), ($tl : list_msgs) |- ($l : list_msgs) =
+{
+  case $tl (
+    cons => $x <- recv $tl ;
+            $l.cons ;
+            send $l $x ;
+            $l <- mappend <- $m $tl
+  | nil => wait $tl ;
+           $l.cons ;
+           send $l $m ;
+           $l.nil ;
+           close $l
+  )
+}
+
+proc contract communicator : (sid : int), (rid : int), ($l : list_msgs) |- (#dc : comm) =
+{
+  $ldc <- accept #dc ;
+  case $ldc (
+    SEND => $msg <- recv $ldc ;
+            print ("%d-%d comm acquired by %d: message received\n", sid, rid, sid);
+            #dc <- detach $ldc ;
+            $lnew <- mappend <- $msg $l ;
+            #dc <- communicator <- sid rid $lnew
+  
+  | RECV => case $l (
+              cons => $m <- recv $l ;
+                      $ldc.yes ;
+                      print ("%d-%d comm acquired by %d: message delivered\n", sid, rid, rid);
+                      send $ldc $m ;
+                      #dc <- detach $ldc ;
+                      #dc <- communicator <- sid rid $l
+            | nil => wait $l ;
+                     $ldc.no ;
+                     (* print ("%d-%d comm acquired by %d: no message\n", sid, rid, rid); *)
+                     $lnew <- mnil <- ;
+                     #dc <- detach $ldc ;
+                     #dc <- communicator <- sid rid $lnew
+            )
+  )
+}
+
+proc asset create_msg : (m : int) |- ($msg : msg) =
+{
+  send $msg m ;
+  close $msg
+}
+
+type recv_lrcomms = comm -o comm -o int ^ 1
+
+proc transaction gen_id : (id : int) |- ($v : int ^ 1) =
+{
+  let x = id * id * id - 3 * id * id + 4 * id - 2 ;
+  send $v x ;
+  close $v
+}
+
+proc transaction party_init : (id : int), (is_initiator : bool) |- ($p : recv_lrcomms) =
+{
+  print ("created party with id %d\n", id);
+  #l <- recv $p ;
+  print ("party %d: received left comm %c\n", id, #l);
+  #r <- recv $p ;
+  print ("party %d: received right comm %c\n", id, #r);
+  $nid <- gen_id <- id ;
+  nid = recv $nid ;
+  wait $nid ;
+  $p <- party_initiate_election <- nid is_initiator #l #r
+}
+
+proc transaction party_initiate_election : (id : int), (is_initiator : bool),
+  (#left : comm), (#right : comm) |- ($p : int ^ 1) =
+{
+  let is_leader = false ;
+  if is_initiator
+  then
+    $msg <- create_msg <- id ;
+    $lr <- acquire #right ;
+    $lr.SEND ;
+    send $lr $msg ;
+    #right <- release $lr ;
+    let is_part = true ;
+    print ("party %d initiated the election\n", id);
+    $p <- party <- id is_part is_leader #left #right
+  else
+    let is_part = false ;
+    $p <- party <- id is_part is_leader #left #right
+}
+
+proc transaction party : (id : int), (is_part : bool), (is_leader : bool),
+  (#left : comm), (#right : comm) |- ($p : int ^ 1) =
+{
+  $ll <- acquire #left ;
+  $ll.RECV ;
+  case $ll (
+    no => #left <- release $ll ;
+          $p <- party <- id is_part is_leader #left #right
+  | yes => $msg <- recv $ll ;
+           #left <- release $ll ;
+           m = recv $msg ;
+           wait $msg ;
+           if m > id
+           then
+            $msg <- create_msg <- m ;
+            $lr <- acquire #right ;
+            $lr.SEND ;
+            send $lr $msg ;
+            #right <- release $lr ;
+            let is_part = true ;
+            print ("party %d received message UID %d from left, sending to the right and marking self as participant\n", id, m);
+            $p <- party <- id is_part is_leader #left #right
+           else
+            if m < id
+            then
+              if is_part
+              then
+                print ("party %d received message UID %d from left, ignoring\n", id, m);
+                $p <- party <- id is_part is_leader #left #right
+              else
+                $msg <- create_msg <- id ;
+                $lr <- acquire #right ;
+                $lr.SEND ;
+                send $lr $msg ;
+                #right <- release $lr ;
+                let is_part = true ;
+                print ("party %d received message UID %d from left, sending message UID %d to the right, marking self as participant\n", id, m, id);
+                $p <- party <- id is_part is_leader #left #right
+            else
+              print ("party %d received message UID %d, elected as leader\n", id, m) ;
+              send $p m ;
+              close $p
+  )
+}
+
+type list_parties = +{cons : (int ^ 1) * list_parties,
+                      nil : 1}
+
+proc transaction pnil : . |- ($ps : list_parties) =
+{
+  $ps.nil ;
+  close $ps
+}
+
+proc transaction pcons : ($x : int ^ 1), ($tl : list_parties) |- ($ps : list_parties) =
+{
+  $ps.cons ;
+  send $ps $x ;
+  $ps <- $tl
+}
+
+proc transaction create_parties : (N : int), (initiator_id : int) |- ($ps : list_parties) =
+{
+  let is_initiator = N = initiator_id ;
+  $p <- party_init <- N is_initiator ;
+  $ml <- mnil <- ;
+  let M = N - 1 ;
+  #cl <- communicator <- M N $ml ;
+  print ("created %d-%d comm on channel %c\n", M, N, #cl);
+  send $p #cl ;
+  $emp <- pnil <- ;
+  $inner_ps <- create_inner_parties <- N M initiator_id #cl $emp ;
+  #cr <- recv $inner_ps ;
+  send $p #cr ;
+  $ps <- pcons <- $p $inner_ps
+}
+
+proc transaction create_inner_parties : (last_chan : int), (N : int), (initiator_id : int),
+  (#pr : comm), ($ps_inner : list_parties) |- ($ps : comm * list_parties) =
+{
+  if N = 0
+  then
+    send $ps #pr ;
+    $ps <- $ps_inner
+  else
+    let is_initiator = N = initiator_id ;
+    $p <- party_init <- N is_initiator ;
+    $ml <- mnil <- ;
+    let M = if N = 1 then last_chan else (N - 1) ;
+    #pl <- communicator <- M N $ml ;
+    print ("created %d-%d comm on channel %c\n", M, N, #pl);
+    send $p #pl ;
+    send $p #pr ;
+    $ps_new <- pcons <- $p $ps_inner ;
+    let M = N - 1;
+    $ps <- create_inner_parties <- last_chan M initiator_id #pl $ps_new
+}
+
+proc transaction wait_all : ($ps : list_parties) |- ($d : 1) =
+{
+  case $ps (
+    cons => $p <- recv $ps ;
+            m = recv $p ;
+            wait $p ;
+            $d <- wait_all <- $ps
+  | nil => wait $ps ;
+           close $d
+  )
+}
+
+proc transaction main : . |- ($mn : 1) =
+{
+  let N = 20 ;
+  let initiator_id = 3 ;
+  $ps <- create_parties <- N initiator_id ;
+  $d <- wait_all <- $ps ;
+  wait $d ;
+  close $mn
+}
+
+exec main
