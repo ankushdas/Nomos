@@ -1206,7 +1206,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.Up _ | A.Down _
               | A.FArrow _ | A.FProduct _  ->
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan z ^
-                           ", expected internal choice, found: " ^ PP.pp_tp_compact env c)
+                           ", expected prob. internal choice, found: " ^ PP.pp_tp_compact env c)
         else (* the type a of x must be external choice *)
           let a = find_ltp x delta (exp.A.st_data) in
           match a with
@@ -1226,7 +1226,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.Up _ | A.Down _
             | A.FArrow _ | A.FProduct _ ->
               error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
-                         ", expected external choice, found: " ^ PP.pp_tp_compact env a)
+                         ", expected prob. external choice, found: " ^ PP.pp_tp_compact env a)
       end
   | A.PCase(x,branches) ->
       begin
@@ -1254,7 +1254,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.Up _ | A.Down _
               | A.FArrow _ | A.FProduct _ ->
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan z ^
-                           ", expected external choice, found: " ^ PP.pp_tp_compact env c)
+                           ", expected prob. external choice, found: " ^ PP.pp_tp_compact env c)
         else (* the type a of x must be internal choice *)
           let a = find_ltp x delta (exp.A.st_data) in
           match a with
@@ -1270,7 +1270,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.Up _ | A.Down _
             | A.FArrow _ | A.FProduct _ ->
               error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
-                         ", expected internal choice, found: " ^ PP.pp_tp_compact env a)
+                         ", expected prob. internal choice, found: " ^ PP.pp_tp_compact env a)
       end
   | A.Flip(e,p1,p2) ->
       begin

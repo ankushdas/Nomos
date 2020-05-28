@@ -62,7 +62,7 @@ let rec remove_stars_exp exp = match exp with
   | A.ExpName(x,f,xs) -> A.ExpName(x,f,xs)
   | A.Lab(x,k,p) -> A.Lab(x, k, remove_stars_aug p)
   | A.Case(x,branches) -> A.Case(x, remove_stars_branches branches)
-  | A.PLab(x,k,p) -> A.Lab(x, k, remove_stars_aug p)
+  | A.PLab(x,k,p) -> A.PLab(x, k, remove_stars_aug p)
   | A.PCase(x,branches) -> A.PCase(x, remove_stars_branches branches)
   | A.Flip(e,p1,p2) -> A.Flip(remove_stars_faug e, remove_stars_aug p1, remove_stars_aug p2)
   | A.Send(x,w,p) -> A.Send(x,w, remove_stars_aug p)
