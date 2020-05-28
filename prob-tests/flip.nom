@@ -1,0 +1,12 @@
+type pcoin = p+{head{1} : 1, tail{1} : 1}
+
+proc asset fair_coin : . |- ($p : pcoin) =
+{
+  let x = PNomos.Create {{1},{1}};
+  flip x (
+    HH => $p..head ;
+          close $p
+  | TT => $p..tail ;
+          close $p
+  )
+}
