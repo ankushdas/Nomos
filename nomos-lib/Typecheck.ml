@@ -28,6 +28,8 @@ let rec esync env seen tp c ext is_shared =
   match tp with
       A.Plus(choice) -> esync_choices env seen choice c ext is_shared
     | A.With(choice) -> esync_choices env seen choice c ext is_shared
+    | A.PPlus(pchoices) -> esync_pchoices env seen pchoices c ext is_shared
+    | A.PWith(pchoices) -> esync_pchoices env seen pchoices c ext is_shared
     | A.Tensor(_a,b,_m) -> esync env seen b c ext is_shared
     | A.Lolli(_a,b,_m) -> esync env seen b c ext is_shared
     | A.One -> if is_shared then error ext ("type not equi-synchronizing") else ()
@@ -47,6 +49,10 @@ let rec esync env seen tp c ext is_shared =
     | A.FArrow(_t,a) -> esync env seen a c ext is_shared
     | A.FProduct(_t,a) -> esync env seen a c ext is_shared
 
+and esync_pchoices env seen pcs c ext is_shared = match pcs with
+    (_l,_pot,a)::as' -> esync env seen a c ext is_shared ; esync_pchoices env seen as' c ext is_shared
+  | [] -> ()
+
 and esync_choices env seen cs c ext is_shared = match cs with
     (_l,a)::as' -> esync env seen a c ext is_shared ; esync_choices env seen as' c ext is_shared
   | [] -> ();;
@@ -60,6 +66,7 @@ let esync_tp env tp ext = esync env [] tp tp ext false;;
 let contractive tp = match tp with
     A.TpName(_a) -> false
   | A.Plus _ | A.With _
+  | A.PPlus _ | A.PWith _ 
   | A.Tensor _ | A.Lolli _
   | A.One
   | A.PayPot _ | A.GetPot _
@@ -339,6 +346,8 @@ let rec ssync env seen tp c_opt ext =
   match tp with
       A.Plus(choice) -> ssync_choices env seen choice c_opt ext
     | A.With(choice) -> ssync_choices env seen choice c_opt ext
+    | A.PPlus(choice) -> ssync_pchoices env seen choice c_opt ext
+    | A.PWith(choice) -> ssync_pchoices env seen choice c_opt ext
     | A.Tensor(_a,b,_m) -> ssync env seen b c_opt ext
     | A.Lolli(_a,b,_m) -> ssync env seen b c_opt ext
     | A.One ->
@@ -367,6 +376,10 @@ let rec ssync env seen tp c_opt ext =
         end
     | A.FArrow(_t,a) -> ssync env seen a c_opt ext
     | A.FProduct(_t,a) -> ssync env seen a c_opt ext
+
+and ssync_pchoices env seen cs c ext = match cs with
+    (_l,_pot,a)::cs' -> ssync env seen a c ext ; ssync_pchoices env seen cs' c ext
+  | [] -> ()
 
 and ssync_choices env seen cs c ext = match cs with
     (_l,a)::cs' -> ssync env seen a c ext ; ssync_choices env seen cs' c ext
@@ -597,7 +610,8 @@ let remove_var x delta =
 let rec consume_pot tp = match tp with
     A.Integer | A.Boolean | A.String | A.Address | A.VarT _ -> tp
   | A.ListTP(t,_pot) -> A.ListTP(consume_pot t, A.Arith (R.Int(0)))
-  | A.Arrow(t1,t2) -> A.Arrow(consume_pot t1, consume_pot t2);;
+  | A.Arrow(t1,t2) -> A.Arrow(consume_pot t1, consume_pot t2)
+  | A.Prob _ -> tp;;
 
 let rec consumevar x odelta = match odelta with
     [] -> []
@@ -726,7 +740,12 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
         match tp with
             A.Address -> (delta, pot)
           | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
-
+      end
+  | A.ProbE(_) ->
+      begin
+        match tp with
+            A.Prob _ -> (delta, pot)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
       end
   | A.Var(x) ->
       begin
@@ -844,6 +863,17 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
           | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
       end
   | A.Command _ -> raise UnknownTypeError
+  | A.Create(prob1,prob2) ->
+      begin
+        match tp with
+            A.Prob(tprob1, tprob2) ->
+              if eq prob1 tprob1 && eq prob2 tprob2
+              then (delta, pot)
+              else error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected: " ^ PP.pp_ftp_simple (A.Prob(prob1,prob2))
+                                          ^ ", found: " ^ PP.pp_ftp_simple tp)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected: " ^ PP.pp_ftp_simple (A.Prob(prob1,prob2))
+                                        ^ ", found: " ^ PP.pp_ftp_simple tp)
+      end
 
 and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = match (e.A.func_structure) with
     A.If(e1,e2,e3) ->
@@ -859,6 +889,12 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
   | A.Int _ -> (delta, pot, A.Integer)
   | A.Str _ -> (delta, pot, A.String)
   | A.Addr _ -> (delta, pot, A.Address)
+  | A.ProbE f ->
+      begin
+        match f with
+            A.Head -> (delta, pot, A.Prob(A.Arith (R.Int 1), A.Arith (R.Int 0)))
+          | A.Tail -> (delta, pot, A.Prob(A.Arith (R.Int 0), A.Arith (R.Int 1)))
+      end
   | A.Var(x) ->
       begin
         let t = lookup_ftp x delta (e.A.func_data) in
@@ -936,6 +972,7 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
   | A.GetTxnNum -> (delta, pot, A.Integer)
   | A.GetTxnSender -> (delta, pot, A.Address)
   | A.Command _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
+  | A.Create(prob1,prob2) -> (delta, pot, A.Prob(prob1,prob2))
 
 
 and checkfexp trace env delta pot e zc ext mode = match e.A.func_structure with
@@ -1074,6 +1111,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                         None -> E.error_label_invalid env (k,c,z) (exp.A.st_data)
                       | Some ck -> check_exp' trace env delta pot p (z,ck) ext mode
                   end
+              | A.PPlus _ | A.PWith _
               | A.With _ | A.One
               | A.Tensor _ | A.Lolli _
               | A.PayPot _ | A.GetPot _
@@ -1092,6 +1130,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                     | Some ak -> check_exp' trace env (update_tp env x ak delta) pot p zc ext mode
                 end
             | A.Plus _ | A.One
+            | A.PPlus _ | A.PWith _
             | A.Tensor _ | A.Lolli _
             | A.PayPot _ | A.GetPot _
             | A.Up _ | A.Down _
@@ -1116,6 +1155,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
               | A.With(choices) -> check_branchesR trace env delta pot branches z choices (exp.A.st_data) mode
               | A.Plus _ | A.One
+              | A.PPlus _ | A.PWith _
               | A.Tensor _ | A.Lolli _
               | A.PayPot _ | A.GetPot _
               | A.Up _ | A.Down _
@@ -1128,12 +1168,116 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
             | A.Plus(choices) -> check_branchesL trace env delta x choices pot branches zc (exp.A.st_data) mode
             | A.With _ | A.One
+            | A.PPlus _ | A.PWith _
             | A.Tensor _ | A.Lolli _
             | A.PayPot _ | A.GetPot _
             | A.Up _ | A.Down _
             | A.FArrow _ | A.FProduct _ ->
               error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                          ", expected internal choice, found: " ^ PP.pp_tp_compact env a)
+      end
+  | A.PLab(x,k,p) ->
+      begin
+        if not (check_ltp x delta)
+        then
+          if not (checktp x [zc])
+          then E.error_unknown_var (x) (exp.A.st_data)
+          else (* the type c of z must be internal choice *)
+            let (z,c) = zc in
+            if not (eq_mode x z)
+            then E.error_mode_mismatch (x, z) (exp.A.st_data)
+            else if not (mode_lin x)
+            then E.error_mode_shared_comm (x) (exp.A.st_data)
+            else
+            match c with
+                A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
+              | A.PPlus(pchoices) ->
+                  begin
+                    (* TODO: make prob(k) = 1, all other choices = 0 *)
+                    let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in 
+                    match A.lookup_choice choices k with
+                        None -> E.error_label_invalid env (k,c,z) (exp.A.st_data)
+                      | Some ck -> check_exp' trace env delta pot p (z,ck) ext mode
+                  end
+              | A.PWith _ | A.One
+              | A.Plus _ | A.With _
+              | A.Tensor _ | A.Lolli _
+              | A.PayPot _ | A.GetPot _
+              | A.Up _ | A.Down _
+              | A.FArrow _ | A.FProduct _  ->
+                error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan z ^
+                           ", expected internal choice, found: " ^ PP.pp_tp_compact env c)
+        else (* the type a of x must be external choice *)
+          let a = find_ltp x delta (exp.A.st_data) in
+          match a with
+              A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
+            | A.PWith(pchoices) ->
+                begin
+                  (* TODO: make prob(k) = 1, all other choices = 0 *)
+                  let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in 
+                  match A.lookup_choice choices k with
+                      None -> E.error_label_invalid env (k,a,x) (exp.A.st_data)
+                    | Some ak -> check_exp' trace env (update_tp env x ak delta) pot p zc ext mode
+                end
+            | A.PPlus _ | A.One
+            | A.Plus _ | A.With _
+            | A.Tensor _ | A.Lolli _
+            | A.PayPot _ | A.GetPot _
+            | A.Up _ | A.Down _
+            | A.FArrow _ | A.FProduct _ ->
+              error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
+                         ", expected external choice, found: " ^ PP.pp_tp_compact env a)
+      end
+  | A.PCase(x,branches) ->
+      begin
+        if not (check_ltp x delta)
+        then
+          if not (checktp x [zc])
+          then E.error_unknown_var (x) (exp.A.st_data)
+          else (* the type c of z must be external choice *)
+            let (z,c) = zc in
+            if not (eq_mode x z)
+            then E.error_mode_mismatch (x, z) (exp.A.st_data)
+            else if not (mode_lin x)
+            then E.error_mode_shared_comm (x) (exp.A.st_data)
+            else
+            match c with
+                A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
+              | A.PWith(pchoices) ->
+                  (* TODO: apply corresponding typing rule for pcase, both for probs and potential *)
+                  let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in
+                  check_branchesR trace env delta pot branches z choices (exp.A.st_data) mode
+              | A.PPlus _ | A.One
+              | A.Plus _ | A.With _
+              | A.Tensor _ | A.Lolli _
+              | A.PayPot _ | A.GetPot _
+              | A.Up _ | A.Down _
+              | A.FArrow _ | A.FProduct _ ->
+                error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan z ^
+                           ", expected external choice, found: " ^ PP.pp_tp_compact env c)
+        else (* the type a of x must be internal choice *)
+          let a = find_ltp x delta (exp.A.st_data) in
+          match a with
+              A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
+            | A.PPlus(pchoices) ->
+                (* TODO: apply corresponding typing rule for pcase, both for probs and potential *)
+                let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in
+                check_branchesL trace env delta x choices pot branches zc (exp.A.st_data) mode
+            | A.PWith _ | A.One
+            | A.Plus _ | A.With _
+            | A.Tensor _ | A.Lolli _
+            | A.PayPot _ | A.GetPot _
+            | A.Up _ | A.Down _
+            | A.FArrow _ | A.FProduct _ ->
+              error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
+                         ", expected internal choice, found: " ^ PP.pp_tp_compact env a)
+      end
+  | A.Flip(e,p1,p2) ->
+      begin
+        let (delta', pot', _t) = synth_fexp_simple trace env delta pot e ext mode false in
+        (* TODO: apply corresponding typing rule for flip, both for probs and potential *)
+        check_exp' trace env delta' pot' p1 zc ext mode;
+        check_exp' trace env delta' pot' p2 zc ext mode
       end
   | A.Send(x,w,p) ->
       begin
@@ -1167,6 +1311,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                                       ", found: " ^ PP.pp_tp_compact env a')
                       else check_exp' trace env (remove_tp w delta) pot p (z,b) ext mode
                   | A.Plus _ | A.With _
+                  | A.PPlus _ | A.PWith _
                   | A.One | A.Lolli _
                   | A.PayPot _ | A.GetPot _
                   | A.Up _ | A.Down _
@@ -1188,6 +1333,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                                     ", found: " ^ PP.pp_tp_compact env a')
                     else check_exp' trace env (update_tp env x b (remove_tp w delta)) pot p zc ext mode
                 | A.Plus _ | A.With _
+                | A.PPlus _ | A.PWith _
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
                 | A.Up _ | A.Down _
@@ -1222,6 +1368,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                                       ", found: " ^ PP.pp_tp_compact env a')
                       else check_exp' trace env delta pot p (z,b) ext mode
                   | A.Plus _ | A.With _
+                  | A.PPlus _ | A.PWith _
                   | A.One | A.Lolli _
                   | A.PayPot _ | A.GetPot _
                   | A.Up _ | A.Down _
@@ -1243,6 +1390,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                                     ", found: " ^ PP.pp_tp_compact env a')
                     else check_exp' trace env (update_tp env x b delta) pot p zc ext mode
                 | A.Plus _ | A.With _
+                | A.PPlus _ | A.PWith _
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
                 | A.Up _ | A.Down _
@@ -1277,6 +1425,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                     then error (exp.A.st_data) ("cannot receive at mode " ^ PP.pp_mode m ^ " when current mode is " ^ PP.pp_mode mode)
                     else check_exp' trace env (add_chan env (y,a) delta) pot p (z,b) ext mode
                 | A.Plus _ | A.With _
+                | A.PPlus _ | A.PWith _
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
                 | A.Up _ | A.Down _
@@ -1295,6 +1444,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                   then error (exp.A.st_data) ("cannot receive at mode " ^ PP.pp_mode m ^ " when current mode is " ^ PP.pp_mode mode)
                   else check_exp' trace env (add_chan env (y,a) (update_tp env x b delta)) pot p zc ext mode
               | A.Plus _ | A.With _
+              | A.PPlus _ | A.PWith _
               | A.One | A.Lolli _
               | A.PayPot _ | A.GetPot _
               | A.Up _ | A.Down _
@@ -1367,6 +1517,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                   then error (exp.A.st_data) ("insufficient potential to pay: " ^ pp_lt pot tpot)
                   else check_exp' trace env delta (minus pot tpot) p (z,c') ext mode
               | A.Plus _ | A.With _
+              | A.PPlus _ | A.PWith _
               | A.Tensor _ | A.Lolli _
               | A.One | A.GetPot _
               | A.Up _ | A.Down _
@@ -1385,6 +1536,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 then error (exp.A.st_data) ("insufficient potential to pay: " ^ pp_lt pot epot)
                 else check_exp' trace env (update_tp env x a' delta) (minus pot epot) p zc ext mode
             | A.Plus _ | A.With _
+            | A.PPlus _ | A.PWith _
             | A.Tensor _ | A.Lolli _
             | A.One | A.PayPot _
             | A.Up _ | A.Down _
@@ -1413,6 +1565,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                                   "potential in expression: " ^ pp_uneq epot tpot)
                   else check_exp' trace env delta (plus pot epot) p (z,c') ext mode
               | A.Plus _ | A.With _
+              | A.PPlus _ | A.PWith _
               | A.Tensor _ | A.Lolli _
               | A.One | A.PayPot _
               | A.Up _ | A.Down _
@@ -1428,6 +1581,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                                 "potential in expression: " ^ pp_uneq epot tpot)
                 else check_exp' trace env (update_tp env x a' delta) (plus pot epot) p zc ext mode
             | A.Plus _ | A.With _
+            | A.PPlus _ | A.PWith _
             | A.Tensor _ | A.Lolli _
             | A.One | A.GetPot _
             | A.Up _ | A.Down _
@@ -1450,6 +1604,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
             | A.Up(a') -> check_exp' trace env (add_chan env (y,a') (remove_tp x delta)) pot p zc ext mode
             | A.Plus _ | A.With _
+            | A.PPlus _ | A.PWith _
             | A.Tensor _ | A.Lolli _
             | A.One
             | A.PayPot _ | A.GetPot _
@@ -1480,6 +1635,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
             | A.Up(c') -> check_exp' trace env delta pot p (y,c') ext A.Linear
             | A.Plus _ | A.With _
+            | A.PPlus _ | A.PWith _
             | A.Tensor _ | A.Lolli _
             | A.One
             | A.PayPot _ | A.GetPot _
@@ -1503,6 +1659,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
             | A.Down(a') -> check_exp' trace env (add_chan env (y,a') (remove_tp x delta)) pot p zc ext mode
             | A.Plus _ | A.With _
+            | A.PPlus _ | A.PWith _
             | A.Tensor _ | A.Lolli _
             | A.One
             | A.PayPot _ | A.GetPot _
@@ -1533,6 +1690,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
             | A.Down(c') -> check_exp' trace env delta pot p (y,c') ext A.Shared
             | A.Plus _ | A.With _
+            | A.PPlus _ | A.PWith _
             | A.Tensor _ | A.Lolli _
             | A.One
             | A.PayPot _ | A.GetPot _
@@ -1559,6 +1717,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                   let (delta', pot') = check_fexp_simple trace env delta pot e t ext mode true in
                   check_exp' trace env delta' pot' p (z,b) ext mode
               | A.Plus _ | A.With _
+              | A.PPlus _ | A.PWith _
               | A.One | A.Lolli _ | A.Tensor _
               | A.PayPot _ | A.GetPot _
               | A.Up _ | A.Down _
@@ -1573,6 +1732,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 let (delta', pot') = check_fexp_simple trace env delta pot e t ext mode true in
                 check_exp' trace env (update_tp env x b delta') pot' p zc ext mode
             | A.Plus _ | A.With _
+            | A.PPlus _ | A.PWith _
             | A.One | A.Tensor _ | A.Lolli _
             | A.PayPot _ | A.GetPot _
             | A.Up _ | A.Down _
@@ -1601,6 +1761,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 | A.FArrow(t,b) ->
                     check_exp' trace env (add_var (y,t) delta) pot p (z,b) ext mode
                 | A.Plus _ | A.With _
+                | A.PPlus _ | A.PWith _
                 | A.One | A.Tensor _ | A.Lolli _
                 | A.PayPot _ | A.GetPot _
                 | A.Up _ | A.Down _
@@ -1614,6 +1775,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.FProduct(t,b) ->
                   check_exp' trace env (add_var (y,t) (update_tp env x b delta)) pot p zc ext mode
               | A.Plus _ | A.With _
+              | A.PPlus _ | A.PWith _
               | A.One | A.Lolli _ | A.Tensor _
               | A.PayPot _ | A.GetPot _
               | A.Up _ | A.Down _

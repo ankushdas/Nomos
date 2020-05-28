@@ -41,12 +41,17 @@ rule token = parse
   | "/\\"               { UP }
   | "\\/"               { DOWN }
   | "^"                 { PRODUCT }
+
+  (* probabilistic session types *)
+  | "p+"                { POPLUS }
+  | "p&"                { PAMPERSAND }
   
   (* functional types *)
   | "int"               { INTEGER }
   | "bool"              { BOOLEAN }
   | "address"           { ADDRESS }
   | "list"              { LIST }
+  | "prob"              { PROB }
   
   (* functional *)
   | newline             { next_line lexbuf; token lexbuf }
@@ -89,6 +94,11 @@ rule token = parse
   | "Nomos.GetTxnSender()"    { GETTXNSENDER }
   | "Nomos.MakeChannel"       { MAKECHAN }
 
+  (* pnomos specific *)
+  | "PNomos.Create"           { CREATE }
+  | "HH"                      { HH }
+  | "TT"                      { TT }
+
   (* printing *)
   | "print"             { PRINT }    
   | '"'                 { quoted_string := [] ; printable_items lexbuf }
@@ -119,6 +129,11 @@ rule token = parse
   | "release"           { RELEASE }
   | "detach"            { DETACH }
   | "abort"             { ABORT }
+
+  (* probabilistic expressions *)
+  | "pcase"             { PCASE }
+  | "flip"              { FLIP }
+  | ".."                { PDOT }
 
   (* identifier *)
   | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']* as word { ID (word) }

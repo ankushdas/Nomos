@@ -94,12 +94,15 @@ let rec pp_ftp_simple t = match t with
   | A.Address -> "address"
   | A.ListTP(t,pot) -> pp_ftp_simple t ^ " list " ^ pp_pot pot
   | A.Arrow(t1,t2) -> pp_ftp_simple t1 ^ " -> " ^ pp_ftp_simple t2
-  | A.VarT s -> s;;
+  | A.VarT s -> s
+  | A.Prob(pot1,pot2) -> "prob" ^ pp_pot pot1 ^ " " ^ pp_pot pot2;;
 
 let rec pp_tp_simple a = match a with
     A.One -> "1"
   | A.Plus(choice) -> "+{ " ^ pp_choice_simple choice ^ " }"
   | A.With(choice) -> "&{ " ^ pp_choice_simple choice ^ " }"
+  | A.PPlus(pchoices) -> "p+{ " ^ pp_pchoice_simple pchoices ^ " }"
+  | A.PWith(pchoices) -> "p&{ " ^ pp_pchoice_simple pchoices ^ " }"
   | A.Tensor(a,b,m) -> pp_tp_simple a ^ " *[" ^ pp_mode m ^ "] " ^ pp_tp_simple b
   | A.Lolli(a,b,m) -> pp_tp_simple a ^ " -o[" ^ pp_mode m ^ "] " ^ pp_tp_simple b
   | A.GetPot(pot,a) -> "<" ^ pp_potpos pot ^ "| " ^ pp_tp_simple a
@@ -109,6 +112,12 @@ let rec pp_tp_simple a = match a with
   | A.FArrow(t,a) -> pp_ftp_simple t ^ " -> " ^ pp_tp_simple a
   | A.FProduct(t,a) -> pp_ftp_simple t ^ " ^ " ^ pp_tp_simple a 
   | A.TpName(a) -> a
+
+and pp_pchoice_simple pcs = match pcs with
+    [] -> ""
+  | [(l,pot,a)] -> l ^ " " ^ pp_pot pot ^ " : " ^ pp_tp_simple a
+  | (l,pot,a)::pcs' ->
+      l ^ " " ^ pp_pot pot ^ " : " ^ pp_tp_simple a ^ ", " ^ pp_pchoice_simple pcs'
 
 and pp_choice_simple cs = match cs with
     [] -> ""
@@ -145,6 +154,8 @@ let rec pp_channames chans = match chans with
 let rec pp_tp i a = match a with
     A.Plus(choice) -> "+{ " ^ pp_choice (i+3) choice ^ " }"
   | A.With(choice) -> "&{ " ^ pp_choice (i+3) choice ^ " }"
+  | A.PPlus(choice) -> "p+{ " ^ pp_pchoice (i+4) choice ^ " }"
+  | A.PWith(choice) -> "p&{ " ^ pp_pchoice (i+4) choice ^ " }"
   | A.Tensor(a,b,m) ->
       let astr = pp_tp i a in
       let inc = len astr in
@@ -186,6 +197,16 @@ let rec pp_tp i a = match a with
 
 and pp_tp_after i s a = s ^ pp_tp (i+len(s)) a
 
+and pp_pchoice i cs = match cs with
+    [] -> ""
+  | [(l,pot,a)] ->
+    pp_tp_after i (l ^ pp_pot pot ^ " : ") a
+  | (l,pot,a)::cs' ->
+    pp_tp_after i (l ^ pp_pot pot ^ " : ") a ^ ",\n"
+    ^ pp_pchoice_indent i cs'
+
+and pp_pchoice_indent i cs = spaces i ^ pp_pchoice i cs
+
 and pp_choice i cs = match cs with
     [] -> ""
   | [(l,a)] ->
@@ -193,6 +214,7 @@ and pp_choice i cs = match cs with
   | (l,a)::cs' ->
     pp_tp_after i (l ^ " : ") a ^ ",\n"
     ^ pp_choice_indent i cs'
+
 and pp_choice_indent i cs = spaces i ^ pp_choice i cs;;
 
 let pp_tp = fun _env -> fun a -> pp_tp 0 a;;
@@ -240,6 +262,11 @@ let pp_printable x =
     | A.PChan -> "%c"
     | A.PNewline -> "\\n";;
 
+let pp_prob f =
+  match f with
+      A.Head -> "HH"
+    | A.Tail -> "TT";;
+
 (***********************)
 (* Process expressions *)
 (***********************)
@@ -259,6 +286,12 @@ let rec pp_exp env i exp = match exp with
   | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames env xs
   | A.Lab(x,k,p) -> pp_chan x ^ "." ^ k ^ " ;\n" ^ pp_exp_indent env i p
   | A.Case(x,bs) -> "case " ^ pp_chan x ^ " ( " ^ pp_branches env (i+8+len (pp_chan x)) bs ^ " )"
+  | A.PLab(x,k,p) -> pp_chan x ^ ".." ^ k ^ " ;\n" ^ pp_exp_indent env i p
+  | A.PCase(x,bs) -> "pcase " ^ pp_chan x ^ " ( " ^ pp_branches env (i+9+len (pp_chan x)) bs ^ " )"
+  | A.Flip(e,p1,p2) ->
+      let estr = pp_fexp env i e.A.func_structure in
+      let bs = [("HH", p1); ("TT", p2)] in
+      "flip " ^ estr ^ " ( " ^ pp_branches env (i+8+len estr) bs ^ " )"
   | A.Send(x,w,p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ;\n" ^ pp_exp_indent env i p
   | A.Recv(x,y,p) -> pp_chan y ^ " <- recv " ^ pp_chan x ^ " ;\n" ^ pp_exp_indent env i p
   | A.Close(x) -> "close " ^ pp_chan x
@@ -331,6 +364,7 @@ and pp_fexp env i e =
     | A.Int(i)  -> string_of_int i
     | A.Str(s) -> s
     | A.Addr(s) -> s
+    | A.ProbE f -> pp_prob f
     | A.LetIn(x, e1, e2) ->
         let a = pp_fexp env i e1.A.func_structure in
         let b = pp_fexp_indent env i e2.A.func_structure in
@@ -381,6 +415,7 @@ and pp_fexp env i e =
     | A.GetTxnNum -> "Nomos.GetTxnNum()"
     | A.GetTxnSender -> "Nomos.GetTxnSender()"
     | A.Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
+    | A.Create(pot1,pot2) -> "PNomos.Create " ^ pp_pot pot1 ^ " " ^ pp_pot pot2
 
 and pp_fexp_indent env i p = spaces i ^ pp_fexp env i p
 
@@ -400,6 +435,9 @@ let pp_exp_prefix exp = match exp with
   | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames () xs
   | A.Lab(x,k,_p) -> pp_chan x ^ "." ^ k ^ " ; ..."
   | A.Case(x,_bs) -> "case " ^ pp_chan x ^ " ( ... )"
+  | A.PLab(x,k,_p) -> pp_chan x ^ ".." ^ k ^ " ; ..."
+  | A.PCase(x,_bs) -> "pcase " ^ pp_chan x ^ " ( ... )"
+  | A.Flip(e,_p1,_p2) -> "flip " ^ pp_fexp () 0 e.A.func_structure ^ " ( ... )"
   | A.Send(x,w,_p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ; ..."
   | A.Recv(x,y,_p) -> pp_chan y ^ " <- recv " ^ pp_chan x ^ " ; ..."
   | A.Close(x) -> "close " ^ pp_chan x
@@ -441,7 +479,8 @@ and pp_val v =
     | A.StrV(s) -> s
     | A.AddrV(a) -> a
     | A.ListV(l) -> "[" ^ pp_val_list l ^ "]"
-    | A.LambdaV(args, v1) -> "fun " ^ pp_args args ^ " -> " ^ pp_fexp () 0 v1.A.func_structure;;
+    | A.LambdaV(args, v1) -> "fun " ^ pp_args args ^ " -> " ^ pp_fexp () 0 v1.A.func_structure
+    | A.ProbV f -> pp_prob f;;
 
 let pp_msg m = match m with
     A.MLabI(c,k,c') -> "+ " ^ pp_chan c ^ "." ^ k ^ " ; " ^ pp_exp_prefix (Fwd(c,c'))

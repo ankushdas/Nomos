@@ -1,9 +1,14 @@
 module R = Arith
-type ext = Mark.ext option [@@deriving sexp]
-type potential = Arith of R.arith | Star [@@deriving sexp]
+type ext = Mark.ext option
+[@@deriving sexp]
+type potential = Arith of R.arith | Star
+[@@deriving sexp]
 type label = string
-type tpname = string [@@deriving sexp]
+[@@deriving sexp]
+type tpname = string
+[@@deriving sexp]
 type expname = string
+[@@deriving sexp]
 type func_tp =
     Integer
   | Boolean
@@ -12,20 +17,19 @@ type func_tp =
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string
+  | Prob of potential * potential
 [@@deriving sexp]
-type mode =
-    Shared
-  | Linear
-  | Transaction
-  | Pure
-  | Unknown
-  | MVar of string
+type mode = Shared | Linear | Transaction | Pure | Unknown | MVar of string
 [@@deriving sexp]
 type str = Hash | Dollar
-type chan = str * string * mode [@@deriving sexp]
+[@@deriving sexp]
+type chan = str * string * mode
+[@@deriving sexp]
 type stype =
     Plus of choices
   | With of choices
+  | PPlus of pchoices
+  | PWith of pchoices
   | Tensor of stype * stype * mode
   | Lolli of stype * stype * mode
   | One
@@ -36,13 +40,19 @@ type stype =
   | Down of stype
   | FArrow of func_tp * stype
   | FProduct of func_tp * stype
-and choices = (label * stype) list
 [@@deriving sexp]
+and choices = (label * stype) list
+and pchoices = (label * potential * stype) list
 type arglist = Single of string * ext | Curry of (string * ext) * arglist
 [@@deriving sexp]
 type arith_operator = Add | Sub | Mult | Div
+[@@deriving sexp]
 type comp_operator = Eq | Neq | Lt | Gt | Leq | Geq
+[@@deriving sexp]
 type rel_operator = And | Or
+[@@deriving sexp]
+type pflip = Head | Tail
+[@@deriving sexp]
 type 'a func_aug_expr = { func_structure : 'a func_expr; func_data : 'a; }
 and 'a st_aug_expr = { st_structure : 'a st_expr; st_data : 'a; }
 and 'a func_expr =
@@ -52,6 +62,7 @@ and 'a func_expr =
   | Int of int
   | Str of string
   | Addr of string
+  | ProbE of pflip
   | Var of string
   | ListE of 'a func_aug_expr list
   | App of 'a func_aug_expr list
@@ -67,12 +78,16 @@ and 'a func_expr =
   | GetTxnNum
   | GetTxnSender
   | Command of 'a st_aug_expr
+  | Create of potential * potential
 and 'a st_expr =
     Fwd of chan * chan
   | Spawn of chan * expname * 'a arg list * 'a st_aug_expr
   | ExpName of chan * expname * 'a arg list
   | Lab of chan * label * 'a st_aug_expr
   | Case of chan * 'a branches
+  | PLab of chan * label * 'a st_aug_expr
+  | PCase of chan * 'a branches
+  | Flip of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
   | Send of chan * chan * 'a st_aug_expr
   | Recv of chan * chan * 'a st_aug_expr
   | Close of chan
@@ -88,23 +103,22 @@ and 'a st_expr =
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr
   | Let of string * 'a func_aug_expr * 'a st_aug_expr
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
-  | MakeChan of chan * stype * int * 'a st_aug_expr 
+  | MakeChan of chan * stype * int * 'a st_aug_expr
   | Abort
   | Print of printable list * 'a arg list * 'a st_aug_expr
-  [@@deriving sexp]
-and printable = 
+and printable =
     Word of string
-  | PInt 
-  | PBool 
-  | PStr 
-  | PAddr 
+  | PInt
+  | PBool
+  | PStr
+  | PAddr
   | PChan
   | PNewline
-  [@@deriving sexp]
-
+[@@deriving sexp]
 and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list
 and 'a arg = STArg of chan | FArg of 'a func_expr
+[@@deriving sexp]
 type parsed_expr = ext func_aug_expr
 type typed_expr = func_tp func_aug_expr
 type argument = Functional of string * func_tp | STyped of chan * stype
@@ -128,6 +142,8 @@ type 'a value =
   | AddrV of string
   | ListV of 'a value list
   | LambdaV of arglist * 'a func_aug_expr
+  | ProbV of pflip
+[@@deriving sexp]
 type 'a msg =
     MLabI of chan * label * chan
   | MLabE of chan * label * chan
@@ -151,6 +167,7 @@ val lookup_choice : ('a * 'b) list -> 'a -> 'b option
 val is_shared : (decl * 'a) list -> stype -> bool
 val sub : 'a * 'b * 'c -> 'd * 'b * 'e -> 'a * 'b * 'c -> 'a * 'b * 'c
 val sub_arg : str * string * mode -> 'a * string * 'b -> 'c arg -> 'c arg
+val eq_name : 'a * 'b * 'c -> 'd * 'b * 'e -> bool
 val subst_list :
   str * string * mode -> 'a * string * 'b -> 'c arg list -> 'c arg list
 val subst :
@@ -165,6 +182,7 @@ val fsubst_aug :
   str * string * mode ->
   'a * string * 'b -> 'c func_aug_expr -> 'c func_aug_expr
 val toExpr : 'a -> 'a value -> 'a func_expr
+val existsIn : string -> arglist -> bool
 val substv : 'a func_expr -> string -> 'a func_expr -> 'a func_expr
 val substv_aug :
   'a func_expr -> string -> 'a func_aug_expr -> 'a func_aug_expr

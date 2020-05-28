@@ -28,6 +28,8 @@
 %token HASH DOLLAR
 %token LARROW SEMI RRARROW
 %token RECV SEND CASE DOT CLOSE WAIT WORK PAY GET ACQUIRE ACCEPT RELEASE DETACH ABORT
+(* PNomos specific *)
+%token PROB POPLUS PAMPERSAND CREATE PCASE FLIP PDOT HH TT
 %right ANDALSO ORELSE
 %left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
 %right CONS
@@ -62,6 +64,10 @@ label_stype :
     | l = ID; COLON; t = stype         { (l,t) }
     ;
 
+lab_p_stype :
+    | l = ID; pot = potential; COLON; t = stype         { (l, pot, t) }
+    ;
+
 sp_stype:
     | x = ID                    { Ast.TpName(x) }
     | INT                       { Ast.One }
@@ -78,6 +84,8 @@ sp_ftype:
 stype :
     | PLUS; LBRACE; choices = separated_list(COMMA, label_stype); RBRACE        { Ast.Plus(choices) }
     | AMPERSAND; LBRACE; choices = separated_list(COMMA, label_stype); RBRACE   { Ast.With(choices) }
+    | POPLUS; LBRACE; choices = separated_list(COMMA, lab_p_stype); RBRACE      { Ast.PPlus(choices) }
+    | PAMPERSAND; LBRACE; choices = separated_list(COMMA, lab_p_stype); RBRACE  { Ast.PWith(choices) }
     | s = sp_stype; TIMES; t = stype                                            { Ast.Tensor(s,t,Ast.Unknown) }
     | s = sp_stype; LOLLI; t = stype                                            { Ast.Lolli(s,t,Ast.Unknown) }
     | INT                                                                       { Ast.One }
@@ -92,12 +100,13 @@ stype :
     ;
 
 ftype :
-    | INTEGER                                               { Ast.Integer }
-    | BOOLEAN                                               { Ast.Boolean }
-    | ADDRESS                                               { Ast.Address }
-    | a = sp_ftype; LIST; pot = potential                   { Ast.ListTP(a,pot) }
-    | a = sp_ftype; RIGHTARROW; b = ftype                   { Ast.Arrow(a,b) }
-    | LPAREN; a = ftype; RPAREN                             { a }
+    | INTEGER                                                           { Ast.Integer }
+    | BOOLEAN                                                           { Ast.Boolean }
+    | ADDRESS                                                           { Ast.Address }
+    | a = sp_ftype; LIST; pot = potential                               { Ast.ListTP(a,pot) }
+    | a = sp_ftype; RIGHTARROW; b = ftype                               { Ast.Arrow(a,b) }
+    | LPAREN; a = ftype; RPAREN                                         { a }
+    | PROB; LBRACE; x = potential; COMMA; y = potential; RBRACE         { Ast.Prob(x,y) }
     ;
 
 argument :
@@ -175,7 +184,10 @@ expr :
                                              $startpos.Lexing.pos_fname)} } 
     | r = relOp                       { {Ast.func_structure = r; Ast.func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
-                                             $startpos.Lexing.pos_fname)} } 
+                                             $startpos.Lexing.pos_fname)} }
+    | c = createExp                   { {Ast.func_structure = c; Ast.func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} }
     | LBRACE; s = st; RBRACE          { {func_structure = Ast.Command(s); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                              $startpos.Lexing.pos_fname)} }
@@ -234,6 +246,10 @@ compOp :
 relOp :
    | x = expr; ANDALSO; y = expr    { Ast.RelOp(x, Ast.And, y) } 
    | x = expr; ORELSE; y = expr     { Ast.RelOp(x, Ast.Or, y) } 
+   ;
+
+createExp :
+   | CREATE; LBRACE; x = potential; COMMA; y = potential; RBRACE        { Ast.Create(x,y) }
    ;
 
 
@@ -347,13 +363,23 @@ st:
     |  x = mid; DOT; k = ID; SEMI; p = st                                { {st_structure = Ast.Lab(x,k,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(k).Lexing.pos_lnum, $endpos(k).Lexing.pos_cnum - $endpos(k).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }   
-    |  CASE; x = linid; LPAREN; b = branches                            { {st_structure = Ast.Case(x,b); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  x = mid; PDOT; k = ID; SEMI; p = st                               { {st_structure = Ast.PLab(x,k,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(k).Lexing.pos_lnum, $endpos(k).Lexing.pos_cnum - $endpos(k).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} } 
+    |  CASE; x = linid; LPAREN; b = branches                             { {st_structure = Ast.Case(x,b); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                    $startpos.Lexing.pos_fname)} }
+    |  PCASE; x = linid; LPAREN; b = branches                            { {st_structure = Ast.PCase(x,b); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                    $startpos.Lexing.pos_fname)} }
+    |  FLIP; e = arg; LPAREN; HH; RRARROW; p1 = st; BAR; TT; RRARROW; p2 = st; RPAREN
+                                                                         { {st_structure = Ast.Flip(e,p1,p2); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
     |  CLOSE; x = linid                                                  { {st_structure = Ast.Close(x); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
-    |  ABORT                                                            { {st_structure = Ast.Abort; st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  ABORT                                                             { {st_structure = Ast.Abort; st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} } 
     |  WAIT; x = linid; SEMI; p = st                                     { {st_structure = Ast.Wait(x,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),

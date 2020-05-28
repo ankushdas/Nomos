@@ -73,6 +73,10 @@ let txnNum = ref 0;;
 
 let txnSender = ref "";;
 
+let evaluate pot = match pot with
+    A.Star -> raise RuntimeError
+  | A.Arith p -> R.evaluate p;;
+
 let rec eval fexp = match fexp.A.func_structure with
     A.If(e1,e2,e3) ->
       begin
@@ -97,6 +101,7 @@ let rec eval fexp = match fexp.A.func_structure with
   | A.Int i -> (A.IntV i, R.Int 0)
   | A.Str s -> (A.StrV s, R.Int 0)
   | A.Addr a -> (A.AddrV a, R.Int 0)
+  | A.ProbE f -> (A.ProbV f, R.Int 0)
   | A.Var _ -> raise RuntimeError
   | A.ListE(l) ->
       begin
@@ -187,7 +192,16 @@ let rec eval fexp = match fexp.A.func_structure with
       end
   | A.GetTxnNum -> (A.IntV !txnNum, R.Int 0)
   | A.GetTxnSender -> (A.AddrV !txnSender, R.Int 0)
-  | A.Command(_) -> raise RuntimeError;;
+  | A.Command(_) -> raise RuntimeError
+  | A.Create(prob1,prob2) ->
+      begin
+        let p1 = evaluate prob1 in
+        let p2 = evaluate prob2 in
+        let v = Random.int (p1+p2) in
+        if v <= p1
+        then (A.ProbV A.Head, R.Int 0)
+        else (A.ProbV A.Tail, R.Int 0)
+      end;;
 
 
 module Chan =
@@ -1118,6 +1132,9 @@ let match_and_one_step env sem config =
                 if c = c'
                 then echoice_R c config
                 else ichoice_R c config
+            
+            (* TODO: implement PNomos constructs *)
+            | A.PLab _ | A.PCase _ | A.Flip _ -> Aborted
             
             | A.Send(c',_e,_p) ->
                 if c = c'

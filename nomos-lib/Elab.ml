@@ -185,6 +185,7 @@ let rec check_redecl dcls = match dcls with
 
 let rec check_declared env ext a = match a with
     A.Plus(choices) | A.With(choices) -> check_declared_choices env ext choices
+  | A.PPlus(pchoices) | A.PWith(pchoices) -> check_declared_pchoices env ext pchoices
   | A.Tensor(a1,a2,_m) | A.Lolli(a1,a2,_m) ->
       let () = check_declared env ext a1 in
       check_declared env ext a2
@@ -196,6 +197,12 @@ let rec check_declared env ext a = match a with
       else error ext ("type name " ^ v ^ " undeclared")
   | A.Up(a') | A.Down(a') -> check_declared env ext a'
   | A.FArrow(_t,a') | A.FProduct(_t,a') -> check_declared env ext a'
+
+and check_declared_pchoices env ext cs = match cs with
+    [] -> ()
+  | (_,_,a)::cs' ->
+      let () = check_declared env ext a in
+      check_declared_pchoices env ext cs'
 
 and check_declared_choices env ext cs = match cs with
     [] -> ()
