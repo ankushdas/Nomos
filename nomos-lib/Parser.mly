@@ -29,7 +29,7 @@
 %token LARROW SEMI RRARROW
 %token RECV SEND CASE DOT CLOSE WAIT WORK PAY GET ACQUIRE ACCEPT RELEASE DETACH ABORT
 (* PNomos specific *)
-%token PROB POPLUS PAMPERSAND CREATE PCASE FLIP PDOT HH TT
+%token POPLUS PAMPERSAND PCASE FLIP PDOT HH TT
 %right ANDALSO ORELSE
 %left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
 %right CONS
@@ -106,7 +106,6 @@ ftype :
     | a = sp_ftype; LIST; pot = potential                               { Ast.ListTP(a,pot) }
     | a = sp_ftype; RIGHTARROW; b = ftype                               { Ast.Arrow(a,b) }
     | LPAREN; a = ftype; RPAREN                                         { a }
-    | PROB; LBRACE; x = potential; COMMA; y = potential; RBRACE         { Ast.Prob(x,y) }
     ;
 
 argument :
@@ -185,9 +184,6 @@ expr :
     | r = relOp                       { {Ast.func_structure = r; Ast.func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                              $startpos.Lexing.pos_fname)} }
-    | c = createExp                   { {Ast.func_structure = c; Ast.func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
-                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
-                                             $startpos.Lexing.pos_fname)} }
     | LBRACE; s = st; RBRACE          { {func_structure = Ast.Command(s); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                              $startpos.Lexing.pos_fname)} }
@@ -247,11 +243,6 @@ relOp :
    | x = expr; ANDALSO; y = expr    { Ast.RelOp(x, Ast.And, y) } 
    | x = expr; ORELSE; y = expr     { Ast.RelOp(x, Ast.Or, y) } 
    ;
-
-createExp :
-   | CREATE; LBRACE; x = potential; COMMA; y = potential; RBRACE        { Ast.Create(x,y) }
-   ;
-
 
 matchExp :
     | MATCH; x = expr; WITH; EMPTYLIST; RIGHTARROW; y = expr; BAR; a = ID; 
@@ -372,8 +363,8 @@ st:
     |  PCASE; x = linid; LPAREN; b = branches                            { {st_structure = Ast.PCase(x,b); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
-    |  FLIP; e = arg; LPAREN; HH; RRARROW; p1 = st; BAR; TT; RRARROW; p2 = st; RPAREN
-                                                                         { {st_structure = Ast.Flip(e,p1,p2); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  FLIP; LBRACE; x = INT; COMMA; y = INT; RBRACE; LPAREN; HH; RRARROW; p1 = st; BAR; TT; RRARROW; p2 = st; RPAREN
+                                                                         { {st_structure = Ast.Flip(Ast.Arith (Arith.Int x),Ast.Arith (Arith.Int y), p1,p2); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
     |  CLOSE; x = linid                                                  { {st_structure = Ast.Close(x); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),

@@ -610,8 +610,7 @@ let remove_var x delta =
 let rec consume_pot tp = match tp with
     A.Integer | A.Boolean | A.String | A.Address | A.VarT _ -> tp
   | A.ListTP(t,_pot) -> A.ListTP(consume_pot t, A.Arith (R.Int(0)))
-  | A.Arrow(t1,t2) -> A.Arrow(consume_pot t1, consume_pot t2)
-  | A.Prob _ -> tp;;
+  | A.Arrow(t1,t2) -> A.Arrow(consume_pot t1, consume_pot t2);;
 
 let rec consumevar x odelta = match odelta with
     [] -> []
@@ -741,12 +740,6 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
             A.Address -> (delta, pot)
           | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
       end
-  | A.ProbE(_) ->
-      begin
-        match tp with
-            A.Prob _ -> (delta, pot)
-          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
-      end
   | A.Var(x) ->
       begin
         let t1 = lookup_ftp x delta (e.A.func_data) in
@@ -863,17 +856,6 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
           | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected address, found: " ^ PP.pp_ftp_simple tp)
       end
   | A.Command _ -> raise UnknownTypeError
-  | A.Create(prob1,prob2) ->
-      begin
-        match tp with
-            A.Prob(tprob1, tprob2) ->
-              if eq prob1 tprob1 && eq prob2 tprob2
-              then (delta, pot)
-              else error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected: " ^ PP.pp_ftp_simple (A.Prob(prob1,prob2))
-                                          ^ ", found: " ^ PP.pp_ftp_simple tp)
-          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 (e.A.func_structure) ^ ": expected: " ^ PP.pp_ftp_simple (A.Prob(prob1,prob2))
-                                        ^ ", found: " ^ PP.pp_ftp_simple tp)
-      end
 
 and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = match (e.A.func_structure) with
     A.If(e1,e2,e3) ->
@@ -889,12 +871,6 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
   | A.Int _ -> (delta, pot, A.Integer)
   | A.Str _ -> (delta, pot, A.String)
   | A.Addr _ -> (delta, pot, A.Address)
-  | A.ProbE f ->
-      begin
-        match f with
-            A.Head -> (delta, pot, A.Prob(A.Arith (R.Int 1), A.Arith (R.Int 0)))
-          | A.Tail -> (delta, pot, A.Prob(A.Arith (R.Int 0), A.Arith (R.Int 1)))
-      end
   | A.Var(x) ->
       begin
         let t = lookup_ftp x delta (e.A.func_data) in
@@ -972,7 +948,6 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
   | A.GetTxnNum -> (delta, pot, A.Integer)
   | A.GetTxnSender -> (delta, pot, A.Address)
   | A.Command _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
-  | A.Create(prob1,prob2) -> (delta, pot, A.Prob(prob1,prob2))
 
 
 and checkfexp trace env delta pot e zc ext mode = match e.A.func_structure with
@@ -1194,7 +1169,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.PPlus(pchoices) ->
                   begin
                     (* TODO: make prob(k) = 1, all other choices = 0 *)
-                    let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in 
+                    let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in
                     match A.lookup_choice choices k with
                         None -> E.error_label_invalid env (k,c,z) (exp.A.st_data)
                       | Some ck -> check_exp' trace env delta pot p (z,ck) ext mode
@@ -1272,12 +1247,11 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                          ", expected prob. internal choice, found: " ^ PP.pp_tp_compact env a)
       end
-  | A.Flip(e,p1,p2) ->
+  | A.Flip(_pot1,_pot2,p1,p2) ->
       begin
-        let (delta', pot', _t) = synth_fexp_simple trace env delta pot e ext mode false in
         (* TODO: apply corresponding typing rule for flip, both for probs and potential *)
-        check_exp' trace env delta' pot' p1 zc ext mode;
-        check_exp' trace env delta' pot' p2 zc ext mode
+        check_exp' trace env delta pot p1 zc ext mode;
+        check_exp' trace env delta pot p2 zc ext mode
       end
   | A.Send(x,w,p) ->
       begin

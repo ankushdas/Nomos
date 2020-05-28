@@ -51,7 +51,6 @@ rule token = parse
   | "bool"              { BOOLEAN }
   | "address"           { ADDRESS }
   | "list"              { LIST }
-  | "prob"              { PROB }
   
   (* functional *)
   | newline             { next_line lexbuf; token lexbuf }
@@ -95,7 +94,6 @@ rule token = parse
   | "Nomos.MakeChannel"       { MAKECHAN }
 
   (* pnomos specific *)
-  | "PNomos.Create"           { CREATE }
   | "HH"                      { HH }
   | "TT"                      { TT }
 

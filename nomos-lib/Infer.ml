@@ -52,7 +52,6 @@ and remove_stars_pchoices pchoices = match pchoices with
 
 and remove_stars_ftp ftp = match ftp with
     A.ListTP(t,pot) -> A.ListTP(t, remove_star pot)
-  | A.Prob(pot1,pot2) -> A.Prob(remove_star pot1, remove_star pot2)
   | A.Integer | A.Boolean | A.String | A.Address | A.VarT _ -> ftp
   | A.Arrow(t1,t2) -> A.Arrow(remove_stars_ftp t1, remove_stars_ftp t2);;
 
@@ -64,7 +63,7 @@ let rec remove_stars_exp exp = match exp with
   | A.Case(x,branches) -> A.Case(x, remove_stars_branches branches)
   | A.PLab(x,k,p) -> A.PLab(x, k, remove_stars_aug p)
   | A.PCase(x,branches) -> A.PCase(x, remove_stars_branches branches)
-  | A.Flip(e,p1,p2) -> A.Flip(remove_stars_faug e, remove_stars_aug p1, remove_stars_aug p2)
+  | A.Flip(pot1,pot2,p1,p2) -> A.Flip(remove_star pot1, remove_star pot2, remove_stars_aug p1, remove_stars_aug p2)
   | A.Send(x,w,p) -> A.Send(x,w, remove_stars_aug p)
   | A.Recv(x,y,p) -> A.Recv(x,y, remove_stars_aug p)
   | A.Close(x) -> A.Close(x)
@@ -103,7 +102,7 @@ and remove_stars_faug {A.func_data = d; A.func_structure = e} = {A.func_data = d
 and remove_stars_fexp fexp = match fexp with
     A.If(e1,e2,e3) -> A.If(remove_stars_faug e1, remove_stars_faug e2, remove_stars_faug e3)
   | A.LetIn(x,e1,e2) -> A.LetIn(x, remove_stars_faug e1, remove_stars_faug e2)
-  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.ProbE _ | A.Var _ -> fexp
+  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.Var _ -> fexp
   | A.ListE(l) -> A.ListE(List.map remove_stars_faug l)
   | A.App(es) -> A.App(List.map remove_stars_faug es)
   | A.Cons(e1,e2) -> A.Cons(remove_stars_faug e1, remove_stars_faug e2)
@@ -116,8 +115,7 @@ and remove_stars_fexp fexp = match fexp with
   | A.Tick(pot,e) -> A.Tick(remove_star pot, remove_stars_faug e)
   | A.GetTxnNum -> A.GetTxnNum
   | A.GetTxnSender -> A.GetTxnSender
-  | A.Command(p) -> A.Command(remove_stars_aug p)
-  | A.Create(pot1,pot2) -> A.Create(remove_star pot1, remove_star pot2);;
+  | A.Command(p) -> A.Command(remove_stars_aug p);;
 
 (********************************************)
 (* Substituting actual values for potential *)
@@ -183,7 +181,6 @@ and substitute_pchoices pchoices psols msols = match pchoices with
 
 and substitute_ftp ftp psols msols = match ftp with
     A.ListTP(t,pot) -> A.ListTP(t, substitute_pot pot psols)
-  | A.Prob(pot1,pot2) -> A.Prob(substitute_pot pot1 psols, substitute_pot pot2 psols)
   | A.Integer | A.Boolean | A.String | A.Address | A.VarT _ -> ftp
   | A.Arrow(t1,t2) -> A.Arrow(substitute_ftp t1 psols msols, substitute_ftp t2 psols msols);;
 
@@ -197,7 +194,7 @@ let rec substitute_exp exp psols msols = match exp with
   | A.Case(x,branches) -> A.Case(substitute_mode x msols, substitute_branches branches psols msols)
   | A.PLab(x,k,p) -> A.PLab(substitute_mode x msols, k, substitute_aug p psols msols)
   | A.PCase(x,branches) -> A.Case(substitute_mode x msols, substitute_branches branches psols msols)
-  | A.Flip(e,p1,p2) -> A.Flip(substitute_faug e psols msols, substitute_aug p1 psols msols, substitute_aug p2 psols msols)
+  | A.Flip(pot1,pot2,p1,p2) -> A.Flip(substitute_pot pot1 psols, substitute_pot pot2 psols, substitute_aug p1 psols msols, substitute_aug p2 psols msols)
   | A.Send(x,w,p) -> A.Send(substitute_mode x msols, substitute_mode w msols, substitute_aug p psols msols)
   | A.Recv(x,y,p) -> A.Recv(substitute_mode x msols, substitute_mode y msols, substitute_aug p psols msols)
   | A.Close(x) -> A.Close(substitute_mode x msols)
@@ -236,7 +233,7 @@ and substitute_faug {A.func_data = d; A.func_structure = e} psols msols = {A.fun
 and substitute_fexp fexp psols msols = match fexp with
     A.If(e1,e2,e3) -> A.If(substitute_faug e1 psols msols, substitute_faug e2 psols msols, substitute_faug e3 psols msols)
   | A.LetIn(x,e1,e2) -> A.LetIn(x, substitute_faug e1 psols msols, substitute_faug e2 psols msols)
-  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.ProbE _ | A.Var _ -> fexp
+  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.Var _ -> fexp
   | A.ListE(l) -> A.ListE(List.map (fun e -> substitute_faug e psols msols) l)
   | A.App(es) -> A.App(List.map (fun e -> substitute_faug e psols msols) es)
   | A.Cons(e1,e2) -> A.Cons(substitute_faug e1 psols msols, substitute_faug e2 psols msols)
@@ -249,8 +246,7 @@ and substitute_fexp fexp psols msols = match fexp with
   | A.Tick(pot,e) -> A.Tick(substitute_pot pot psols, substitute_faug e psols msols)
   | A.GetTxnNum -> A.GetTxnNum
   | A.GetTxnSender -> A.GetTxnSender
-  | A.Command(p) -> A.Command(substitute_aug p psols msols)
-  | A.Create(pot1,pot2) -> A.Create(substitute_pot pot1 psols, substitute_pot pot2 psols);;
+  | A.Command(p) -> A.Command(substitute_aug p psols msols);;
 
 (***************************************************************)
 (* Substituting mode variables for U in channel and type modes *)
@@ -308,7 +304,7 @@ let rec removeU_exp exp = match exp with
   | A.Case(x,branches) -> A.Case(removeU x, removeU_branches branches)
   | A.PLab(x,k,p) -> A.PLab(removeU x, k, removeU_aug p)
   | A.PCase(x,branches) -> A.PCase(removeU x, removeU_branches branches)
-  | A.Flip(e,p1,p2) -> A.Flip(e, removeU_aug p1, removeU_aug p2)
+  | A.Flip(pot1,pot2,p1,p2) -> A.Flip(pot1, pot2, removeU_aug p1, removeU_aug p2)
   | A.Send(x,w,p) -> A.Send(removeU x, removeU w, removeU_aug p)
   | A.Recv(x,y,p) -> A.Recv(removeU x, removeU y, removeU_aug p)
   | A.Close(x) -> A.Close(removeU x)
@@ -341,7 +337,7 @@ and removeU_faug {A.func_data = d; A.func_structure = e} = {A.func_data = d; A.f
 and removeU_fexp fexp = match fexp with
     A.If(e1,e2,e3) -> A.If(removeU_faug e1, removeU_faug e2, removeU_faug e3)
   | A.LetIn(x,e1,e2) -> A.LetIn(x, removeU_faug e1, removeU_faug e2)
-  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.ProbE _ | A.Var _ -> fexp
+  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.Var _ -> fexp
   | A.ListE(l) -> A.ListE(List.map removeU_faug l)
   | A.App(es) -> A.App(List.map removeU_faug es)
   | A.Cons(e1,e2) -> A.Cons(removeU_faug e1, removeU_faug e2)
@@ -354,8 +350,7 @@ and removeU_fexp fexp = match fexp with
   | A.Tick(pot,e) -> A.Tick(pot, removeU_faug e)
   | A.GetTxnNum -> A.GetTxnNum
   | A.GetTxnSender -> A.GetTxnSender
-  | A.Command(p) -> A.Command(removeU_aug p)
-  | A.Create _ -> fexp;;
+  | A.Command(p) -> A.Command(removeU_aug p);;
 
 
 (**************)

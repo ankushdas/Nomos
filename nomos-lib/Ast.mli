@@ -17,7 +17,6 @@ type func_tp =
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string
-  | Prob of potential * potential
 [@@deriving sexp]
 type mode = Shared | Linear | Transaction | Pure | Unknown | MVar of string
 [@@deriving sexp]
@@ -51,8 +50,6 @@ type comp_operator = Eq | Neq | Lt | Gt | Leq | Geq
 [@@deriving sexp]
 type rel_operator = And | Or
 [@@deriving sexp]
-type pflip = Head | Tail
-[@@deriving sexp]
 type 'a func_aug_expr = { func_structure : 'a func_expr; func_data : 'a; }
 and 'a st_aug_expr = { st_structure : 'a st_expr; st_data : 'a; }
 and 'a func_expr =
@@ -62,7 +59,6 @@ and 'a func_expr =
   | Int of int
   | Str of string
   | Addr of string
-  | ProbE of pflip
   | Var of string
   | ListE of 'a func_aug_expr list
   | App of 'a func_aug_expr list
@@ -78,7 +74,6 @@ and 'a func_expr =
   | GetTxnNum
   | GetTxnSender
   | Command of 'a st_aug_expr
-  | Create of potential * potential
 and 'a st_expr =
     Fwd of chan * chan
   | Spawn of chan * expname * 'a arg list * 'a st_aug_expr
@@ -87,7 +82,7 @@ and 'a st_expr =
   | Case of chan * 'a branches
   | PLab of chan * label * 'a st_aug_expr
   | PCase of chan * 'a branches
-  | Flip of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
+  | Flip of potential * potential * 'a st_aug_expr * 'a st_aug_expr
   | Send of chan * chan * 'a st_aug_expr
   | Recv of chan * chan * 'a st_aug_expr
   | Close of chan
@@ -142,7 +137,6 @@ type 'a value =
   | AddrV of string
   | ListV of 'a value list
   | LambdaV of arglist * 'a func_aug_expr
-  | ProbV of pflip
 [@@deriving sexp]
 type 'a msg =
     MLabI of chan * label * chan

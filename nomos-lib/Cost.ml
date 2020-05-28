@@ -7,7 +7,7 @@ let rec cost_tick_aug {A.func_data = d; A.func_structure = e} = {A.func_data = d
 and cost_tick fexp = match fexp with
     A.If(e1,e2,e3) -> A.If(cost_tick_aug e1, cost_tick_aug e2, cost_tick_aug e3)
   | A.LetIn(x,e1,e2) -> A.LetIn(x, cost_tick_aug e1, cost_tick_aug e2)
-  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.ProbE _ | A.Var _ -> fexp
+  | A.Bool _ | A.Int _ | A.Str _ | A.Addr _ | A.Var _ -> fexp
   | A.ListE(l) -> A.ListE(List.map cost_tick_aug l)
   | A.App(es) -> A.App(List.map cost_tick_aug es)
   | A.Cons(e1,e2) -> A.Cons(cost_tick_aug e1, cost_tick_aug e2)
@@ -20,7 +20,6 @@ and cost_tick fexp = match fexp with
   | A.Tick(pot,e) -> A.Tick(pot, cost_tick_aug e)
   | A.GetTxnNum | A.GetTxnSender -> fexp
   | A.Command(p) -> A.Command(cost_work !F.work p)
-  | A.Create _ -> fexp
 
 and cost_work flag exp = match flag with
     F.Nil -> exp
@@ -41,7 +40,7 @@ and cost_recv d exp = match exp with
 
   | A.PLab(x,k,p) -> A.PLab(x, k, cost_recv_aug p)
   | A.PCase(x,branches) -> work d (A.PCase(x, cost_recv_branches branches))
-  | A.Flip(e,p1,p2) -> work d (A.Flip(cost_tick_aug e, cost_recv_aug p1, cost_recv_aug p2))
+  | A.Flip(pot1,pot2,p1,p2) -> work d (A.Flip(pot1, pot2, cost_recv_aug p1, cost_recv_aug p2))
 
   | A.Send(x,w,p) -> A.Send(x,w,cost_recv_aug p)
   | A.Recv(x,y,p) -> work d (A.Recv(x,y, cost_recv_aug p))
@@ -86,7 +85,7 @@ and cost_send d exp = match exp with
 
   | A.PLab(x,k,p) -> work d (A.PLab(x, k, cost_send_aug p))
   | A.PCase(x,branches) -> A.PCase(x, cost_send_branches branches)
-  | A.Flip(e,p1,p2) -> work d (A.Flip(cost_tick_aug e, cost_send_aug p1, cost_send_aug p2))
+  | A.Flip(pot1,pot2,p1,p2) -> work d (A.Flip(pot1,pot2, cost_send_aug p1, cost_send_aug p2))
 
   | A.Send(x,w,p) -> work d (A.Send(x,w, cost_send_aug p))
   | A.Recv(x,y,p) -> A.Recv(x,y, cost_send_aug p)

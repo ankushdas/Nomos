@@ -26,7 +26,6 @@ type func_tp =
   | ListTP of func_tp * potential
   | Arrow of func_tp * func_tp
   | VarT of string
-  | Prob of potential * potential
 [@@deriving sexp]
 
 type mode =
@@ -93,9 +92,6 @@ type rel_operator =
   | Or
 [@@deriving sexp]
 
-type pflip = Head | Tail
-[@@deriving sexp]
-
 type 'a func_aug_expr =
   {
     func_structure : 'a func_expr;
@@ -113,7 +109,6 @@ and 'a func_expr =
   | Int of int
   | Str of string
   | Addr of string
-  | ProbE of pflip
   | Var of string
   | ListE of 'a func_aug_expr list
   | App of 'a func_aug_expr list
@@ -129,8 +124,6 @@ and 'a func_expr =
   | GetTxnNum                                   (* Nomos.GetTxnNum(): get txn number *)
   | GetTxnSender                                (* Nomos.GetTxnSender(): get txn issuer *)
   | Command of 'a st_aug_expr
-  (* PNomos specific *)
-  | Create of potential * potential
 and 'a st_expr =
   (* judgmental constructs *)
   | Fwd of chan * chan                                      (* x <- y *)
@@ -145,7 +138,7 @@ and 'a st_expr =
   (* PNomos specific *)
   | PLab of chan * label * 'a st_aug_expr                       (* x..k  ; P *)
   | PCase of chan * 'a branches                                 (* pcase x (l => Ql) *)
-  | Flip of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr  (* flip p (H => Q | T => Q) *)
+  | Flip of potential * potential * 'a st_aug_expr * 'a st_aug_expr  (* flip p (H => Q | T => Q) *)
 
   (* tensor or lolli *)
   | Send of chan * chan * 'a st_aug_expr                    (* send x w ; P *)
@@ -234,7 +227,6 @@ type 'a value =
   | AddrV of string
   | ListV of 'a value list
   | LambdaV of arglist * 'a func_aug_expr
-  | ProbV of pflip
 [@@deriving sexp]
 
 type 'a msg =
@@ -325,7 +317,7 @@ let rec subst c' c expr = match expr with
   | Case(x,branches) -> Case(sub c' c x, subst_branches c' c branches)
   | PLab(x,k,p) -> PLab(sub c' c x, k, subst_aug c' c p)
   | PCase(x,branches) -> PCase(x, subst_branches c' c branches)
-  | Flip(e,p1,p2) -> Flip(fsubst_aug c' c e, subst_aug c' c p1, subst_aug c' c p2)
+  | Flip(pot1,pot2,p1,p2) -> Flip(pot1, pot2, subst_aug c' c p1, subst_aug c' c p2)
   | Send(x,w,p) -> Send(sub c' c x, sub c' c w, subst_aug c' c p)
   | Recv(x,y,p) ->
       if eq_name c y
@@ -374,7 +366,7 @@ and subst_aug c' c {st_structure = exp; st_data = d} =
 and fsubst c' c fexp = match fexp with
     If(e1,e2,e3) -> If(fsubst_aug c' c e1, fsubst_aug c' c e2, fsubst_aug c' c e3)
   | LetIn(x,e1,e2) -> LetIn(x, fsubst_aug c' c e1, fsubst_aug c' c e2)
-  | Bool _ | Int _ | Str _ | Addr _ | ProbE _ | Var _ -> fexp
+  | Bool _ | Int _ | Str _ | Addr _ | Var _ -> fexp
   | ListE(l) -> ListE(List.map (fsubst_aug c' c) l)
   | App(es) -> App(List.map (fsubst_aug c' c) es)
   | Cons(e1,e2) -> Cons(fsubst_aug c' c e1, fsubst_aug c' c e2)
@@ -388,7 +380,6 @@ and fsubst c' c fexp = match fexp with
   | GetTxnNum -> GetTxnNum
   | GetTxnSender -> GetTxnSender
   | Command(p) -> Command(subst_aug c' c p)
-  | Create _ -> fexp
 
 and fsubst_aug c' c {func_structure = exp ; func_data = d} =
   {func_structure = fsubst c' c exp ; func_data = d};;
@@ -399,8 +390,7 @@ let rec toExpr d v = match v with
   | StrV s -> Str s
   | AddrV a -> Addr a
   | ListV l -> ListE (List.map (fun x -> {func_structure = toExpr d x ; func_data = d}) l)
-  | LambdaV(xs,e) -> Lambda (xs,e)
-  | ProbV f -> ProbE f;;
+  | LambdaV(xs,e) -> Lambda (xs,e);;
 
 let rec existsIn v xs = match xs with
     Single(x,_ext) -> v = x
@@ -412,7 +402,7 @@ let rec substv v' v fexp = match fexp with
       if v = x
       then LetIn(x, substv_aug v' v e1, e2)
       else LetIn(x, substv_aug v' v e1, substv_aug v' v e2)
-  | Bool _ | Str _ | Int _ | Addr _ | ProbE _ -> fexp
+  | Bool _ | Str _ | Int _ | Addr _ -> fexp
   | Var x -> if x = v then v' else Var x
   | ListE(l) -> ListE(List.map (substv_aug v' v) l)
   | App(es) -> App(List.map (substv_aug v' v) es)
@@ -433,7 +423,6 @@ let rec substv v' v fexp = match fexp with
   | GetTxnNum -> GetTxnNum
   | GetTxnSender -> GetTxnSender
   | Command(p) -> Command(esubstv_aug v' v p)
-  | Create _ -> fexp
 
 and substv_aug v' v {func_structure = fexp ; func_data = d} =
   {func_structure = substv v' v fexp ; func_data = d}
@@ -453,7 +442,7 @@ and esubstv v' v exp = match exp with
   | Case(x,branches) -> Case(x, esubstv_branches v' v branches)
   | PLab(x,k,p) -> PLab(x, k, esubstv_aug v' v p)
   | PCase(x,branches) -> PCase(x, esubstv_branches v' v branches)
-  | Flip(e, p1, p2) -> Flip(substv_aug v' v e, esubstv_aug v' v p1, esubstv_aug v' v p2)
+  | Flip(pot1, pot2, p1, p2) -> Flip(pot1, pot2, esubstv_aug v' v p1, esubstv_aug v' v p2)
   | Send(x,w,p) -> Send(x, w, esubstv_aug v' v p)
   | Recv(x,y,p) -> Recv(x, y, esubstv_aug v' v p)
   | Close(x) -> Close(x)
