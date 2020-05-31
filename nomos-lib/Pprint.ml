@@ -65,6 +65,8 @@ let pp_rel_opr opr = match opr with
     A.And -> "&&"
   | A.Or -> "||";;
 
+let pp_prob pr = "{" ^ string_of_float pr ^ "}";;
+
 (***********************)
 (* Externalizing types *)
 (***********************)
@@ -114,9 +116,9 @@ let rec pp_tp_simple a = match a with
 
 and pp_pchoice_simple pcs = match pcs with
     [] -> ""
-  | [(l,pot,a)] -> l ^ " " ^ pp_pot pot ^ " : " ^ pp_tp_simple a
+  | [(l,pot,a)] -> l ^ " " ^ pp_prob pot ^ " : " ^ pp_tp_simple a
   | (l,pot,a)::pcs' ->
-      l ^ " " ^ pp_pot pot ^ " : " ^ pp_tp_simple a ^ ", " ^ pp_pchoice_simple pcs'
+      l ^ " " ^ pp_prob pot ^ " : " ^ pp_tp_simple a ^ ", " ^ pp_pchoice_simple pcs'
 
 and pp_choice_simple cs = match cs with
     [] -> ""
@@ -199,9 +201,9 @@ and pp_tp_after i s a = s ^ pp_tp (i+len(s)) a
 and pp_pchoice i cs = match cs with
     [] -> ""
   | [(l,pot,a)] ->
-    pp_tp_after i (l ^ pp_pot pot ^ " : ") a
+    pp_tp_after i (l ^ pp_prob pot ^ " : ") a
   | (l,pot,a)::cs' ->
-    pp_tp_after i (l ^ pp_pot pot ^ " : ") a ^ ",\n"
+    pp_tp_after i (l ^ pp_prob pot ^ " : ") a ^ ",\n"
     ^ pp_pchoice_indent i cs'
 
 and pp_pchoice_indent i cs = spaces i ^ pp_pchoice i cs
@@ -282,8 +284,8 @@ let rec pp_exp env i exp = match exp with
   | A.Case(x,bs) -> "case " ^ pp_chan x ^ " ( " ^ pp_branches env (i+8+len (pp_chan x)) bs ^ " )"
   | A.PLab(x,k,p) -> pp_chan x ^ ".." ^ k ^ " ;\n" ^ pp_exp_indent env i p
   | A.PCase(x,bs) -> "pcase " ^ pp_chan x ^ " ( " ^ pp_branches env (i+9+len (pp_chan x)) bs ^ " )"
-  | A.Flip(pot1,pot2,p1,p2) ->
-      let pstr = "{" ^ pp_pot pot1 ^ "," ^ pp_pot pot2 ^ "}" in
+  | A.Flip(pr,p1,p2) ->
+      let pstr = pp_prob pr in
       let bs = [("HH", p1); ("TT", p2)] in
       "flip " ^ pstr ^ " ( " ^ pp_branches env (i+8+len pstr) bs ^ " )"
   | A.Send(x,w,p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ;\n" ^ pp_exp_indent env i p
@@ -429,7 +431,7 @@ let pp_exp_prefix exp = match exp with
   | A.Case(x,_bs) -> "case " ^ pp_chan x ^ " ( ... )"
   | A.PLab(x,k,_p) -> pp_chan x ^ ".." ^ k ^ " ; ..."
   | A.PCase(x,_bs) -> "pcase " ^ pp_chan x ^ " ( ... )"
-  | A.Flip(pot1,pot2,_p1,_p2) -> "flip " ^ "{" ^ pp_pot pot1 ^ "," ^ pp_pot pot2 ^ "}" ^ " ( ... )"
+  | A.Flip(pr,_p1,_p2) -> "flip " ^ pp_prob pr ^ "}" ^ " ( ... )"
   | A.Send(x,w,_p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ; ..."
   | A.Recv(x,y,_p) -> pp_chan y ^ " <- recv " ^ pp_chan x ^ " ; ..."
   | A.Close(x) -> "close " ^ pp_chan x

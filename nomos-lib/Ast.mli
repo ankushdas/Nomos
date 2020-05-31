@@ -41,7 +41,7 @@ type stype =
   | FProduct of func_tp * stype
 [@@deriving sexp]
 and choices = (label * stype) list
-and pchoices = (label * potential * stype) list
+and pchoices = (label * float * stype) list
 type arglist = Single of string * ext | Curry of (string * ext) * arglist
 [@@deriving sexp]
 type arith_operator = Add | Sub | Mult | Div
@@ -82,7 +82,7 @@ and 'a st_expr =
   | Case of chan * 'a branches
   | PLab of chan * label * 'a st_aug_expr
   | PCase of chan * 'a branches
-  | Flip of potential * potential * 'a st_aug_expr * 'a st_aug_expr
+  | Flip of float * 'a st_aug_expr * 'a st_aug_expr
   | Send of chan * chan * 'a st_aug_expr
   | Recv of chan * chan * 'a st_aug_expr
   | Close of chan

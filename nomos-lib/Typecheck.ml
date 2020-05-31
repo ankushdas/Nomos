@@ -685,6 +685,230 @@ let is_argtype p = match p with
 
 let filter_args l = List.filter (fun p -> is_argtype p) l;;
 
+let fequals x y =
+  let eps = 1e-6 in
+  x > y -. eps && x < y +. eps;;
+
+let rec plabprob k pchoices ext = match pchoices with
+    [] -> ()
+  | (l,prob,_a)::pchoices' ->
+      if k = l
+      then
+        begin
+          if fequals prob 1.0
+          then plabprob k pchoices' ext
+          else error ext ("prob. mismatch of label " ^ l ^ ": expected {1}, found: " ^ PP.pp_prob prob)
+        end
+      else
+        begin
+          if fequals prob 0.0
+          then plabprob k pchoices' ext
+          else error ext ("prob. mismatch of label " ^ l ^ ": expected {0}, found: " ^ PP.pp_prob prob)
+        end
+
+let rec in_ctx c xs = match xs with
+    [] -> false
+  | x::xs' ->
+      match x with
+          A.STArg c' -> eq_name c' c || in_ctx c xs'
+        | A.FArg _ -> in_ctx c xs';;
+
+let rec find_sigtp ctx xs c = match ctx, xs with
+    A.STyped (_sc,st)::ctx', A.STArg c'::xs' ->
+      if eq_name c' c
+      then st
+      else find_sigtp ctx' xs' c
+  | A.Functional _::ctx', A.FArg _::xs' -> find_sigtp ctx' xs' c
+  | _, _ -> raise UnknownTypeError;;
+
+let get_typeL env f xs c =
+  match A.lookup_expdec env f with
+      None -> raise UnknownTypeError
+    | Some (ctx,_lpot,_xa,_mdef) ->
+        let ctx = join ctx in
+        find_sigtp ctx xs c;;
+
+let get_typeR env f =
+  match A.lookup_expdec env f with
+      None -> raise UnknownTypeError
+    | Some (_ctx,_lpot,(_x,a),_mdef) -> a;;
+
+let rec gen_pchoices pchoices k = match pchoices with
+    [] -> []
+  | (l,_pr,a)::pchoices' ->
+      if k = l
+      then (l,1.0,a)::(gen_pchoices pchoices' k)
+      else (l,0.0,a)::(gen_pchoices pchoices' k);;
+
+let gen_tp k a = match a with
+    A.PPlus(pchoices) -> A.PPlus(gen_pchoices pchoices k)
+  | A.PWith(pchoices) -> A.PWith(gen_pchoices pchoices k)
+  | _a -> raise UnknownTypeError;;
+
+let rec action env p c a = match p.A.st_structure with
+    A.Fwd(_x,_y) -> a
+  | A.Spawn(_x,f,xs,q) ->
+      if in_ctx c xs
+      then get_typeL env f xs c
+      else action env q c a
+  | A.ExpName(x,f,xs) ->
+      if eq_name x c
+      then get_typeR env f
+      else get_typeL env f xs c
+  | A.Lab(_x,_k,q) ->
+      action env q c a
+  | A.Case(_x,branches) -> action_branches env branches c a
+  | A.PLab(x,k,q) ->
+      if eq_name x c
+      then gen_tp k a
+      else action env q c a
+  | A.PCase(_x,branches) -> action_branches env branches c a
+  | A.Flip(_pr,q1,q2) -> action_branches env [("HH", q1); ("TT", q2)] c a
+  | A.Send(_x,_w,q) -> action env q c a
+  | A.Recv(_x,_y,q) -> action env q c a
+  | Close(_x) -> raise UnknownTypeError
+  | Wait(_x,q) -> action env q c a
+  | Work(_pot,q) -> action env q c a
+  | Pay(_x,_pot,q) -> action env q c a
+  | Get(_x,_pot,q) -> action env q c a
+  | Acquire(_x,_y,q) -> action env q c a
+  | Accept(_x,_y,q) -> action env q c a
+  | Release(_x,_y,q) -> action env q c a
+  | Detach(_x,_y,q) -> action env q c a
+  | RecvF(_x,_y,q) -> action env q c a
+  | SendF(_x,_m,q) -> action env q c a
+  | Let(_x,_e,q) -> action env q c a
+  | IfS(_e,q1,_q2) -> action env q1 c a
+  | MakeChan(_x,_a,_n,q) -> action env q c a
+  | Abort -> raise UnknownTypeError
+  | Print(_l,_args,q) -> action env q c a
+
+and action_branches env branches c a = match branches with
+    [] -> raise UnknownTypeError
+  | (_l,q)::_bs -> action env q c a
+
+let rec gen_prob_tpL env p x a = match a with
+  | A.PWith _ -> action env p x a
+  | A.TpName(v) -> gen_prob_tpL env p x (A.expd_tp env v)
+  (* TODO: do other types change at all? *)
+  | _a -> a;;
+
+let rec gen_prob_tpR env p x a = match a with
+    A.PPlus _ -> action env p x a
+  | A.TpName(v) -> gen_prob_tpR env p x (A.expd_tp env v)
+  (* TODO: do other types change at all? *)
+  | _a -> a;;
+
+let gen_prob_ctx env delta p =
+  let {A.shared = sdelta; A.linear = ldelta; A.ordered = odelta} = delta in
+  let gen_func (c,a) = (c, gen_prob_tpL env p c a) in
+  let gen_ofunc arg = match arg with
+                          A.Functional _ -> arg
+                        | A.STyped (c,a) -> let (cl,al) = gen_func (c,a) in A.STyped(cl,al)
+  in
+  let sdeltaf = List.map gen_func sdelta in
+  let ldeltaf = List.map gen_func ldelta in
+  let odeltaf = List.map gen_ofunc odelta in
+  {A.shared = sdeltaf; A.linear = ldeltaf; A.ordered = odeltaf};;
+
+let rec subtract_choices env x pcs pr pcs' ext = match pcs, pcs' with
+    [], [] -> []
+  | (l,prob,a)::pcstl, (l',prob',a')::pcstl' ->
+      if l <> l'
+      then error ext ("label mismatch in " ^ PP.pp_chan x ^ ": " ^ l ^ " <> " ^ l')
+      else if not (subtp env a a')
+      then error ext ("type mismatch in " ^ PP.pp_chan x ^ ": " ^ PP.pp_tp_compact env a ^ " <> " ^ PP.pp_tp_compact env a')
+      else (l, prob -. pr *. prob', a)::(subtract_choices env x pcstl pr pcstl' ext)
+  | _, _ -> error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ": unequal lengths");;
+
+let rec subtract env x a (pr,a') ext = match a, a' with
+  | _, A.TpName(v) -> subtract env x a (pr, A.expd_tp env v) ext
+  | A.PPlus(pcs), A.PPlus(pcs') -> A.PPlus(subtract_choices env x pcs pr pcs' ext)
+  | A.PWith(pcs), A.PWith(pcs') -> A.PWith(subtract_choices env x pcs pr pcs' ext)
+  | _, _ -> raise UnknownTypeError;;
+
+let rec check_zero_pchoices pcs = match pcs with
+    [] -> true
+  | (_l,pr,_a)::pcs' ->
+      if fequals pr 0.0
+      then check_zero_pchoices pcs'
+      else false;;
+
+let check_zero env a = match a with
+    A.PPlus(pcs) | A.PWith(pcs) ->
+      let () = if !F.verbosity >= 3 then print_string ("checking zero of " ^ PP.pp_tp_compact env a ^ "\n") in
+      check_zero_pchoices pcs
+  | _ -> raise UnknownTypeError;;
+
+let rec weighted_diff env x a al ext = match al with
+    [] -> check_zero env a
+  | (_l,pr,a')::al' -> weighted_diff env x (subtract env x a (pr,a') ext) al' ext;;
+
+let rec label_errormsg env al = match al with
+    [] -> ""
+  | (l,pr,a)::al' -> l ^ PP.pp_prob pr ^ " : " ^ PP.pp_tp_compact env a ^ "\n" ^ label_errormsg env al';;
+
+let prob_error env x a al ext =
+  let lstr = label_errormsg env al in
+  error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ", expected: " ^ PP.pp_tp_compact env a ^ "\nfound: \n" ^ lstr);;
+
+let rec match_probs env x a al ext = match a with
+    A.PPlus _ | A.PWith _ ->
+      begin
+        if weighted_diff env x a al ext
+        then ()
+        else prob_error env x a al ext
+      end
+  | A.TpName(v) -> match_probs env x (A.expd_tp env v) al ext
+  | _ -> ();;
+
+let rec extract x delta = match delta with
+    [] -> raise UnknownTypeError
+  | (y,t)::ys ->
+      if eq_name x y
+      then t
+      else extract x ys;;
+
+let rec extract_ord x odelta = match odelta with
+    [] -> raise UnknownTypeError
+  | A.Functional _::ys -> extract_ord x ys
+  | A.STyped(y,t)::ys ->
+      if eq_name x y
+      then t
+      else extract_ord x ys;;
+
+let sextract x delta =
+  let {A.shared = sdelta; A.linear = _ldelta; A.ordered = _odelta} = delta in
+  extract x sdelta;;
+
+let lextract x delta =
+  let {A.shared = _sdelta; A.linear = ldelta; A.ordered = _odelta} = delta in
+  extract x ldelta;;
+
+let oextract x delta =
+  let {A.shared = _sdelta; A.linear = _ldelta; A.ordered = odelta} = delta in
+  extract_ord x odelta;;
+
+let sextractl x deltal = List.map (fun (l,prob,delta) -> (l,prob,sextract x delta)) deltal;;
+
+let lextractl x deltal = List.map (fun (l,prob,delta) -> (l,prob,lextract x delta)) deltal;;
+
+let oextractl x deltal = List.map (fun (l,prob,delta) -> (l,prob,oextract x delta)) deltal;;
+
+let match_probs_ctx env delta deltal ext =
+  let {A.shared = sdelta; A.linear = ldelta; A.ordered = odelta} = delta in
+  let match_sfunc (x,a) = match_probs env x a (sextractl x deltal) ext in
+  let match_lfunc (x,a) = match_probs env x a (lextractl x deltal) ext in
+  let match_ofunc arg = match arg with
+                            A.Functional _ -> ()
+                          | A.STyped (x,a) -> match_probs env x a (oextractl x deltal) ext
+  in
+  let _s = List.map match_sfunc sdelta in
+  let _l = List.map match_lfunc ldelta in
+  let _o = List.map match_ofunc odelta in
+  ();;
+
+
 let rec check_fexp_simple' trace env delta pot (e : A.parsed_expr) tp ext mode isSend =
   begin
     if trace
@@ -956,7 +1180,7 @@ and checkfexp trace env delta pot e zc ext mode = match e.A.func_structure with
 
 and check_exp' trace env delta pot p zc ext mode =
   begin
-    if trace
+    if trace || !F.verbosity >= 3
     then print_string ("[" ^ PP.pp_mode mode ^ "] : " ^  PP.pp_exp_prefix (p.A.st_structure) ^ " : "
                           ^ PP.pp_tpj_compact env delta pot zc ^ "\n")
     else ()
@@ -1157,7 +1381,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         then
           if not (checktp x [zc])
           then E.error_unknown_var (x) (exp.A.st_data)
-          else (* the type c of z must be internal choice *)
+          else (* the type c of z must be prob. internal choice *)
             let (z,c) = zc in
             if not (eq_mode x z)
             then E.error_mode_mismatch (x, z) (exp.A.st_data)
@@ -1168,8 +1392,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
               | A.PPlus(pchoices) ->
                   begin
-                    (* TODO: make prob(k) = 1, all other choices = 0 *)
-                    let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in
+                    let choices = List.map (fun (l,_pot,a) -> (l,a)) pchoices in
+                    let () = plabprob k pchoices (exp.A.st_data) in
                     match A.lookup_choice choices k with
                         None -> E.error_label_invalid env (k,c,z) (exp.A.st_data)
                       | Some ck -> check_exp' trace env delta pot p (z,ck) ext mode
@@ -1182,14 +1406,14 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.FArrow _ | A.FProduct _  ->
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan z ^
                            ", expected prob. internal choice, found: " ^ PP.pp_tp_compact env c)
-        else (* the type a of x must be external choice *)
+        else (* the type a of x must be prob. external choice *)
           let a = find_ltp x delta (exp.A.st_data) in
           match a with
               A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
             | A.PWith(pchoices) ->
                 begin
-                  (* TODO: make prob(k) = 1, all other choices = 0 *)
-                  let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in 
+                  let choices = List.map (fun (l,_pot,a) -> (l,a)) pchoices in
+                  let () = plabprob k pchoices (exp.A.st_data) in
                   match A.lookup_choice choices k with
                       None -> E.error_label_invalid env (k,a,x) (exp.A.st_data)
                     | Some ak -> check_exp' trace env (update_tp env x ak delta) pot p zc ext mode
@@ -1209,7 +1433,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         then
           if not (checktp x [zc])
           then E.error_unknown_var (x) (exp.A.st_data)
-          else (* the type c of z must be external choice *)
+          else (* the type c of z must be prob. external choice *)
             let (z,c) = zc in
             if not (eq_mode x z)
             then E.error_mode_mismatch (x, z) (exp.A.st_data)
@@ -1219,9 +1443,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             match c with
                 A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
               | A.PWith(pchoices) ->
-                  (* TODO: apply corresponding typing rule for pcase, both for probs and potential *)
-                  let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in
-                  check_branchesR trace env delta pot branches z choices (exp.A.st_data) mode
+                  let deltal = check_pbranchesR trace env delta pot branches z pchoices (exp.A.st_data) mode in
+                  match_probs_ctx env delta deltal ext
               | A.PPlus _ | A.One
               | A.Plus _ | A.With _
               | A.Tensor _ | A.Lolli _
@@ -1230,14 +1453,16 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.FArrow _ | A.FProduct _ ->
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan z ^
                            ", expected prob. external choice, found: " ^ PP.pp_tp_compact env c)
-        else (* the type a of x must be internal choice *)
+        else (* the type a of x must be prob. internal choice *)
           let a = find_ltp x delta (exp.A.st_data) in
           match a with
               A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
             | A.PPlus(pchoices) ->
-                (* TODO: apply corresponding typing rule for pcase, both for probs and potential *)
-                let choices = List.map (fun (a,_b,c) -> (a,c)) pchoices in
-                check_branchesL trace env delta x choices pot branches zc (exp.A.st_data) mode
+                let (z,c) = zc in
+                let (deltal, cl) = check_pbranchesL trace env delta x pchoices pot branches zc (exp.A.st_data) mode in
+                let () = match_probs_ctx env delta deltal ext in
+                let () = match_probs env z c cl ext in
+                ()
             | A.PWith _ | A.One
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
@@ -1247,11 +1472,18 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                          ", expected prob. internal choice, found: " ^ PP.pp_tp_compact env a)
       end
-  | A.Flip(_pot1,_pot2,p1,p2) ->
+  | A.Flip(pr,p1,p2) ->
       begin
-        (* TODO: apply corresponding typing rule for flip, both for probs and potential *)
-        check_exp' trace env delta pot p1 zc ext mode;
-        check_exp' trace env delta pot p2 zc ext mode
+        let deltaHH = gen_prob_ctx env delta p1 in
+        let deltaTT = gen_prob_ctx env delta p2 in
+        let (z,c) = zc in
+        let cHH = gen_prob_tpR env p1 z c in
+        let cTT = gen_prob_tpR env p2 z c in
+        let () = check_exp' trace env deltaHH pot p1 (z,cHH) (p1.A.st_data) mode in
+        let () = check_exp' trace env deltaTT pot p2 (z,cTT) (p2.A.st_data) mode in
+        let () = match_probs_ctx env delta [("HH", pr, deltaHH); ("TT", 1.0 -. pr, deltaTT)] ext in
+        let () = match_probs env z c [("HH", pr, cHH); ("TT", 1.0 -. pr, cTT)] ext in
+        ()
       end
   | A.Send(x,w,p) ->
       begin
@@ -1782,6 +2014,40 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         let () = check_printable_list delta (exp.A.st_data) l args (List.length (filter_args l)) (List.length args) in
         check_exp' trace env delta pot p zc ext mode
       end
+
+and check_pbranchesR trace env delta pot branches z pchoices ext mode = match branches, pchoices with
+    (l1,p)::branches', (l2,prob,c)::pchoices' ->
+      begin
+        let () = if trace then print_string ("| " ^ l1 ^ " => \n") else () in
+        let () = if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext in
+        let deltal = gen_prob_ctx env delta p in
+        let () = check_exp' trace env deltal pot p (z,c) (p.A.st_data) mode in
+        let deltatl = check_pbranchesR trace env delta pot branches' z pchoices' ext mode in
+        (l1, prob, deltal)::deltatl
+      end
+  | [], [] -> []
+  | (l,_p)::_branches', [] ->
+      E.error_label_missing_alt (l) ext
+  | [], (l,_prob,_c)::_choices' ->
+      E.error_label_missing_branch (l) ext
+
+and check_pbranchesL trace env delta x pchoices pot branches zc ext mode = match pchoices, branches with
+    (l1,prob,a)::pchoices', (l2,p)::branches' ->
+      begin
+        let () = if trace then print_string ("| " ^ l1 ^ " => \n") else () in
+        let () = if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext in
+        let deltal = gen_prob_ctx env delta p in
+        let (z,c) = zc in
+        let cl = gen_prob_tpR env p z c in
+        let () = check_exp' trace env (update_tp env x a deltal) pot p (z,cl) (p.A.st_data) mode in
+        let (deltatl, ctl) = check_pbranchesL trace env delta x pchoices' pot branches' zc ext mode in
+        ((l1, prob, deltal)::deltatl, (l1, prob, cl)::ctl)
+      end
+  | [], [] -> ([], [])
+  | [], (l,_p)::_branches' ->
+      E.error_label_missing_alt (l) ext
+  | (l,_prob,_a)::_choices', [] ->
+      E.error_label_missing_branch (l) ext
 
 and check_branchesR trace env delta pot branches z choices ext mode = match branches, choices with
     (l1,p)::branches', (l2,c)::choices' ->

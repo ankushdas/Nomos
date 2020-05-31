@@ -64,7 +64,7 @@ type stype =
 
 and choices = (label * stype) list
 
-and pchoices = (label * potential * stype) list
+and pchoices = (label * float * stype) list
 
 type arglist =
   | Single of string * ext 
@@ -138,7 +138,7 @@ and 'a st_expr =
   (* PNomos specific *)
   | PLab of chan * label * 'a st_aug_expr                       (* x..k  ; P *)
   | PCase of chan * 'a branches                                 (* pcase x (l => Ql) *)
-  | Flip of potential * potential * 'a st_aug_expr * 'a st_aug_expr  (* flip p (H => Q | T => Q) *)
+  | Flip of float * 'a st_aug_expr * 'a st_aug_expr  (* flip {p} (H => Q | T => Q) *)
 
   (* tensor or lolli *)
   | Send of chan * chan * 'a st_aug_expr                    (* send x w ; P *)
@@ -317,7 +317,7 @@ let rec subst c' c expr = match expr with
   | Case(x,branches) -> Case(sub c' c x, subst_branches c' c branches)
   | PLab(x,k,p) -> PLab(sub c' c x, k, subst_aug c' c p)
   | PCase(x,branches) -> PCase(x, subst_branches c' c branches)
-  | Flip(pot1,pot2,p1,p2) -> Flip(pot1, pot2, subst_aug c' c p1, subst_aug c' c p2)
+  | Flip(pr,p1,p2) -> Flip(pr, subst_aug c' c p1, subst_aug c' c p2)
   | Send(x,w,p) -> Send(sub c' c x, sub c' c w, subst_aug c' c p)
   | Recv(x,y,p) ->
       if eq_name c y
@@ -442,7 +442,7 @@ and esubstv v' v exp = match exp with
   | Case(x,branches) -> Case(x, esubstv_branches v' v branches)
   | PLab(x,k,p) -> PLab(x, k, esubstv_aug v' v p)
   | PCase(x,branches) -> PCase(x, esubstv_branches v' v branches)
-  | Flip(pot1, pot2, p1, p2) -> Flip(pot1, pot2, esubstv_aug v' v p1, esubstv_aug v' v p2)
+  | Flip(pr, p1, p2) -> Flip(pr, esubstv_aug v' v p1, esubstv_aug v' v p2)
   | Send(x,w,p) -> Send(x, w, esubstv_aug v' v p)
   | Recv(x,y,p) -> Recv(x, y, esubstv_aug v' v p)
   | Close(x) -> Close(x)

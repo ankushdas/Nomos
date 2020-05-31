@@ -40,7 +40,7 @@ and cost_recv d exp = match exp with
 
   | A.PLab(x,k,p) -> A.PLab(x, k, cost_recv_aug p)
   | A.PCase(x,branches) -> work d (A.PCase(x, cost_recv_branches branches))
-  | A.Flip(pot1,pot2,p1,p2) -> work d (A.Flip(pot1, pot2, cost_recv_aug p1, cost_recv_aug p2))
+  | A.Flip(pr,p1,p2) -> work d (A.Flip(pr, cost_recv_aug p1, cost_recv_aug p2))
 
   | A.Send(x,w,p) -> A.Send(x,w,cost_recv_aug p)
   | A.Recv(x,y,p) -> work d (A.Recv(x,y, cost_recv_aug p))
@@ -85,7 +85,7 @@ and cost_send d exp = match exp with
 
   | A.PLab(x,k,p) -> work d (A.PLab(x, k, cost_send_aug p))
   | A.PCase(x,branches) -> A.PCase(x, cost_send_branches branches)
-  | A.Flip(pot1,pot2,p1,p2) -> work d (A.Flip(pot1,pot2, cost_send_aug p1, cost_send_aug p2))
+  | A.Flip(pr,p1,p2) -> work d (A.Flip(pr, cost_send_aug p1, cost_send_aug p2))
 
   | A.Send(x,w,p) -> work d (A.Send(x,w, cost_send_aug p))
   | A.Recv(x,y,p) -> A.Recv(x,y, cost_send_aug p)

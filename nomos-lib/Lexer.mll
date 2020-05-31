@@ -17,6 +17,12 @@ let quoted_string = ref []
 }
 
 let newline = '\r' | '\n' | "\r\n"
+let digit = ['0'-'9']
+let frac = '.' digit*
+let exp = ['e' 'E'] ['-' '+']? digit+
+let float = digit* frac? exp?
+
+
 rule token = parse
 
   (* white spaces *)
@@ -56,6 +62,7 @@ rule token = parse
   | newline             { next_line lexbuf; token lexbuf }
   | "(*"                { comment_depth := 1; comment lexbuf; token lexbuf }
   | ['0'-'9']+ as i     { INT (int_of_string i) }
+  | float               { FLOAT (float_of_string (Lexing.lexeme lexbuf))}
   | "let"               { LET }
   | "in"                { IN }
   | "true"              { TRUE }  
