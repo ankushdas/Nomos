@@ -1,0 +1,174 @@
+type die = p+ { d1{0.166666666} : 1,
+                d2{0.166666666} : 1,
+                d3{0.166666667} : 1,
+                d4{0.166666666} : 1,
+                d5{0.166666666} : 1,
+                d6{0.166666667} : 1}
+
+proc asset pzero : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- pone <-
+  | TT => $p <- ptwo <-
+  )
+}
+
+type one = p+ { d1{0.333333333} : 1,
+                d2{0.333333333} : 1,
+                d3{0.333333334} : 1,
+                d4{0.0} : 1,
+                d5{0.0} : 1,
+                d6{0.0} : 1}
+
+proc asset pone : . |- ($p : one) =
+{
+  flip {0.5} (
+    HH => $p <- pthree <-
+  | TT => $p <- pfour <-
+  )
+}
+
+type two = p+ { d1{0.0} : 1,
+                d2{0.0} : 1,
+                d3{0.0} : 1,
+                d4{0.333333333} : 1,
+                d5{0.333333333} : 1,
+                d6{0.333333334} : 1}
+
+proc asset ptwo : . |- ($p : two) =
+{
+  flip {0.5} (
+    HH => $p <- pfive <-
+  | TT => $p <- psix <-
+  )
+}
+
+type three = p+ { d1{0.666666666} : 1,
+                  d2{0.166666667} : 1,
+                  d3{0.166666667} : 1,
+                  d4{0.0} : 1,
+                  d5{0.0} : 1,
+                  d6{0.0} : 1}
+
+proc asset pthree : . |- ($p : three) =
+{
+  flip {0.5} (
+    HH => $p..d1 ;
+          close $p
+  | TT => $p <- pone <-
+  )
+}
+
+type four = p+{ d1{0.0} : 1,
+                d2{0.5} : 1,
+                d3{0.5} : 1,
+                d4{0.0} : 1,
+                d5{0.0} : 1,
+                d6{0.0} : 1}
+
+proc asset pfour : . |- ($p : four) =
+{
+  flip {0.5} (
+    HH => $p..d2 ;
+          close $p
+  | TT => $p..d3 ;
+          close $p
+  )
+}
+
+type five = p+{ d1{0.0} : 1,
+                d2{0.0} : 1,
+                d3{0.0} : 1,
+                d4{0.5} : 1,
+                d5{0.5} : 1,
+                d6{0.0} : 1}
+
+proc asset pfive : . |- ($p : five) =
+{
+  flip {0.5} (
+    HH => $p..d4 ;
+          close $p
+  | TT => $p..d5 ;
+          close $p
+  )
+}
+
+type six = p+ { d1{0.0} : 1,
+                d2{0.0} : 1,
+                d3{0.0} : 1,
+                d4{0.166666667} : 1,
+                d5{0.166666667} : 1,
+                d6{0.666666666} : 1}
+
+proc asset psix : . |- ($p : six) =
+{
+  flip {0.5} (
+    HH => $p..d6 ;
+          close $p
+  | TT => $p <- ptwo <-
+  )
+}
+
+(*
+proc asset zero : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- one <-
+  | TT => $p <- two <-
+  )
+}
+
+proc asset one : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- three <-
+  | TT => $p <- four <-
+  )
+}
+
+proc asset two : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- five <-
+  | TT => $p <- six <-
+  )
+}
+
+proc asset three : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- one <-
+  | TT => $p..one ;
+          close $p
+  )
+}
+
+proc asset four : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p..two ;
+          close $p
+  | TT => $p..three ;
+          close $p
+  )
+}
+
+proc asset five : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p..four ;
+          close $p
+  | TT => $p..five ;
+          close $p
+  )
+}
+
+proc asset six : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- two <-
+  | TT => $p.six ;
+          close $p
+  )
+}
+*)

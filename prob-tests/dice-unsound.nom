@@ -1,0 +1,68 @@
+type die = p+ { d1{0.166666666} : 1,
+                d2{0.166666666} : 1,
+                d3{0.166666667} : 1,
+                d4{0.166666666} : 1,
+                d5{0.166666666} : 1,
+                d6{0.166666667} : 1}
+
+proc asset zero : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- one <-
+  | TT => $p <- two <-
+  )
+}
+
+proc asset one : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- three <-
+  | TT => $p <- four <-
+  )
+}
+
+proc asset two : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- five <-
+  | TT => $p <- six <-
+  )
+}
+
+proc asset three : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- one <-
+  | TT => $p..one ;
+          close $p
+  )
+}
+
+proc asset four : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p..two ;
+          close $p
+  | TT => $p..three ;
+          close $p
+  )
+}
+
+proc asset five : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p..four ;
+          close $p
+  | TT => $p..five ;
+          close $p
+  )
+}
+
+proc asset six : . |- ($p : die) =
+{
+  flip {0.5} (
+    HH => $p <- two <-
+  | TT => $p.six ;
+          close $p
+  )
+}
