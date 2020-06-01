@@ -17,6 +17,7 @@ let quoted_string = ref []
 }
 
 let newline = '\r' | '\n' | "\r\n"
+let int = '-'? ['0'-'9'] ['0'-'9']*
 let digit = ['0'-'9']
 let frac = '.' digit*
 let exp = ['e' 'E'] ['-' '+']? digit+
@@ -30,6 +31,11 @@ rule token = parse
 
   (* imports *)
   | "import " (['a'-'z' 'A'-'Z' '/' '-' ' ' '.' '_']* as s) { IMPORT s }
+
+  (* base types *)
+  | "."                 { DOT }
+  | int                 { INT (int_of_string (Lexing.lexeme lexbuf)) }
+  | float               { FLOAT (float_of_string (Lexing.lexeme lexbuf))}
   
   (* declarations *)
   | "type"              { TYPE }
@@ -61,8 +67,6 @@ rule token = parse
   (* functional *)
   | newline             { next_line lexbuf; token lexbuf }
   | "(*"                { comment_depth := 1; comment lexbuf; token lexbuf }
-  | ['0'-'9']+ as i     { INT (int_of_string i) }
-  | float               { FLOAT (float_of_string (Lexing.lexeme lexbuf))}
   | "let"               { LET }
   | "in"                { IN }
   | "true"              { TRUE }  
@@ -123,7 +127,6 @@ rule token = parse
   | "send"              { SEND }
   | "case"              { CASE }
   | "=>"                { RRARROW }
-  | "."                 { DOT }
   | "close"             { CLOSE }
   | "wait"              { WAIT }
   | "work"              { WORK }

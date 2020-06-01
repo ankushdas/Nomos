@@ -188,6 +188,9 @@ let mode_recv m1 m2 = match m1, m2 with
   | _, A.Transaction -> true
   | _, _ -> false;;
 
+let fequals x y =
+  let eps = 1e-6 in
+  x > y -. eps && x < y +. eps;;
 
 let rec eq_ftp tp tp' = match tp, tp' with
     A.Integer, A.Integer -> true
@@ -219,6 +222,10 @@ and eq_tp env seen tp tp' = match tp, tp' with
       eq_choice env seen choice choice'
   | A.With(choice), A.With(choice') ->
       eq_choice env seen choice choice'
+  | A.PPlus(pchoice), A.PPlus(pchoice') ->
+      eq_pchoice env seen pchoice pchoice'
+  | A.PWith(pchoice), A.PWith(pchoice') ->
+      eq_pchoice env seen pchoice pchoice'
   | A.Tensor(s,t,m), A.Tensor(s',t',m') ->
       eqmode m m' && eq_tp' env seen s s' && eq_tp' env seen t t'
   | A.Lolli(s,t,m), A.Lolli(s',t',m') ->
@@ -249,6 +256,14 @@ and eq_tp env seen tp tp' = match tp, tp' with
 
   | _a, _a' -> false
 
+and eq_pchoice env seen pcs pcs' = match pcs, pcs' with
+    [], [] -> true
+  | (l,pr,a)::pchoice, (l',pr',a')::pchoice' ->
+      l = l' && fequals pr pr' && eq_tp' env seen a a'
+      && eq_pchoice env seen pchoice pchoice'
+  | _pcs, [] -> false
+  | [], _pcs' -> false
+
 and eq_choice env seen cs cs' = match cs, cs' with
     [], [] -> true
   | (l,a)::choice, (l',a')::choice' -> (* order must be equal *)
@@ -278,6 +293,10 @@ and sub_tp env seen tp tp' = match tp, tp' with
       sub_ichoice env seen choice choice'
   | A.With(choice), A.With(choice') ->
       sub_echoice env seen choice choice'
+  | A.PPlus(pchoice), A.PPlus(pchoice') ->
+      sub_pichoice env seen pchoice pchoice'
+  | A.PWith(pchoice), A.PWith(pchoice') ->
+      sub_pechoice env seen pchoice pchoice'
   | A.Tensor(s,t,m), A.Tensor(s',t',m') ->
       eqmode m m' && sub_tp' env seen s s' && sub_tp' env seen t t'
   | A.Lolli(s,t,m), A.Lolli(s',t',m') ->
@@ -308,6 +327,15 @@ and sub_tp env seen tp tp' = match tp, tp' with
 
   | _a, _a' -> false
 
+and sub_pichoice env seen pcs pcs' = match pcs with
+    [] -> true
+  | (l,pr,a)::pchoice -> 
+      let lab_match = List.find_all (fun (l', _, _) -> l = l') pcs' in
+      if (List.length lab_match != 1)
+      then false
+      else let (_, pr', a') = List.nth lab_match 0 in 
+      fequals pr pr' && sub_tp' env seen a a' && sub_pichoice env seen pchoice pcs'
+
 and sub_ichoice env seen cs cs' = match cs with
     [] -> true
   | (l,a)::choice -> 
@@ -317,14 +345,23 @@ and sub_ichoice env seen cs cs' = match cs with
       else let (_, a') = List.nth lab_match 0 in 
       sub_tp' env seen a a' && sub_ichoice env seen choice cs'
 
+and sub_pechoice env seen pcs pcs' = match pcs' with
+    [] -> true
+  | (l',pr',a')::pchoice' -> 
+      let lab_match = List.find_all (fun (l, _, _) -> l = l') pcs in
+      if (List.length lab_match != 1)
+      then false
+      else let (_, pr, a) = List.nth lab_match 0 in 
+      fequals pr pr' && sub_tp' env seen a a' && sub_pechoice env seen pcs pchoice'
+
 and sub_echoice env seen cs cs' = match cs' with
     [] -> true
-  | (l',a')::choice -> 
+  | (l',a')::choice' -> 
       let lab_match = List.find_all (fun (l, _) -> l = l') cs in
       if (List.length lab_match != 1)
       then false
       else let (_, a) = List.nth lab_match 0 in 
-      sub_tp' env seen a a' && sub_echoice env seen cs choice
+      sub_tp' env seen a a' && sub_echoice env seen cs choice'
 
 and sub_name_name env seen a a' =
   if mem_seen env seen a a' then true
@@ -685,10 +722,6 @@ let is_argtype p = match p with
 
 let filter_args l = List.filter (fun p -> is_argtype p) l;;
 
-let fequals x y =
-  let eps = 1e-6 in
-  x > y -. eps && x < y +. eps;;
-
 let rec plabprob k pchoices ext = match pchoices with
     [] -> ()
   | (l,prob,_a)::pchoices' ->
@@ -745,6 +778,23 @@ let gen_tp k a = match a with
   | A.PWith(pchoices) -> A.PWith(gen_pchoices pchoices k)
   | _a -> raise UnknownTypeError;;
 
+let rec add_choices env pr x pcs pcs' ext = match pcs, pcs' with
+    [], [] -> []
+  | (l,prob,a)::pcstl, (l',prob',a')::pcstl' ->
+      if l <> l'
+      then error ext ("label mismatch in " ^ PP.pp_chan x ^ ": " ^ l ^ " <> " ^ l')
+      else if not (subtp env a a')
+      then error ext ("type mismatch in " ^ PP.pp_chan x ^ ": " ^ PP.pp_tp_compact env a ^ " <> " ^ PP.pp_tp_compact env a')
+      else (l, pr *. prob +. (1.0 -. pr) *. prob', a)::(add_choices env pr x pcstl pcstl' ext)
+  | _, _ -> error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ": unequal lengths");;
+
+let rec weighted_sum env pr c a1 a2 ext = match a1, a2 with
+  | _, A.TpName(v) -> weighted_sum env pr c a1 (A.expd_tp env v) ext
+  | A.TpName(v), _ -> weighted_sum env pr c (A.expd_tp env v) a2 ext
+  | A.PPlus(pcs), A.PPlus(pcs') -> A.PPlus(add_choices env pr c pcs pcs' ext)
+  | A.PWith(pcs), A.PWith(pcs') -> A.PWith(add_choices env pr c pcs pcs' ext)
+  | _, _ -> raise UnknownTypeError;;
+
 let rec action env p c a = match p.A.st_structure with
     A.Fwd(_x,_y) -> a
   | A.Spawn(_x,f,xs,q) ->
@@ -763,7 +813,7 @@ let rec action env p c a = match p.A.st_structure with
       then gen_tp k a
       else action env q c a
   | A.PCase(_x,branches) -> action_branches env branches c a
-  | A.Flip(_pr,q1,q2) -> action_branches env [("HH", q1); ("TT", q2)] c a
+  | A.Flip(pr,q1,q2) -> action_pbranches env pr q1 q2 c a p.A.st_data
   | A.Send(_x,_w,q) -> action env q c a
   | A.Recv(_x,_y,q) -> action env q c a
   | Close(_x) -> raise UnknownTypeError
@@ -782,6 +832,11 @@ let rec action env p c a = match p.A.st_structure with
   | MakeChan(_x,_a,_n,q) -> action env q c a
   | Abort -> raise UnknownTypeError
   | Print(_l,_args,q) -> action env q c a
+
+and action_pbranches env pr p1 p2 c a ext =
+  let a1 = action env p1 c a in
+  let a2 = action env p2 c a in
+  weighted_sum env pr c a1 a2 ext
 
 and action_branches env branches c a = match branches with
     [] -> raise UnknownTypeError
@@ -1180,7 +1235,7 @@ and checkfexp trace env delta pot e zc ext mode = match e.A.func_structure with
 
 and check_exp' trace env delta pot p zc ext mode =
   begin
-    if trace || !F.verbosity >= 3
+    if trace || !F.verbosity >= 2
     then print_string ("[" ^ PP.pp_mode mode ^ "] : " ^  PP.pp_exp_prefix (p.A.st_structure) ^ " : "
                           ^ PP.pp_tpj_compact env delta pot zc ^ "\n")
     else ()
@@ -1444,7 +1499,7 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
               | A.PWith(pchoices) ->
                   let deltal = check_pbranchesR trace env delta pot branches z pchoices (exp.A.st_data) mode in
-                  match_probs_ctx env delta deltal ext
+                  match_probs_ctx env delta deltal (exp.A.st_data)
               | A.PPlus _ | A.One
               | A.Plus _ | A.With _
               | A.Tensor _ | A.Lolli _
@@ -1460,8 +1515,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.PPlus(pchoices) ->
                 let (z,c) = zc in
                 let (deltal, cl) = check_pbranchesL trace env delta x pchoices pot branches zc (exp.A.st_data) mode in
-                let () = match_probs_ctx env delta deltal ext in
-                let () = match_probs env z c cl ext in
+                let () = match_probs_ctx env delta deltal (exp.A.st_data) in
+                let () = match_probs env z c cl (exp.A.st_data) in
                 ()
             | A.PWith _ | A.One
             | A.Plus _ | A.With _
@@ -1481,8 +1536,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         let cTT = gen_prob_tpR env p2 z c in
         let () = check_exp' trace env deltaHH pot p1 (z,cHH) (p1.A.st_data) mode in
         let () = check_exp' trace env deltaTT pot p2 (z,cTT) (p2.A.st_data) mode in
-        let () = match_probs_ctx env delta [("HH", pr, deltaHH); ("TT", 1.0 -. pr, deltaTT)] ext in
-        let () = match_probs env z c [("HH", pr, cHH); ("TT", 1.0 -. pr, cTT)] ext in
+        let () = match_probs_ctx env delta [("HH", pr, deltaHH); ("TT", 1.0 -. pr, deltaTT)] (exp.A.st_data) in
+        let () = match_probs env z c [("HH", pr, cHH); ("TT", 1.0 -. pr, cTT)] (exp.A.st_data) in
         ()
       end
   | A.Send(x,w,p) ->

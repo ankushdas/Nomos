@@ -210,6 +210,56 @@ and check_declared_choices env ext cs = match cs with
       let () = check_declared env ext a in
       check_declared_choices env ext cs';;
 
+let rec check_declared_proc env p = match p.A.st_structure with
+    A.Fwd _ -> ()
+  | A.Spawn(_x,f,_xs,q) ->
+      if is_expdecdef env f
+      then check_declared_proc env q
+      else error p.A.st_data ("process " ^ f ^ " undeclared")
+  | A.ExpName(_x,f,_xs) ->
+      if is_expdecdef env f
+      then ()
+      else error p.A.st_data ("process " ^ f ^ " undeclared")
+  | A.Lab(_x,_k,q) -> check_declared_proc env q
+  | A.Case(_x,branches) -> check_declared_branches env branches
+  | A.PLab(_x,_k,q) -> check_declared_proc env q
+  | A.PCase(_x,branches) -> check_declared_branches env branches
+  | A.Flip(_pr,q1,q2) ->
+      let () = check_declared_proc env q1 in
+      let () = check_declared_proc env q2 in
+      ()
+  | A.Send(_x,_w,q) -> check_declared_proc env q
+  | A.Recv(_x,_y,q) -> check_declared_proc env q
+  | A.Close _ -> ()
+  | A.Wait(_x,q) -> check_declared_proc env q
+  | A.Work(_pot,q) -> check_declared_proc env q
+  | A.Pay(_x,_pot,q) -> check_declared_proc env q
+  | A.Get(_x,_pot,q) -> check_declared_proc env q
+  | A.Acquire(_x,_y,q) -> check_declared_proc env q
+  | A.Accept(_x,_y,q) -> check_declared_proc env q
+  | A.Release(_x,_y,q) -> check_declared_proc env q
+  | A.Detach(_x,_y,q) -> check_declared_proc env q
+  | A.RecvF(_x,_y,q) -> check_declared_proc env q
+  | A.SendF(_x,_m,q) -> check_declared_proc env q
+  | A.Let(_x,_e,q) -> check_declared_proc env q
+  | A.IfS(_e,q1,q2) ->
+      let () = check_declared_proc env q1 in
+      let () = check_declared_proc env q2 in
+      ()
+  | A.MakeChan(_x,_a,_n,q) -> check_declared_proc env q
+  | A.Abort -> ()
+  | A.Print(_ps,_xs, q) -> check_declared_proc env q
+
+and check_declared_branches env bs = match bs with
+    [] -> ()
+  | (_l,p)::bs' ->
+      let () = check_declared_proc env p in
+      check_declared_branches env bs'
+
+and check_declared_prog env fexp = match fexp.A.func_structure with
+    A.Command(p) -> check_declared_proc env p
+  | _f -> raise ElabImpossible;;
+
 let rec check_declared_list env ext args = match args with
     A.Functional _::args' -> check_declared_list env ext args'
   | A.STyped(_c,a)::args' ->
@@ -226,9 +276,10 @@ let rec check_valid env dcls = match dcls with
   | (A.TpDef(_v,a), ext)::dcls' ->
       let () = check_declared env ext a in
       check_valid env dcls'
-  | (A.ExpDecDef(_f,_m,(ctx,_pot,(_x,a)),_p), ext)::dcls' ->
+  | (A.ExpDecDef(_f,_m,(ctx,_pot,(_x,a)),p), ext)::dcls' ->
       let () = check_declared_ctx env ext ctx in
       let () = check_declared env ext a in
+      let () = check_declared_prog env p in
       check_valid env dcls'
   | (A.Exec(f), ext)::dcls' ->
       if is_expdecdef env f

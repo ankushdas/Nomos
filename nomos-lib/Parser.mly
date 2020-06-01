@@ -365,7 +365,7 @@ st:
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
     |  FLIP; LBRACE; x = FLOAT; RBRACE; LPAREN; HH; RRARROW; p1 = st; BAR; TT; RRARROW; p2 = st; RPAREN
-                                                                         { {st_structure = Ast.Flip(x, p1,p2); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                         { {st_structure = Ast.Flip(x,p1,p2); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
     |  CLOSE; x = linid                                                  { {st_structure = Ast.Close(x); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),

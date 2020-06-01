@@ -431,7 +431,7 @@ let pp_exp_prefix exp = match exp with
   | A.Case(x,_bs) -> "case " ^ pp_chan x ^ " ( ... )"
   | A.PLab(x,k,_p) -> pp_chan x ^ ".." ^ k ^ " ; ..."
   | A.PCase(x,_bs) -> "pcase " ^ pp_chan x ^ " ( ... )"
-  | A.Flip(pr,_p1,_p2) -> "flip " ^ pp_prob pr ^ "}" ^ " ( ... )"
+  | A.Flip(pr,_p1,_p2) -> "flip " ^ pp_prob pr ^ " ( ... )"
   | A.Send(x,w,_p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ; ..."
   | A.Recv(x,y,_p) -> pp_chan y ^ " <- recv " ^ pp_chan x ^ " ; ..."
   | A.Close(x) -> "close " ^ pp_chan x
