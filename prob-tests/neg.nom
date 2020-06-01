@@ -1,11 +1,10 @@
-type pcoin = p+{head{1} : 1, tail{1} : 1}
+type A = p+ {H{0.2} : 1, T{0.8} : 1}
+type B = p+ {H{0.8} : 1, T{0.2} : 1}
 
-proc asset fair_coin : . |- ($p : pcoin) =
+proc asset neg : ($x : A) |- ($y : B) =
 {
-  flip {1,1} (
-    HH => $p..head ;
-          close $p
-  | TT => $p..tail ;
-          close $p
+  pcase $x (
+    H => $y..T ; wait $x ; close $y
+  | T => $y..H ; wait $x ; close $y
   )
 }
