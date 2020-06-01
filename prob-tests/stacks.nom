@@ -1,0 +1,29 @@
+type A = 1
+
+type stackA = p&{ ins{0.5} : A -o stackA,
+                  del{0.5} : +{none : 1,
+                               some : A * stackA}}
+
+proc asset empty : . |- ($s : stackA) =
+{
+  pcase $s (
+    ins => $x <- recv $s ;
+           $e <- empty <- ;
+           $s <- elem <- $x $e
+  | del => $s.none ;
+           close $s
+  )
+}
+
+proc asset elem : ($x : A), ($t : stackA) |- ($s : stackA) =
+{
+  pcase $s (
+    ins => $y <- recv $s ;
+           $t..ins ;
+           send $t $y ;
+           $s <- elem <- $x $t
+  | del => $s.some ;
+           send $s $x ;
+           $s <- $t
+  )
+}
