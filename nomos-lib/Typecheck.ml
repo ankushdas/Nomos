@@ -778,22 +778,41 @@ let gen_tp k a = match a with
   | A.PWith(pchoices) -> A.PWith(gen_pchoices pchoices k)
   | _a -> raise UnknownTypeError;;
 
-let rec add_choices env pr x pcs pcs' ext = match pcs, pcs' with
+
+let rec add_choices env x pcs pcs' ext = match pcs, pcs' with
     [], [] -> []
   | (l,prob,a)::pcstl, (l',prob',a')::pcstl' ->
       if l <> l'
       then error ext ("label mismatch in " ^ PP.pp_chan x ^ ": " ^ l ^ " <> " ^ l')
       else if not (subtp env a a')
       then error ext ("type mismatch in " ^ PP.pp_chan x ^ ": " ^ PP.pp_tp_compact env a ^ " <> " ^ PP.pp_tp_compact env a')
-      else (l, pr *. prob +. (1.0 -. pr) *. prob', a)::(add_choices env pr x pcstl pcstl' ext)
+      else (l, prob +. prob', a)::(add_choices env x pcstl pcstl' ext)
   | _, _ -> error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ": unequal lengths");;
 
-let rec weighted_sum env pr c a1 a2 ext = match a1, a2 with
-  | _, A.TpName(v) -> weighted_sum env pr c a1 (A.expd_tp env v) ext
-  | A.TpName(v), _ -> weighted_sum env pr c (A.expd_tp env v) a2 ext
-  | A.PPlus(pcs), A.PPlus(pcs') -> A.PPlus(add_choices env pr c pcs pcs' ext)
-  | A.PWith(pcs), A.PWith(pcs') -> A.PWith(add_choices env pr c pcs pcs' ext)
+let rec add_ptypes env c a a' ext = match a, a' with
+    _, A.TpName(v) -> add_ptypes env c a (A.expd_tp env v) ext
+  | A.TpName(v), _ -> add_ptypes env c (A.expd_tp env v) a' ext
+  | A.PPlus(pcs), A.PPlus(pcs') -> A.PPlus(add_choices env c pcs pcs' ext)
+  | A.PWith(pcs), A.PWith(pcs') -> A.PWith(add_choices env c pcs pcs' ext)
   | _, _ -> raise UnknownTypeError;;
+
+let rec mult_choices env pr pcs = match pcs with
+    [] -> []
+  | (l,prob,a)::pcstl -> (l, pr *. prob, a)::(mult_choices env pr pcstl);;
+
+let rec mult_ptype env pr a = match a with
+    A.TpName(v) -> mult_ptype env pr (A.expd_tp env v)
+  | A.PPlus(pcs) -> A.PPlus(mult_choices env pr pcs)
+  | A.PWith(pcs) -> A.PWith(mult_choices env pr pcs)
+  | _ -> raise UnknownTypeError
+
+let rec weighted_psum env c al ext = match al with
+    [] -> raise UnknownTypeError
+  | [(_l,pr,a)] -> mult_ptype env pr a
+  | (_l,pr,a)::al' ->
+      let a' = weighted_psum env c al' ext in
+      let pra = mult_ptype env pr a in
+      add_ptypes env c pra a' ext;;
 
 let rec action env p c a = match p.A.st_structure with
     A.Fwd(_x,_y) -> a
@@ -816,7 +835,7 @@ let rec action env p c a = match p.A.st_structure with
   | A.Flip(pr,q1,q2) -> action_pbranches env pr q1 q2 c a p.A.st_data
   | A.Send(_x,_w,q) -> action env q c a
   | A.Recv(_x,_y,q) -> action env q c a
-  | Close(_x) -> raise UnknownTypeError
+  | Close(_x) -> a
   | Wait(_x,q) -> action env q c a
   | Work(_pot,q) -> action env q c a
   | Pay(_x,_pot,q) -> action env q c a
@@ -830,13 +849,13 @@ let rec action env p c a = match p.A.st_structure with
   | Let(_x,_e,q) -> action env q c a
   | IfS(_e,q1,_q2) -> action env q1 c a
   | MakeChan(_x,_a,_n,q) -> action env q c a
-  | Abort -> raise UnknownTypeError
+  | Abort -> a
   | Print(_l,_args,q) -> action env q c a
 
 and action_pbranches env pr p1 p2 c a ext =
   let a1 = action env p1 c a in
   let a2 = action env p2 c a in
-  weighted_sum env pr c a1 a2 ext
+  weighted_psum env c [("HH", pr, a1); ("TT", 1.0 -. pr, a2)] ext
 
 and action_branches env branches c a = match branches with
     [] -> raise UnknownTypeError
@@ -866,53 +885,22 @@ let gen_prob_ctx env delta p =
   let odeltaf = List.map gen_ofunc odelta in
   {A.shared = sdeltaf; A.linear = ldeltaf; A.ordered = odeltaf};;
 
-let rec subtract_choices env x pcs pr pcs' ext = match pcs, pcs' with
-    [], [] -> []
-  | (l,prob,a)::pcstl, (l',prob',a')::pcstl' ->
-      if l <> l'
-      then error ext ("label mismatch in " ^ PP.pp_chan x ^ ": " ^ l ^ " <> " ^ l')
-      else if not (subtp env a a')
-      then error ext ("type mismatch in " ^ PP.pp_chan x ^ ": " ^ PP.pp_tp_compact env a ^ " <> " ^ PP.pp_tp_compact env a')
-      else (l, prob -. pr *. prob', a)::(subtract_choices env x pcstl pr pcstl' ext)
-  | _, _ -> error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ": unequal lengths");;
-
-let rec subtract env x a (pr,a') ext = match a, a' with
-  | _, A.TpName(v) -> subtract env x a (pr, A.expd_tp env v) ext
-  | A.PPlus(pcs), A.PPlus(pcs') -> A.PPlus(subtract_choices env x pcs pr pcs' ext)
-  | A.PWith(pcs), A.PWith(pcs') -> A.PWith(subtract_choices env x pcs pr pcs' ext)
-  | _, _ -> raise UnknownTypeError;;
-
-let rec check_zero_pchoices pcs = match pcs with
-    [] -> true
-  | (_l,pr,_a)::pcs' ->
-      if fequals pr 0.0
-      then check_zero_pchoices pcs'
-      else false;;
-
-let check_zero env a = match a with
-    A.PPlus(pcs) | A.PWith(pcs) ->
-      let () = if !F.verbosity >= 3 then print_string ("checking zero of " ^ PP.pp_tp_compact env a ^ "\n") in
-      check_zero_pchoices pcs
-  | _ -> raise UnknownTypeError;;
-
-let rec weighted_diff env x a al ext = match al with
-    [] -> check_zero env a
-  | (_l,pr,a')::al' -> weighted_diff env x (subtract env x a (pr,a') ext) al' ext;;
-
 let rec label_errormsg env al = match al with
     [] -> ""
   | (l,pr,a)::al' -> l ^ PP.pp_prob pr ^ " : " ^ PP.pp_tp_compact env a ^ "\n" ^ label_errormsg env al';;
 
-let prob_error env x a al ext =
+let prob_error env x a a' al ext =
+  let a'str = PP.pp_tp_compact env a' in
   let lstr = label_errormsg env al in
-  error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ", expected: " ^ PP.pp_tp_compact env a ^ "\nfound: \n" ^ lstr);;
+  error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ", expected: " ^ PP.pp_tp_compact env a ^ "\nfound: " ^ a'str ^ "\ndue to branches:\n" ^ lstr);;
 
 let rec match_probs env x a al ext = match a with
     A.PPlus _ | A.PWith _ ->
       begin
-        if weighted_diff env x a al ext
+        let a' = weighted_psum env x al ext in
+        if subtp env a a'
         then ()
-        else prob_error env x a al ext
+        else prob_error env x a a' al ext
       end
   | A.TpName(v) -> match_probs env x (A.expd_tp env v) al ext
   | _ -> ();;

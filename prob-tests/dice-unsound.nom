@@ -33,7 +33,7 @@ proc asset three : . |- ($p : die) =
 {
   flip {0.5} (
     HH => $p <- one <-
-  | TT => $p..one ;
+  | TT => $p..d1 ;
           close $p
   )
 }
@@ -41,9 +41,9 @@ proc asset three : . |- ($p : die) =
 proc asset four : . |- ($p : die) =
 {
   flip {0.5} (
-    HH => $p..two ;
+    HH => $p..d2 ;
           close $p
-  | TT => $p..three ;
+  | TT => $p..d3 ;
           close $p
   )
 }
@@ -51,9 +51,9 @@ proc asset four : . |- ($p : die) =
 proc asset five : . |- ($p : die) =
 {
   flip {0.5} (
-    HH => $p..four ;
+    HH => $p..d4 ;
           close $p
-  | TT => $p..five ;
+  | TT => $p..d5 ;
           close $p
   )
 }
@@ -62,7 +62,7 @@ proc asset six : . |- ($p : die) =
 {
   flip {0.5} (
     HH => $p <- two <-
-  | TT => $p.six ;
+  | TT => $p..d6 ;
           close $p
   )
 }
