@@ -1,0 +1,19 @@
+type pnat2 = p+ {succ{0.5} : pnat2, zero{0.5} : 1}
+
+type pnat4 = p+ {succ{0.25} : pnat4, zero{0.75} : 1}
+
+proc asset nat3 : ($y : pnat2) |- ($x : pnat4) =
+{
+  pcase $y (
+    succ => pcase $y (
+      succ => $x..succ ;
+              $x <- nat3 <- $y
+    | zero => $x..zero ;
+              wait $y ;
+              close $x
+    )
+  | zero => $x..zero ;
+            wait $y ;
+            close $x
+  )
+}
