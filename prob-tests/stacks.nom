@@ -2,9 +2,13 @@ type A = 1
 
 type stackA = p&{ ins{0.5} : A -o stackA,
                   del{0.5} : +{none : 1,
-                               some : A * stackA}}
+                               some : A * stackAi}}
 
-proc asset empty : . |- ($s : stackA) =
+type stackAi = p&{ins{1.0} : A -o stackAi,
+                  del{0.0} : +{none : 1,
+                               some : A * stackAi}}
+
+proc asset empty : . |- ($s : stackAi) =
 {
   pcase $s (
     ins => $x <- recv $s ;
@@ -15,7 +19,7 @@ proc asset empty : . |- ($s : stackA) =
   )
 }
 
-proc asset elem : ($x : A), ($t : stackA) |- ($s : stackA) =
+proc asset elem : ($x : A), ($t : stackAi) |- ($s : stackAi) =
 {
   pcase $s (
     ins => $y <- recv $s ;
