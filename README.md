@@ -46,6 +46,16 @@ Simply run the make command at the top-level.
 $ make
 ```
 
+### Troubleshooting
+1. Sometimes, your `$ make` command may fail with the error "dune: command not found". In this case, try restarting your terminal and running `$ make` again.
+
+2. Sometimes, the core library of ocaml is not correctly installed (generally, if you already have an old installation of core). In these cases, simply run `$ opam install core` and try running `$ make` again.
+
+3. On Linux machines, you may need to provide the `LD_LIBRARY_PATH` as well. This can be achieved by the following command.
+```
+$ export LD_LIBRARY_PATH=<absolute-path-to-'coin-Clp'-folder>/lib
+```
+
 ### Executing
 The make command creates an executable for nomos at `_build/default/nomos-bin/nomos.exe`.
 To typecheck a file with nomos, run
@@ -55,7 +65,7 @@ $ _build/default/nomos-bin/nomos.exe -tc <file-path>
 The `-tc` flag tells Nomos to only typecheck the target file. It ignores any `exec` statements.
 
 You can also omit `-tc` to run the `exec` statements.
-For example, the `wallet-demo.nom` file has an example transactions as well as the
+For example, the `nomos-tests/wallet-demo.nom` file has an example transaction as well as the
 necessary support code. You typecheck and run this with
 ```
 $ ./_build/default/nomos-bin/nomos.exe nomos-tests/wallet-demo.nom
@@ -105,11 +115,6 @@ This saves the final configuration after running t1, t2, and t3 to final.conf.
 For a complete listing of available commands at the top level, see `nomos-src/TopLevel.mli`.
 
 
-### Troubleshooting
-1. Sometimes, your `$ make` command may fail with the error "dune: command not found". In this case, try restarting your terminal and running `$ make` again.
-
-2. Sometimes, the core library of ocaml is not correctly installed (generally, if you already have an old installation of core). In these cases, simply run `$ opam install core` and try running `$ make` again.
-
 ## Writing Nomos programs
 Writing session-typed programs needs some guidance. First, I will introduce the basic declarations. There are three forms of declarations:
 
@@ -123,9 +128,81 @@ type auction = /\ <{*}| +{running : &{bid : int -> money -o |{*}> \/ auction,
 ```
 Here, `/\` and `\/` are used to denote up-shift and down-shift, `<{q}|` and `|{q}>` are used to receive and send potential resp., `->` and `^` are used to receive and send functional data, `-o` and `*` are used to receive and send channels, `+` and `&` denote internal and external choice, and `1` indicates termination. Note that `*` can be used in place of `q` to denote unknown potential, which is later inferred by the compiler.
 
-2. Process Definitions: New processes are defined using the syntax `proc <mode> f : (x1 : A1), (x2 : A2), ..., (xn : An) |{q}- (x : A) = P` where the process name is `f`, its context is a sequence of arguments `xi` with types `Ai`, the potential stored is `q`, and the offered channel is `x` of type `A`. The definition is denoted by the expression `P`. An empty context is described using `.`. The `mode` can be either `asset`, `contract` or `transaction` depending on the role of the process.
+Formally, the grammar for session types is as follows:
+```
+<A> ::= +{l1 : <A1>, ..., ln : <An>}       // internal choice
+      | &{l1 : <A1>, ..., ln : <An>}       // external choice
+      | <A> * <A>                          // tensor
+      | <A> -o <A>                         // lolli
+      | 1                                  // one
+      | |{q}> <A>                          // paypot (send q units of potential, continue with A)
+      | <{q}| <A>                          // getpot (receive q units of potential, continue with A)
+      | /\ <A>                             // up (linear to shared)
+      | \/ <A>                             // down (shared to linear)
+      | <t> ^ <A>                          // send functional value of type t
+      | <t> -> <A>                         // receive functional value of type t
+      | <id>                               // type name (e.g. auction)
+      | ( <A> )
+    
+<t> ::= int           // integer
+      | bool          // boolean
+      | address       // built-in address type (internally a string)
+      | <t> list{q}   // list of type t with potential q
+      | <t> -> <t>    // arrow type
+      | ( t )
+
+<q> ::= *           // unknown potential
+      | n           // positive integer
+```
+
+2. Process Definitions: New processes are defined using the syntax `proc <mode> f : (x1 : t1), (x2 : t2), ..., (xn : tn), ($c1 : A1), ... ($cm : Am) |{q}- ($c : A) = M` where the process name is `f`, its context is a sequence of functional arguments `xi` with types `Ai` and channel arguments `$ci` (shared channels are denoted by `#ci`) of type `Ai`, the potential stored is `q`, and the offered channel is `x` of type `A`. The definition is denoted by the expression `P`. An empty context is described using `.`. The `mode` can be either `asset`, `contract` or `transaction` depending on the role of the process.
+
+Formally, the context is denoted with
+```
+<context> ::= .     // empty context
+            | ctx   // non-empty context  
+
+<ctx> ::= ($x : <A>), ctx
+        | (#x : <A>), ctx
+        | (x : <t>), ctx
+```
 
 3. Process Execution: A process `f` can be executed using the syntax `exec f`. Note that since Nomos only allows closed processes to execute, I require that `f` is defined with an empty context (this is checked by the type checker).
 
 ### Process Syntax
 The channels in Nomos are prefixed with either a `#` or `$` character. Thus, shared channel `c` is denoted using `#c` while linear channel `c` is denoted using `$c`. This is required to visually separate functional variables from session-typed channels.
+
+Formally, the syntax for processes is below.
+```
+M ::= { P }               // session-typed monad
+
+<ch> ::= #<id> | $<id>   // channel
+<ch-list> ::= <ch> | <ch> <ch-list>
+
+<P> ::= <ch> <- f <- <ch-list> ; <P>    // spawn process f
+      | <ch> <- f <- <ch-list>          // tail call f
+      | <ch> <- <ch>                    // forwarding
+      | send <ch1> <ch2> ; <P>          // send ch2 on ch1
+      | <ch2> <- recv <ch1> ; <P>       // receive ch2 on ch1
+      | <ch>.k ; <P>                    // send label k on ch
+      | case <ch> ( <branches> )        // case analyze on label received on <ch>
+      | close <ch>                      // close channel <ch>
+      | wait <ch> ; <P>                 // wait for <ch> to close
+      | work {q} ; <P>                  // work q units
+      | pay <ch> {q} ; <P>              // pay q units on <ch>
+      | get <ch> {q} ; <P>              // get q units on <ch>
+      | <ch> <- acquire <ch> ; <P>      // acquire channel
+      | <ch> <- accept <ch> ; <P>       // accept acquire request
+      | <ch> <- release <ch> ; <P>      // release channel
+      | <ch> <- detach <ch> ; <P>       // detach from release requ
+      | send <ch> <e> ; <P>             // send functional expression e
+      | <id> = recv <ch> ; <P>          // receive functional value
+      | let <id> = <e> ; <P>            // define new variable
+      | if <e> then <P> else <P>        // if expression
+
+<e> ::= n | true | false                // primitive values
+      | <id>                            // variable
+      | if <e> then <e> else <e>        // if expression
+      | let <id> = <e> in <e>           // let expression
+      | <e> <op> <e>                    // boolean, comparison and arithmetic operations
+```
