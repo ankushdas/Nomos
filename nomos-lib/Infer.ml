@@ -123,7 +123,7 @@ and remove_stars_fexp fexp = match fexp with
 (********************************************)
 
 let rec getpval v sols = match sols with
-    [] -> 0
+    [] -> 0.
   | (v',n)::sols' ->
       if v = v' then n
       else getpval v sols';;
@@ -132,8 +132,8 @@ let rec subst_pot e sols = match e with
     R.Add(e1,e2) -> R.Add(subst_pot e1 sols, subst_pot e2 sols)
   | R.Sub(e1,e2) -> R.Sub(subst_pot e1 sols, subst_pot e2 sols)
   | R.Mult(e1,e2) -> R.Mult(subst_pot e1 sols, subst_pot e2 sols)
-  | R.Int(n) -> R.Int(n)
-  | R.Var(v) -> R.Int(getpval v sols);;
+  | R.Float(n) -> R.Float(n)
+  | R.Var(v) -> R.Float(getpval v sols);;
 
 let substitute_pot pot sols = match pot with
     A.Star -> raise InferImpossible
@@ -362,12 +362,11 @@ let probnum = ref 0;;
 let probfresh () =
   let pr = "_pr" ^ string_of_int !probnum in
   let () = probnum := !probnum + 1 in
-  let () = print_string ("generated " ^ pr ^ "\n") in
   pr;;
 
 let fresh_probvar () =
   let x = probfresh () in
-  A.Arith (R.Var x);;
+  R.Var x;;
 
 (**************)
 (* LP solving *)
@@ -403,39 +402,45 @@ let get_modevar v =
     | Some sv -> sv;;
 
 type entry =
-    Var of int * string
-  | Const of int;;
+    Var of float * string
+  | Const of float;;
 
 let get_entry p = match p with
-    R.Mult(R.Int(n), R.Var(v)) -> Var(n, v)
-  | R.Mult(R.Int(n), R.Int(1)) -> Const(n)
+    R.Mult(R.Float(n), R.Var(v)) -> Var(n, v)
+  | R.Mult(R.Float(n), R.Float(_o)) -> Const(n)
   | _p -> raise InferImpossible;;
 
 let rec get_expr_list e = match e with
-    R.Int(0) -> (0, [])
-  | R.Add(p,s) ->
+    R.Float(n) ->
+      if R.fequals n 0.
+      then (0., [])
+      else get_expr_listh e
+  | e -> get_expr_listh e
+
+and get_expr_listh e = match e with
+    R.Add(p,s) ->
       begin
         let e = get_entry p in
         let (c, l) = get_expr_list s in
         match e with
             Var (n,v) -> (c, (n,v)::l)
-          | Const(n) -> (n+c, l)
+          | Const(n) -> (n +. c, l)
       end
   | p ->
       begin
         let e = get_entry p in
         match e with
-            Var(n,v) -> (0, [(n,v)])
+            Var(n,v) -> (0., [(n,v)])
           | Const(n) -> (n, [])
       end;;
 
-let constr_list l = List.map (fun (n, v) -> (get_potvar v, float_of_int n)) l;;
+let constr_list l = List.map (fun (n, v) -> (get_potvar v, n)) l;;
 
 let add_eq_constr n l =
   if List.length l = 0 then ()
   else
     let cl = constr_list l in
-    let neg_n = float_of_int (-n) in
+    let neg_n = -. n in
     let () = t_cons () in
     ClpS.add_constr_list ~lower:neg_n ~upper:neg_n cl;;
 
@@ -443,12 +448,12 @@ let add_ge_constr n l =
   if List.length l = 0 then ()
   else
     let cl = constr_list l in
-    let neg_n = float_of_int (-n) in
+    let neg_n = -. n in
     let () = t_cons () in
     ClpS.add_constr_list ~lower:neg_n cl;;
 
 let eq e1 e2 =
-  try (R.evaluate e1) = (R.evaluate e2)
+  try R.fequals (R.evaluate e1) (R.evaluate e2)
   with R.NotClosed ->
     let en = N.normalize (R.minus e1 e2) in
     let () = if !F.verbosity >= 2 then print_string (R.pp_arith e1 ^ " = " ^ R.pp_arith e2 ^ "\n") in
@@ -457,7 +462,7 @@ let eq e1 e2 =
     true;;
 
 let ge e1 e2 =
-  try (R.evaluate e1) >= (R.evaluate e2)
+  try R.fpos (R.evaluate (R.minus e1 e2))
   with R.NotClosed ->
     let en = N.normalize (R.minus e1 e2) in
     let () = if !F.verbosity >= 2 then print_string (R.pp_arith e1 ^ " >= " ^ R.pp_arith e2 ^ "\n") in
@@ -534,14 +539,14 @@ let get_modevarlist () =
 let get_solution () =
   let vs = get_potvarlist () in
   let ms = get_modevarlist () in
-  (List.map (fun v -> (v, int_of_float (ClpS.get_solution (get_potvar v)))) vs,
+  (List.map (fun v -> (v, ClpS.get_solution (get_potvar v))) vs,
   List.map (fun m -> (m, get_mode (ClpS.get_solution (get_modevar m)))) ms);;
 
 let rec print_pot_solution sols =
   match sols with
       [] -> ()
     | (v,n)::sols' ->
-        let () = print_string (v ^ " = " ^ string_of_int n ^ "\n") in
+        let () = print_string (v ^ " = " ^ string_of_float n ^ "\n") in
         print_pot_solution sols';;
 
 let rec print_mode_solution sols =

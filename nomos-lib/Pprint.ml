@@ -17,9 +17,9 @@ let parens prec_left prec s =
  * All arithmetic operators are left associative
  *)
 let rec pp_arith_prec prec_left e = match e with
-    R.Int(n) ->
-      if n >= 0 then string_of_int n
-      else pp_arith_prec prec_left (R.Sub(R.Int(0),R.Int(0-n))) (* might overflow *)
+    R.Float(n) ->
+      if R.fpos n then string_of_float n
+      else pp_arith_prec prec_left (R.Sub(R.Float(0.),R.Float(0.-.n))) (* might overflow *)
   | R.Add(s,t) ->
       parens prec_left 1 (pp_arith_prec 0 s ^ "+" ^ pp_arith_prec 1 t)
   | R.Sub(s,t) ->
@@ -36,15 +36,27 @@ let pp_arith e = pp_arith_prec 0 e;;
 (*******************************)
 
 (* pp_pot p = "{p}", "" if p = 0 *)
-let pp_pot e = match e with
-    A.Arith (R.Int 0) -> ""
-  | A.Star -> "{*}"
+let rec pp_pot e = match e with
+    A.Arith (R.Float n) ->
+      if R.fequals n 0.
+      then ""
+      else pp_poth e
+  | e -> pp_poth e
+
+and pp_poth e = match e with
+    A.Star -> "{*}"
   | A.Arith e -> "{" ^ R.pp_arith e ^ "}";;
 
 (* pp_pospos p = "{p}", "" if p = 1 *)
-let pp_potpos e = match e with
-    A.Arith (R.Int 1) -> ""
-  | A.Star -> "{*}"
+let rec pp_potpos e = match e with
+    A.Arith (R.Float n) ->
+      if R.fequals n 1.
+      then ""
+      else pp_potposh e
+  | e -> pp_potposh e
+
+and pp_potposh e = match e with
+    A.Star -> "{*}"
   | A.Arith e -> "{" ^ R.pp_arith e ^ "}";;
 
 let pp_arith_opr opr = match opr with

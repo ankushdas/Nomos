@@ -6,9 +6,9 @@ module M = C.Map
 
 type sem =
     (* Proc(chan, in_use, time, (work, pot), P) *)
-    Proc of string * A.chan * A.chan list * int * (int * int) * A.ext A.st_expr
+    Proc of string * A.chan * A.chan list * int * (float * float) * A.ext A.st_expr
     (* Msg(chan, time, (work, pot), M) *)
-  | Msg of A.chan * int * (int * int) * A.ext A.msg
+  | Msg of A.chan * int * (float * float) * A.ext A.msg
 
 module Chan :
   sig

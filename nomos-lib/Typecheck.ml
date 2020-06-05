@@ -82,7 +82,7 @@ let contractive tp = match tp with
 
 (* Structural equality *)
 
-let zero = A.Arith (R.Int 0);;
+let zero = A.Arith (R.Float 0.);;
 
 let eq pot1 pot2 = match pot1, pot2 with
     A.Star, A.Star
@@ -188,10 +188,6 @@ let mode_recv m1 m2 = match m1, m2 with
   | _, A.Transaction -> true
   | _, _ -> false;;
 
-let fequals x y =
-  let eps = 1e-6 in
-  x > y -. eps && x < y +. eps;;
-
 let rec eq_ftp tp tp' = match tp, tp' with
     A.Integer, A.Integer -> true
   | A.Boolean, A.Boolean -> true
@@ -259,7 +255,7 @@ and eq_tp env seen tp tp' = match tp, tp' with
 and eq_pchoice env seen pcs pcs' = match pcs, pcs' with
     [], [] -> true
   | (l,pr,a)::pchoice, (l',pr',a')::pchoice' ->
-      l = l' && fequals pr pr' && eq_tp' env seen a a'
+      l = l' && R.fequals pr pr' && eq_tp' env seen a a'
       && eq_pchoice env seen pchoice pchoice'
   | _pcs, [] -> false
   | [], _pcs' -> false
@@ -334,7 +330,7 @@ and sub_pichoice env seen pcs pcs' = match pcs with
       if (List.length lab_match != 1)
       then false
       else let (_, pr', a') = List.nth lab_match 0 in 
-      fequals pr pr' && sub_tp' env seen a a' && sub_pichoice env seen pchoice pcs'
+      R.fequals pr pr' && sub_tp' env seen a a' && sub_pichoice env seen pchoice pcs'
 
 and sub_ichoice env seen cs cs' = match cs with
     [] -> true
@@ -352,7 +348,7 @@ and sub_pechoice env seen pcs pcs' = match pcs' with
       if (List.length lab_match != 1)
       then false
       else let (_, pr, a) = List.nth lab_match 0 in 
-      fequals pr pr' && sub_tp' env seen a a' && sub_pechoice env seen pcs pchoice'
+      R.fequals pr pr' && sub_tp' env seen a a' && sub_pechoice env seen pcs pchoice'
 
 and sub_echoice env seen cs cs' = match cs' with
     [] -> true
@@ -646,7 +642,7 @@ let remove_var x delta =
 
 let rec consume_pot tp = match tp with
     A.Integer | A.Boolean | A.String | A.Address | A.VarT _ -> tp
-  | A.ListTP(t,_pot) -> A.ListTP(consume_pot t, A.Arith (R.Int(0)))
+  | A.ListTP(t,_pot) -> A.ListTP(consume_pot t, A.Arith (R.Float(0.)))
   | A.Arrow(t1,t2) -> A.Arrow(consume_pot t1, consume_pot t2);;
 
 let rec consumevar x odelta = match odelta with
@@ -728,13 +724,13 @@ let rec plabprob k pchoices ext = match pchoices with
       if k = l
       then
         begin
-          if fequals prob 1.0
+          if R.fequals prob 1.0
           then plabprob k pchoices' ext
           else error ext ("prob. mismatch of label " ^ l ^ ": expected {1}, found: " ^ PP.pp_prob prob)
         end
       else
         begin
-          if fequals prob 0.0
+          if R.fequals prob 0.0
           then plabprob k pchoices' ext
           else error ext ("prob. mismatch of label " ^ l ^ ": expected {0}, found: " ^ PP.pp_prob prob)
         end
@@ -1486,8 +1482,11 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             match c with
                 A.TpName(v) -> check_exp' trace env delta pot exp (z,A.expd_tp env v) ext mode
               | A.PWith(pchoices) ->
-                  let deltal = check_pbranchesR trace env delta pot branches z pchoices (exp.A.st_data) mode in
-                  match_probs_ctx env delta deltal (exp.A.st_data)
+                  let (deltal, potl) = check_pbranchesR trace env delta branches z pchoices (exp.A.st_data) mode in
+                  let () = match_probs_ctx env delta deltal (exp.A.st_data) in
+                  if not (eq pot (A.Arith potl))
+                  then error (exp.A.st_data) ("potential mismatch in pcase: " ^ pp_uneq pot (A.Arith potl))
+                  else ()
               | A.PPlus _ | A.One
               | A.Plus _ | A.With _
               | A.Tensor _ | A.Lolli _
@@ -1502,10 +1501,11 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               A.TpName(v) -> check_exp' trace env (update_tp env x (A.expd_tp env v) delta) pot exp zc ext mode
             | A.PPlus(pchoices) ->
                 let (z,c) = zc in
-                let (deltal, cl) = check_pbranchesL trace env delta x pchoices pot branches zc (exp.A.st_data) mode in
+                let (deltal, potl, cl) = check_pbranchesL trace env delta x pchoices branches zc (exp.A.st_data) mode in
                 let () = match_probs_ctx env delta deltal (exp.A.st_data) in
                 let () = match_probs env z c cl (exp.A.st_data) in
-                ()
+                if not (eq pot (A.Arith potl))
+                then error (exp.A.st_data) ("potential mismatch in pcase: " ^ pp_uneq pot (A.Arith potl))
             | A.PWith _ | A.One
             | A.Plus _ | A.With _
             | A.Tensor _ | A.Lolli _
@@ -1522,11 +1522,18 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         let (z,c) = zc in
         let cHH = gen_prob_tpR env p1 z c in
         let cTT = gen_prob_tpR env p2 z c in
-        let () = check_exp' trace env deltaHH pot p1 (z,cHH) (p1.A.st_data) mode in
-        let () = check_exp' trace env deltaTT pot p2 (z,cTT) (p2.A.st_data) mode in
+        let potHH = I.fresh_probvar () in
+        let potTT = I.fresh_probvar () in
+        let prpotHH = R.Mult(R.Float(pr), potHH) in
+        let prpotTT = R.Mult(R.Float(1. -. pr), potTT) in
+        let potHHTT = R.Add(prpotHH, prpotTT) in
+        let () = check_exp' trace env deltaHH (A.Arith potHH) p1 (z,cHH) (p1.A.st_data) mode in
+        let () = check_exp' trace env deltaTT (A.Arith potTT) p2 (z,cTT) (p2.A.st_data) mode in
         let () = match_probs_ctx env delta [("HH", pr, deltaHH); ("TT", 1.0 -. pr, deltaTT)] (exp.A.st_data) in
         let () = match_probs env z c [("HH", pr, cHH); ("TT", 1.0 -. pr, cTT)] (exp.A.st_data) in
-        ()
+        if not (eq pot (A.Arith potHHTT))
+        then error (exp.A.st_data) ("potential mismatch in flip: " ^ pp_uneq pot (A.Arith potHHTT))
+        else ()
       end
   | A.Send(x,w,p) ->
       begin
@@ -2058,35 +2065,39 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         check_exp' trace env delta pot p zc ext mode
       end
 
-and check_pbranchesR trace env delta pot branches z pchoices ext mode = match branches, pchoices with
+and check_pbranchesR trace env delta branches z pchoices ext mode = match branches, pchoices with
     (l1,p)::branches', (l2,prob,c)::pchoices' ->
       begin
         let () = if trace then print_string ("| " ^ l1 ^ " => \n") else () in
         let () = if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext in
         let deltal = gen_prob_ctx env delta p in
-        let () = check_exp' trace env deltal pot p (z,c) (p.A.st_data) mode in
-        let deltatl = check_pbranchesR trace env delta pot branches' z pchoices' ext mode in
-        (l1, prob, deltal)::deltatl
+        let potl = I.fresh_probvar () in
+        let prpotl = R.Mult(R.Float(prob), potl) in
+        let () = check_exp' trace env deltal (A.Arith potl) p (z,c) (p.A.st_data) mode in
+        let (deltatl, pottl) = check_pbranchesR trace env delta branches' z pchoices' ext mode in
+        ((l1, prob, deltal)::deltatl, R.Add(prpotl, pottl))
       end
-  | [], [] -> []
+  | [], [] -> ([], R.Float(0.))
   | (l,_p)::_branches', [] ->
       E.error_label_missing_alt (l) ext
   | [], (l,_prob,_c)::_choices' ->
       E.error_label_missing_branch (l) ext
 
-and check_pbranchesL trace env delta x pchoices pot branches zc ext mode = match pchoices, branches with
+and check_pbranchesL trace env delta x pchoices branches zc ext mode = match pchoices, branches with
     (l1,prob,a)::pchoices', (l2,p)::branches' ->
       begin
         let () = if trace then print_string ("| " ^ l1 ^ " => \n") else () in
         let () = if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext in
         let deltal = gen_prob_ctx env delta p in
+        let potl = I.fresh_probvar () in
+        let prpotl = R.Mult(R.Float(prob), potl) in
         let (z,c) = zc in
         let cl = gen_prob_tpR env p z c in
-        let () = check_exp' trace env (update_tp env x a deltal) pot p (z,cl) (p.A.st_data) mode in
-        let (deltatl, ctl) = check_pbranchesL trace env delta x pchoices' pot branches' zc ext mode in
-        ((l1, prob, deltal)::deltatl, (l1, prob, cl)::ctl)
+        let () = check_exp' trace env (update_tp env x a deltal) (A.Arith potl) p (z,cl) (p.A.st_data) mode in
+        let (deltatl, pottl, ctl) = check_pbranchesL trace env delta x pchoices' branches' zc ext mode in
+        ((l1, prob, deltal)::deltatl, R.Add(prpotl, pottl), (l1, prob, cl)::ctl)
       end
-  | [], [] -> ([], [])
+  | [], [] -> ([], R.Float(0.), [])
   | [], (l,_p)::_branches' ->
       E.error_label_missing_alt (l) ext
   | (l,_prob,_a)::_choices', [] ->

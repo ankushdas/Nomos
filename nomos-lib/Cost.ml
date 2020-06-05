@@ -2,7 +2,7 @@ module R = Arith
 module A = Ast
 module F = NomosFlags
 
-let rec cost_tick_aug {A.func_data = d; A.func_structure = e} = {A.func_data = d; A.func_structure = A.Tick(A.Arith (R.Int 1), {A.func_data = d; A.func_structure = cost_tick e})}
+let rec cost_tick_aug {A.func_data = d; A.func_structure = e} = {A.func_data = d; A.func_structure = A.Tick(A.Arith (R.Float 1.), {A.func_data = d; A.func_structure = cost_tick e})}
 
 and cost_tick fexp = match fexp with
     A.If(e1,e2,e3) -> A.If(cost_tick_aug e1, cost_tick_aug e2, cost_tick_aug e3)
@@ -28,7 +28,7 @@ and cost_work flag exp = match flag with
   | F.RecvSend -> cost_send_aug (cost_recv_aug exp)
   | F.Send -> cost_send_aug exp
 
-and work d p = A.Work(A.Arith (R.Int 1), {A.st_data = d; A.st_structure = p})
+and work d p = A.Work(A.Arith (R.Float 1.), {A.st_data = d; A.st_structure = p})
 
 and cost_recv d exp = match exp with
     A.Fwd(x,y) -> A.Fwd(x,y)

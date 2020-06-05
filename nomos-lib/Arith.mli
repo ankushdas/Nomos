@@ -1,13 +1,15 @@
 (* Interface for Arith *)
 
 type arith =
-    Int of int
+    Float of float
   | Add of arith * arith
   | Sub of arith * arith
   | Mult of arith * arith
   | Var of string
 [@@deriving sexp]
-val evaluate : arith -> int
+val evaluate : arith -> float
+val fequals : float -> float -> bool
+val fpos : float -> bool
 val plus : arith -> arith -> arith
 val minus : arith -> arith -> arith
 val pos : arith -> bool

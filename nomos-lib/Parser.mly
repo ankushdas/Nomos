@@ -118,7 +118,7 @@ decl :
     | TYPE; x = ID; EQUALS; t = stype   { (Ast.TpDef (x,t), Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                              $startpos.Lexing.pos_fname)) }
-    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr                      { (Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, Ast.Arith(Arith.Int(0)), (c,t)), e),
+    | PROC; m = mode; f = ID; COLON; ctx = context_opt; TURNSTILE; LPAREN; c = mid; COLON; t = stype; RPAREN; EQUALS; e = expr                      { (Ast.ExpDecDef(f, m, ({Ast.shared = []; Ast.linear = []; Ast.ordered = ctx}, Ast.Arith(Arith.Float(0.)), (c,t)), e),
                                                                                                                                                       Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                                                       ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                                                       $startpos.Lexing.pos_fname)) }
@@ -316,7 +316,7 @@ branches2 :
     ;
 
 potential :
-    | LBRACE; i = INT; RBRACE { Ast.Arith(Arith.Int(i)) }
+    | LBRACE; i = FLOAT; RBRACE { Ast.Arith(Arith.Float(i)) }
     | LBRACE; TIMES; RBRACE   { Ast.Star }
     ;
 

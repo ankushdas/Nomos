@@ -28,19 +28,19 @@ exception RuntimeError (* should never happen at runtime *)
 open Sexplib.Std
 type sem =
     (* Proc(chan, in_use, time, (work, pot), P) *)
-    Proc of string * A.chan * A.chan list * int * (int * int) * A.ext A.st_expr
+    Proc of string * A.chan * A.chan list * int * (float * float) * A.ext A.st_expr
     (* Msg(chan, time, (work, pot), M) *)
-  | Msg of A.chan * int * (int * int) * A.ext A.msg
+  | Msg of A.chan * int * (float * float) * A.ext A.msg
   [@@deriving sexp]
 
 let pp_sem sem = match sem with
     Proc(f,c,in_use,t,(w,pot),p) ->
       f ^ ": proc(" ^ PP.pp_chan c ^ ", in_use = [" ^ PP.pp_channames in_use ^
-      "], t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
-      ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
+      "], t = " ^ string_of_int t ^ ", (w = " ^ string_of_float w ^
+      ", pot = " ^ string_of_float pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
   | Msg(c,t,(w,pot),m) ->
-      "msg(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
-      ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
+      "msg(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_float w ^
+      ", pot = " ^ string_of_float pot ^ "), " ^ PP.pp_msg m ^ ")";;
 
 let apply_op op n1 n2 =
   match op with
@@ -93,15 +93,15 @@ let rec eval fexp = match fexp.A.func_structure with
         let (v2, c2) = eval e2 in
         (v2, R.plus c1 c2)
       end
-  | A.Bool b -> (A.BoolV b, R.Int 0)
-  | A.Int i -> (A.IntV i, R.Int 0)
-  | A.Str s -> (A.StrV s, R.Int 0)
-  | A.Addr a -> (A.AddrV a, R.Int 0)
+  | A.Bool b -> (A.BoolV b, R.Float 0.)
+  | A.Int i -> (A.IntV i, R.Float 0.)
+  | A.Str s -> (A.StrV s, R.Float 0.)
+  | A.Addr a -> (A.AddrV a, R.Float 0.)
   | A.Var _ -> raise RuntimeError
   | A.ListE(l) ->
       begin
         let (vs, cs) = proj (List.map eval l) in
-        (A.ListV vs, List.fold_left (fun s x -> R.plus s x) (R.Int 0) cs)
+        (A.ListV vs, List.fold_left (fun s x -> R.plus s x) (R.Float 0.) cs)
       end
   | A.App(l) ->
       begin
@@ -145,7 +145,7 @@ let rec eval fexp = match fexp.A.func_structure with
               end
           | _ -> raise RuntimeError
       end
-  | A.Lambda(xs,e) -> (A.LambdaV(xs,e), R.Int 0)
+  | A.Lambda(xs,e) -> (A.LambdaV(xs,e), R.Float 0.)
   | A.Op(e1,op,e2) ->
       begin
         let (v1, c1) = eval e1 in
@@ -185,8 +185,8 @@ let rec eval fexp = match fexp.A.func_structure with
             A.Star -> raise RuntimeError
           | A.Arith p -> (v, R.plus c p)
       end
-  | A.GetTxnNum -> (A.IntV !txnNum, R.Int 0)
-  | A.GetTxnSender -> (A.AddrV !txnSender, R.Int 0)
+  | A.GetTxnNum -> (A.IntV !txnNum, R.Float 0.)
+  | A.GetTxnSender -> (A.AddrV !txnSender, R.Float 0.)
   | A.Command(_) -> raise RuntimeError;;
 
 
@@ -365,7 +365,7 @@ let fwd ch config =
                           let config = remove_sem c1 config in
                           let e = get_cont c1 config in
                           let config = remove_sem e config in
-                          let msg = Msg(e,max(t,t'),(w+w',pot+pot'),A.msubst d c1 m) in
+                          let msg = Msg(e,max(t,t'),(w+.w',pot+.pot'),A.msubst d c1 m) in
                           let config = add_sem msg config in
                           let config = remove_cont c1 config in
                           let config = add_cont (d,e) config in
@@ -378,7 +378,7 @@ let fwd ch config =
               | Some(Msg(_d,t',(w',pot'),(A.MSendP _ as m))) ->
                   let config = remove_sem c1 config in
                   let config = remove_sem d config in
-                  let msg = Msg(c1,max(t,t'),(w+w',pot+pot'), A.msubst c1 d m) in
+                  let msg = Msg(c1,max(t,t'),(w+.w',pot+.pot'), A.msubst c1 d m) in
                   let config = add_sem msg config in
                   let d' = get_cont d config in
                   let config = remove_cont d config in
@@ -387,7 +387,7 @@ let fwd ch config =
               | Some(Msg(_d,t',(w',pot'),(A.MClose _ as m))) ->
                   let config = remove_sem c1 config in
                   let config = remove_sem d config in
-                  let msg = Msg(c1,max(t,t'),(w+w',pot+pot'), A.msubst c1 d m) in
+                  let msg = Msg(c1,max(t,t'),(w+.w',pot+.pot'), A.msubst c1 d m) in
                   let config = add_sem msg config in
                   Changed config
               | _s -> Unchanged config
@@ -455,8 +455,8 @@ let spawn env ch config =
           let (linear_args, shared_args) = extract_chans xs in
           let f_in_use = linear_args @ shared_args in
           let func_in_use = add_chan c' (chans_diff in_use linear_args) in
-          let proc1 = Proc(f,c',f_in_use,t+1,(0,pot'),A.ExpName(c',f,xs)) in
-          let proc2 = Proc(func,d,func_in_use,t+1,(w,pot-pot'),A.subst c' x q.A.st_structure) in
+          let proc1 = Proc(f,c',f_in_use,t+1,(0.,pot'),A.ExpName(c',f,xs)) in
+          let proc2 = Proc(func,d,func_in_use,t+1,(w,pot-.pot'),A.subst c' x q.A.st_structure) in
           let config = add_sem proc1 config in
           let config = add_sem proc2 config in
           begin
@@ -506,7 +506,7 @@ let ichoice_S ch config =
         then raise ChannelMismatch
         else
           let c' = cfresh (mode_of c1) in
-          let msg = Msg(c1,t+1,(0,0),A.MLabI(c1,l,c')) in
+          let msg = Msg(c1,t+1,(0.,0.),A.MLabI(c1,l,c')) in
           let proc = Proc(func,c',in_use,t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
@@ -530,7 +530,7 @@ let ichoice_R ch config =
                   else
                     let q = find_branch l bs in
                     let in_use' = replace_chan c' c in_use in
-                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
+                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+.w',pot+.pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -549,7 +549,7 @@ let echoice_S ch config =
         then raise ChannelMismatch
         else
           let c' = cfresh (mode_of c) in
-          let msg = Msg(c',t+1,(0,0),A.MLabE(c,l,c')) in
+          let msg = Msg(c',t+1,(0.,0.),A.MLabE(c,l,c')) in
           let in_use' = replace_chan c' c in_use in
           let proc = Proc(func,d,in_use',t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
@@ -573,7 +573,7 @@ let echoice_R ch config =
                   then raise ChannelMismatch
                   else
                     let q = find_branch l bs in
-                    let proc = Proc(func,c2',in_use,max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
+                    let proc = Proc(func,c2',in_use,max(t,t')+1, (w+.w',pot+.pot'), A.subst c2' c2 q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
@@ -592,7 +592,7 @@ let tensor_S ch config =
         then raise ChannelMismatch
         else
           let c' = cfresh (mode_of c1) in
-          let msg = Msg(c1,t+1,(0,0),A.MSendT(c1,e,c')) in
+          let msg = Msg(c1,t+1,(0.,0.),A.MSendT(c1,e,c')) in
           let in_use' = remove_chan e in_use in
           let proc = Proc(func,c',in_use',t+1,wp,A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
@@ -617,7 +617,7 @@ let tensor_R ch config =
                   else
                     let q = A.subst_aug e x q in
                     let in_use' = add_chan e (replace_chan c' c in_use) in
-                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
+                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+.w',pot+.pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -636,7 +636,7 @@ let lolli_S ch config =
         then raise ChannelMismatch
         else
           let c' = cfresh (mode_of c) in
-          let msg = Msg(c',t+1,(0,0),A.MSendL(c,e,c')) in
+          let msg = Msg(c',t+1,(0.,0.),A.MSendL(c,e,c')) in
           let in_use' = replace_chan c' c (remove_chan e in_use) in
           let proc = Proc(func,d,in_use',t+1,wp,A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
@@ -661,7 +661,7 @@ let lolli_R ch config =
                   else
                     let q = A.subst_aug e x q in
                     let in_use' = add_chan e in_use in
-                    let proc = Proc(func,c2',in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
+                    let proc = Proc(func,c2',in_use',max(t,t')+1, (w+.w',pot+.pot'), A.subst c2' c2 q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
@@ -678,7 +678,7 @@ let one_S ch config =
       Proc(_,c1,in_use,t,(w,pot),A.Close(c2)) ->
         if uneq_name c1 c2
         then raise ChannelMismatch
-        else if pot > 0
+        else if R.fpos pot
         then raise UnconsumedPotential
         else if List.length (linear_chans in_use) > 0
         then raise ExecImpossible
@@ -703,7 +703,7 @@ let one_R ch config =
                   then raise ChannelMismatch
                   else
                     let in_use' = remove_chan c in_use in
-                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), q.A.st_structure) in
+                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+.w',pot+.pot'), q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -721,7 +721,7 @@ let work ch config =
         if pot < k
         then raise InsufficientPotential
         else
-          let proc = Proc(func,c,in_use,t+1,(w+k,pot-k),p.A.st_structure) in
+          let proc = Proc(func,c,in_use,t+1,(w+.k,pot-.k),p.A.st_structure) in
           let config = add_sem proc config in
           Changed config
     | _s -> raise ExecImpossible;;
@@ -738,8 +738,8 @@ let paypot_S ch config =
         else
           let c' = cfresh (mode_of c1) in
           let vpot = try_evaluate epot in
-          let msg = Msg(c1,t+1,(0,vpot),A.MPayP(c1,epot,c')) in
-          let proc = Proc(func,c',in_use,t+1,(w,pot-vpot),A.subst c' c1 p.A.st_structure) in
+          let msg = Msg(c1,t+1,(0.,vpot),A.MPayP(c1,epot,c')) in
+          let proc = Proc(func,c',in_use,t+1,(w,pot-.vpot),A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
@@ -763,7 +763,7 @@ let paypot_R ch config =
                   then raise PotentialMismatch
                   else
                     let in_use' = replace_chan c' c in_use in
-                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
+                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+.w',pot+.pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -785,9 +785,9 @@ let getpot_S ch config =
         else
           let c' = cfresh (mode_of c) in
           let vpot = try_evaluate epot in
-          let msg = Msg(c',t+1,(0,vpot),A.MPayG(c,epot,c')) in
+          let msg = Msg(c',t+1,(0.,vpot),A.MPayG(c,epot,c')) in
           let in_use' = replace_chan c' c in_use in
-          let proc = Proc(func,d,in_use',t+1,(w,pot-vpot),A.subst c' c p.A.st_structure) in
+          let proc = Proc(func,d,in_use',t+1,(w,pot-.vpot),A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
@@ -810,7 +810,7 @@ let getpot_R ch config =
                   else if not (try_eq epot epot')
                   then raise PotentialMismatch
                   else
-                    let proc = Proc(func,c2',in_use,max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
+                    let proc = Proc(func,c2',in_use,max(t,t')+1, (w+.w',pot+.pot'), A.subst c2' c2 q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
@@ -936,8 +936,8 @@ let product_S ch config =
           let c' = cfresh (mode_of c1) in
           let (v, acost) = eval e in
           let vcost = R.evaluate acost in
-          let msg = Msg(c1,t+1,(0,0),A.MSendP(c1,v,c')) in
-          let proc = Proc(func,c',in_use,t+1,(w+vcost,pot-vcost),A.subst c' c1 p.A.st_structure) in
+          let msg = Msg(c1,t+1,(0.,0.),A.MSendP(c1,v,c')) in
+          let proc = Proc(func,c',in_use,t+1,(w+.vcost,pot-.vcost),A.subst c' c1 p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c1,c') config in
@@ -960,7 +960,7 @@ let product_R ch config =
                   else
                     let q = A.esubstv_aug (A.toExpr None v) x q in
                     let in_use' = replace_chan c' c in_use in
-                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+w',pot+pot'), A.subst c' c q.A.st_structure) in
+                    let proc = Proc(func,d,in_use',max(t,t')+1, (w+.w',pot+.pot'), A.subst c' c q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c config in
                     let config = add_sem proc config in
@@ -983,9 +983,9 @@ let arrow_S ch config =
           let (v, acost) = eval e in
           let vcost = R.evaluate acost in
           (* let () = print_string ("evaluated to: " ^ PP.pp_val v ^ "\n") in *)
-          let msg = Msg(c',t+1,(0,0),A.MSendA(c,v,c')) in
+          let msg = Msg(c',t+1,(0.,0.),A.MSendA(c,v,c')) in
           let in_use' = replace_chan c' c in_use in
-          let proc = Proc(func,d,in_use',t+1,(w+vcost,pot-vcost),A.subst c' c p.A.st_structure) in
+          let proc = Proc(func,d,in_use',t+1,(w+.vcost,pot-.vcost),A.subst c' c p.A.st_structure) in
           let config = add_sem msg config in
           let config = add_sem proc config in
           let config = add_cont (c,c') config in
@@ -1007,7 +1007,7 @@ let arrow_R ch config =
                   then raise ExecImpossible
                   else
                     let q = A.esubstv_aug (A.toExpr None v) x q in
-                    let proc = Proc(func,c2',in_use,max(t,t')+1, (w+w',pot+pot'), A.subst c2' c2 q.A.st_structure) in
+                    let proc = Proc(func,c2',in_use,max(t,t')+1, (w+.w',pot+.pot'), A.subst c2' c2 q.A.st_structure) in
                     let config = remove_sem ch config in
                     let config = remove_sem c2' config in
                     let config = add_sem proc config in
@@ -1025,7 +1025,7 @@ let letS ch config =
         let (v, acost) = eval e in
         let vcost = R.evaluate acost in
         let p = A.esubstv_aug (A.toExpr None v) x p in
-        let proc = Proc(func,c,in_use,t+1,(w+vcost,pot-vcost),p.A.st_structure) in
+        let proc = Proc(func,c,in_use,t+1,(w+.vcost,pot-.vcost),p.A.st_structure) in
         let config = add_sem proc config in
         Changed config
     | _s -> raise ExecImpossible;;
@@ -1040,11 +1040,11 @@ let ifS ch config =
         begin
           match v with
               A.BoolV true ->
-                let proc = Proc(func,c,in_use,t+1,(w+vcost,pot-vcost),p1.A.st_structure) in
+                let proc = Proc(func,c,in_use,t+1,(w+.vcost,pot-.vcost),p1.A.st_structure) in
                 let config = add_sem proc config in
                 Changed config
             | A.BoolV false ->
-                let proc = Proc(func,c,in_use,t+1,(w+vcost,pot-vcost),p2.A.st_structure) in
+                let proc = Proc(func,c,in_use,t+1,(w+.vcost,pot-.vcost),p2.A.st_structure) in
                 let config = add_sem proc config in
                 Changed config
             | _ -> raise RuntimeError
@@ -1224,7 +1224,7 @@ let error = ErrorMsg.error_msg ErrorMsg.Runtime None;;
 
 type state =
   {
-    energy : int;
+    energy : float;
     gamma : A.chan list;
     delta : A.chan list;
     config : configuration;
@@ -1245,7 +1245,7 @@ let check_and_add (top : Chan.t) (sem : sem) (st : state): state option =
   match sem with
     (Proc(_, c, in_use, _t, (work, pot), p)) -> (
       let (_, _, m) = c in
-      let st' = { st with energy = st.energy + work + pot } in
+      let st' = { st with energy = st.energy +. work +. pot } in
       match checked_diff st.delta in_use with
         None -> None
       | Some(delta') -> Some(
@@ -1304,7 +1304,7 @@ let verify_final_configuration top config =
     let (st', sems', changed) = step_state st sems in
     if changed then st_fixpoint st' sems' else (st', sems') in
   let sems0 = get_sems config in
-  let st0 = { energy = 0; delta = []; gamma = []; config } in
+  let st0 = { energy = 0.; delta = []; gamma = []; config } in
   let (st_final, sems_final) = st_fixpoint st0 sems0 in
   let config' = st_final.config in
   if List.length sems_final > 0
@@ -1338,7 +1338,7 @@ let exec env (full_config : full_configuration) (f, args) =
   let m = chan_mode env f in
   let c = cfresh m in
   let pot = try_evaluate (get_pot env f) in
-  let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
+  let sem = Proc(f,c,[],0,(0.,pot),A.ExpName(c,f,args)) in
   let config = add_sem sem initial_config in
   match step env config with
       Fail -> full_config
