@@ -12,7 +12,7 @@ proc asset rdwalk : ($l : ulist) |{*}- ($d : 1) =
   case $l (
     cons =>
       get $l {*} ;
-      flip {0.4} (
+      flip {0.6} (
         HH => work {*} ;
               $d <- rdwalk <- $l
       | TT => work {*} ;

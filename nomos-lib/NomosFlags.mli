@@ -1,6 +1,6 @@
 (* Interface for Flags *)
 
-type cost = Nil | Free | Recv | RecvSend | Send
+type cost = Nil | Free | Recv | RecvSend | Send | Flip
 val parseCost : string -> cost option
 val pp_cost : cost -> string
 type syntax = Implicit | Explicit

@@ -4,6 +4,7 @@ type cost = Nil                   (* none *)
           | Recv                   (* each receive costs 1 unit  *)
           | RecvSend               (* each receive and send costs 1 unit *)
           | Send                   (* each send costs 1 unit *)
+          | Flip                   (* flip costs 1 unit *)
 
 let parseCost s = match s with
     "none" -> Some Nil
@@ -11,6 +12,7 @@ let parseCost s = match s with
   | "recvsend" -> Some RecvSend
   | "send" -> Some Send
   | "free" -> Some Free
+  | "flip" -> Some Flip
   | _ -> None;;
 
 let pp_cost c = match c with
@@ -18,7 +20,8 @@ let pp_cost c = match c with
   | Recv -> "recv"
   | RecvSend -> "recvsend"
   | Send -> "send"
-  | Free -> "free";;
+  | Free -> "free"
+  | Flip -> "flip";;
 
 (* Syntax *)
 (* Explicit syntax performs no reconstruction

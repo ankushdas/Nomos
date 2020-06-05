@@ -27,6 +27,7 @@ and cost_work flag exp = match flag with
   | F.Recv -> cost_recv_aug exp
   | F.RecvSend -> cost_send_aug (cost_recv_aug exp)
   | F.Send -> cost_send_aug exp
+  | F.Flip -> cost_flip_aug exp
 
 and work d p = A.Work(A.Arith (R.Float 1.), {A.st_data = d; A.st_structure = p})
 
@@ -118,7 +119,52 @@ and cost_send_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_str
 and cost_send_branches bs = match bs with
     [] -> []
   | (l,p)::branches ->
-      (l, cost_send_aug p)::(cost_send_branches branches);;
+      (l, cost_send_aug p)::(cost_send_branches branches)
+
+and cost_flip d exp = match exp with
+    A.Fwd(x,y) -> A.Fwd(x,y)
+  | A.Spawn(x,g,xs,p) -> A.Spawn(x,g,xs, cost_flip_aug p)
+  | A.ExpName(x,f,xs) -> A.ExpName(x,f,xs)
+
+  | A.Lab(x,k,p) -> A.Lab(x, k, cost_flip_aug p)
+  | A.Case(x,branches) -> A.Case(x, cost_flip_branches branches)
+
+  | A.PLab(x,k,p) -> A.PLab(x, k, cost_flip_aug p)
+  | A.PCase(x,branches) -> A.PCase(x, cost_flip_branches branches)
+  | A.Flip(pr,p1,p2) -> work d (A.Flip(pr, cost_flip_aug p1, cost_flip_aug p2))
+
+  | A.Send(x,w,p) -> A.Send(x,w, cost_flip_aug p)
+  | A.Recv(x,y,p) -> A.Recv(x,y, cost_flip_aug p)
+
+  | A.Close(x) -> A.Close(x)
+  | A.Wait(x,p) -> A.Wait(x, cost_flip_aug p)
+
+  | A.Work(pot,p) -> A.Work(pot, cost_flip_aug p)
+  | A.Pay(x,pot,p) -> A.Pay(x,pot, cost_flip_aug p)
+  | A.Get(x,pot,p) -> A.Get(x,pot, cost_flip_aug p)
+
+  | A.Acquire(x,y,p) -> A.Acquire(x,y,cost_flip_aug p)
+  | A.Accept(x,y,p) -> A.Accept(x,y,cost_flip_aug p)
+  | A.Release(x,y,p) -> A.Release(x,y,cost_flip_aug p)
+  | A.Detach(x,y,p) -> A.Detach(x,y,cost_flip_aug p)
+
+  | A.RecvF(x,y,p) -> A.RecvF(x,y,cost_flip_aug p)
+  | A.SendF(x,e,p) -> work d (A.SendF(x, cost_tick_aug e, cost_flip_aug p))
+
+  | A.Let(x,e,p) -> work d (A.Let(x, cost_tick_aug e, cost_flip_aug p))
+  | A.IfS(e,p1,p2) -> work d (A.IfS(cost_tick_aug e, cost_flip_aug p1, cost_flip_aug p2))
+
+  | A.MakeChan(x,a,n,p) -> work d (A.MakeChan(x, a, n, cost_flip_aug p))
+  | A.Abort -> A.Abort
+  (* TODO: add ticks to argument list of spawn and print *)
+  | A.Print(l,arg,p) -> A.Print(l, arg, cost_flip_aug p)
+
+and cost_flip_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_flip d p}
+
+and cost_flip_branches bs = match bs with
+    [] -> []
+  | (l,p)::branches ->
+      (l, cost_flip_aug p)::(cost_flip_branches branches);;
 
 let apply_cost {A.func_data = d; A.func_structure = fexp} =
   {A.func_data = d; A.func_structure = cost_tick fexp};;
