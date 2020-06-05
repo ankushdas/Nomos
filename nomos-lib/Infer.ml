@@ -476,7 +476,7 @@ let m_eq v1 v2 =
   else
     let sv1 = get_modevar v1 in
     let sv2 = get_modevar v2 in
-    let () = if !F.verbosity >= 2 then print_string (v1 ^ " = " ^ v2 ^ "\n") in
+    let () = if !F.verbosity >= 3 then print_string (v1 ^ " = " ^ v2 ^ "\n") in
     let () = t_cons () in
     let () = ClpS.add_constr_list ~lower:0.0 ~upper:0.0 [(sv1, 1.0); (sv2, -1.0)]
     in true;;
@@ -498,7 +498,7 @@ let get_mode f = match f with
 let m_eq_const v m =
   let c = modeval m in
   let sv = get_modevar v in
-  let () = if !F.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode m ^ "\n") in
+  let () = if !F.verbosity >= 3 then print_string (v ^ " = " ^ PP.pp_mode m ^ "\n") in
   let () = t_cons () in
   let () = ClpS.add_constr_list ~lower:c ~upper:c [(sv, 1.0)] in
   true;;
@@ -509,7 +509,7 @@ let m_eq_pair v m1 m2 =
   let min_val = min c1 c2 in
   let max_val = max c1 c2 in
   let sv = get_modevar v in
-  let () = if !F.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Shared ^ "\n") in
+  let () = if !F.verbosity >= 3 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Shared ^ "\n") in
   let () = t_cons () in
   let () = ClpS.add_constr_list ~lower:min_val ~upper:max_val [(sv, 1.0)] in
   true;;
@@ -525,7 +525,7 @@ let min_max m1 m2 m3 =
 let m_lin v =
   let (min_val, max_val) = min_max A.Pure A.Linear A.Transaction in
   let sv = get_modevar v in
-  let () = if !F.verbosity >= 2 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Linear ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Transaction ^ "\n") in
+  let () = if !F.verbosity >= 3 then print_string (v ^ " = " ^ PP.pp_mode A.Pure ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Linear ^ " or " ^ v ^ " = " ^ PP.pp_mode A.Transaction ^ "\n") in
   let () = t_cons () in
   let () = ClpS.add_constr_list ~lower:min_val ~upper:max_val [(sv, 1.0)] in
   true;;

@@ -1,6 +1,6 @@
 type hcoin = p+{H{1.0} : 1, T{0.0} : 1}
 
-proc asset expected : . |- ($p : hcoin) =
+proc asset expected : . |{*}- ($p : hcoin) =
 {
   flip {0.5} (
     HH => $p..H ;

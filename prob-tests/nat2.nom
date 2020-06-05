@@ -1,6 +1,6 @@
 type pnat = p+{succ{0.4} : pnat, zero{0.6} : 1}
 
-proc asset nat1 : . |- ($x : pnat) =
+proc asset nat1 : . |{*}- ($x : pnat) =
 {
   flip {0.4} (
     HH => $x..succ ;
@@ -10,19 +10,21 @@ proc asset nat1 : . |- ($x : pnat) =
   )
 }
 
-proc asset nat2 : . |- (  $x : pnat) =
+proc asset nat2 : . |{*}- (  $x : pnat) =
 {
   flip {0.5} (
     HH => flip {0.2} (
       HH => $x..succ ;
             $x <- nat1 <-
     | TT => $x..zero ;
+            work {*} ;
             close $x
     )
   | TT => flip {0.6} (
       HH => $x..succ ;
             $x <- nat1 <-
     | TT => $x..zero ;
+            work {*} ;
             close $x
     )
   )

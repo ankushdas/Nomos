@@ -1219,7 +1219,7 @@ and checkfexp trace env delta pot e zc ext mode = match e.A.func_structure with
 
 and check_exp' trace env delta pot p zc ext mode =
   begin
-    if trace || !F.verbosity >= 2
+    if trace
     then print_string ("[" ^ PP.pp_mode mode ^ "] : " ^  PP.pp_exp_prefix (p.A.st_structure) ^ " : "
                           ^ PP.pp_tpj_compact env delta pot zc ^ "\n")
     else ()

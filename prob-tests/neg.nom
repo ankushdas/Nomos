@@ -1,7 +1,7 @@
 type A = p+ {H{0.2} : 1, T{0.8} : 1}
 type B = p+ {H{0.8} : 1, T{0.2} : 1}
 
-proc asset neg : ($x : A) |- ($y : B) =
+proc asset neg : ($x : A) |{*}- ($y : B) =
 {
   pcase $x (
     H => $y..T ; wait $x ; close $y
