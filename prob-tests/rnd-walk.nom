@@ -1,0 +1,27 @@
+type ulist = +{cons : |{*}> ulist, nil : 1}
+
+proc asset cons : ($t : ulist) |{*}- ($l : ulist) =
+{
+  $l.cons ;
+  pay $l {*} ;
+  $l <- $t
+}
+
+proc asset rdwalk : ($l : ulist) |{*}- ($d : 1) =
+{
+  case $l (
+    cons =>
+      get $l {*} ;
+      flip {0.4} (
+        HH => work {*} ;
+              $d <- rdwalk <- $l
+      | TT => work {*} ;
+              $l1 <- cons <- $l ;
+              $l2 <- cons <- $l1 ;
+              $d <- rdwalk <- $l2
+      )
+  | nil => work {*} ;
+           wait $l ;
+           close $d
+  )
+}
