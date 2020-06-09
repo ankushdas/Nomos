@@ -72,7 +72,7 @@ You can also omit `-tc` to run the `exec` statements.
 For example, the `nomos-tests/wallet-demo.nom` file has an example transaction as well as the
 necessary support code. You typecheck and run this with
 ```
-$ ./_build/default/nomos-bin/nomos.exe -ts ankush nomos-tests/wallet-demo.nom
+$ ./_build/default/nomos-bin/nomos.exe -ts someone nomos-tests/wallet-demo.nom
 ```
 It should produce the output "% runtime successful!" at the end.
 
