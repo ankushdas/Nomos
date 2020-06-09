@@ -40,7 +40,7 @@ $ export CLP_PATH=<absolute-path-to-'coin-Clp'-folder>
 Now, we need to build and install Nomos.
 ```
 $ opam update
-$ opam pin add -y nomos .    # only the first time you build
+$ opam pin add -y nomos .         # only the first time you build
 $ opam upgrade                    # after packages upgrade
 ```
 
