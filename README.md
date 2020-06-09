@@ -32,16 +32,16 @@ $ make test
 $ make install
 $ cd ../..
 ```
+The next step is setting up the environment variable `CLP_PATH` to the directory where the Coin-Or LP solver is installed. Use the command below.
+```
+$ export CLP_PATH=<absolute-path-to-'coin-Clp'-folder>
+```
+
 Now, we need to build and install Nomos.
 ```
 $ opam update
 $ opam pin add -y nomos-rast .    # only the first time you build
 $ opam upgrade                    # after packages upgrade
-```
-
-The next step is setting up the environment variable `CLP_PATH` to the directory where the Coin-Or LP solver is installed. Use the command below.
-```
-$ export CLP_PATH=<absolute-path-to-'coin-Clp'-folder>
 ```
 
 ### Building
