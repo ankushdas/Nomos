@@ -33,6 +33,7 @@ $ make install
 $ cd ../..
 ```
 Now, we need to build and install Nomos.
+```
 $ opam update
 $ opam pin add -y nomos-rast .    # only the first time you build
 $ opam upgrade                    # after packages upgrade
