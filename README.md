@@ -60,6 +60,45 @@ $ make
 $ export LD_LIBRARY_PATH=<absolute-path-to-'coin-Clp'-folder>/lib
 ```
 
+### Testing
+To test whether your installation works, here are a few sample smart contract transactions you can test. Run the following command to run a tranaction to create a wallet with 1000 coins.
+```
+./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -o s1.conf nomos-tests/test-wallet/t1.nom
+```
+The output at the end should be
+```
+created a wallet with 1000 coins on channel #ch3[S]
+% runtime successful!
+```
+Next, run the following command to create another wallet with 100 coins.
+```
+./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -i s1.conf -o s2.conf nomos-tests/test-wallet/t2.nom
+```
+The output at the end should be
+```
+created a wallet with 100 coins on channel #ch7[S]
+% runtime successful!
+```
+Then, run the following command to transfer 100 coins from the first wallet to the second.
+```
+./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -i s2.conf -o s3.conf nomos-tests/test-wallet/t3.nom
+```
+The output at the end should be
+```
+transfer of 100 coins from #ch3[S] to #ch7[S] successful
+% runtime successful!
+```
+Finally, run the following command to check if the wallets are updated correctly.
+```
+./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -i s3.conf -o s4.conf nomos-tests/test-wallet/t4.nom
+```
+The output at the end should be
+```
+The balance of #ch3[S] is 900
+The balance of #ch7[S] is 200
+% runtime successful!
+```
+
 ### Executing
 The make command creates an executable for nomos at `_build/default/nomos-bin/nomos.exe`.
 To typecheck a file with nomos, run
