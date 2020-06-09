@@ -20,9 +20,6 @@ Clone the repository and obtain the source code, and install the necessary libra
 ```
 $ git clone https://github.com/ankushdas/Nomos.git
 $ cd Nomos
-$ opam update
-$ opam pin add -y nomos-rast .    # only the first time you build
-$ opam upgrade                    # after packages upgrade
 ```
 The next step is installing the [Coin-Or LP solver](https://projects.coin-or.org/Clp). Use the instructions below.
 ```
@@ -35,6 +32,12 @@ $ make test
 $ make install
 $ cd ../..
 ```
+Now, we need to build and install Nomos.
+$ opam update
+$ opam pin add -y nomos-rast .    # only the first time you build
+$ opam upgrade                    # after packages upgrade
+```
+
 The next step is setting up the environment variable `CLP_PATH` to the directory where the Coin-Or LP solver is installed. Use the command below.
 ```
 $ export CLP_PATH=<absolute-path-to-'coin-Clp'-folder>
@@ -68,7 +71,7 @@ You can also omit `-tc` to run the `exec` statements.
 For example, the `nomos-tests/wallet-demo.nom` file has an example transaction as well as the
 necessary support code. You typecheck and run this with
 ```
-$ ./_build/default/nomos-bin/nomos.exe nomos-tests/wallet-demo.nom
+$ ./_build/default/nomos-bin/nomos.exe -ts ankush nomos-tests/wallet-demo.nom
 ```
 It should produce the output "% runtime successful!" at the end.
 
