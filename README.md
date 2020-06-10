@@ -60,6 +60,14 @@ $ make
 $ export LD_LIBRARY_PATH=<absolute-path-to-'coin-Clp'-folder>/lib
 ```
 
+4. Sometimes, `$ opam upgrade` can fail with the following error particularly on Linux machines.
+```
+The packages you requested declare the following system dependencies. Please
+make sure they are installed before retrying:
+    m4
+```
+Please make sure you install `m4`. On Ubuntu machines, this simply amounts to running the command `$ sudo apt install m4`.
+
 ### Testing
 To test whether your installation works, here are a few sample smart contract transactions you can test. Run the following command to run a tranaction to create a wallet with 1000 coins.
 ```
@@ -161,7 +169,8 @@ For a complete listing of available commands at the top level, see `nomos-src/To
 ## Writing Nomos programs
 Writing session-typed programs needs some guidance. First, I will introduce the basic declarations. There are three forms of declarations:
 
-1. Type Definitions: New type names can be defined using the following syntax `type v = A` where type name `v` has definition `A`. As an example, the `auction` type is defined as follows:
+#### Type Definitions
+New type names can be defined using the following syntax `type v = A` where type name `v` has definition `A`. As an example, the `auction` type is defined as follows:
 ```
 type auction = /\ <{*}| +{running : &{bid : int -> money -o |{*}> \/ auction,
                                       cancel : |{*}> \/ auction},
@@ -198,7 +207,8 @@ Formally, the grammar for session types is as follows:
       | n           // positive integer
 ```
 
-2. Process Definitions: New processes are defined using the syntax `proc <mode> f : (x1 : t1), (x2 : t2), ..., (xn : tn), ($c1 : A1), ... ($cm : Am) |{q}- ($c : A) = M` where the process name is `f`, its context is a sequence of functional arguments `xi` with types `Ai` and channel arguments `$ci` (shared channels are denoted by `#ci`) of type `Ai`, the potential stored is `q`, and the offered channel is `x` of type `A`. The definition is denoted by the expression `P`. An empty context is described using `.`. The `mode` can be either `asset`, `contract` or `transaction` depending on the role of the process.
+#### Process Definitions
+New processes are defined using the syntax `proc <mode> f : (x1 : t1), (x2 : t2), ..., (xn : tn), ($c1 : A1), ... ($cm : Am) |{q}- ($c : A) = M` where the process name is `f`, its context is a sequence of functional arguments `xi` with types `Ai` and channel arguments `$ci` (shared channels are denoted by `#ci`) of type `Ai`, the potential stored is `q`, and the offered channel is `x` of type `A`. The definition is denoted by the expression `P`. An empty context is described using `.`. The `mode` can be either `asset`, `contract` or `transaction` depending on the role of the process.
 
 Formally, the context is denoted with
 ```
@@ -210,7 +220,9 @@ Formally, the context is denoted with
         | (x : <t>), ctx
 ```
 
-3. Process Execution: A process `f` can be executed using the syntax `exec f`. Note that since Nomos only allows closed processes to execute, I require that `f` is defined with an empty context (this is checked by the type checker).
+
+#### Process Execution
+A process `f` can be executed using the syntax `exec f`. Note that since Nomos only allows closed processes to execute, I require that `f` is defined with an empty context (this is checked by the type checker).
 
 ### Process Syntax
 The channels in Nomos are prefixed with either a `#` or `$` character. Thus, shared channel `c` is denoted using `#c` while linear channel `c` is denoted using `$c`. This is required to visually separate functional variables from session-typed channels.
