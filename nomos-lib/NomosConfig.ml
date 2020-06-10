@@ -28,7 +28,7 @@ let set_syntax s =
 
 let set_txn_sender s =
   match s with
-      None -> (C.eprintf "%% txn sender must be specified\n"; exit 1)
+      None -> TL.set_sender "none"(* (C.eprintf "%% txn sender must be specified\n"; exit 1) *)
     | Some s -> TL.set_sender s;;
 
 let check_extension filename ext =

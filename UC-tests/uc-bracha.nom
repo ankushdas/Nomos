@@ -117,23 +117,26 @@ type action = &{ACTIVATE : +{DONE : int ^ 1,
 proc transaction dealer : (id : int), (m : int), ($dcs : list_comms) |- ($d : action) =
 {
   case $d (
-    ACTIVATE =>
-      case $dcs (
-        cons => #dc <- recv $dcs ;
-                print ("dealer activated by ENV: sending message on %c\n", #dc);
-                $ldc <- acquire #dc ;
-                $ldc.SEND ;
-                $msg <- create_send_msg <- m ;
-                send $ldc $msg ;
-                #dc <- release $ldc ;
-                print ("dealer: sent number %d to %c\n", m, #dc);
-                $d.NEXT ;
-                $d <- dealer <- id m $dcs
-      | nil => wait $dcs ;
-               $d.DONE ;
-               send $d m ;
-               close $d
-      )
+    ACTIVATE => $d <- dealer_send_msgs <- id m $dcs
+  )
+}
+
+proc transaction dealer_send_msgs : (id : int), (m : int), ($dcs : list_comms) |- ($d : +{DONE : int ^ 1, NEXT : action}) =
+{
+  case $dcs (
+    cons => #dc <- recv $dcs ;
+            print ("dealer activated by ENV: sending message on %c\n", #dc);
+            $ldc <- acquire #dc ;
+            $ldc.SEND ;
+            $msg <- create_send_msg <- m ;
+            send $ldc $msg ;
+            #dc <- release $ldc ;
+            print ("dealer: sent number %d on %c\n", m, #dc);
+            $d <- dealer_send_msgs <- id m $dcs
+   | nil => wait $dcs ;
+            $d.DONE ;
+            send $d m ;
+            close $d
   )
 }
 
