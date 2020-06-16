@@ -86,7 +86,7 @@ and cost_send d exp = match exp with
 
   | A.PLab(x,k,p) -> work d (A.PLab(x, k, cost_send_aug p))
   | A.PCase(x,branches) -> A.PCase(x, cost_send_branches branches)
-  | A.Flip(pr,p1,p2) -> work d (A.Flip(pr, cost_send_aug p1, cost_send_aug p2))
+  | A.Flip(pr,p1,p2) -> A.Flip(pr, cost_send_aug p1, cost_send_aug p2)
 
   | A.Send(x,w,p) -> work d (A.Send(x,w, cost_send_aug p))
   | A.Recv(x,y,p) -> A.Recv(x,y, cost_send_aug p)
@@ -106,13 +106,13 @@ and cost_send d exp = match exp with
   | A.RecvF(x,y,p) -> A.RecvF(x,y,cost_send_aug p)
   | A.SendF(x,e,p) -> work d (A.SendF(x, cost_tick_aug e, cost_send_aug p))
 
-  | A.Let(x,e,p) -> work d (A.Let(x, cost_tick_aug e, cost_send_aug p))
-  | A.IfS(e,p1,p2) -> work d (A.IfS(cost_tick_aug e, cost_send_aug p1, cost_send_aug p2))
+  | A.Let(x,e,p) -> A.Let(x, cost_tick_aug e, cost_send_aug p)
+  | A.IfS(e,p1,p2) -> A.IfS(cost_tick_aug e, cost_send_aug p1, cost_send_aug p2)
 
-  | A.MakeChan(x,a,n,p) -> work d (A.MakeChan(x, a, n, cost_send_aug p))
-  | A.Abort -> work d (A.Abort)
+  | A.MakeChan(x,a,n,p) -> A.MakeChan(x, a, n, cost_send_aug p)
+  | A.Abort -> A.Abort
   (* TODO: add ticks to argument list of spawn and print *)
-  | A.Print(l,arg,p) -> work d (A.Print(l, arg, cost_send_aug p))
+  | A.Print(l,arg,p) -> A.Print(l, arg, cost_send_aug p)
 
 and cost_send_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = cost_send d p}
 

@@ -858,16 +858,14 @@ and action_branches env branches c a = match branches with
   | (_l,q)::_bs -> action env q c a
 
 let rec gen_prob_tpL env p x a = match a with
-  | A.PWith _ -> action env p x a
-  | A.TpName(v) -> gen_prob_tpL env p x (A.expd_tp env v)
+    A.TpName(v) -> gen_prob_tpL env p x (A.expd_tp env v)
   (* TODO: do other types change at all? *)
-  | _a -> a;;
+  | a -> action env p x a;;
 
 let rec gen_prob_tpR env p x a = match a with
-    A.PPlus _ -> action env p x a
-  | A.TpName(v) -> gen_prob_tpR env p x (A.expd_tp env v)
+    A.TpName(v) -> gen_prob_tpR env p x (A.expd_tp env v)
   (* TODO: do other types change at all? *)
-  | _a -> a;;
+  | a -> action env p x a;;
 
 let gen_prob_ctx env delta p =
   let {A.shared = sdelta; A.linear = ldelta; A.ordered = odelta} = delta in

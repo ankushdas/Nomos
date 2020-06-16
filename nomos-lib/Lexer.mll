@@ -17,7 +17,7 @@ let quoted_string = ref []
 }
 
 let newline = '\r' | '\n' | "\r\n"
-let int = '-'? ['0'-'9'] ['0'-'9']*
+let int = ['0'-'9'] ['0'-'9']*
 let digit = ['0'-'9']
 let frac = '.' digit*
 let exp = ['e' 'E'] ['-' '+']? digit+
