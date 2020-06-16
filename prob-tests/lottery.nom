@@ -1,0 +1,48 @@
+type lottery = /\ &{one : p+{won{0.5} : \/ lottery,
+                             lost{0.5} : \/ lottery},
+                    two : p+{won{0.5} : \/ lottery,
+                             lost{0.5} : \/ lottery}}
+
+type lottery1 = /\ &{one : p+{won{1.0} : \/ lottery1,
+                              lost{0.0} : \/ lottery1},
+                     two : p+{won{0.0} : \/ lottery1,
+                              lost{1.0} : \/ lottery1}}
+
+type lottery2 = /\ &{one : p+{won{0.0} : \/ lottery2,
+                              lost{1.0} : \/ lottery2},
+                     two : p+{won{1.0} : \/ lottery2,
+                              lost{0.0} : \/ lottery2}}
+
+proc contract lottery_proc : . |{*}- (#sl : lottery) =
+{
+  flip {0.5} (
+    HH => #sl <- lottery_proc1 <-
+  | TT => #sl <- lottery_proc2 <-
+  )
+}
+
+proc contract lottery_proc1 : . |{*}- (#sl : lottery1) =
+{
+  $ll <- accept #sl ;
+  case $ll (
+    one => $ll..won ;
+           #sl <- detach $ll ;
+           #sl <- lottery_proc1 <-
+  | two => $ll..lost ;
+           #sl <- detach $ll ;
+           #sl <- lottery_proc1 <-
+  )
+}
+
+proc contract lottery_proc2 : . |{*}- (#sl : lottery2) =
+{
+  $ll <- accept #sl ;
+  case $ll (
+    one => $ll..lost ;
+           #sl <- detach $ll ;
+           #sl <- lottery_proc2 <-
+  | two => $ll..won ;
+           #sl <- detach $ll ;
+           #sl <- lottery_proc2 <-
+  )
+}

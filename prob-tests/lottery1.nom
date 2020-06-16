@@ -1,0 +1,15 @@
+type lottery = /\ p+{won{0.2} : \/ lottery,
+                     lost{0.8} : \/ lottery}
+
+proc contract lottery_proc : . |- (#sl : lottery) =
+{
+  $ll <- accept #sl ;
+  flip {0.2} (
+    HH => $ll..won ;
+          #sl <- detach $ll ;
+          #sl <- lottery_proc <-
+  | TT => $ll..lost ;
+          #sl <- detach $ll ;
+          #sl <- lottery_proc <-
+  )
+}
