@@ -1,0 +1,185 @@
+
+(* still need to add sell ticket *)
+
+type coin = 1
+
+type ticket = 1
+
+
+proc asset new_ticket : . |{*}- ($t : ticket) = 
+{
+ close $t
+}
+
+
+type lottery =
+   /\ +{ open : &{ buy_ticket : coin -o ticket * \/ lottery
+                 , cancel : \/ lottery
+                 }
+       , closed : &{ collect_win : ticket -o
+                           +{ won : coin * coin * \/ lottery
+			    , lost : \/ lottery
+			    }
+                   , cancel : \/ lottery
+                   }
+       }
+
+type lottery_win =
+   /\ +{ open : &{ buy_ticket : coin -o ticket * \/ lottery_win
+                 , cancel : \/ lottery_win
+                 }
+       , closed : &{ collect_win : ticket -o
+                           +{ won : coin * coin * \/ lottery_win
+			    , lost : \/ lottery_win
+			    }
+                   , cancel : \/ lottery_win
+                   }
+       }
+
+type lottery_loose =
+   /\ +{ open : &{ buy_ticket : coin -o ticket * \/ lottery_loose
+                 , cancel : \/ lottery_loose
+                 }
+       , closed : &{ collect_win : ticket -o
+                           +{ won : coin * coin * \/ lottery_loose
+			    , lost : \/ lottery_loose
+			    }
+                   , cancel : \/ lottery_loose
+                   }
+       }
+
+
+(*
+type lottery =
+   /\ +{ open : &{ buy_ticket : coin -o ticket * \/ lottery
+                 , cancel : \/ lottery
+                 }
+       , closed : &{ collect_win : ticket -o
+                          p+{ won{0.5} : coin * coin * \/ lottery
+			    , lost{0.5} : \/ lottery
+			    }
+                   , cancel : \/ lottery
+                   }
+       }
+
+
+type lottery_win =
+   /\ +{ open : &{ buy_ticket : coin -o ticket * \/ lottery_win
+                 , cancel : \/ lottery_win
+                 }
+       , closed : &{ collect_win : ticket -o
+                          p+{ won{1.0} : coin * coin * \/ lottery
+			    , lost{0.0} : \/ lottery
+			    }
+                   , cancel : \/ lottery_win
+                   }
+       }
+
+
+type lottery_loose =
+   /\ +{ open : &{ buy_ticket : coin -o ticket * \/ lottery_loose
+                 , cancel : \/ lottery_loose
+                 }
+       , closed : &{ collect_win : ticket -o
+                          p+{ won{0.0} : coin * coin * \/ lottery
+			    , lost{1.0} : \/ lottery
+			    }
+                   , cancel : \/ lottery_loose
+                   }
+       }
+*)
+
+proc contract lottery_open_empty : ($ticket1 : ticket), ($ticket2 : ticket) |{*}- (#sl : lottery) =
+{
+  $ll <- accept #sl;
+  $ll.open;
+  case $ll (
+    buy_ticket =>
+      $c <- recv $ll;
+      send $ll $ticket2;
+      #sl <- detach $ll;
+      #sl <- lottery_open_one <- $ticket1 $c
+  | cancel =>
+      #sl <- detach $ll;
+      #sl <- lottery_open_empty <- $ticket1 $ticket2
+  )
+}
+
+proc contract lottery_open_one : ($ticket1 : ticket), ($c1 : coin) |{*}- (#sl : lottery) =
+{
+  $ll <- accept #sl;
+  $ll.open;
+  case $ll (
+    buy_ticket =>
+      $c2 <- recv $ll;
+      send $ll $ticket1;
+      #sl <- detach $ll;
+      #sl <- lottery_closed <- $c1 $c2
+  | cancel =>
+      #sl <- detach $ll;
+      #sl <- lottery_open_one <- $ticket1 $c1
+  )
+}
+
+
+proc contract lottery_closed : ($c1 : coin), ($c2 : coin) |{*}- (#sl : lottery) =
+{
+  $ll <- accept #sl;
+  $ll.closed;
+  case $ll (
+    collect_win =>
+      $ticket <- recv $ll;
+      flip {0.5} (
+        HH =>
+          $ll.won;
+          send $ll $c1;
+          send $ll $c2;      
+          #sl <- detach $ll;
+          #sl <- lottery_closed_loose <- $ticket
+      | TT =>
+          $ll.lost;
+          #sl <- detach $ll;
+          #sl <- lottery_closed_win <- $ticket $c1 $c2
+	  )
+  | cancel =>
+      #sl <- detach $ll;
+      #sl <- lottery_closed <- $c1 $c2
+  )
+}
+
+
+proc contract lottery_closed_loose : ($ticket1 : ticket) |{*}- (#sl : lottery_loose) =
+{
+  $ll <- accept #sl;
+  $ll.closed;
+  case $ll (
+    collect_win =>
+      $ticket2 <- recv $ll;
+      $ll.lost;
+      #sl <- detach $ll;
+      #sl <- lottery_open_empty <- $ticket1 $ticket2
+  | cancel =>
+      #sl <- detach $ll;
+      #sl <- lottery_closed_loose <- $ticket1
+  )
+}
+
+
+proc contract lottery_closed_win : ($ticket1 : ticket), ($c1 : coin), ($c2 : coin) |{*}- (#sl : lottery_win) =
+{
+  $ll <- accept #sl;
+  $ll.closed;
+  case $ll (
+    collect_win =>
+      $ticket2 <- recv $ll;
+      $ll.won;
+      send $ll $c1;
+      send $ll $c2;      
+      #sl <- detach $ll;
+      #sl <- lottery_open_empty <- $ticket1 $ticket2
+  | cancel =>
+      #sl <- detach $ll;
+      #sl <- lottery_closed_win <- $ticket1 $c1 $c2
+  )
+}
+
