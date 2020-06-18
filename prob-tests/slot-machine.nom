@@ -1,0 +1,34 @@
+type lottery = /\ <{1.}| p+{won{0.2} : potlist * \/ lottery,
+                            lost{0.8} : \/ lottery}
+
+type potlist = +{cons : |{*}> potlist, nil : 1}
+
+proc asset nil : . |{*}- ($p : potlist) =
+{
+  $p.nil ;
+  close $p
+}
+
+proc asset cons : ($x : potlist) |{*}- ($p : potlist) =
+{
+  $p.cons ;
+  pay $p {*} ;
+  $p <- $x
+}
+
+proc contract lottery_proc : ($p : potlist) |{*}- (#sl : lottery) =
+{
+  $ll <- accept #sl ;
+  get $ll {*} ;
+  flip {0.2} (
+    HH => $ll..won ;
+          send $ll $p ;
+          #sl <- detach $ll ;
+          $pnil <- nil <- ;
+          #sl <- lottery_proc <- $pnil
+  | TT => $ll..lost ;
+          $pnew <- cons <- $p ;
+          #sl <- detach $ll ;
+          #sl <- lottery_proc <- $pnew
+  )
+}
