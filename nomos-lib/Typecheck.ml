@@ -790,7 +790,7 @@ let rec add_ptypes env c a a' ext = match a, a' with
   | A.TpName(v), _ -> add_ptypes env c (A.expd_tp env v) a' ext
   | A.PPlus(pcs), A.PPlus(pcs') -> A.PPlus(add_choices env c pcs pcs' ext)
   | A.PWith(pcs), A.PWith(pcs') -> A.PWith(add_choices env c pcs pcs' ext)
-  | _, _ -> raise UnknownTypeError;;
+  | _, _ -> a';;
 
 let rec mult_choices env pr pcs = match pcs with
     [] -> []
@@ -800,7 +800,7 @@ let rec mult_ptype env pr a = match a with
     A.TpName(v) -> mult_ptype env pr (A.expd_tp env v)
   | A.PPlus(pcs) -> A.PPlus(mult_choices env pr pcs)
   | A.PWith(pcs) -> A.PWith(mult_choices env pr pcs)
-  | _ -> raise UnknownTypeError
+  | _ -> a
 
 let rec weighted_psum env c al ext = match al with
     [] -> raise UnknownTypeError
