@@ -820,28 +820,66 @@ let rec action env p c a = match p.A.st_structure with
       if eq_name x c
       then get_typeR env f
       else get_typeL env f xs c
-  | A.Lab(_x,_k,q) ->
-      action env q c a
+  | A.Lab(x,_k,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
   | A.Case(_x,branches) -> action_branches env branches c a
   | A.PLab(x,k,q) ->
       if eq_name x c
       then gen_tp k a
       else action env q c a
-  | A.PCase(_x,branches) -> action_branches env branches c a
+  | A.PCase(x,branches) ->
+      if eq_name x c
+      then a
+      else action_branches env branches c a
   | A.Flip(pr,q1,q2) -> action_pbranches env pr q1 q2 c a p.A.st_data
-  | A.Send(_x,_w,q) -> action env q c a
-  | A.Recv(_x,_y,q) -> action env q c a
+  | A.Send(x,w,q) ->
+      if eq_name x c || eq_name w c
+      then a
+      else action env q c a
+  | A.Recv(x,_y,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
   | Close(_x) -> a
-  | Wait(_x,q) -> action env q c a
+  | Wait(x,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
   | Work(_pot,q) -> action env q c a
-  | Pay(_x,_pot,q) -> action env q c a
-  | Get(_x,_pot,q) -> action env q c a
-  | Acquire(_x,_y,q) -> action env q c a
-  | Accept(_x,_y,q) -> action env q c a
-  | Release(_x,_y,q) -> action env q c a
-  | Detach(_x,_y,q) -> action env q c a
-  | RecvF(_x,_y,q) -> action env q c a
-  | SendF(_x,_m,q) -> action env q c a
+  | Pay(x,_pot,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
+  | Get(x,_pot,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
+  | Acquire(x,_y,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
+  | Accept(x,_y,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
+  | Release(x,_y,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
+  | Detach(x,_y,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
+  | RecvF(x,_y,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
+  | SendF(x,_m,q) ->
+      if eq_name x c
+      then a
+      else action env q c a
   | Let(_x,_e,q) -> action env q c a
   | IfS(_e,q1,_q2) -> action env q1 c a
   | MakeChan(_x,_a,_n,q) -> action env q c a
