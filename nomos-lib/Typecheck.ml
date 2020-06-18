@@ -209,7 +209,7 @@ let rec mem_seen env seen a a' = match seen with
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
 let rec eq_tp' env seen a a' =
   if !F.verbosity >= 3
-  then print_string ("comparing " ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
+  then print_string ("comparing " ^ PP.pp_tp env a ^ "\nand\n" ^ PP.pp_tp env a' ^ "\n")
   else ()
   ; eq_tp env seen a a'
 
@@ -926,16 +926,11 @@ let prob_error env x a a' al ext =
   let lstr = label_errormsg env al in
   error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ", expected: " ^ PP.pp_tp_compact env a ^ "\nfound: " ^ a'str ^ "\ndue to branches:\n" ^ lstr);;
 
-let rec match_probs env x a al ext = match a with
-    A.PPlus _ | A.PWith _ ->
-      begin
-        let a' = weighted_psum env x al ext in
-        if subtp env a a'
-        then ()
-        else prob_error env x a a' al ext
-      end
-  | A.TpName(v) -> match_probs env x (A.expd_tp env v) al ext
-  | _ -> ();;
+let match_probs env x a al ext =
+  let a' = weighted_psum env x al ext in
+  if subtp env a a'
+  then ()
+  else prob_error env x a a' al ext
 
 let rec extract x delta = match delta with
     [] -> raise UnknownTypeError
@@ -1256,7 +1251,7 @@ and checkfexp trace env delta pot e zc ext mode = match e.A.func_structure with
 and check_exp' trace env delta pot p zc ext mode =
   begin
     if trace
-    then print_string ("[" ^ PP.pp_mode mode ^ "] : " ^  PP.pp_exp_prefix (p.A.st_structure) ^ " : "
+    then print_string ("Checking [" ^ PP.pp_mode mode ^ "] : " ^  PP.pp_exp_prefix (p.A.st_structure) ^ " : "
                           ^ PP.pp_tpj_compact env delta pot zc ^ "\n")
     else ()
   end
