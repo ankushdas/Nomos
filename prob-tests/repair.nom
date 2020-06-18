@@ -1,0 +1,22 @@
+type days = +{cons : |{*}> days}
+
+type steady = p+{working{0.888888888} : steady, broken{0.111111112} : steady}
+
+proc asset steady_state : ($d : days), ($c : steady) |{*}- ($m : steady) =
+{
+  case $d (
+    cons => get $d {*} ;
+            pcase $c (
+              working => flip {0.95} (
+                HH => $m..working ; $m <- steady_state <- $d $c
+              | TT => work {1.0} ;
+                      $m..broken ; $m <- steady_state <- $d $c
+              )
+            | broken => flip {0.4} (
+                HH => $m..working ; $m <- steady_state <- $d $c
+              | TT => work {1.0} ;
+                      $m..broken ; $m <- steady_state <- $d $c
+              )
+            )
+  )
+}
