@@ -1188,7 +1188,16 @@ and synth_fexp_simple trace env delta pot (e : A.parsed_expr) ext mode isSend = 
               (delta1, pot1, tplist)
           | _t -> error (e.A.func_data) ("type of " ^ PP.pp_fexp env 0 e2.A.func_structure ^ " not a list")
       end
-  | A.Match _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
+  | A.Match(e1, e2, x, xs, e3) ->
+      begin
+        let (delta1, pot1, t) = synth_fexp_simple' trace env delta pot e1 ext mode isSend in
+        match t with
+            A.ListTP(t', pot') ->
+              let (delta2, pot2, tp) = synth_fexp_simple' trace env delta1 pot1 e2 ext mode isSend in
+              let (delta3, pot3) = check_fexp_simple' trace env (add_var (x, t') (add_var (xs, t) delta2)) (plus pot2 pot') e3 tp ext mode isSend in
+              (remove_var x (remove_var xs delta3), pot3, tp)
+          | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_fexp env 0 e1.A.func_structure ^ ", expected list, found: " ^ PP.pp_ftp_simple t)
+      end
   | A.Lambda _ -> error (e.A.func_data) ("cannot synthesize type of " ^ PP.pp_fexp env 0 (e.A.func_structure))
   | A.Op(e1, _, e2) ->
       begin

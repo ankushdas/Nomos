@@ -404,7 +404,7 @@ and pp_fexp env i e =
         let snil = "| [] -> " in
         let lnil = len snil in
         let sy = pp_fexp env (i+2+lnil) y.A.func_structure in
-        let scons = a ^ "::" ^ b ^ " -> " in
+        let scons = "| " ^ a ^ "::" ^ b ^ " -> " in
         let lcons = len scons in
         let sz = pp_fexp env (i+2+lcons) z.A.func_structure in
         "match " ^ sx ^ " with \n" ^
