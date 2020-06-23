@@ -1,0 +1,61 @@
+type sbool = +{zero : 1, one : 1}
+
+proc asset next_val : ($xp : sbool), ($xi : sbool) |{*}- ($x : sbool) =
+{
+  case $xp (
+    zero => case $xi (
+      zero => flip {0.5} (
+        HH =>
+          $x.zero ;
+          wait $xp ;
+          wait $xi ;
+          close $x
+      | TT =>
+          $x.one ;
+          wait $xp ;
+          wait $xi ;
+          close $x
+        )
+    | one => $x.one ;
+             wait $xp ;
+             wait $xi ;
+             close $x
+    )
+  | one => case $xi (
+      zero => $x.zero ;
+              wait $xp ;
+              wait $xi ;
+              close $x
+    | one => flip {0.5} (
+        HH =>
+          $x.zero ;
+          wait $xp ;
+          wait $xi ;
+          close $x
+      | TT =>
+          $x.one ;
+          wait $xp ;
+          wait $xi ;
+          close $x
+      )
+    )
+  )
+}
+
+(*
+proc asset token :
+  ($x1 : sbool), ($x1c : sbool),
+  ($x2 : sbool), ($x2c : sbool),
+  ($x3 : sbool), ($x3c : sbool) |{*}- ($d : 1) =
+{
+  $x1n <- next_val <- $x3c $x1 ;
+  $x2n <- next_val <- $x1c $x2 ;
+  $x3n <- next_val <- $x2c $x2 ;
+  $x1c <- copy <- $x1n ;
+  $x2c <- copy <- $x2n ;
+  $x3c <- copy <- $x3n ;
+  $x1 <- recv $x1c ;
+  $x2 <- recv $x2c ;
+  $x3 <- recv 
+}
+*)
