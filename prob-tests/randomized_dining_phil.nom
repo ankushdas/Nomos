@@ -1,0 +1,78 @@
+type sfork = /\ p+{acquired{0.8} : \/ sfork,
+                   available{0.2} : \/ sfork}
+
+proc transaction thinking : (#l : sfork), (#r : sfork) |{*}- ($p : 1) =
+{
+  flip {0.5} (
+    HH => $ll <- acquire #l ;
+          pcase $ll (
+            acquired =>
+              #l <- release $ll ;
+              $p <- thinking <- #l #r
+          | available =>
+              $rr <- acquire #r ;
+              pcase $rr (
+                acquired =>
+                  #r <- release $rr ;
+                  #l <- release $ll ;
+                  $p <- thinking <- #l #r
+              | available =>
+                  $p <- eatingRL <- $ll $rr
+              )
+          )
+  | TT => $rr <- acquire #r ;
+          pcase $rr (
+            acquired =>
+              #r <- release $rr ;
+              $p <- thinking <- #l #r
+          | available =>
+              $ll <- acquire #l ;
+              pcase $ll (
+                acquired =>
+                  #l <- release $ll ;
+                  #r <- release $rr ;
+                  $p <- thinking <- #l #r
+              | available =>
+                  $p <- eatingLR <- $ll $rr
+              )
+          )
+  )
+}
+
+proc transaction eatingRL : ($ll : \/ sfork), ($rr : \/ sfork) |{*}- ($p : 1) =
+{
+  #r <- release $rr ;
+  #l <- release $ll ;
+  close $p
+}
+
+proc transaction eatingLR : ($ll : \/ sfork), ($rr : \/ sfork) |{*}- ($p : 1) =
+{
+  #l <- release $ll ;
+  #r <- release $rr ;
+  close $p
+}
+
+(*
+proc contract acquired_fork : . |{*}- (#f : sfork) =
+{
+  $lf <- accept #f ;
+  $lf.acquired ;
+  #f <- detach $lf ;
+  #f <- fork_proc <-
+}
+
+proc transaction main : . |{*}- ($d : 1) =
+{
+  #f1 <- fork_proc <- ;
+  #f2 <- fork_proc <- ;
+  #f3 <- fork_proc <- ;
+  $p1 <- thinking <- #f3 #f1 ;
+  $p2 <- thinking <- #f1 #f2 ;
+  $p3 <- thinking <- #f2 #f3 ;
+  wait $p1 ;
+  wait $p2 ;
+  wait $p3 ;
+  close $d
+}
+*)
