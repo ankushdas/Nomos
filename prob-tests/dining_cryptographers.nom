@@ -1,0 +1,55 @@
+type scoin = /\ +{head : \/ scoin,
+                  tail : \/ scoin}
+
+
+proc contract coin_proc : . |{*}- (#s : scoin) =
+{
+  flip {0.5} (
+    HH => #s <- head_proc <-
+  | TT => #s <- tail_proc <-
+  )
+}
+
+proc contract head_proc : . |{*}- (#s : scoin) =
+{
+  $l <- accept #s ;
+  $l.head ;
+  #s <- detach $l ;
+  #s <- head_proc <-
+}
+
+proc contract tail_proc : . |{*}- (#s : scoin) =
+{
+  $l <- accept #s ;
+  $l.tail ;
+  #s <- detach $l ;
+  #s <- head_proc <-
+}
+
+proc transaction cryptographer : (#l : scoin), (#my : scoin) |{*}- ($c : +{agree : 1, disagree : 1}) =
+{
+  $ll <- acquire #l ;
+  $lm <- acquire #my ;
+  case $ll (
+    head => case $lm (
+      head => $c.agree ;
+              #l <- release $ll ;
+              #my <- release $lm ;
+              close $c
+    | tail => $c.disagree ;
+              #l <- release $ll ;
+              #my <- release $lm ;
+              close $c
+    )
+  | tail => case $lm (
+      head => $c.disagree ;
+              #l <- release $ll ;
+              #my <- release $lm ;
+              close $c
+    | tail => $c.agree ;
+              #l <- release $ll ;
+              #my <- release $lm ;
+              close $c
+    )
+  )
+}
