@@ -905,9 +905,13 @@ let rec gen_prob_tpR env p x a = match a with
   (* TODO: do other types change at all? *)
   | a -> action env p x a;;
 
-let gen_prob_ctx env delta p =
+let eq_name_opt x_opt c = match x_opt with
+    None -> false
+  | Some x -> eq_name x c;;
+
+let gen_prob_ctx env delta p x_opt =
   let {A.shared = sdelta; A.linear = ldelta; A.ordered = odelta} = delta in
-  let gen_func (c,a) = (c, gen_prob_tpL env p c a) in
+  let gen_func (c,a) = (c, if eq_name_opt x_opt c then a else gen_prob_tpL env p c a) in
   let gen_ofunc arg = match arg with
                           A.Functional _ -> arg
                         | A.STyped (c,a) -> let (cl,al) = gen_func (c,a) in A.STyped(cl,al)
@@ -1557,8 +1561,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
       end
   | A.Flip(pr,p1,p2) ->
       begin
-        let deltaHH = gen_prob_ctx env delta p1 in
-        let deltaTT = gen_prob_ctx env delta p2 in
+        let deltaHH = gen_prob_ctx env delta p1 None in
+        let deltaTT = gen_prob_ctx env delta p2 None in
         let (z,c) = zc in
         let cHH = gen_prob_tpR env p1 z c in
         let cTT = gen_prob_tpR env p2 z c in
@@ -2110,7 +2114,7 @@ and check_pbranchesR trace env delta branches z pchoices ext mode = match branch
       begin
         let () = if trace then print_string ("| " ^ l1 ^ " => \n") else () in
         let () = if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext in
-        let deltal = gen_prob_ctx env delta p in
+        let deltal = gen_prob_ctx env delta p None in
         let potl = I.fresh_probvar () in
         let prpotl = R.Mult(R.Float(prob), potl) in
         let () = check_exp' trace env deltal (A.Arith potl) p (z,c) (p.A.st_data) mode in
@@ -2128,7 +2132,7 @@ and check_pbranchesL trace env delta x pchoices branches zc ext mode = match pch
       begin
         let () = if trace then print_string ("| " ^ l1 ^ " => \n") else () in
         let () = if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext in
-        let deltal = gen_prob_ctx env delta p in
+        let deltal = gen_prob_ctx env delta p (Some x) in
         let potl = I.fresh_probvar () in
         let prpotl = R.Mult(R.Float(prob), potl) in
         let (z,c) = zc in
