@@ -1,0 +1,38 @@
+type t1 = p+ { one{0.333333333} : 1,
+               two{0.333333333} : 1,
+               three{0.333333334} : 1}
+
+proc asset p1 : . |{*}- ($p : t1) =
+{
+  flip {0.5} (
+    HH => $p <- p2 <-
+  | TT => $p <- p3 <-
+  )
+}
+
+type t2 = p+ { one{0.666666666} : 1,
+               two{0.166666667} : 1,
+               three{0.166666667} : 1}
+
+proc asset p2 : . |{*}- ($p : t2) =
+{
+  flip {0.5} (
+    HH => $p..one ;
+          close $p
+  | TT => $p <- p1 <-
+  )
+}
+
+type t3 = p+{ one{0.0} : 1,
+              two{0.5} : 1,
+              three{0.5} : 1}
+
+proc asset p3 : . |{*}- ($p : t3) =
+{
+  flip {0.5} (
+    HH => $p..two ;
+          close $p
+  | TT => $p..three ;
+          close $p
+  )
+}

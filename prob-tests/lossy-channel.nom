@@ -1,36 +1,13 @@
-type msg = /\ \/ msg
+type lossy_channel = int -> p+{ack{0.8} : 1,
+                               dropped{0.2} : lossy_channel}
 
-type comm = /\ &{SEND : int -> \/ comm,
-                 RECV : p+{YES{0.8} : int ^ \/ comm,
-                           NO{0.2} : \/ comm}}
-
-proc contract empty_communicator : . |- (#sc : comm) =
+proc asset communicator : . |{*}- ($c : lossy_channel) =
 {
-  $lc <- accept #sc ;
-  case $lc (
-    SEND => m = recv $lc ;
-            flip {0.8} (
-              HH => #sc <- detach $lc ;
-                    #sc <- full_communicator <- m
-            | TT => #sc <- detach $lc ;
-                    #sc <- empty_communicator <-
-            )
-  | RECV => $lc..NO ;
-            #sc <- detach $lc ;
-            #sc <- empty_communicator <-
-  )
-}
-
-proc contract full_communicator : (m : int) |- (#sc : comm) =
-{
-  $lc <- accept #sc ;
-  case $lc (
-    SEND => m1 = recv $lc ;
-            #sc <- detach $lc ;
-            #sc <- full_communicator <- m
-  | RECV => $lc..YES ;
-            send $lc m ;
-            #sc <- detach $lc ;
-            #sc <- empty_communicator <-
+  m = recv $c ;
+  flip {0.8} (
+    HH => $c..ack ;
+          close $c
+  | TT => $c..dropped ;
+          $c <- communicator <-
   )
 }
