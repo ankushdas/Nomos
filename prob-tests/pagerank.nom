@@ -1,0 +1,26 @@
+type steady = p+{A{0.4} : 1, M{0.2} : 1, N{0.4} : 1}
+
+proc asset steady_state : ($a : steady) |- ($b : steady) =
+{
+  pcase $a (
+    A => flip {0.5} (
+      HH => $b..N ;
+            wait $a ;
+            close $b
+    | TT => $b..M ;
+            wait $a ;
+            close $b
+    )
+  | M => $b..A ;
+         wait $a ;
+         close $b
+  | N => flip {0.5} (
+      HH => $b..A ;
+            wait $a ;
+            close $b
+    | TT => $b..N ;
+            wait $a ;
+            close $b
+    )
+  )
+}

@@ -1,0 +1,161 @@
+proc asset n3k2 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.375} (
+    HH => close $p
+  | TT => $p <- n3k2 <- 
+  )
+}
+
+proc asset n3k3 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.555555555555} (
+    HH => close $p
+  | TT => $p <- n3k3 <- 
+  )
+}
+
+proc asset n3k4 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.65625} (
+    HH => close $p
+  | TT => $p <- n3k4 <- 
+  )
+}
+
+proc asset n3k5 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.72} (
+    HH => close $p
+  | TT => $p <- n3k5 <- 
+  )
+}
+
+proc asset n3k6 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.76388888888889} (
+    HH => close $p
+  | TT => $p <- n3k6 <- 
+  )
+}
+
+proc asset n3k7 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.79591836} (
+    HH => close $p
+  | TT => $p <- n3k7 <- 
+  )
+}
+
+proc asset n3k8 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.8203125} (
+    HH => close $p
+  | TT => $p <- n3k8 <- 
+  )
+}
+
+proc asset n3k9 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.839506172} (
+    HH => close $p
+  | TT => $p <- n3k9 <- 
+  )
+}
+
+proc asset n3k10 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.855} (
+    HH => close $p
+  | TT => $p <- n3k10 <- 
+  )
+}
+
+proc asset n4k2 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.25} (
+    HH => close $p
+  | TT => $p <- n4k2 <- 
+  )
+}
+
+proc asset n4k3 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.4444444444444} (
+    HH => close $p
+  | TT => $p <- n4k3 <- 
+  )
+}
+
+proc asset n4k4 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.5625} (
+    HH => close $p
+  | TT => $p <- n4k4 <- 
+  )
+}
+
+proc asset n4k5 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.64} (
+    HH => close $p
+  | TT => $p <- n4k5 <- 
+  )
+}
+
+proc asset n4k6 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.694444444444} (
+    HH => close $p
+  | TT => $p <- n4k6 <- 
+  )
+}
+
+proc asset n4k7 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.73469387755} (
+    HH => close $p
+  | TT => $p <- n4k7 <- 
+  )
+}
+
+proc asset n4k8 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.765625} (
+    HH => close $p
+  | TT => $p <- n4k8 <- 
+  )
+}
+
+proc asset n4k9 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.79012345679} (
+    HH => close $p
+  | TT => $p <- n4k9 <- 
+  )
+}
+
+proc asset n4k10 : . |{*}- ($p : 1) =
+{
+  work {1.} ;
+  flip {0.81} (
+    HH => close $p
+  | TT => $p <- n4k10 <- 
+  )
+}

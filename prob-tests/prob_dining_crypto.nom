@@ -1,39 +1,6 @@
 type scoin = /\ p+{head{0.5} : \/ scoin,
                    tail{0.5} : \/ scoin}
 
-(*
-type hcoin = /\ p+{head{1.0} : \/ hcoin,
-                   tail{0.0} : \/ hcoin}
-
-type tcoin = /\ p+{head{0.0} : \/ tcoin,
-                   tail{1.0} : \/ tcoin}
-
-
-proc contract coin_proc : . |{*}- (#s : scoin) =
-{
-  flip {0.5} (
-    HH => #s <- head_proc <-
-  | TT => #s <- tail_proc <-
-  )
-}
-
-proc contract head_proc : . |{*}- (#s : hcoin) =
-{
-  $l <- accept #s ;
-  #s..head ;
-  #s <- detach $l ;
-  #s <- head_proc <-
-}
-
-proc contract tail_proc : . |{*}- (#s : tcoin) =
-{
-  $l <- accept #s ;
-  #s..tail ;
-  #s <- detach $l ;
-  #s <- head_proc <-
-}
-*)
-
 proc transaction cryptographer : (#l : scoin), (#my : scoin) |{*}- ($c : +{agree : 1, disagree : 1}) =
 {
   $ll <- acquire #l ;
