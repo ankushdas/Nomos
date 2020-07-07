@@ -1,26 +1,26 @@
-type steady = p+{A{0.4} : 1, M{0.2} : 1, N{0.4} : 1}
+type limit = p+{A{0.4} : 1, M{0.2} : 1, N{0.4} : 1}
 
-proc asset steady_state : ($a : steady) |- ($b : steady) =
+proc asset transition : ($IN : limit) |- ($OUT : limit) =
 {
-  pcase $a (
+  pcase $IN (
     A => flip {0.5} (
-      HH => $b..N ;
-            wait $a ;
-            close $b
-    | TT => $b..M ;
-            wait $a ;
-            close $b
+      HH => $OUT..N ;
+            wait $IN ;
+            close $OUT
+    | TT => $OUT..M ;
+            wait $IN ;
+            close $OUT
     )
-  | M => $b..A ;
-         wait $a ;
-         close $b
+  | M => $OUT..A ;
+         wait $IN ;
+         close $OUT
   | N => flip {0.5} (
-      HH => $b..A ;
-            wait $a ;
-            close $b
-    | TT => $b..N ;
-            wait $a ;
-            close $b
+      HH => $OUT..A ;
+            wait $IN ;
+            close $OUT
+    | TT => $OUT..N ;
+            wait $IN ;
+            close $OUT
     )
   )
 }

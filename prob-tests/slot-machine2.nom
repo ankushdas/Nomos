@@ -1,0 +1,17 @@
+type slot = /\ <{1.}| p+{won{0.2} : |{*}> \/ slot,
+                         lost{0.8} : \/ slot}
+
+proc contract machine : . |{*}- (#sl : slot) =
+{
+  $ll <- accept #sl ;
+  get $ll {*} ;
+  flip {0.2} (
+    HH => $ll..won ;
+          pay $ll {*} ;
+          #sl <- detach $ll ;
+          #sl <- machine <-
+  | TT => $ll..lost ;
+          #sl <- detach $ll ;
+          #sl <- machine <-
+  )
+}

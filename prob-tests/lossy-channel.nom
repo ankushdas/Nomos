@@ -1,13 +1,18 @@
-type lossy_channel = int -> p+{ack{0.8} : 1,
-                               dropped{0.2} : lossy_channel}
+type channel = int ^ channel
 
-proc asset communicator : . |{*}- ($c : lossy_channel) =
+type lossy_channel = |{*}> int ^ p&{ack{0.1} : lossy_channel,
+                                    dropped{0.9} : lossy_channel}
+
+proc asset communicator : ($d : lossy_channel) |{*}- ($c : channel) =
 {
-  m = recv $c ;
-  flip {0.8} (
-    HH => $c..ack ;
-          close $c
-  | TT => $c..dropped ;
-          $c <- communicator <-
+  get $d {*} ;
+  m = recv $d ;
+  flip {0.1} (
+    HH => $d..ack ;
+          work {1.} ;
+          send $c m ;
+          $c <- communicator <- $d
+  | TT => $d..dropped ;
+          $c <- communicator <- $d
   )
 }
