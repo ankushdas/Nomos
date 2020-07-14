@@ -1,0 +1,12 @@
+type val = +{me : 1,
+             he : 1,
+             choose : 1,
+             rst : 1}
+
+type register = /\ &{SET : val -o \/ register,
+                     GET : val * \/ register}
+
+proc transaction test_set : (#my : register), (#your : register) |- ($p : int ^ 1) =
+{
+  
+}

@@ -1,0 +1,128 @@
+type msg = +{round : int ^ value * 1,
+             ratify : int ^ value * 1}
+
+type value = +{zero : 1, one : 1, unk : 1}
+
+type comm = /\ &{SEND : msg -o \/ comm,
+                 RECV : msg * \/ comm}
+
+proc asset round_msg : (rnd : int), ($pref : value) |{*}- ($m : msg) =
+{
+  $m.round ;
+  send $m rnd ;
+  send $m $pref ;
+  close $m
+}
+
+proc asset throwval : ($m : value) |{*}- ($dm : 1) =
+{
+  case $m (
+    zero => $dm <- $m
+  | one => $dm <- $m
+  | unk => $dm <- $m
+  )
+}
+
+proc asset throw : ($m : msg) |{*}- ($dm : 1) =
+{
+  case $m (
+    round => x = recv $m ;
+             $v <- recv $m ;
+             $d <- throwval <- $v ;
+             wait $m ;
+             $dm <- $d
+  | ratify => x = recv $m ;
+              $v <- recv $m ;
+              $d <- throwval <- $v ;
+              wait $m ;
+              $dm <- $d
+  )
+}
+
+proc transaction get_round_msgs : (#x1 : comm), (#x2 : comm) |{*}- ($d : 1) =
+{
+  $lx1 <- acquire #x1 ;
+  $lx1.RECV ;
+  $m <- recv $lx1 ;
+  #x1 <- release $lx1 ;
+  $dm <- throw <- $m ;
+  wait $dm ;
+  $lx2 <- acquire #x2 ;
+  $lx2.RECV ;
+  $m <- recv $lx2 ;
+  #x2 <- release $lx2 ;
+  $dm <- throw <- $m ;
+  wait $dm ;
+  close $d
+}
+
+proc asset zerop : . |{*}- ($v : value) =
+{
+  $v.zero ;
+  close $v
+}
+
+proc asset onep : . |{*}- ($v : value) =
+{
+  $v.one ;
+  close $v
+}
+
+proc asset unkp : . |{*}- ($v : value) =
+{
+  $v.unk ;
+  close $v
+}
+
+proc asset copy : ($v : value) |{*}- ($vv : value * value * 1) =
+{
+  case $v (
+    zero => $v1 <- zerop <- ;
+            $v2 <- zerop <- ;
+            send $vv $v1 ;
+            send $vv $v2 ;
+            wait $v ;
+            close $vv
+  | one => $v1 <- onep <- ;
+           $v2 <- onep <- ;
+           send $vv $v1 ;
+           send $vv $v2 ;
+           wait $v ;
+           close $vv
+  | unk => $v1 <- unkp <- ;
+           $v2 <- unkp <- ;
+           send $vv $v1 ;
+           send $vv $v2 ;
+           wait $v ;
+           close $vv
+  )
+}
+
+proc transaction send_unk_msg : (#x1 : comm), (#x2 : comm),
+  (round : int), ($pref : value) |{*}- ($p : 1) =
+{
+  abort
+}
+
+proc transaction party : (#x1 : comm), (#x2 : comm),
+  (round : int), ($pref : value) |{*}- ($p : 1) =
+{
+  $prefpair <- copy <- $pref ;
+  $pref1 <- recv $prefpair ;
+  $pref2 <- recv $prefpair ;
+  wait $prefpair ;
+  $m <- round_msg <- round $pref1 ;
+  $lx1 <- acquire #x1 ;
+  $lx1.SEND ;
+  send $lx1 $m ;
+  #x1 <- release $lx1 ;
+  $m <- round_msg <- round pref2 ;
+  $lx2 <- acquire #x2 ;
+  $lx2.SEND ;
+  send $lx2 $m ;
+  #x2 <- release $lx2 ;
+  $d <- get_round_msgs <- #x1 #x2 ;
+  wait $d ;
+  $d <- send_unk_msg <- #x1 #x2 ;
+  close $p
+}

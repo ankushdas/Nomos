@@ -1,0 +1,16 @@
+type pbool = p+{T{0.6} : 1, F{0.4} : 1}
+type ubool = p+{T{0.5} : 1, F{0.5} : 1}
+
+proc asset unbias : ($b : pbool) |- ($c : ubool) =
+{
+  pcase $b (
+    T => flip {0.5} (
+      HH => $c..F ; wait $b ; close $c
+    | TT => $c..T ; wait $b ; close $c
+    )
+  | F => flip {0.5} (
+      HH => $c..T ; wait $b ; close $c
+    | TT => $c..F ; wait $b ; close $c
+    )
+  )
+}
