@@ -1,6 +1,6 @@
 type limit = p+{A{0.4} : 1, M{0.2} : 1, N{0.4} : 1}
 
-proc asset transition : ($IN : limit) |- ($OUT : limit) =
+proc asset transition : ($IN : limit) |{*}- ($OUT : limit) =
 {
   pcase $IN (
     A => flip {0.5} (

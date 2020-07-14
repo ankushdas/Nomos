@@ -1,10 +1,10 @@
-type A = p+ {H{0.2} : 1, T{0.8} : 1}
-type B = p+ {H{0.8} : 1, T{0.2} : 1}
+type A = p+ {H{0.6} : 1, T{0.4} : 1}
+type B = p+ {H{0.4} : 1, T{0.6} : 1}
 
 proc asset neg : ($x : A) |{*}- ($y : B) =
 {
   pcase $x (
-    H => $y..T ; wait $x ; close $y
-  | T => $y..H ; wait $x ; close $y
+    H => work {2.} ; $y..T ; wait $x ; close $y
+  | T => work {1.} ; $y..H ; wait $x ; close $y
   )
 }

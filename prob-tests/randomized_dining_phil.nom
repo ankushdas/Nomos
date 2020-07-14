@@ -1,5 +1,5 @@
-type sfork = /\ <{*}| p+{ acquired{0.0} : \/ sfork,
-                          available{1.0} : \/ sfork}
+type sfork = /\ <{*}| p+{ acquired{0.2} : \/ sfork,
+                          available{0.8} : \/ sfork}
 
 proc transaction thinking : (#l : sfork), (#r : sfork) |{*}- ($p : 1) =
 {
@@ -63,7 +63,7 @@ proc contract fork_proc : . |{*}- (#f : sfork) =
 {
   $lf <- accept #f ;
   get $lf {*} ;
-  flip {0.0} (
+  flip {0.2} (
     HH => $lf..acquired ;
           #f <- detach $lf ;
           #f <- fork_proc <-
@@ -78,11 +78,17 @@ proc transaction main : . |{*}- ($d : 1) =
   #f1 <- fork_proc <- ;
   #f2 <- fork_proc <- ;
   #f3 <- fork_proc <- ;
-  $p1 <- thinking <- #f3 #f1 ;
+  #f4 <- fork_proc <- ;
+  #f5 <- fork_proc <- ;
+  $p1 <- thinking <- #f5 #f1 ;
   $p2 <- thinking <- #f1 #f2 ;
   $p3 <- thinking <- #f2 #f3 ;
+  $p4 <- thinking <- #f3 #f4 ;
+  $p5 <- thinking <- #f4 #f5 ;
   wait $p1 ;
   wait $p2 ;
   wait $p3 ;
+  wait $p4 ;
+  wait $p5 ;
   close $d
 }
