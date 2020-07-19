@@ -1,0 +1,3310 @@
+file: EXEC ID WORK
+##
+## Ends in an error in state: 353.
+##
+## list(decl) -> decl . list(decl) [ EOF ]
+##
+## The known suffix of the stack is as follows:
+## decl
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: EXEC WORK
+##
+## Ends in an error in state: 349.
+##
+## decl -> EXEC . ID [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## EXEC
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: IMPORT WORK
+##
+## Ends in an error in state: 355.
+##
+## list(import) -> import . list(import) [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## import
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR LBRACE TIMES RBRACE MINUS LPAREN HASH ID COLON INT RPAREN EQUALS TRUE WORK
+##
+## Ends in an error in state: 345.
+##
+## compOp -> expr . EQUALS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## decl -> PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN EQUALS expr . [ TYPE PROC EXEC EOF ]
+## op -> expr . PLUS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN EQUALS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR LBRACE TIMES RBRACE MINUS LPAREN HASH ID COLON INT RPAREN EQUALS WORK
+##
+## Ends in an error in state: 344.
+##
+## decl -> PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN EQUALS . expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN EQUALS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR LBRACE TIMES RBRACE MINUS LPAREN HASH ID COLON INT RPAREN WORK
+##
+## Ends in an error in state: 343.
+##
+## decl -> PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN . EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR LBRACE TIMES RBRACE MINUS LPAREN HASH ID COLON INT TYPE
+##
+## Ends in an error in state: 342.
+##
+## decl -> PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype . RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 22, spurious reduction of production stype -> INT 
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR LBRACE TIMES RBRACE MINUS LPAREN HASH ID COLON WORK
+##
+## Ends in an error in state: 341.
+##
+## decl -> PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON . stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR LBRACE TIMES RBRACE MINUS LPAREN HASH ID WORK
+##
+## Ends in an error in state: 340.
+##
+## decl -> PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid . COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR potential MINUS LPAREN mid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR LBRACE TIMES RBRACE MINUS LPAREN WORK
+##
+## Ends in an error in state: 339.
+##
+## decl -> PROC mode ID COLON context_opt BAR potential MINUS LPAREN . mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR potential MINUS LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR LBRACE TIMES RBRACE MINUS WORK
+##
+## Ends in an error in state: 338.
+##
+## decl -> PROC mode ID COLON context_opt BAR potential MINUS . LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR potential MINUS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR LBRACE TIMES RBRACE WORK
+##
+## Ends in an error in state: 337.
+##
+## decl -> PROC mode ID COLON context_opt BAR potential . MINUS LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR potential
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON BAR WORK
+##
+## Ends in an error in state: 336.
+##
+## decl -> PROC mode ID COLON context_opt BAR . potential MINUS LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt BAR
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON DOT ASSET
+##
+## Ends in an error in state: 96.
+##
+## decl -> PROC mode ID COLON context_opt . TURNSTILE LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+## decl -> PROC mode ID COLON context_opt . BAR potential MINUS LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN HASH ID COLON INT TYPE
+##
+## Ends in an error in state: 89.
+##
+## argument -> LPAREN mid COLON stype . RPAREN [ TURNSTILE COMMA BAR ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN mid COLON stype
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 22, spurious reduction of production stype -> INT 
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN HASH ID COLON WORK
+##
+## Ends in an error in state: 88.
+##
+## argument -> LPAREN mid COLON . stype RPAREN [ TURNSTILE COMMA BAR ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN mid COLON
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN HASH ID WORK
+##
+## Ends in an error in state: 87.
+##
+## argument -> LPAREN mid . COLON stype RPAREN [ TURNSTILE COMMA BAR ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN mid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN HASH WORK
+##
+## Ends in an error in state: 91.
+##
+## mid -> m . ID [ SEMI RPAREN RBRACE LARROW ID HASH ELSE DOT DOLLAR COMMA COLON BAR ]
+##
+## The known suffix of the stack is as follows:
+## m
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN ID COLON ADDRESS RPAREN COMMA WORK
+##
+## Ends in an error in state: 347.
+##
+## separated_nonempty_list(COMMA,argument) -> argument COMMA . separated_nonempty_list(COMMA,argument) [ TURNSTILE BAR ]
+##
+## The known suffix of the stack is as follows:
+## argument COMMA
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN ID COLON ADDRESS RPAREN WORK
+##
+## Ends in an error in state: 346.
+##
+## separated_nonempty_list(COMMA,argument) -> argument . [ TURNSTILE BAR ]
+## separated_nonempty_list(COMMA,argument) -> argument . COMMA separated_nonempty_list(COMMA,argument) [ TURNSTILE BAR ]
+##
+## The known suffix of the stack is as follows:
+## argument
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN ID COLON INTEGER LIST LBRACE TIMES RBRACE WORK
+##
+## Ends in an error in state: 83.
+##
+## argument -> LPAREN ID COLON ftype . RPAREN [ TURNSTILE COMMA BAR ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN ID COLON ftype
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN ID COLON INTEGER PRODUCT
+##
+## Ends in an error in state: 81.
+##
+## ftype -> sp_ftype . LIST potential [ RPAREN ]
+## ftype -> sp_ftype . RIGHTARROW ftype [ RPAREN ]
+##
+## The known suffix of the stack is as follows:
+## sp_ftype
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 51, spurious reduction of production sp_ftype -> INTEGER 
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN ID COLON INTEGER RIGHTARROW WORK
+##
+## Ends in an error in state: 82.
+##
+## ftype -> sp_ftype RIGHTARROW . ftype [ RPAREN ]
+##
+## The known suffix of the stack is as follows:
+## sp_ftype RIGHTARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN ID COLON LPAREN WORK
+##
+## Ends in an error in state: 80.
+##
+## ftype -> LPAREN . ftype RPAREN [ RPAREN ]
+## sp_ftype -> LPAREN . ftype RPAREN [ RIGHTARROW LIST ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN ID COLON WORK
+##
+## Ends in an error in state: 79.
+##
+## argument -> LPAREN ID COLON . ftype RPAREN [ TURNSTILE COMMA BAR ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN ID COLON
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN ID WORK
+##
+## Ends in an error in state: 78.
+##
+## argument -> LPAREN ID . COLON ftype RPAREN [ TURNSTILE COMMA BAR ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON LPAREN WORK
+##
+## Ends in an error in state: 77.
+##
+## argument -> LPAREN . mid COLON stype RPAREN [ TURNSTILE COMMA BAR ]
+## argument -> LPAREN . ID COLON ftype RPAREN [ TURNSTILE COMMA BAR ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS FUN ID EQUALS
+##
+## Ends in an error in state: 141.
+##
+## lambdaExp -> FUN id_list . RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## FUN id_list
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 139, spurious reduction of production id_list -> ID 
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS FUN ID RIGHTARROW WORK
+##
+## Ends in an error in state: 142.
+##
+## lambdaExp -> FUN id_list RIGHTARROW . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## FUN id_list RIGHTARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS FUN ID WORK
+##
+## Ends in an error in state: 139.
+##
+## id_list -> ID . [ RIGHTARROW EQUALS ]
+## id_list -> ID . id_list [ RIGHTARROW EQUALS ]
+##
+## The known suffix of the stack is as follows:
+## ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS FUN WORK
+##
+## Ends in an error in state: 138.
+##
+## lambdaExp -> FUN . id_list RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## FUN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS ID LPAREN TRUE WORK
+##
+## Ends in an error in state: 189.
+##
+## arg -> LPAREN expr . RPAREN [ WITH TYPE TRUE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LPAREN LESSEQ LESS INT IN ID GREATEREQ GREATER FALSE EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . PLUS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS ID LPAREN WORK
+##
+## Ends in an error in state: 126.
+##
+## arg -> LPAREN . expr RPAREN [ WITH TYPE TRUE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LPAREN LESSEQ LESS INT IN ID GREATEREQ GREATER FALSE EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS ID TRUE WORK
+##
+## Ends in an error in state: 134.
+##
+## nonempty_list(arg) -> arg . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## nonempty_list(arg) -> arg . nonempty_list(arg) [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## arg
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS ID WORK
+##
+## Ends in an error in state: 129.
+##
+## app -> ID . nonempty_list(arg) [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## expr -> ID . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS IF TRUE THEN TRUE ELSE WORK
+##
+## Ends in an error in state: 187.
+##
+## cond -> IF expr THEN expr ELSE . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## IF expr THEN expr ELSE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS IF TRUE THEN TRUE WORK
+##
+## Ends in an error in state: 160.
+##
+## compOp -> expr . EQUALS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## cond -> IF expr THEN expr . ELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## op -> expr . PLUS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS ELSE DIV CONS ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## IF expr THEN expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS IF TRUE THEN WORK
+##
+## Ends in an error in state: 159.
+##
+## cond -> IF expr THEN . expr ELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## IF expr THEN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS IF TRUE WORK
+##
+## Ends in an error in state: 156.
+##
+## compOp -> expr . EQUALS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## cond -> IF expr . THEN expr ELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . PLUS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## IF expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS IF WORK
+##
+## Ends in an error in state: 128.
+##
+## cond -> IF . expr THEN expr ELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## IF
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE ABORT WORK
+##
+## Ends in an error in state: 301.
+##
+## expr -> LBRACE st . RBRACE [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LBRACE st
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE CASE DOLLAR ID LPAREN ID RRARROW ABORT BAR WORK
+##
+## Ends in an error in state: 229.
+##
+## branches2 -> BAR . branches [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## BAR
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE CASE DOLLAR ID LPAREN ID RRARROW ABORT WORK
+##
+## Ends in an error in state: 227.
+##
+## branches -> ID RRARROW st . branches2 [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## ID RRARROW st
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE CASE DOLLAR ID LPAREN ID RRARROW WITH
+##
+## Ends in an error in state: 225.
+##
+## branches -> ID RRARROW . st branches2 [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## ID RRARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE CASE DOLLAR ID LPAREN ID WORK
+##
+## Ends in an error in state: 224.
+##
+## branches -> ID . RRARROW st branches2 [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE CASE DOLLAR ID LPAREN WORK
+##
+## Ends in an error in state: 223.
+##
+## st -> CASE linid LPAREN . branches [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## CASE linid LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE CASE DOLLAR ID WORK
+##
+## Ends in an error in state: 222.
+##
+## st -> CASE linid . LPAREN branches [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## CASE linid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE CASE WORK
+##
+## Ends in an error in state: 221.
+##
+## st -> CASE . linid LPAREN branches [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## CASE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE CLOSE WORK
+##
+## Ends in an error in state: 219.
+##
+## st -> CLOSE . linid [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## CLOSE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE GET DOLLAR ID LBRACE TIMES RBRACE SEMI WITH
+##
+## Ends in an error in state: 218.
+##
+## st -> GET linid potential SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## GET linid potential SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE GET DOLLAR ID LBRACE TIMES RBRACE WORK
+##
+## Ends in an error in state: 217.
+##
+## st -> GET linid potential . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## GET linid potential
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE GET DOLLAR ID WORK
+##
+## Ends in an error in state: 216.
+##
+## st -> GET linid . potential SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## GET linid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE GET WORK
+##
+## Ends in an error in state: 215.
+##
+## st -> GET . linid potential SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## GET
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID COLON INT LARROW MAKECHAN INT SEMI WITH
+##
+## Ends in an error in state: 275.
+##
+## st -> mid COLON stype LARROW MAKECHAN INT SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid COLON stype LARROW MAKECHAN INT SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID COLON INT LARROW MAKECHAN INT WORK
+##
+## Ends in an error in state: 274.
+##
+## st -> mid COLON stype LARROW MAKECHAN INT . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid COLON stype LARROW MAKECHAN INT
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID COLON INT LARROW MAKECHAN WORK
+##
+## Ends in an error in state: 273.
+##
+## st -> mid COLON stype LARROW MAKECHAN . INT SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid COLON stype LARROW MAKECHAN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID COLON INT LARROW WORK
+##
+## Ends in an error in state: 272.
+##
+## st -> mid COLON stype LARROW . MAKECHAN INT SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid COLON stype LARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID COLON INT TYPE
+##
+## Ends in an error in state: 271.
+##
+## st -> mid COLON stype . LARROW MAKECHAN INT SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid COLON stype
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 22, spurious reduction of production stype -> INT 
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID COLON WORK
+##
+## Ends in an error in state: 270.
+##
+## st -> mid COLON . stype LARROW MAKECHAN INT SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid COLON
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID DOT ID SEMI WITH
+##
+## Ends in an error in state: 268.
+##
+## st -> mid DOT ID SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid DOT ID SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID DOT ID WORK
+##
+## Ends in an error in state: 267.
+##
+## st -> mid DOT ID . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid DOT ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID DOT WORK
+##
+## Ends in an error in state: 266.
+##
+## st -> mid DOT . ID SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid DOT
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ACCEPT HASH ID SEMI WITH
+##
+## Ends in an error in state: 263.
+##
+## st -> mid LARROW ACCEPT sharedid SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW ACCEPT sharedid SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ACCEPT HASH ID WORK
+##
+## Ends in an error in state: 262.
+##
+## st -> mid LARROW ACCEPT sharedid . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW ACCEPT sharedid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ACCEPT WORK
+##
+## Ends in an error in state: 261.
+##
+## st -> mid LARROW ACCEPT . sharedid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW ACCEPT
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ACQUIRE HASH ID SEMI WITH
+##
+## Ends in an error in state: 259.
+##
+## st -> mid LARROW ACQUIRE sharedid SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW ACQUIRE sharedid SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ACQUIRE HASH ID WORK
+##
+## Ends in an error in state: 258.
+##
+## st -> mid LARROW ACQUIRE sharedid . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW ACQUIRE sharedid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ACQUIRE HASH WORK
+##
+## Ends in an error in state: 256.
+##
+## sharedid -> HASH . ID [ SEMI ]
+##
+## The known suffix of the stack is as follows:
+## HASH
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ACQUIRE WORK
+##
+## Ends in an error in state: 255.
+##
+## st -> mid LARROW ACQUIRE . sharedid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW ACQUIRE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW DETACH DOLLAR ID SEMI WITH
+##
+## Ends in an error in state: 253.
+##
+## st -> mid LARROW DETACH linid SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW DETACH linid SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW DETACH DOLLAR ID WORK
+##
+## Ends in an error in state: 252.
+##
+## st -> mid LARROW DETACH linid . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW DETACH linid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW DETACH WORK
+##
+## Ends in an error in state: 251.
+##
+## st -> mid LARROW DETACH . linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW DETACH
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ID LARROW ID WORK
+##
+## Ends in an error in state: 249.
+##
+## list(app_arg) -> app_arg . list(app_arg) [ SEMI RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## app_arg
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ID LARROW SEMI WITH
+##
+## Ends in an error in state: 247.
+##
+## st -> mid LARROW ID LARROW list(app_arg) SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW ID LARROW list(app_arg) SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ID LARROW WORK
+##
+## Ends in an error in state: 243.
+##
+## st -> mid LARROW ID LARROW . list(app_arg) SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid LARROW ID LARROW . list(app_arg) [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW ID LARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW ID WORK
+##
+## Ends in an error in state: 242.
+##
+## st -> mid LARROW ID . LARROW list(app_arg) SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid LARROW ID . LARROW list(app_arg) [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW RECV DOLLAR ID SEMI WITH
+##
+## Ends in an error in state: 240.
+##
+## st -> mid LARROW RECV linid SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW RECV linid SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW RECV DOLLAR ID WORK
+##
+## Ends in an error in state: 239.
+##
+## st -> mid LARROW RECV linid . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW RECV linid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW RECV WORK
+##
+## Ends in an error in state: 238.
+##
+## st -> mid LARROW RECV . linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW RECV
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW RELEASE DOLLAR ID SEMI WITH
+##
+## Ends in an error in state: 236.
+##
+## st -> mid LARROW RELEASE linid SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW RELEASE linid SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW RELEASE DOLLAR ID WORK
+##
+## Ends in an error in state: 235.
+##
+## st -> mid LARROW RELEASE linid . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW RELEASE linid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW RELEASE WORK
+##
+## Ends in an error in state: 234.
+##
+## st -> mid LARROW RELEASE . linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW RELEASE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID LARROW WORK
+##
+## Ends in an error in state: 233.
+##
+## st -> mid LARROW . ID LARROW list(app_arg) SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid LARROW . ID LARROW list(app_arg) [ RPAREN RBRACE ELSE BAR ]
+## st -> mid LARROW . mid [ RPAREN RBRACE ELSE BAR ]
+## st -> mid LARROW . RECV linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid LARROW . ACQUIRE sharedid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid LARROW . ACCEPT sharedid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid LARROW . RELEASE linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid LARROW . DETACH linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid LARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE HASH ID WORK
+##
+## Ends in an error in state: 232.
+##
+## st -> mid . LARROW ID LARROW list(app_arg) SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid . LARROW ID LARROW list(app_arg) [ RPAREN RBRACE ELSE BAR ]
+## st -> mid . LARROW mid [ RPAREN RBRACE ELSE BAR ]
+## st -> mid . LARROW RECV linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid . DOT ID SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid . LARROW ACQUIRE sharedid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid . LARROW ACCEPT sharedid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid . LARROW RELEASE linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid . LARROW DETACH linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> mid . COLON stype LARROW MAKECHAN INT SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## mid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE ID EQUALS RECV DOLLAR ID SEMI WITH
+##
+## Ends in an error in state: 214.
+##
+## st -> ID EQUALS RECV linid SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## ID EQUALS RECV linid SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE ID EQUALS RECV DOLLAR ID WORK
+##
+## Ends in an error in state: 213.
+##
+## st -> ID EQUALS RECV linid . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## ID EQUALS RECV linid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE ID EQUALS RECV WORK
+##
+## Ends in an error in state: 212.
+##
+## st -> ID EQUALS RECV . linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## ID EQUALS RECV
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE ID EQUALS WORK
+##
+## Ends in an error in state: 211.
+##
+## st -> ID EQUALS . RECV linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## ID EQUALS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE ID WORK
+##
+## Ends in an error in state: 210.
+##
+## st -> ID . EQUALS RECV linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE IF TRUE THEN ABORT ELSE WITH
+##
+## Ends in an error in state: 281.
+##
+## st -> IF expr THEN st ELSE . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## IF expr THEN st ELSE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE IF TRUE THEN ABORT WORK
+##
+## Ends in an error in state: 280.
+##
+## st -> IF expr THEN st . ELSE st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## IF expr THEN st
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE IF TRUE THEN WITH
+##
+## Ends in an error in state: 209.
+##
+## st -> IF expr THEN . st ELSE st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## IF expr THEN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE IF TRUE WORK
+##
+## Ends in an error in state: 208.
+##
+## compOp -> expr . EQUALS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . PLUS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES THEN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## st -> IF expr . THEN st ELSE st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## IF expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE IF WORK
+##
+## Ends in an error in state: 207.
+##
+## st -> IF . expr THEN st ELSE st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## IF
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE LET ID EQUALS TRUE SEMI WITH
+##
+## Ends in an error in state: 206.
+##
+## st -> LET ID EQUALS expr SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## LET ID EQUALS expr SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE LET ID EQUALS TRUE WORK
+##
+## Ends in an error in state: 205.
+##
+## compOp -> expr . EQUALS expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . PLUS expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES SEMI PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## st -> LET ID EQUALS expr . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## LET ID EQUALS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE LET ID EQUALS WORK
+##
+## Ends in an error in state: 204.
+##
+## st -> LET ID EQUALS . expr SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## LET ID EQUALS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE LET ID WORK
+##
+## Ends in an error in state: 203.
+##
+## st -> LET ID . EQUALS expr SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## LET ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE LET WORK
+##
+## Ends in an error in state: 202.
+##
+## st -> LET . ID EQUALS expr SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## LET
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PAY DOLLAR ID LBRACE TIMES RBRACE SEMI WITH
+##
+## Ends in an error in state: 201.
+##
+## st -> PAY linid potential SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PAY linid potential SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PAY DOLLAR ID LBRACE TIMES RBRACE WORK
+##
+## Ends in an error in state: 200.
+##
+## st -> PAY linid potential . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PAY linid potential
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PAY DOLLAR ID WORK
+##
+## Ends in an error in state: 199.
+##
+## st -> PAY linid . potential SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PAY linid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PAY WORK
+##
+## Ends in an error in state: 198.
+##
+## st -> PAY . linid potential SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PAY
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT LPAREN QUOTED_STRING COMMA ID COMMA WORK
+##
+## Ends in an error in state: 293.
+##
+## separated_nonempty_list(COMMA,app_arg) -> app_arg COMMA . separated_nonempty_list(COMMA,app_arg) [ RPAREN ]
+##
+## The known suffix of the stack is as follows:
+## app_arg COMMA
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT LPAREN QUOTED_STRING COMMA ID WORK
+##
+## Ends in an error in state: 292.
+##
+## separated_nonempty_list(COMMA,app_arg) -> app_arg . [ RPAREN ]
+## separated_nonempty_list(COMMA,app_arg) -> app_arg . COMMA separated_nonempty_list(COMMA,app_arg) [ RPAREN ]
+##
+## The known suffix of the stack is as follows:
+## app_arg
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT LPAREN QUOTED_STRING COMMA RPAREN SEMI WITH
+##
+## Ends in an error in state: 290.
+##
+## st -> PRINT LPAREN QUOTED_STRING COMMA loption(separated_nonempty_list(COMMA,app_arg)) RPAREN SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PRINT LPAREN QUOTED_STRING COMMA loption(separated_nonempty_list(COMMA,app_arg)) RPAREN SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT LPAREN QUOTED_STRING COMMA RPAREN WORK
+##
+## Ends in an error in state: 289.
+##
+## st -> PRINT LPAREN QUOTED_STRING COMMA loption(separated_nonempty_list(COMMA,app_arg)) RPAREN . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PRINT LPAREN QUOTED_STRING COMMA loption(separated_nonempty_list(COMMA,app_arg)) RPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT LPAREN QUOTED_STRING COMMA WORK
+##
+## Ends in an error in state: 286.
+##
+## st -> PRINT LPAREN QUOTED_STRING COMMA . loption(separated_nonempty_list(COMMA,app_arg)) RPAREN SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PRINT LPAREN QUOTED_STRING COMMA
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT LPAREN QUOTED_STRING RPAREN SEMI WITH
+##
+## Ends in an error in state: 197.
+##
+## st -> PRINT LPAREN QUOTED_STRING RPAREN SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PRINT LPAREN QUOTED_STRING RPAREN SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT LPAREN QUOTED_STRING RPAREN WORK
+##
+## Ends in an error in state: 196.
+##
+## st -> PRINT LPAREN QUOTED_STRING RPAREN . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PRINT LPAREN QUOTED_STRING RPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT LPAREN QUOTED_STRING WORK
+##
+## Ends in an error in state: 195.
+##
+## st -> PRINT LPAREN QUOTED_STRING . RPAREN SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> PRINT LPAREN QUOTED_STRING . COMMA loption(separated_nonempty_list(COMMA,app_arg)) RPAREN SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PRINT LPAREN QUOTED_STRING
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT LPAREN WORK
+##
+## Ends in an error in state: 194.
+##
+## st -> PRINT LPAREN . QUOTED_STRING RPAREN SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> PRINT LPAREN . QUOTED_STRING COMMA loption(separated_nonempty_list(COMMA,app_arg)) RPAREN SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PRINT LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE PRINT WORK
+##
+## Ends in an error in state: 193.
+##
+## st -> PRINT . LPAREN QUOTED_STRING RPAREN SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> PRINT . LPAREN QUOTED_STRING COMMA loption(separated_nonempty_list(COMMA,app_arg)) RPAREN SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## PRINT
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE SEND DOLLAR ID HASH ID SEMI WITH
+##
+## Ends in an error in state: 192.
+##
+## st -> SEND linid mid SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## SEND linid mid SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE SEND DOLLAR ID HASH ID WORK
+##
+## Ends in an error in state: 191.
+##
+## st -> SEND linid mid . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## SEND linid mid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE SEND DOLLAR ID TRUE SEMI WITH
+##
+## Ends in an error in state: 297.
+##
+## st -> SEND linid arg SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## SEND linid arg SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE SEND DOLLAR ID TRUE WORK
+##
+## Ends in an error in state: 296.
+##
+## st -> SEND linid arg . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## SEND linid arg
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE SEND DOLLAR ID WORK
+##
+## Ends in an error in state: 124.
+##
+## st -> SEND linid . mid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> SEND linid . arg SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## SEND linid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE SEND WORK
+##
+## Ends in an error in state: 123.
+##
+## st -> SEND . linid mid SEMI st [ RPAREN RBRACE ELSE BAR ]
+## st -> SEND . linid arg SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## SEND
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE WAIT DOLLAR ID SEMI WITH
+##
+## Ends in an error in state: 122.
+##
+## st -> WAIT linid SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## WAIT linid SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE WAIT DOLLAR ID WORK
+##
+## Ends in an error in state: 121.
+##
+## st -> WAIT linid . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## WAIT linid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE WAIT DOLLAR WORK
+##
+## Ends in an error in state: 119.
+##
+## linid -> DOLLAR . ID [ TRUE SEMI RPAREN RBRACE LPAREN LBRACE INT ID HASH FALSE ELSE DOLLAR BAR ]
+##
+## The known suffix of the stack is as follows:
+## DOLLAR
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE WAIT WORK
+##
+## Ends in an error in state: 118.
+##
+## st -> WAIT . linid SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## WAIT
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE WITH
+##
+## Ends in an error in state: 114.
+##
+## expr -> LBRACE . st RBRACE [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LBRACE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE WORK LBRACE TIMES RBRACE SEMI WITH
+##
+## Ends in an error in state: 117.
+##
+## st -> WORK potential SEMI . st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## WORK potential SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE WORK LBRACE TIMES RBRACE WORK
+##
+## Ends in an error in state: 116.
+##
+## st -> WORK potential . SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## WORK potential
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LBRACE WORK WORK
+##
+## Ends in an error in state: 115.
+##
+## st -> WORK . potential SEMI st [ RPAREN RBRACE ELSE BAR ]
+##
+## The known suffix of the stack is as follows:
+## WORK
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET FUN ID ID EQUALS EMPTYLIST IN WORK
+##
+## Ends in an error in state: 312.
+##
+## letin -> LET FUN ID func IN . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LET FUN ID func IN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET FUN ID ID EQUALS TRUE WORK
+##
+## Ends in an error in state: 310.
+##
+## compOp -> expr . EQUALS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## func -> id_list EQUALS expr . [ IN ]
+## op -> expr . PLUS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## id_list EQUALS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET FUN ID ID EQUALS WORK
+##
+## Ends in an error in state: 309.
+##
+## func -> id_list EQUALS . expr [ IN ]
+##
+## The known suffix of the stack is as follows:
+## id_list EQUALS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET FUN ID ID RIGHTARROW
+##
+## Ends in an error in state: 308.
+##
+## func -> id_list . EQUALS expr [ IN ]
+##
+## The known suffix of the stack is as follows:
+## id_list
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 139, spurious reduction of production id_list -> ID 
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET FUN ID WORK
+##
+## Ends in an error in state: 307.
+##
+## letin -> LET FUN ID . func IN expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LET FUN ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET FUN WORK
+##
+## Ends in an error in state: 306.
+##
+## letin -> LET FUN . ID func IN expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LET FUN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET ID EQUALS TRUE IN WORK
+##
+## Ends in an error in state: 304.
+##
+## letin -> LET ID EQUALS expr IN . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LET ID EQUALS expr IN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET ID EQUALS TRUE WORK
+##
+## Ends in an error in state: 303.
+##
+## compOp -> expr . EQUALS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## letin -> LET ID EQUALS expr . IN expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LET ID EQUALS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET ID EQUALS WORK
+##
+## Ends in an error in state: 113.
+##
+## letin -> LET ID EQUALS . expr IN expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LET ID EQUALS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET ID WORK
+##
+## Ends in an error in state: 112.
+##
+## letin -> LET ID . EQUALS expr IN expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LET ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LET WORK
+##
+## Ends in an error in state: 111.
+##
+## letin -> LET . ID EQUALS expr IN expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## letin -> LET . FUN ID func IN expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LET
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LPAREN MINUS INT WORK
+##
+## Ends in an error in state: 109.
+##
+## expr -> LPAREN MINUS INT . RPAREN [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN MINUS INT
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LPAREN MINUS WORK
+##
+## Ends in an error in state: 108.
+##
+## expr -> LPAREN MINUS . INT RPAREN [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN MINUS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LPAREN TRUE RPAREN WORK
+##
+## Ends in an error in state: 315.
+##
+## app -> LPAREN expr RPAREN . nonempty_list(arg) [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## expr -> LPAREN expr RPAREN . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN expr RPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LPAREN TRUE WORK
+##
+## Ends in an error in state: 314.
+##
+## app -> LPAREN expr . RPAREN nonempty_list(arg) [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## expr -> LPAREN expr . RPAREN [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES RPAREN PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LPAREN WORK
+##
+## Ends in an error in state: 107.
+##
+## app -> LPAREN . expr RPAREN nonempty_list(arg) [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## expr -> LPAREN . MINUS INT RPAREN [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## expr -> LPAREN . expr RPAREN [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LSQUARE TRUE SEMI WORK
+##
+## Ends in an error in state: 322.
+##
+## separated_nonempty_list(SEMI,expr) -> expr SEMI . separated_nonempty_list(SEMI,expr) [ RSQUARE ]
+##
+## The known suffix of the stack is as follows:
+## expr SEMI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LSQUARE TRUE WORK
+##
+## Ends in an error in state: 321.
+##
+## compOp -> expr . EQUALS expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . PLUS expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES SEMI RSQUARE PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## separated_nonempty_list(SEMI,expr) -> expr . [ RSQUARE ]
+## separated_nonempty_list(SEMI,expr) -> expr . SEMI separated_nonempty_list(SEMI,expr) [ RSQUARE ]
+##
+## The known suffix of the stack is as follows:
+## expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS LSQUARE WORK
+##
+## Ends in an error in state: 106.
+##
+## listVal -> LSQUARE . list_fields RSQUARE [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## LSQUARE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WITH EMPTYLIST RIGHTARROW TRUE BAR ID CONS ID RIGHTARROW WORK
+##
+## Ends in an error in state: 333.
+##
+## matchExp -> MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR ID CONS ID RIGHTARROW . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR ID CONS ID RIGHTARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WITH EMPTYLIST RIGHTARROW TRUE BAR ID CONS ID WORK
+##
+## Ends in an error in state: 332.
+##
+## matchExp -> MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR ID CONS ID . RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR ID CONS ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WITH EMPTYLIST RIGHTARROW TRUE BAR ID CONS WORK
+##
+## Ends in an error in state: 331.
+##
+## matchExp -> MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR ID CONS . ID RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR ID CONS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WITH EMPTYLIST RIGHTARROW TRUE BAR ID WORK
+##
+## Ends in an error in state: 330.
+##
+## matchExp -> MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR ID . CONS ID RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WITH EMPTYLIST RIGHTARROW TRUE BAR WORK
+##
+## Ends in an error in state: 329.
+##
+## matchExp -> MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR . ID CONS ID RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr WITH EMPTYLIST RIGHTARROW expr BAR
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WITH EMPTYLIST RIGHTARROW TRUE WORK
+##
+## Ends in an error in state: 328.
+##
+## compOp -> expr . EQUALS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## matchExp -> MATCH expr WITH EMPTYLIST RIGHTARROW expr . BAR ID CONS ID RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr WITH EMPTYLIST RIGHTARROW expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WITH EMPTYLIST RIGHTARROW WORK
+##
+## Ends in an error in state: 327.
+##
+## matchExp -> MATCH expr WITH EMPTYLIST RIGHTARROW . expr BAR ID CONS ID RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr WITH EMPTYLIST RIGHTARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WITH EMPTYLIST WORK
+##
+## Ends in an error in state: 326.
+##
+## matchExp -> MATCH expr WITH EMPTYLIST . RIGHTARROW expr BAR ID CONS ID RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr WITH EMPTYLIST
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WITH WORK
+##
+## Ends in an error in state: 325.
+##
+## matchExp -> MATCH expr WITH . EMPTYLIST RIGHTARROW expr BAR ID CONS ID RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr WITH
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH TRUE WORK
+##
+## Ends in an error in state: 324.
+##
+## compOp -> expr . EQUALS expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## matchExp -> MATCH expr . WITH EMPTYLIST RIGHTARROW expr BAR ID CONS ID RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TIMES PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EQUALS DIV CONS ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS MATCH WORK
+##
+## Ends in an error in state: 105.
+##
+## matchExp -> MATCH . expr WITH EMPTYLIST RIGHTARROW expr BAR ID CONS ID RIGHTARROW expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## MATCH
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE ANDALSO TRUE WORK
+##
+## Ends in an error in state: 186.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr ANDALSO expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr ANDALSO expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE ANDALSO WORK
+##
+## Ends in an error in state: 185.
+##
+## relOp -> expr ANDALSO . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr ANDALSO
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE CONS TRUE WORK
+##
+## Ends in an error in state: 172.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr CONS expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr CONS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE CONS WORK
+##
+## Ends in an error in state: 171.
+##
+## cons -> expr CONS . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr CONS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE DIV WORK
+##
+## Ends in an error in state: 163.
+##
+## op -> expr DIV . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr DIV
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE EQUALS EQUALS TRUE WORK
+##
+## Ends in an error in state: 183.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr EQUALS EQUALS expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr EQUALS EQUALS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE EQUALS EQUALS WORK
+##
+## Ends in an error in state: 182.
+##
+## compOp -> expr EQUALS EQUALS . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr EQUALS EQUALS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE EQUALS TRUE WORK
+##
+## Ends in an error in state: 184.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr EQUALS expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr EQUALS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE EQUALS WORK
+##
+## Ends in an error in state: 181.
+##
+## compOp -> expr EQUALS . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr EQUALS . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr EQUALS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE GREATER TRUE WORK
+##
+## Ends in an error in state: 180.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr GREATER expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr GREATER expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE GREATER WORK
+##
+## Ends in an error in state: 179.
+##
+## compOp -> expr GREATER . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr GREATER
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE GREATEREQ TRUE WORK
+##
+## Ends in an error in state: 178.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr GREATEREQ expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr GREATEREQ expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE GREATEREQ WORK
+##
+## Ends in an error in state: 177.
+##
+## compOp -> expr GREATEREQ . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr GREATEREQ
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE LESS TRUE WORK
+##
+## Ends in an error in state: 176.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr LESS expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr LESS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE LESS WORK
+##
+## Ends in an error in state: 175.
+##
+## compOp -> expr LESS . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr LESS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE LESSEQ TRUE WORK
+##
+## Ends in an error in state: 174.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr LESSEQ expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr LESSEQ expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE LESSEQ WORK
+##
+## Ends in an error in state: 173.
+##
+## compOp -> expr LESSEQ . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr LESSEQ
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE MINUS TRUE WORK
+##
+## Ends in an error in state: 170.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr MINUS expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr MINUS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE MINUS WORK
+##
+## Ends in an error in state: 169.
+##
+## op -> expr MINUS . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr MINUS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE NEQ TRUE WORK
+##
+## Ends in an error in state: 168.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr NEQ expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr NEQ expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE NEQ WORK
+##
+## Ends in an error in state: 167.
+##
+## compOp -> expr NEQ . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr NEQ
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE ORELSE TRUE WORK
+##
+## Ends in an error in state: 166.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr ORELSE expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr ORELSE expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE ORELSE WORK
+##
+## Ends in an error in state: 165.
+##
+## relOp -> expr ORELSE . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr ORELSE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE PLUS TRUE WORK
+##
+## Ends in an error in state: 162.
+##
+## compOp -> expr . EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . NEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATER expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## compOp -> expr . LESSEQ expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## cons -> expr . CONS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . PLUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr PLUS expr . [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . TIMES expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . MINUS expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## op -> expr . DIV expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ANDALSO expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+## relOp -> expr . ORELSE expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr PLUS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE PLUS WORK
+##
+## Ends in an error in state: 161.
+##
+## op -> expr PLUS . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr PLUS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE TIMES WORK
+##
+## Ends in an error in state: 157.
+##
+## op -> expr TIMES . expr [ WITH TYPE TIMES THEN SEMI RSQUARE RPAREN PROC PLUS ORELSE NEQ MINUS LESSEQ LESS IN GREATEREQ GREATER EXEC EQUALS EOF ELSE DIV CONS BAR ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## expr TIMES
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS TRUE WORK
+##
+## Ends in an error in state: 335.
+##
+## compOp -> expr . EQUALS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . EQUALS EQUALS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . NEQ expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . GREATER expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . LESS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . GREATEREQ expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## compOp -> expr . LESSEQ expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## cons -> expr . CONS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## decl -> PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON stype RPAREN EQUALS expr . [ TYPE PROC EXEC EOF ]
+## op -> expr . PLUS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## op -> expr . TIMES expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## op -> expr . MINUS expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## op -> expr . DIV expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## relOp -> expr . ANDALSO expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+## relOp -> expr . ORELSE expr [ TYPE TIMES PROC PLUS ORELSE NEQ MINUS LESSEQ LESS GREATEREQ GREATER EXEC EQUALS EOF DIV CONS ANDALSO ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON stype RPAREN EQUALS expr
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN EQUALS WORK
+##
+## Ends in an error in state: 103.
+##
+## decl -> PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON stype RPAREN EQUALS . expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON stype RPAREN EQUALS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT RPAREN WORK
+##
+## Ends in an error in state: 102.
+##
+## decl -> PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON stype RPAREN . EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON stype RPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON INT TYPE
+##
+## Ends in an error in state: 101.
+##
+## decl -> PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON stype . RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON stype
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 22, spurious reduction of production stype -> INT 
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID COLON WORK
+##
+## Ends in an error in state: 100.
+##
+## decl -> PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON . stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt TURNSTILE LPAREN mid COLON
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN HASH ID WORK
+##
+## Ends in an error in state: 99.
+##
+## decl -> PROC mode ID COLON context_opt TURNSTILE LPAREN mid . COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt TURNSTILE LPAREN mid
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE LPAREN WORK
+##
+## Ends in an error in state: 98.
+##
+## decl -> PROC mode ID COLON context_opt TURNSTILE LPAREN . mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt TURNSTILE LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON TURNSTILE WORK
+##
+## Ends in an error in state: 97.
+##
+## decl -> PROC mode ID COLON context_opt TURNSTILE . LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON context_opt TURNSTILE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID COLON WORK
+##
+## Ends in an error in state: 76.
+##
+## decl -> PROC mode ID COLON . context_opt TURNSTILE LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+## decl -> PROC mode ID COLON . context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID COLON
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION ID WORK
+##
+## Ends in an error in state: 75.
+##
+## decl -> PROC mode ID . COLON context_opt TURNSTILE LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+## decl -> PROC mode ID . COLON context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC TRANSACTION WORK
+##
+## Ends in an error in state: 74.
+##
+## decl -> PROC mode . ID COLON context_opt TURNSTILE LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+## decl -> PROC mode . ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC mode
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: PROC WORK
+##
+## Ends in an error in state: 70.
+##
+## decl -> PROC . mode ID COLON context_opt TURNSTILE LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+## decl -> PROC . mode ID COLON context_opt BAR potential MINUS LPAREN mid COLON stype RPAREN EQUALS expr [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## PROC
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS AMPERSAND LBRACE WORK
+##
+## Ends in an error in state: 30.
+##
+## stype -> AMPERSAND LBRACE . loption(separated_nonempty_list(COMMA,label_stype)) RBRACE [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## AMPERSAND LBRACE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS AMPERSAND WORK
+##
+## Ends in an error in state: 29.
+##
+## stype -> AMPERSAND . LBRACE loption(separated_nonempty_list(COMMA,label_stype)) RBRACE [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## AMPERSAND
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS BAR LBRACE TIMES RBRACE GREATER WORK
+##
+## Ends in an error in state: 28.
+##
+## stype -> BAR potential GREATER . stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## BAR potential GREATER
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS BAR LBRACE TIMES RBRACE WORK
+##
+## Ends in an error in state: 27.
+##
+## stype -> BAR potential . GREATER stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## BAR potential
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS BAR WORK
+##
+## Ends in an error in state: 26.
+##
+## stype -> BAR . potential GREATER stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## BAR
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS DOWN WORK
+##
+## Ends in an error in state: 24.
+##
+## stype -> DOWN . stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## DOWN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS ID WORK
+##
+## Ends in an error in state: 23.
+##
+## sp_stype -> ID . [ TIMES LOLLI ]
+## stype -> ID . [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS INT LOLLI WORK
+##
+## Ends in an error in state: 47.
+##
+## stype -> sp_stype LOLLI . stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## sp_stype LOLLI
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS INT TIMES WORK
+##
+## Ends in an error in state: 40.
+##
+## stype -> sp_stype TIMES . stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## sp_stype TIMES
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS INT WORK
+##
+## Ends in an error in state: 22.
+##
+## sp_stype -> INT . [ TIMES LOLLI ]
+## stype -> INT . [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## INT
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS INTEGER PRODUCT WORK
+##
+## Ends in an error in state: 45.
+##
+## stype -> sp_ftype PRODUCT . stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## sp_ftype PRODUCT
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS INTEGER RIGHTARROW WORK
+##
+## Ends in an error in state: 43.
+##
+## stype -> sp_ftype RIGHTARROW . stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## sp_ftype RIGHTARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS INTEGER WORK
+##
+## Ends in an error in state: 42.
+##
+## stype -> sp_ftype . RIGHTARROW stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+## stype -> sp_ftype . PRODUCT stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## sp_ftype
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LESS LBRACE INT WORK
+##
+## Ends in an error in state: 17.
+##
+## potential -> LBRACE INT . RBRACE [ SEMI RPAREN MINUS GREATER BAR ]
+##
+## The known suffix of the stack is as follows:
+## LBRACE INT
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LESS LBRACE TIMES RBRACE BAR WORK
+##
+## Ends in an error in state: 20.
+##
+## stype -> LESS potential BAR . stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## LESS potential BAR
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LESS LBRACE TIMES RBRACE WORK
+##
+## Ends in an error in state: 19.
+##
+## stype -> LESS potential . BAR stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## LESS potential
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LESS LBRACE TIMES WORK
+##
+## Ends in an error in state: 15.
+##
+## potential -> LBRACE TIMES . RBRACE [ SEMI RPAREN MINUS GREATER BAR ]
+##
+## The known suffix of the stack is as follows:
+## LBRACE TIMES
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LESS LBRACE WORK
+##
+## Ends in an error in state: 14.
+##
+## potential -> LBRACE . INT RBRACE [ SEMI RPAREN MINUS GREATER BAR ]
+## potential -> LBRACE . TIMES RBRACE [ SEMI RPAREN MINUS GREATER BAR ]
+##
+## The known suffix of the stack is as follows:
+## LBRACE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LESS WORK
+##
+## Ends in an error in state: 13.
+##
+## stype -> LESS . potential BAR stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## LESS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN ADDRESS WORK
+##
+## Ends in an error in state: 53.
+##
+## ftype -> ADDRESS . [ RPAREN ]
+## sp_ftype -> ADDRESS . [ RIGHTARROW PRODUCT LIST ]
+##
+## The known suffix of the stack is as follows:
+## ADDRESS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN BOOLEAN WORK
+##
+## Ends in an error in state: 52.
+##
+## ftype -> BOOLEAN . [ RPAREN ]
+## sp_ftype -> BOOLEAN . [ RIGHTARROW PRODUCT LIST ]
+##
+## The known suffix of the stack is as follows:
+## BOOLEAN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN INT RPAREN WORK
+##
+## Ends in an error in state: 55.
+##
+## sp_stype -> LPAREN stype RPAREN . [ TIMES LOLLI ]
+## stype -> LPAREN stype RPAREN . [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN stype RPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN INT TYPE
+##
+## Ends in an error in state: 54.
+##
+## sp_stype -> LPAREN stype . RPAREN [ TIMES LOLLI ]
+## stype -> LPAREN stype . RPAREN [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN stype
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 22, spurious reduction of production stype -> INT 
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN INTEGER LIST LBRACE TIMES RBRACE WORK
+##
+## Ends in an error in state: 63.
+##
+## sp_ftype -> LPAREN ftype . RPAREN [ RIGHTARROW PRODUCT ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN ftype
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN INTEGER LIST WORK
+##
+## Ends in an error in state: 59.
+##
+## ftype -> sp_ftype LIST . potential [ RPAREN ]
+##
+## The known suffix of the stack is as follows:
+## sp_ftype LIST
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN INTEGER RIGHTARROW WORK
+##
+## Ends in an error in state: 57.
+##
+## ftype -> sp_ftype RIGHTARROW . ftype [ RPAREN ]
+## stype -> sp_ftype RIGHTARROW . stype [ RPAREN ]
+##
+## The known suffix of the stack is as follows:
+## sp_ftype RIGHTARROW
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN INTEGER WORK
+##
+## Ends in an error in state: 51.
+##
+## ftype -> INTEGER . [ RPAREN ]
+## sp_ftype -> INTEGER . [ RIGHTARROW PRODUCT LIST ]
+##
+## The known suffix of the stack is as follows:
+## INTEGER
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN LPAREN INTEGER LIST LBRACE TIMES RBRACE WORK
+##
+## Ends in an error in state: 61.
+##
+## ftype -> LPAREN ftype . RPAREN [ RPAREN ]
+## sp_ftype -> LPAREN ftype . RPAREN [ RIGHTARROW PRODUCT LIST ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN ftype
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN LPAREN INTEGER RPAREN WORK
+##
+## Ends in an error in state: 62.
+##
+## ftype -> LPAREN ftype RPAREN . [ RPAREN ]
+## sp_ftype -> LPAREN ftype RPAREN . [ RIGHTARROW PRODUCT LIST ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN ftype RPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN LPAREN WORK
+##
+## Ends in an error in state: 12.
+##
+## ftype -> LPAREN . ftype RPAREN [ RPAREN ]
+## sp_ftype -> LPAREN . ftype RPAREN [ RIGHTARROW PRODUCT LIST ]
+## sp_stype -> LPAREN . stype RPAREN [ TIMES LOLLI ]
+## stype -> LPAREN . stype RPAREN [ RPAREN ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS LPAREN WORK
+##
+## Ends in an error in state: 11.
+##
+## sp_ftype -> LPAREN . ftype RPAREN [ RIGHTARROW PRODUCT ]
+## sp_stype -> LPAREN . stype RPAREN [ TIMES LOLLI ]
+## stype -> LPAREN . stype RPAREN [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## LPAREN
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS PLUS LBRACE ID COLON ID COMMA WORK
+##
+## Ends in an error in state: 35.
+##
+## separated_nonempty_list(COMMA,label_stype) -> label_stype COMMA . separated_nonempty_list(COMMA,label_stype) [ RBRACE ]
+##
+## The known suffix of the stack is as follows:
+## label_stype COMMA
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS PLUS LBRACE ID COLON ID TYPE
+##
+## Ends in an error in state: 34.
+##
+## separated_nonempty_list(COMMA,label_stype) -> label_stype . [ RBRACE ]
+## separated_nonempty_list(COMMA,label_stype) -> label_stype . COMMA separated_nonempty_list(COMMA,label_stype) [ RBRACE ]
+##
+## The known suffix of the stack is as follows:
+## label_stype
+##
+## WARNING: This example involves spurious reductions.
+## This implies that, although the LR(1) items shown above provide an
+## accurate view of the past (what has been recognized so far), they
+## may provide an INCOMPLETE view of the future (what was expected next).
+## In state 23, spurious reduction of production stype -> ID 
+## In state 65, spurious reduction of production label_stype -> ID COLON stype 
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS PLUS LBRACE ID COLON WORK
+##
+## Ends in an error in state: 10.
+##
+## label_stype -> ID COLON . stype [ RBRACE COMMA ]
+##
+## The known suffix of the stack is as follows:
+## ID COLON
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS PLUS LBRACE ID WORK
+##
+## Ends in an error in state: 9.
+##
+## label_stype -> ID . COLON stype [ RBRACE COMMA ]
+##
+## The known suffix of the stack is as follows:
+## ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS PLUS LBRACE WORK
+##
+## Ends in an error in state: 8.
+##
+## stype -> PLUS LBRACE . loption(separated_nonempty_list(COMMA,label_stype)) RBRACE [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## PLUS LBRACE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS PLUS WORK
+##
+## Ends in an error in state: 7.
+##
+## stype -> PLUS . LBRACE loption(separated_nonempty_list(COMMA,label_stype)) RBRACE [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## PLUS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS UP WORK
+##
+## Ends in an error in state: 6.
+##
+## stype -> UP . stype [ TYPE RPAREN RBRACE PROC LARROW EXEC EOF COMMA ]
+##
+## The known suffix of the stack is as follows:
+## UP
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID EQUALS WORK
+##
+## Ends in an error in state: 5.
+##
+## decl -> TYPE ID EQUALS . stype [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## TYPE ID EQUALS
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE ID WORK
+##
+## Ends in an error in state: 4.
+##
+## decl -> TYPE ID . EQUALS stype [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## TYPE ID
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: TYPE WORK
+##
+## Ends in an error in state: 3.
+##
+## decl -> TYPE . ID EQUALS stype [ TYPE PROC EXEC EOF ]
+##
+## The known suffix of the stack is as follows:
+## TYPE
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
+file: WORK
+##
+## Ends in an error in state: 0.
+##
+## file' -> . file [ # ]
+##
+## The known suffix of the stack is as follows:
+##
+##
+
+<YOUR SYNTAX ERROR MESSAGE HERE>
+
