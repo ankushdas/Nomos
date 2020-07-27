@@ -171,13 +171,58 @@ proc transaction dealer : (id : int), (m : int), ($dcs : list_comms) |- ($d : ac
   )
 }
 
-proc transaction adversary : (id : int), ($dcs : list_comms) |- ($d : action) =
+proc asset print_msg : ($m : msg) |- ($d : 1) =
+{
+  case $m (
+    SEND => v = recv $m ;
+            print ("adversary found leaked SEND message: %d\n", v);
+            $d <- $m
+  | ECHO => v = recv $m ;
+            print ("adversary found leaked ECHO message: %d\n", v);
+            $d <- $m
+  | READY => v = recv $m ;
+             print ("adversary found leaked READY message: %d\n", v);
+             $d <- $m
+  )
+}
+
+proc asset print_msgs : ($l : list_msgs) |- ($p : 1) =
+{
+  case $l (
+    cons => $m <- recv $l ;
+            $d <- print_msg <- $m ;
+            wait $d ;
+            $p <- print_msgs <- $l
+  | nil => wait $l ;
+           close $p
+  )
+}
+
+proc transaction adversary : (id : int), ($comms : list_comms) |- ($d : action) =
 {
   case $d (
-    ACTIVATE => $n <- throw <- $dcs ;
-                $d.DONE ;
-                send $d 0 ;
-                $d <- $n
+    ACTIVATE => $emp <- nil <- ;
+                $d <- print_adversary_msgs <- id $comms $emp
+  )
+}
+
+proc transaction print_adversary_msgs : (id : int),
+  ($unprinted_comms : list_comms), ($printed_comms : list_comms) |- ($d : +{ DONE : int ^ 1, NEXT : action }) =
+{
+  case $unprinted_comms (
+    cons => #c <- recv $unprinted_comms ;
+            $lc <- acquire #c ;
+            $lc.LEAK ;
+            $m <- recv $lc ;
+            (* print ("adversary activated, printing messages\n") ; *)
+            #c <- release $lc ;
+            $p <- print_msgs <- $m ;
+            wait $p ;
+            $printed_comms_new <- cons <- $printed_comms #c ;
+            $d <- print_adversary_msgs <- id $unprinted_comms $printed_comms_new
+  | nil => wait $unprinted_comms ;
+           $d.NEXT ;
+           $d <- adversary <- id $printed_comms
   )
 }
 
