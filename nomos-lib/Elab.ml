@@ -24,11 +24,6 @@ module F = NomosFlags
 
 let error = ErrorMsg.error ErrorMsg.Type;;
 
-let postponed dcl = match dcl with
-    A.Exec _ -> "% "
-  | A.TpDef _
-  | A.ExpDecDef _ -> "";;
-
 (*********************)
 (* Validity of Types *)
 (*********************)

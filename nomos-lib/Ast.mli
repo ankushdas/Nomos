@@ -139,7 +139,6 @@ type 'a msg =
   | MSendP of chan * 'a value * chan
   | MSendA of chan * 'a value * chan
 [@@deriving sexp]
-exception AstImpossible
 exception UndeclaredTp
 val lookup_tp : (decl * 'a) list -> tpname -> stype option
 val expd_tp : (decl * 'a) list -> tpname -> stype
@@ -149,31 +148,18 @@ val lookup_expdec :
 val lookup_expdef : (decl * 'a) list -> expname -> parsed_expr option
 val lookup_choice : ('a * 'b) list -> 'a -> 'b option
 val is_shared : (decl * 'a) list -> stype -> bool
-val sub : 'a * 'b * 'c -> 'd * 'b * 'e -> 'a * 'b * 'c -> 'a * 'b * 'c
-val sub_arg : str * string * mode -> 'a * string * 'b -> 'c arg -> 'c arg
-val subst_list :
-  str * string * mode -> 'a * string * 'b -> 'c arg list -> 'c arg list
 val subst :
   str * string * mode -> 'a * string * 'b -> 'c st_expr -> 'c st_expr
-val subst_branches :
-  str * string * mode -> 'a * string * 'b -> 'c branches -> 'c branches
 val subst_aug :
   str * string * mode -> 'a * string * 'b -> 'c st_aug_expr -> 'c st_aug_expr
-val fsubst :
-  str * string * mode -> 'a * string * 'b -> 'c func_expr -> 'c func_expr
 val fsubst_aug :
   str * string * mode ->
   'a * string * 'b -> 'c func_aug_expr -> 'c func_aug_expr
 val toExpr : 'a -> 'a value -> 'a func_expr
-val substv : 'a func_expr -> string -> 'a func_expr -> 'a func_expr
 val substv_aug :
   'a func_expr -> string -> 'a func_aug_expr -> 'a func_aug_expr
 val esubstv_aug : 'a func_expr -> string -> 'a st_aug_expr -> 'a st_aug_expr
-val esubstv_arg : 'a func_expr -> string -> 'a arg -> 'a arg
-val esubstv : 'a func_expr -> string -> 'a st_expr -> 'a st_expr
-val esubstv_branches : 'a func_expr -> string -> 'a branches -> 'a branches
 val fsubst_ctx :
   'a arg list -> argument list -> 'a func_aug_expr -> 'a func_aug_expr
 val msubst : str * string * mode -> 'a * string * 'b -> 'c msg -> 'c msg
-exception SplitError
 val split_last : 'a list -> 'a list * 'a

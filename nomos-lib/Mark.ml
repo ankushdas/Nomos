@@ -51,8 +51,3 @@ let show_source ((line1, col1), (line2, col2), file) =
   with Sys_error s -> s;;
 
 type 'a marked = 'a * ext option
-
-let mark' (x, ext_opt) = (x, ext_opt);;
-
-let data (x, _ext_opt) = x;;
-let ext (_x, ext_opt) = ext_opt;;

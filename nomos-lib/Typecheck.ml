@@ -200,6 +200,7 @@ let rec mem_seen env seen a a' = match seen with
       else mem_seen env seen' a a'
   | [] -> false;;
 
+(*
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
 let rec eq_tp' env seen a a' =
   if !F.verbosity >= 3
@@ -254,7 +255,8 @@ and eq_name_name env seen a a' =
   if mem_seen env seen a a' then true
   else eq_tp' env ((a,a')::seen) (A.expd_tp env a) (A.expd_tp env a');;
 
-let eqtp env tp tp' = eq_tp' env [] tp tp';; 
+let eqtp env tp tp' = eq_tp' env [] tp tp';;
+*)
 
 (* ******************* *)
 (* Subtyping Algorithm *)
@@ -384,7 +386,9 @@ let chan_of (c, _tp) = c
 let tp_of (_c, tp) = tp;;
 let name_of (_s,c,_m) = c;;
 
+(*
 let eq_str (s1,_c1,_m1) (s2,_c2,_m2) = s1 = s2;;
+*)
 
 let eq_name (_s1,c1,_m1) (_s2,c2,_m2) = c1 = c2;;
 
@@ -1674,9 +1678,6 @@ and check_branchesL trace env delta x choices pot branches zc ext mode = match c
       E.error_label_missing_alt (l) ext
   | (l,_a)::_choices', [] ->
       E.error_label_missing_branch (l) ext;;
-
-(* external interface *)
-let checkexp = check_exp';;
 
 let rec find_tp x sdelta ldelta = match sdelta, ldelta with
     [], [] -> raise UnknownTypeError

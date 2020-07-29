@@ -462,8 +462,6 @@ let pp_msg m = match m with
 (* Declarations *)
 (****************)
 
-exception Unsupported
-
 let pp_decl env dcl = match dcl with
     A.TpDef(v,a) ->
       pp_tp_after 0 ("type " ^ v ^ " = ") a
@@ -473,11 +471,3 @@ let pp_decl env dcl = match dcl with
     ^ pp_chan_tp (x,a) ^ " = \n" ^
     (pp_fexp_indent env 2 p.A.func_structure)
   | A.Exec(f) -> "exec " ^ f;;
-
-(**********************)
-(* External Interface *)
-(**********************)
-
-let pp_exp = fun env -> fun p -> pp_exp env 0 p;;
-
-let pp_program env decls = (List.fold_left (fun s d -> s ^ "\n" ^ pp_decl env d) "" decls) ^ "\n";;

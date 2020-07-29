@@ -22,7 +22,6 @@ let plus e1 e2 = Add(e1,e2);;
 
 let minus e1 e2 = Sub(e1,e2);;
 
-let pos e = evaluate e > 0;;
 let non_neg e = evaluate e >= 0;;
 
 let rec pp_arith e = match e with

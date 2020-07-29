@@ -40,8 +40,6 @@ let error_msg cat ext note =
       then pmsg (err_string cat ^ " error") ext note
       else () );;
 
-let warn cat ext note = pmsg (err_string cat ^ " warning") ext note;;
-
 (* Print the given error message and then abort compilation *)
 exception Error
 

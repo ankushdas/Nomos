@@ -13,8 +13,6 @@ exception PotentialMismatch (* mismatch while spawning or exchanging *)
 
 exception MissingBranch (* missing branch during internal/external choice *)
 
-exception ProgressError (* final configuration inconsistent *)
-
 exception ChannelMismatch (* channel name mismatch in sem *)
 
 exception UndefinedProcess (* spawning an undefined process *)
@@ -1184,10 +1182,12 @@ let rec pp_sems sems =
       [] -> "---------------------------------------\n"
     | sem::sems' -> pp_sem sem ^ "\n" ^ pp_sems sems';;
 
+(*
 let rec pp_maps maps =
   match maps with
       [] -> "=======================================\n"
     | (c,c')::maps' -> PP.pp_chan c ^ " -> " ^ PP.pp_chan c' ^ "\n" ^ pp_maps maps';; 
+*)
 
 let pp_config config = pp_sems (get_sems config);;
 
@@ -1350,8 +1350,6 @@ let exec env (full_config : full_configuration) (f, args) =
           | PotentialMismatch -> error "potential mismatch during execution"
                                 ; raise RuntimeError
           | MissingBranch -> error "missing branch during execution"
-                            ; raise RuntimeError
-          | ProgressError -> error "final configuration inconsistent"
                             ; raise RuntimeError
           | ChannelMismatch -> error "channel name mismatch found at runtime"
                               ; raise RuntimeError

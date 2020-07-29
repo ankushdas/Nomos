@@ -1,6 +1,4 @@
-module R = Arith
 module A = Ast
-module PP = Pprint
 module C = Core
 module M = C.Map
 
@@ -44,16 +42,7 @@ type type_map = A.stype M.M(C.String).t [@@deriving sexp]
 type full_configuration = int * int * type_map * configuration [@@deriving sexp]
 val empty_full_configuration : full_configuration
 
-
 val pp_sem : sem -> string
-
-val get_pot : (A.decl * 'a) list -> string -> A.potential
-
-exception RuntimeError
-
-exception ProgressError
-
-val pp_maps : (A.chan * A.chan) list -> string
 
 val exec :
      (A.decl * 'a) list
