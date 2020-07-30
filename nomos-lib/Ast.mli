@@ -36,6 +36,7 @@ type stype =
   | Down of stype
   | FArrow of func_tp * stype
   | FProduct of func_tp * stype
+  | Coin
 and choices = (label * stype) list
 [@@deriving sexp]
 type arglist = Single of string * ext | Curry of (string * ext) * arglist

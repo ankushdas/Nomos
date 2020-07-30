@@ -191,6 +191,7 @@ let rec check_declared env ext a = match a with
       else error ext ("type name " ^ v ^ " undeclared")
   | A.Up(a') | A.Down(a') -> check_declared env ext a'
   | A.FArrow(_t,a') | A.FProduct(_t,a') -> check_declared env ext a'
+  | A.Coin -> ()
 
 and check_declared_choices env ext cs = match cs with
     [] -> ()

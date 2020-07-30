@@ -39,6 +39,7 @@ let rec remove_stars_tp tp = match tp with
   | A.Down(a) -> A.Down(remove_stars_tp a)
   | A.FArrow(t,a) -> A.FArrow(t,remove_stars_tp a)
   | A.FProduct(t,a) -> A.FProduct(t,remove_stars_tp a)
+  | A.Coin -> A.Coin
 
 and remove_stars_choices choices = match choices with
     (l,a)::choices' -> (l,remove_stars_tp a)::(remove_stars_choices choices')
@@ -159,6 +160,7 @@ let rec substitute_tp tp psols msols = match tp with
   | A.Down(a) -> A.Down(substitute_tp a psols msols)
   | A.FArrow(t,a) -> A.FArrow(t, substitute_tp a psols msols)
   | A.FProduct(t,a) -> A.FProduct(t, substitute_tp a psols msols)
+  | A.Coin -> A.Coin
 
 and substitute_choices choices psols msols = match choices with
     (l,a)::choices' -> (l,substitute_tp a psols msols)::(substitute_choices choices' psols msols)
@@ -265,6 +267,7 @@ let rec removeU_tp tp = match tp with
   | A.Down(a) -> A.Down(removeU_tp a)
   | A.FArrow(t,a) -> A.FArrow(t,removeU_tp a)
   | A.FProduct(t,a) -> A.FProduct(t,removeU_tp a)
+  | A.Coin -> A.Coin
 
 and removeU_choices choices = match choices with
     (l,a)::choices' -> (l,removeU_tp a)::(removeU_choices choices')

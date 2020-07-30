@@ -41,6 +41,7 @@ rule token = parse
   | "/\\"               { UP }
   | "\\/"               { DOWN }
   | "^"                 { PRODUCT }
+  | "coin"              { COIN }
   
   (* functional types *)
   | "int"               { INTEGER }

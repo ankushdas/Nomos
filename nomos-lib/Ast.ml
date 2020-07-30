@@ -58,6 +58,7 @@ type stype =
   | Down of stype                     (* \/ A *)
   | FArrow of func_tp * stype         (* t -> A *)
   | FProduct of func_tp * stype       (* t ^ A *)
+  | Coin
 [@@deriving sexp]
 
 and choices = (label * stype) list
@@ -279,7 +280,7 @@ let rec is_shared env tp = match tp with
   | One
   | PayPot _ | GetPot _
   | FArrow _ | FProduct _
-  | Down _ -> false;;
+  | Down _ | Coin -> false;;
 
 (*************************)
 (* Operational Semantics *)

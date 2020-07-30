@@ -46,6 +46,7 @@ let rec esync env seen tp c ext is_shared =
     | A.Down(a) -> esync env seen a c ext true
     | A.FArrow(_t,a) -> esync env seen a c ext is_shared
     | A.FProduct(_t,a) -> esync env seen a c ext is_shared
+    | A.Coin -> if is_shared then error ext ("type not equi-synchronizing") else ()
 
 and esync_choices env seen cs c ext is_shared = match cs with
     (_l,a)::as' -> esync env seen a c ext is_shared ; esync_choices env seen as' c ext is_shared
@@ -64,7 +65,8 @@ let contractive tp = match tp with
   | A.One
   | A.PayPot _ | A.GetPot _
   | A.Up _ | A.Down _
-  | A.FArrow _ | A.FProduct _ -> true;;
+  | A.FArrow _ | A.FProduct _
+  | A.Coin -> true;;
 
 (*****************)
 (* Type equality *)
@@ -369,6 +371,12 @@ let rec ssync env seen tp c_opt ext =
         end
     | A.FArrow(_t,a) -> ssync env seen a c_opt ext
     | A.FProduct(_t,a) -> ssync env seen a c_opt ext
+    | A.Coin ->
+        begin
+          match c_opt with
+              None -> ()
+            | Some _ -> error ext ("type not sub-synchronizing")
+        end
 
 and ssync_choices env seen cs c ext = match cs with
     (_l,a)::cs' -> ssync env seen a c ext ; ssync_choices env seen cs' c ext
@@ -1082,7 +1090,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.Tensor _ | A.Lolli _
               | A.PayPot _ | A.GetPot _
               | A.Up _ | A.Down _
-              | A.FArrow _ | A.FProduct _  ->
+              | A.FArrow _ | A.FProduct _
+              | A.Coin ->
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan z ^
                            ", expected internal choice, found: " ^ PP.pp_tp_compact env c)
         else (* the type a of x must be external choice *)
@@ -1099,7 +1108,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.Tensor _ | A.Lolli _
             | A.PayPot _ | A.GetPot _
             | A.Up _ | A.Down _
-            | A.FArrow _ | A.FProduct _ ->
+            | A.FArrow _ | A.FProduct _
+            | A.Coin ->
               error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                          ", expected external choice, found: " ^ PP.pp_tp_compact env a)
       end
@@ -1123,7 +1133,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.Tensor _ | A.Lolli _
               | A.PayPot _ | A.GetPot _
               | A.Up _ | A.Down _
-              | A.FArrow _ | A.FProduct _ ->
+              | A.FArrow _ | A.FProduct _
+              | A.Coin ->
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan z ^
                            ", expected external choice, found: " ^ PP.pp_tp_compact env c)
         else (* the type a of x must be internal choice *)
@@ -1135,7 +1146,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.Tensor _ | A.Lolli _
             | A.PayPot _ | A.GetPot _
             | A.Up _ | A.Down _
-            | A.FArrow _ | A.FProduct _ ->
+            | A.FArrow _ | A.FProduct _
+            | A.Coin ->
               error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                          ", expected internal choice, found: " ^ PP.pp_tp_compact env a)
       end
@@ -1174,7 +1186,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                   | A.One | A.Lolli _
                   | A.PayPot _ | A.GetPot _
                   | A.Up _ | A.Down _
-                  | A.FArrow _ | A.FProduct _ ->
+                  | A.FArrow _ | A.FProduct _
+                  | A.Coin ->
                     error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                                ", expected tensor, found: " ^ PP.pp_tp_compact env c)
             else (* the type a of x must be lolli *)
@@ -1195,7 +1208,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
                 | A.Up _ | A.Down _
-                | A.FArrow _ | A.FProduct _ ->
+                | A.FArrow _ | A.FProduct _
+                | A.Coin ->
                   error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                              ", expected lolli, found: " ^ PP.pp_tp_compact env d)
           end
@@ -1229,7 +1243,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                   | A.One | A.Lolli _
                   | A.PayPot _ | A.GetPot _
                   | A.Up _ | A.Down _
-                  | A.FArrow _ | A.FProduct _ ->
+                  | A.FArrow _ | A.FProduct _
+                  | A.Coin ->
                     error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                                ", expected tensor, found: " ^ PP.pp_tp_compact env c)
             else (* the type a of x must be lolli *)
@@ -1250,7 +1265,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
                 | A.Up _ | A.Down _
-                | A.FArrow _ | A.FProduct _ ->
+                | A.FArrow _ | A.FProduct _
+                | A.Coin ->
                   error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                              ", expected lolli, found: " ^ PP.pp_tp_compact env d)
           end
@@ -1284,7 +1300,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 | A.One | A.Tensor _
                 | A.PayPot _ | A.GetPot _
                 | A.Up _ | A.Down _
-                | A.FArrow _ | A.FProduct _ ->
+                | A.FArrow _ | A.FProduct _
+                | A.Coin ->
                   error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                              ", expected lolli, found: " ^ PP.pp_tp_compact env c)
           else (* the type a of x must be tensor *)
@@ -1302,7 +1319,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.One | A.Lolli _
               | A.PayPot _ | A.GetPot _
               | A.Up _ | A.Down _
-              | A.FArrow _ | A.FProduct _ ->
+              | A.FArrow _ | A.FProduct _
+              | A.Coin ->
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                            ", expected tensor, found: " ^ PP.pp_tp_compact env d)
       end
@@ -1374,9 +1392,10 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.Tensor _ | A.Lolli _
               | A.One | A.GetPot _
               | A.Up _ | A.Down _
-              | A.FArrow _ | A.FProduct _ ->
-              error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
-                                                ", expected paypot, found: " ^ PP.pp_tp_compact env c)
+              | A.FArrow _ | A.FProduct _
+              | A.Coin ->
+                error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
+                                       ", expected paypot, found: " ^ PP.pp_tp_compact env c)
         else (* the type a of x must be getpot *)
           let a = find_ltp x delta (exp.A.st_data) in
           match a with
@@ -1392,7 +1411,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.Tensor _ | A.Lolli _
             | A.One | A.PayPot _
             | A.Up _ | A.Down _
-            | A.FArrow _ | A.FProduct _ ->
+            | A.FArrow _ | A.FProduct _
+            | A.Coin ->
               error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                                               ", expected getpot, found: " ^ PP.pp_tp_compact env a)
       end
@@ -1420,8 +1440,10 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.Tensor _ | A.Lolli _
               | A.One | A.PayPot _
               | A.Up _ | A.Down _
-              | A.FArrow _ | A.FProduct _ -> error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
-                                                ", expected getpot, found: " ^ PP.pp_tp_compact env c)
+              | A.FArrow _ | A.FProduct _
+              | A.Coin ->
+                error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
+                                       ", expected getpot, found: " ^ PP.pp_tp_compact env c)
         else (* the type a of x must be paypot *)
           let a = find_ltp x delta (exp.A.st_data) in
           match a with
@@ -1435,8 +1457,10 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.Tensor _ | A.Lolli _
             | A.One | A.GetPot _
             | A.Up _ | A.Down _
-            | A.FArrow _ | A.FProduct _ -> error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
-                                              ", expected paypot, found: " ^ PP.pp_tp_compact env a)
+            | A.FArrow _ | A.FProduct _
+            | A.Coin ->
+              error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
+                                     ", expected paypot, found: " ^ PP.pp_tp_compact env a)
       end
   | A.Acquire(x,y,p) ->
       begin
@@ -1458,7 +1482,9 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.One
             | A.PayPot _ | A.GetPot _
             | A.Down _
-            | A.FArrow _ | A.FProduct _ -> error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
+            | A.FArrow _ | A.FProduct _
+            | A.Coin ->
+              error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                                      ", expected up, found: " ^ PP.pp_tp_compact env a)
       end
   | A.Accept(x,y,p) ->
@@ -1473,8 +1499,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         then error (exp.A.st_data) ("mode mismatch of accepting channel: expected S, found " ^ PP.pp_chan x)
         else if not (purelin delta)
         then error (exp.A.st_data) ("independence principle violated: " ^
-                        "expected pure linear context, found: " ^
-                        PP.pp_lsctx env delta.linear)
+                                    "expected pure linear context, found: " ^
+                                    PP.pp_lsctx env delta.linear)
         else
           let (z,c) = zc in
           if not (eq_mode x z)
@@ -1488,7 +1514,9 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.One
             | A.PayPot _ | A.GetPot _
             | A.Down _
-            | A.FArrow _ | A.FProduct _ -> error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
+            | A.FArrow _ | A.FProduct _
+            | A.Coin ->
+              error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                                      ", expected up, found: " ^ PP.pp_tp_compact env c)
       end
   | A.Release(x,y,p) ->
@@ -1511,7 +1539,9 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.One
             | A.PayPot _ | A.GetPot _
             | A.Up _
-            | A.FArrow _ | A.FProduct _ -> error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
+            | A.FArrow _ | A.FProduct _
+            | A.Coin ->
+              error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                                      ", expected down, found: " ^ PP.pp_tp_compact env a)
       end
   | A.Detach(x,y,p) ->
@@ -1541,7 +1571,9 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.One
             | A.PayPot _ | A.GetPot _
             | A.Up _
-            | A.FArrow _ | A.FProduct _ -> error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
+            | A.FArrow _ | A.FProduct _
+            | A.Coin ->
+              error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                                      ", expected down, found: " ^ PP.pp_tp_compact env c)
       end
   | A.SendF(x,e,p) ->
@@ -1566,9 +1598,10 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.One | A.Lolli _ | A.Tensor _
               | A.PayPot _ | A.GetPot _
               | A.Up _ | A.Down _
-              | A.FArrow _ ->
+              | A.FArrow _
+              | A.Coin ->
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
-                            ", expected fproduct, found: " ^ PP.pp_tp_compact env c)
+                                       ", expected fproduct, found: " ^ PP.pp_tp_compact env c)
         else (* the type a of x must be farrow *)
           let d = find_ltp x delta (exp.A.st_data) in
           match d with
@@ -1580,9 +1613,10 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | A.One | A.Tensor _ | A.Lolli _
             | A.PayPot _ | A.GetPot _
             | A.Up _ | A.Down _
-            | A.FProduct _ ->
+            | A.FProduct _
+            | A.Coin ->
               error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
-                          ", expected farrow, found: " ^ PP.pp_tp_compact env d)
+                                     ", expected farrow, found: " ^ PP.pp_tp_compact env d)
       end
   | A.RecvF(x,y,p) ->
       begin
@@ -1608,9 +1642,10 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
                 | A.One | A.Tensor _ | A.Lolli _
                 | A.PayPot _ | A.GetPot _
                 | A.Up _ | A.Down _
-                | A.FProduct _ ->
+                | A.FProduct _
+                | A.Coin ->
                   error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
-                             ", expected farrow, found: " ^ PP.pp_tp_compact env c)
+                                         ", expected farrow, found: " ^ PP.pp_tp_compact env c)
           else (* the type a of x must be fproduct *)
             let d = find_ltp x delta (exp.A.st_data) in
             match d with
@@ -1621,9 +1656,10 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
               | A.One | A.Lolli _ | A.Tensor _
               | A.PayPot _ | A.GetPot _
               | A.Up _ | A.Down _
-              | A.FArrow _ ->
+              | A.FArrow _
+              | A.Coin ->
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
-                           ", expected fproduct, found: " ^ PP.pp_tp_compact env d)
+                                       ", expected fproduct, found: " ^ PP.pp_tp_compact env d)
       end
   | A.Let(x,e,p) ->
       begin

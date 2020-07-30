@@ -23,7 +23,7 @@
 (* Nomos specific *)
 %token GETTXNNUM GETTXNSENDER MAKECHAN
 (* session type layer *)
-%token LOLLI AMPERSAND UP DOWN PRODUCT
+%token LOLLI AMPERSAND UP DOWN PRODUCT COIN
 %token LBRACE RBRACE
 %token HASH DOLLAR
 %token LARROW SEMI RRARROW
@@ -87,6 +87,7 @@ stype :
     | DOWN; t = stype                                                           { Ast.Down(t) }
     | a = sp_ftype; RIGHTARROW; t = stype                                       { Ast.FArrow(a,t) }
     | a = sp_ftype; PRODUCT; t = stype                                          { Ast.FProduct(a,t) }
+    | COIN                                                                      { Ast.Coin }
     | x = ID                                                                    { Ast.TpName(x) }
     | LPAREN; s = stype; RPAREN                                                 { s }
     ;

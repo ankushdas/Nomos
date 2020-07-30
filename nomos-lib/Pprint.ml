@@ -109,6 +109,7 @@ let rec pp_tp_simple a = match a with
   | A.FArrow(t,a) -> pp_ftp_simple t ^ " -> " ^ pp_tp_simple a
   | A.FProduct(t,a) -> pp_ftp_simple t ^ " ^ " ^ pp_tp_simple a 
   | A.TpName(a) -> a
+  | A.Coin -> "coin"
 
 and pp_choice_simple cs = match cs with
     [] -> ""
@@ -183,6 +184,7 @@ let rec pp_tp i a = match a with
       let l = len s in
       tstr ^ s ^ pp_tp (i+inc+l) a
   | A.TpName(v) -> v
+  | A.Coin -> "coin"
 
 and pp_tp_after i s a = s ^ pp_tp (i+len(s)) a
 
