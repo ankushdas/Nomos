@@ -10,8 +10,8 @@ module R = Arith
 module Sexp = C.Sexp
 module TC = Typecheck
 module StdList = Stdlib.List
-open Lexer
-open Lexing
+module LEX = Lexer
+module L = Lexing
 
 type environment = (A.decl * A.ext) list
 
@@ -23,7 +23,6 @@ type transaction = Transaction of environment
 (*********************************)
 
 let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
-  let open Lexing in
   lexbuf.lex_curr_p <- {
     pos_fname = fname;
     pos_lnum = 1;
@@ -34,14 +33,14 @@ let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
 let reset () = ErrorMsg.reset ()
 
 let print_position _outx lexbuf =
-  let pos = lexbuf.lex_curr_p in
-  C.printf "%s:%d:%d" pos.pos_fname
-    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
+  let pos = lexbuf.L.lex_curr_p in
+  C.printf "%s:%d:%d" pos.L.pos_fname
+    pos.L.pos_lnum (pos.L.pos_cnum - pos.L.pos_bol + 1)
 
 (* lex and parse using Menhir, then return list of declarations *)
 let parse_with_error lexbuf =
   try Parser.file Lexer.token lexbuf with
-  | SyntaxError msg ->
+  | LEX.SyntaxError msg ->
       (C.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg;
       exit 1)
   | Parser.Error ->
