@@ -4,11 +4,11 @@ type puzzle = /\ <{*}| &{update: int -> money -o |{*}> \/ puzzle,
 
 
 type money = &{value : <{*}| int ^ money, 
-               coins : <{*}| lcoin}
-type lcoin = 1
+               Coins : <{*}| lCoin}
+type lCoin = 1
 
 
-proc asset join : ($m : lcoin), ($n : lcoin) |{*}- ($o : lcoin) = 
+proc asset join : ($m : lCoin), ($n : lCoin) |{*}- ($o : lCoin) = 
 {
     wait $m ;
     wait $n ;
@@ -17,7 +17,7 @@ proc asset join : ($m : lcoin), ($n : lcoin) |{*}- ($o : lcoin) =
 
 proc asset consume : ($m : money) |{*}- ($o : 1) = 
 {
-    $m.coins ;
+    $m.Coins ;
     pay $m {*} ;
     $o <- $m
 }
@@ -31,26 +31,26 @@ proc asset add : ($m : money), ($n : money) |{*}- ($o : money) =
     pay $n {*} ;
     nval = recv $n ;
     let oval = mval + nval ;
-    $m.coins ;
+    $m.Coins ;
     pay $m {*} ;
-    $n.coins ;
+    $n.Coins ;
     pay $n {*} ;
-    $ocoin <- join <- $m $n ;
-    $o <- wallet <- oval $ocoin
+    $oCoin <- join <- $m $n ;
+    $o <- wallet <- oval $oCoin
   }
 
-proc asset wallet : (n : int), ($l : lcoin) |{*}- ($m : money) = 
+proc asset wallet : (n : int), ($l : lCoin) |{*}- ($m : money) = 
 {
     case $m (
       value => get $m {*};
                send $m n;
                $m <- wallet <- n $l 
-    | coins => get $m {*} ;
+    | Coins => get $m {*} ;
                $m <- $l
     )
 }
 
-proc asset emp : . |{*}- ($l : lcoin) = 
+proc asset emp : . |{*}- ($l : lCoin) = 
 {
   close $l
 }

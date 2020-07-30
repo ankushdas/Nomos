@@ -1,15 +1,15 @@
-type coin = 1
-type lcoin = +{cons : |{*}> coin * lcoin, nil : 1}
-type lcoin1 = +{cons : |{*}> coin * lcoin1, nil : 1}
-type lcoin2 = +{cons : |{*}> coin * lcoin2, nil : 1}
+type Coin = 1
+type lCoin = +{cons : |{*}> Coin * lCoin, nil : 1}
+type lCoin1 = +{cons : |{*}> Coin * lCoin1, nil : 1}
+type lCoin2 = +{cons : |{*}> Coin * lCoin2, nil : 1}
 
-proc asset empty : . |{*}- ($l : lcoin3) =
+proc asset empty : . |{*}- ($l : lCoin3) =
   {
     $l.nil ;
     close $l
   }
 
-proc asset cons : ($x : coin), ($l : lcoin4) |{*}- ($k : lcoin4) =
+proc asset cons : ($x : Coin), ($l : lCoin4) |{*}- ($k : lCoin4) =
   {
     $k.cons ;
     pay $k {*} ;
@@ -17,10 +17,10 @@ proc asset cons : ($x : coin), ($l : lcoin4) |{*}- ($k : lcoin4) =
     $k <- $l
   }
 
-type lcoin3 = +{cons : |{*}> coin * lcoin3, nil : 1}
-type lcoin4 = +{cons : |{*}> coin * lcoin4, nil : 1}
+type lCoin3 = +{cons : |{*}> Coin * lCoin3, nil : 1}
+type lCoin4 = +{cons : |{*}> Coin * lCoin4, nil : 1}
 
-proc asset remove_helper : (n : int), ($l : lcoin3), ($m : lcoin4) |{*}- ($k : lcoin4 * lcoin3) =
+proc asset remove_helper : (n : int), ($l : lCoin3), ($m : lCoin4) |{*}- ($k : lCoin4 * lCoin3) =
   {
     if n = 0
     then
@@ -43,19 +43,19 @@ proc asset remove_helper : (n : int), ($l : lcoin3), ($m : lcoin4) |{*}- ($k : l
       )
   }
 
-proc asset empty_acc : . |{*}- ($l : lcoin4) =
+proc asset empty_acc : . |{*}- ($l : lCoin4) =
   {
     $l.nil ;
     close $l
   }
 
-proc asset remove : (n : int), ($l : lcoin3) |{*}- ($k : lcoin4 * lcoin3) =
+proc asset remove : (n : int), ($l : lCoin3) |{*}- ($k : lCoin4 * lCoin3) =
   {
     $m <- empty_acc <- ;
     $k <- remove_helper <- n $l $m
   }
 
-proc asset append : ($l1 : lcoin3), ($l2 : lcoin4) |{*}- ($l : lcoin4) =
+proc asset append : ($l1 : lCoin3), ($l2 : lCoin4) |{*}- ($l : lCoin4) =
   {
     case $l1 (
       cons => get $l1 {*} ;

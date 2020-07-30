@@ -1,16 +1,16 @@
-type coin = 1
-type lcoin = +{cons : coin * lcoin, nil : 1}
+type Coin = 1
+type lCoin = +{cons : Coin * lCoin, nil : 1}
 
 type money = /\ &{value : <{*}| int ^ \/ money,
-                  coins : <{*}| lcoin * \/ money}
+                  Coins : <{*}| lCoin * \/ money}
 
-proc asset emp : . |{*}- ($l : lcoin) =
+proc asset emp : . |{*}- ($l : lCoin) =
 {
   $l.nil ;
   close $l
 } 
 
-proc contract wallet : (n : int), ($l : lcoin) |{*}- (#sm : money) =
+proc contract wallet : (n : int), ($l : lCoin) |{*}- (#sm : money) =
   {
     $m <- accept #sm ;
     case $m (
@@ -19,7 +19,7 @@ proc contract wallet : (n : int), ($l : lcoin) |{*}- (#sm : money) =
                work {*} ;
                #sm <- detach $m ;
                #sm <- wallet <- n $l
-    | coins => get $m {*} ;
+    | Coins => get $m {*} ;
                work {*} ;
                send $m $l ;
                $l <- emp <- ;

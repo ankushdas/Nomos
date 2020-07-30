@@ -2,7 +2,7 @@ type money = &{add : <{*}| money -o money,
                subtract : <{*}| int -> +{sufficient : money * money,
                                          insufficient : money},
                value : <{*}| int ^ money,
-               coins : <{*}| 1}
+               Coins : <{*}| 1}
 
 proc asset wallet : (n : int) |{*}- ($m : money) =
 {
@@ -12,7 +12,7 @@ proc asset wallet : (n : int) |{*}- ($m : money) =
            $m1.value ;
            pay $m1 {*} ;
            n1 = recv $m1 ;
-           $m1.coins ;
+           $m1.Coins ;
            pay $m1 {*} ;
            wait $m1 ;
            let n = n+n1 ;
@@ -34,7 +34,7 @@ proc asset wallet : (n : int) |{*}- ($m : money) =
   | value => get $m {*} ;
              send $m n ;
              $m <- wallet <- n
-  | coins => get $m {*} ;
+  | Coins => get $m {*} ;
              close $m
   )
 }

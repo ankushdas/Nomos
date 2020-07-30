@@ -53,7 +53,7 @@ proc transaction collect_client : (a : int), (#sa : auction) |{*}- ($d : 1) =
               | lost => $m <- recv $la ;
                         get $la {*} ;
                         #sa <- release $la ;
-                        $m.coins ;
+                        $m.Coins ;
                         pay $m {*} ;
                         wait $m ;
                         work {*} ;
@@ -205,10 +205,10 @@ proc asset removebid : (r : int), ($bs : dictionary) |{*}- ($newbs : money * dic
 
 
 type money = &{value : <{*}| int ^ money,
-               coins : <{*}| lcoin}
-type lcoin = 1
+               Coins : <{*}| lCoin}
+type lCoin = 1
 
-proc asset emp : . |{*}- ($l : lcoin) = 
+proc asset emp : . |{*}- ($l : lCoin) = 
 {
   close $l
 }
@@ -250,13 +250,13 @@ proc contract new_full : ($m : money) |{*}- (#w : one_time_wallet) =
   )
 }
 
-proc asset wallet : (n : int), ($l : lcoin) |{*}- ($m : money) = 
+proc asset wallet : (n : int), ($l : lCoin) |{*}- ($m : money) = 
 {
     case $m (
       value => get $m {*};
                send $m n;
                $m <- wallet <- n $l 
-    | coins => get $m {*} ;
+    | Coins => get $m {*} ;
                $m <- $l
     )
 }
@@ -272,7 +272,7 @@ proc asset dummy : (n : int) |{*}- ($d : dictionary) =
     add => get $d {*} ;
             key = recv $d ;
             $v <- recv $d ;
-            $v.coins ;
+            $v.Coins ;
             pay $v {*} ;
             wait $v ;
             let n = n+1 ;

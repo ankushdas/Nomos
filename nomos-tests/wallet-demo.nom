@@ -1,8 +1,8 @@
 type money = &{value : <{*}| int ^ money,
-               coins : <{*}| lcoin}
-type lcoin = 1
+               Coins : <{*}| lCoin}
+type lCoin = 1
 
-proc asset emp : . |{*}- ($l : lcoin) = 
+proc asset emp : . |{*}- ($l : lCoin) = 
 {
   close $l
 }
@@ -14,13 +14,13 @@ proc asset empty_wallet : . |{*}- ($m : money) =
   $m <- wallet <- n $l
 }
 
-proc asset wallet : (n : int), ($l : lcoin) |{*}- ($m : money) = 
+proc asset wallet : (n : int), ($l : lCoin) |{*}- ($m : money) = 
 {
     case $m (
       value => get $m {*};
                send $m n;
                $m <- wallet <- n $l 
-    | coins => get $m {*} ;
+    | Coins => get $m {*} ;
                $m <- $l
     )
 }
@@ -64,7 +64,7 @@ proc transaction main : . |{*}- ($d : 1) =
   case $low (
     full => $low.take ;
             $m <- recv $low ;
-            $m.coins ;
+            $m.Coins ;
             pay $m {*} ;
             wait $m ;
             get $low {*} ;
