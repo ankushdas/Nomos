@@ -3,11 +3,12 @@
 $M : Map<kt, vt>
 
 Map<kt, vt> = &{insert : key -> value -o Map<kt, vt>,
-                remove : key -> +{none : Map<kt, vt>,
+                delete : key -> +{none : Map<kt, vt>,
                                   some : value * Map<kt, vt>},
+                toList : List<kt * vt>,
                 size : int ^ Map<kt, vt>,
-                close : +{ok : 1,
-                          notok : Map<kt, vt>} }
+                close : +{empty : 1,
+                          nonempty : Map<kt, vt>} }
 
 type value_opt = +{none : 1,
                    some : vt ^ 1 / vt * 1}
