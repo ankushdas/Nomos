@@ -1370,7 +1370,7 @@ let exec env full_config (f, args) =
       Insufficient bal ->
         let () = if !F.verbosity >= 0 then print_string ("% txn sender " ^ !txnSender ^ " does not have sufficient gas, needed: " ^ string_of_int pot ^ ", found:  " ^ string_of_int bal ^ "\n") in
         (!txnNum + 1, !chan_num, gas_accs, types, initial_config)
-    | RunOnly ->
+    | NonBC ->
         let () = if !F.verbosity >= 0 then print_string ("% running program in non-blockchain mode\n") in
         try_exec f c pot args initial_config env new_gas_accs types
     | Balance bal ->

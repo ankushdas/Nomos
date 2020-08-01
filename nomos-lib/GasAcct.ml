@@ -25,7 +25,7 @@ let deposit_gas sender d initial_config =
   in
   (tx, ch, new_gas_accs, types, config);;
 
-type res = Insufficient of int | Balance of int | RunOnly;;
+type res = Insufficient of int | Balance of int | NonBC;;
 
 let deduct gas_accs sender gas =
   if !F.bc_mode
@@ -39,4 +39,4 @@ let deduct gas_accs sender gas =
           else (Balance (bal-gas), M.set gas_accs ~key:sender ~data:(bal-gas))
     end
   else
-    (RunOnly, gas_accs)
+    (NonBC, gas_accs)
