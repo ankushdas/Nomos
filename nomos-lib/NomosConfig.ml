@@ -165,7 +165,7 @@ let nomos_command =
     ~summary:"Typechecking and Executing Nomos files"
     C.Command.Let_syntax.(
       let%map_open
-        verbosity = flag "-v" (optional_with_default 1 int)
+        verbosity = flag "-v" (optional_with_default 0 int)
           ~doc:"verbosity:- 0: quiet, 1: default, 2: verbose, 3: debugging mode"
         and cost_model = flag "-w" (optional_with_default "none" string)
           ~doc:"work-cost-model: none, recv, send, recvsend, free"
