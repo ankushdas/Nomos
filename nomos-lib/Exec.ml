@@ -4,6 +4,7 @@ module A = Ast
 module PP = Pprint
 module M = C.Map
 module F = NomosFlags
+module G = GasAcct
 
 exception InsufficientPotential (* not enough potential to work or pay *)
 
@@ -1312,49 +1313,60 @@ let verify_final_configuration top config =
 type type_map = A.stype M.M(C.String).t [@@deriving sexp]
 
 (* transaction num * channel num * type names * configuration *)
-type full_configuration = int * int * type_map * configuration
+type blockchain_state = int * int * G.gas_accounts * type_map * configuration
 [@@deriving sexp]
 
-let empty_full_configuration =
-  (0, 0, M.empty (module C.String), {
-    conf = M.empty (module Chan);
-    conts = M.empty (module Chan);
-    shared = M.empty (module Chan);
-    types = M.empty (module Chan);
-  })
+let empty_blockchain_state =
+  (0,
+   0,
+   M.empty (module C.String),
+   M.empty (module C.String),
+   {
+     conf = M.empty (module Chan);
+     conts = M.empty (module Chan);
+     shared = M.empty (module Chan);
+     types = M.empty (module Chan);
+   });;
 
 (* exec env C (f, args) = C'
  * env is the elaborated environment
  * C is a full configuration
  * C' is final, poised configuration
  *)
-let exec env (full_config : full_configuration) (f, args) =
-  let (tx, ch, types, initial_config) = full_config in
+let exec env full_config (f, args) =
+  let (tx, ch, gas_accs, types, initial_config) = full_config in
   let () = txnNum := tx in
   let () = chan_num := ch in
   let m = chan_mode env f in
   let c = cfresh m in
   let pot = try_evaluate (get_pot env f) in
-  let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
-  let config = add_sem sem initial_config in
-  match step env config with
-      Fail -> full_config
-    | Success final_config ->
-        begin
-          try (!txnNum + 1, !chan_num, types, verify_final_configuration c final_config)
-        with
-          | InsufficientPotential -> error "insufficient potential during execution"
-                                    ; raise RuntimeError
-          | UnconsumedPotential -> error "unconsumed potential during execution"
+  let (res, new_gas_accs) = G.deduct gas_accs !txnSender pot in
+  match res with
+      Insufficient bal ->
+        let () = if !F.verbosity >= 0 then print_string ("% txn sender " ^ !txnSender ^ " does not have sufficient gas, needed: " ^ string_of_int pot ^ ", found:  " ^ string_of_int bal ^ "\n") in
+        (!txnNum + 1, !chan_num, gas_accs, types, initial_config)
+    | Balance bal ->
+        let () = if !F.verbosity >= 0 then print_string ("% gas successfully deducted, txn sender " ^ !txnSender ^ " now has " ^ string_of_int bal ^ " gas units\n") in
+        let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
+        let config = add_sem sem initial_config in
+        match step env config with
+            Fail -> (!txnNum + 1, !chan_num, new_gas_accs, types, initial_config)
+          | Success final_config ->
+              begin
+                try (!txnNum + 1, !chan_num, new_gas_accs, types, verify_final_configuration c final_config)
+              with
+                | InsufficientPotential -> error "insufficient potential during execution"
+                                          ; raise RuntimeError
+                | UnconsumedPotential -> error "unconsumed potential during execution"
+                                        ; raise RuntimeError
+                | PotentialMismatch -> error "potential mismatch during execution"
+                                      ; raise RuntimeError
+                | MissingBranch -> error "missing branch during execution"
                                   ; raise RuntimeError
-          | PotentialMismatch -> error "potential mismatch during execution"
-                                ; raise RuntimeError
-          | MissingBranch -> error "missing branch during execution"
-                            ; raise RuntimeError
-          | ChannelMismatch -> error "channel name mismatch found at runtime"
-                              ; raise RuntimeError
-          | UndefinedProcess -> error "undefined process found at runtime"
-                                ; raise RuntimeError
-          | StarPotential -> error "potential * found at runtime"
-                            ; raise RuntimeError
-      end;;
+                | ChannelMismatch -> error "channel name mismatch found at runtime"
+                                    ; raise RuntimeError
+                | UndefinedProcess -> error "undefined process found at runtime"
+                                      ; raise RuntimeError
+                | StarPotential -> error "potential * found at runtime"
+                                  ; raise RuntimeError
+              end;;

@@ -45,6 +45,7 @@ nomos-editor:
 	ocamlc Typecheck.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core Infer.mli; \
 	ocamlc Elab.mli; \
+	ocamlfind ocamlc -thread -linkpkg -package core GasAcct.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core Exec.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core NomosConfig.mli; \
 	cd ..

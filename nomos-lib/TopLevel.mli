@@ -9,7 +9,7 @@ type transaction = Transaction of environment
 (* flags like cost model, etc should be set by modifying the relevant globals *)
 
 (* holds a full configuration so we don't have to thread it through our commands *)
-val gconfig : E.full_configuration ref
+val gconfig : E.blockchain_state ref
 
 (* resets gconfig to an empty configuration *)
 val reset : unit -> unit
@@ -29,6 +29,12 @@ val infer : raw_transaction -> transaction
 (* sets the current transaction sender *)
 val set_sender : string -> unit
 
+(* create account for a new txn sender *)
+val create_account : E.blockchain_state -> E.blockchain_state
+
+(* deposit gas into txn sender's account *)
+val deposit_gas : int -> E.blockchain_state -> E.blockchain_state
+
 (* execute all the execs in an environment *)
 val exec : transaction -> unit
 
@@ -39,8 +45,8 @@ val read_and_exec : string -> unit
 val show_channels : unit -> unit
 
 (* used for the command line *)
-val run : transaction -> E.full_configuration -> E.full_configuration
+val run : transaction -> E.blockchain_state -> E.blockchain_state
 
-val load_config : string -> E.full_configuration
+val load_config : string -> E.blockchain_state
 
-val save_config : E.full_configuration -> string -> unit
+val save_config : E.blockchain_state -> string -> unit

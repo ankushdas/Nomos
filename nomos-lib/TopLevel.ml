@@ -12,6 +12,7 @@ module TC = Typecheck
 module StdList = Stdlib.List
 module LEX = Lexer
 module L = Lexing
+module G = GasAcct
 
 type environment = (A.decl * A.ext) list
 
@@ -103,10 +104,16 @@ let infer (RawTransaction decls) =
 (**********************)
 
 let load_config config_in =
-  Sexp.load_sexp_conv_exn config_in E.full_configuration_of_sexp
+  Sexp.load_sexp_conv_exn config_in E.blockchain_state_of_sexp
 
 let save_config conf config_out =
-  Sexp.save_hum config_out (E.sexp_of_full_configuration conf)
+  Sexp.save_hum config_out (E.sexp_of_blockchain_state conf)
+
+let create_account initial_config =
+  G.create_account !E.txnSender initial_config;;
+
+let deposit_gas d initial_config =
+  G.deposit_gas !E.txnSender d initial_config;;
 
 let run (Transaction env) config =
   let rec run' config dcls =
@@ -119,8 +126,8 @@ let run (Transaction env) config =
           (* may raise Exec.RuntimeError *)
           run' config' dcls'
       | (A.TpDef(n, t), _ext)::dcls' ->
-          let (tx, ch, types, conf) = config in
-          run' (tx, ch, Map.set types ~key:n ~data:t, conf) dcls'
+          let (tx, ch, ga, types, conf) = config in
+          run' (tx, ch, ga, Map.set types ~key:n ~data:t, conf) dcls'
       | _dcl::dcls' -> run' config dcls'
       | [] -> config
   in
@@ -130,9 +137,9 @@ let run (Transaction env) config =
 (* Interactive Mode *)
 (********************)
 
-let gconfig = ref E.empty_full_configuration
+let gconfig = ref E.empty_blockchain_state
 
-let reset () = gconfig := E.empty_full_configuration
+let reset () = gconfig := E.empty_blockchain_state
 
 let load path = gconfig := load_config path
 
@@ -145,5 +152,5 @@ let exec env = gconfig := run env !gconfig
 let read_and_exec path = read path |> infer |> exec
 
 let show_channels () =
-  let (_, _, _, {E.types = types; _}) = !gconfig in
+  let (_, _, _, _, {E.types = types; _}) = !gconfig in
   C.Map.iteri types ~f:(fun ~key:k ~data:v -> C.printf "%s: %s\n" (PP.pp_chan k) (PP.pp_tp_simple v))

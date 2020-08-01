@@ -1,6 +1,7 @@
 module A = Ast
 module C = Core
 module M = C.Map
+module G = GasAcct
 
 type sem =
     (* Proc(chan, in_use, time, (work, pot), P) *)
@@ -39,15 +40,15 @@ type configuration =
   }
 
 type type_map = A.stype M.M(C.String).t [@@deriving sexp]
-type full_configuration = int * int * type_map * configuration [@@deriving sexp]
-val empty_full_configuration : full_configuration
+type blockchain_state = int * int * G.gas_accounts * type_map * configuration [@@deriving sexp]
+val empty_blockchain_state : blockchain_state
 
 val pp_sem : sem -> string
 
 val exec :
      (A.decl * 'a) list
-  -> full_configuration
+  -> blockchain_state
   -> (string * (A.ext A.arg list))
-  -> full_configuration
+  -> blockchain_state
 
 val txnSender : string ref
