@@ -14,6 +14,6 @@ val deposit_gas :
   'a * 'b * (string, int, 'c) M.t * 'd * 'e ->
   'a * 'b * (string, int, 'c) M.t * 'd * 'e
 
-type res = Insufficient of int | Balance of int;;
+type res = Insufficient of int | Balance of int | RunOnly;;
 
 val deduct : (string, int, 'a) M.t -> string -> int -> res * (string, int, 'a) M.t

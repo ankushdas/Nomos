@@ -31,6 +31,9 @@ let set_txn_sender s =
       None -> ()
     | Some s -> TL.set_sender s;;
 
+let set_bc_mode m =
+  if m then F.bc_mode := false;;
+
 let check_extension filename ext =
   if Filename.check_suffix filename ext
   then filename
@@ -67,7 +70,6 @@ let maybe_load_config config_in_opt =
   | None -> E.empty_blockchain_state
   | Some(path) -> TL.load_config path
 
-
 let create_or_deposit txn_sender create deposit =
   match txn_sender with
       None ->
@@ -89,18 +91,21 @@ let check_file_validity create deposit file =
         end
     | _, _ -> ();;
 
-let check_validity_cmdline_options _tc_only _config_in _config_out txn_sender create deposit file =
-  let () = create_or_deposit txn_sender create deposit in
-  let () = check_file_validity create deposit file in
-  ();;
+let check_validity_cmdline_options run_only _tc_only _config_in _config_out txn_sender create deposit file =
+  if not run_only
+  then
+    let () = create_or_deposit txn_sender create deposit in
+    let () = check_file_validity create deposit file in
+    ();;
 
-let set_flags verbosity cost_model syntax randomness txn_sender =
+let set_flags verbosity cost_model syntax randomness txn_sender run_only =
   let () = F.reset () in
   let () = F.verbosity := verbosity in
   let () = set_cost_model cost_model in
   let () = set_syntax syntax in
   let () = F.random := F.parseRand randomness in
   let () = set_txn_sender txn_sender in
+  let () = set_bc_mode run_only in
   ();;
 
 let maybe_create_account create config_in config_out =
@@ -180,12 +185,14 @@ let nomos_command =
           ~doc:"create gas account"
         and deposit = flag "-deposit" (optional int)
           ~doc:"deposit gas into sender's account"
+        and run_only = flag "-run" no_arg
+          ~doc:"check and run non-blockchain program"
         and file = anon(maybe ("filename" %: nomos_file)) in
         fun () ->
           (* check flag consistency *)
-          let () = check_validity_cmdline_options tc_only config_in config_out txn_sender create deposit file in
+          let () = check_validity_cmdline_options run_only tc_only config_in config_out txn_sender create deposit file in
           (* set flags *)
-          let () = set_flags verbosity cost_model syntax randomness txn_sender in
+          let () = set_flags verbosity cost_model syntax randomness txn_sender run_only in
           let () = maybe_create_account create config_in config_out in
           let () = maybe_deposit deposit config_in config_out in
           let () = maybe_tc_and_run_txn tc_only file config_in config_out in

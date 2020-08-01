@@ -52,6 +52,7 @@ let syntax = ref Explicit;;
 let verbosity = ref 1;;           (* -1 = print nothing, 0 = quiet, 1 = normal, 2 = verbose, 3 = debug *)
 let help = ref false;;
 let random = ref true;;
+let bc_mode = ref true;;
 
 let reset () =
     time := Nil
@@ -59,4 +60,5 @@ let reset () =
   ; syntax := Explicit
   ; verbosity := 1
   ; help := false
-  ; random := true;;
+  ; random := true
+  ; bc_mode := true;;

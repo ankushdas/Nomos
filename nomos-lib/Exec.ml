@@ -1328,6 +1328,31 @@ let empty_blockchain_state =
      types = M.empty (module Chan);
    });;
 
+let try_exec f c pot args initial_config env new_gas_accs types =
+  let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
+  let config = add_sem sem initial_config in
+  match step env config with
+      Fail -> (!txnNum + 1, !chan_num, new_gas_accs, types, initial_config)
+    | Success final_config ->
+        begin
+          try (!txnNum + 1, !chan_num, new_gas_accs, types, verify_final_configuration c final_config)
+        with
+          | InsufficientPotential -> error "insufficient potential during execution"
+                                    ; raise RuntimeError
+          | UnconsumedPotential -> error "unconsumed potential during execution"
+                                  ; raise RuntimeError
+          | PotentialMismatch -> error "potential mismatch during execution"
+                                ; raise RuntimeError
+          | MissingBranch -> error "missing branch during execution"
+                            ; raise RuntimeError
+          | ChannelMismatch -> error "channel name mismatch found at runtime"
+                              ; raise RuntimeError
+          | UndefinedProcess -> error "undefined process found at runtime"
+                                ; raise RuntimeError
+          | StarPotential -> error "potential * found at runtime"
+                            ; raise RuntimeError
+        end;;
+
 (* exec env C (f, args) = C'
  * env is the elaborated environment
  * C is a full configuration
@@ -1345,28 +1370,9 @@ let exec env full_config (f, args) =
       Insufficient bal ->
         let () = if !F.verbosity >= 0 then print_string ("% txn sender " ^ !txnSender ^ " does not have sufficient gas, needed: " ^ string_of_int pot ^ ", found:  " ^ string_of_int bal ^ "\n") in
         (!txnNum + 1, !chan_num, gas_accs, types, initial_config)
+    | RunOnly ->
+        let () = if !F.verbosity >= 0 then print_string ("% running program in non-blockchain mode\n") in
+        try_exec f c pot args initial_config env new_gas_accs types
     | Balance bal ->
         let () = if !F.verbosity >= 0 then print_string ("% gas successfully deducted, txn sender " ^ !txnSender ^ " now has " ^ string_of_int bal ^ " gas units\n") in
-        let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
-        let config = add_sem sem initial_config in
-        match step env config with
-            Fail -> (!txnNum + 1, !chan_num, new_gas_accs, types, initial_config)
-          | Success final_config ->
-              begin
-                try (!txnNum + 1, !chan_num, new_gas_accs, types, verify_final_configuration c final_config)
-              with
-                | InsufficientPotential -> error "insufficient potential during execution"
-                                          ; raise RuntimeError
-                | UnconsumedPotential -> error "unconsumed potential during execution"
-                                        ; raise RuntimeError
-                | PotentialMismatch -> error "potential mismatch during execution"
-                                      ; raise RuntimeError
-                | MissingBranch -> error "missing branch during execution"
-                                  ; raise RuntimeError
-                | ChannelMismatch -> error "channel name mismatch found at runtime"
-                                    ; raise RuntimeError
-                | UndefinedProcess -> error "undefined process found at runtime"
-                                      ; raise RuntimeError
-                | StarPotential -> error "potential * found at runtime"
-                                  ; raise RuntimeError
-              end;;
+        try_exec f c pot args initial_config env new_gas_accs types

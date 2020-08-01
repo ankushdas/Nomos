@@ -12,4 +12,5 @@ val work : cost ref
 val syntax : syntax ref
 val verbosity : int ref
 val random : bool ref
+val bc_mode : bool ref
 val reset : unit -> unit

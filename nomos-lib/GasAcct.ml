@@ -1,5 +1,6 @@
 module C = Core
 module M = C.Map
+module F = NomosFlags
 
 open Sexplib.Std
 
@@ -24,12 +25,18 @@ let deposit_gas sender d initial_config =
   in
   (tx, ch, new_gas_accs, types, config);;
 
-type res = Insufficient of int | Balance of int;;
+type res = Insufficient of int | Balance of int | RunOnly;;
 
 let deduct gas_accs sender gas =
-  match M.find gas_accs sender with
-      None -> C.eprintf "%% account for txn sender %s does not exist!\n" sender; exit 1
-    | Some bal ->
-        if gas > bal
-        then (Insufficient bal, M.set gas_accs ~key:sender ~data:0)
-        else (Balance (bal-gas), M.set gas_accs ~key:sender ~data:(bal-gas));;
+  if !F.bc_mode
+  then
+    begin
+    match M.find gas_accs sender with
+        None -> C.eprintf "%% account for txn sender %s does not exist!\n" sender; exit 1
+      | Some bal ->
+          if gas > bal
+          then (Insufficient bal, M.set gas_accs ~key:sender ~data:0)
+          else (Balance (bal-gas), M.set gas_accs ~key:sender ~data:(bal-gas))
+    end
+  else
+    (RunOnly, gas_accs)
