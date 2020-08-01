@@ -113,7 +113,7 @@ let maybe_create_account create config_in config_out =
   then
     let initial_config = maybe_load_config config_in in
     let final_config = TL.create_account initial_config in
-    let () = if !F.verbosity >= 0 then print_string ("% account creation successful!\n") in
+    let () = if !F.verbosity >= 0 then print_string ("% account creation of " ^ !E.txnSender ^ " successful!\n") in
 
     (* save final configuration *)
     match config_out with
@@ -126,7 +126,7 @@ let maybe_deposit deposit config_in config_out =
     | Some d ->
         let initial_config = maybe_load_config config_in in
         let final_config = TL.deposit_gas d initial_config in
-        let () = if !F.verbosity >= 0 then print_string ("% deposit of " ^ string_of_int d ^ " gas units successful!\n") in
+        let () = if !F.verbosity >= 0 then print_string ("% deposit of " ^ string_of_int d ^ " gas units to account of " ^ !E.txnSender ^ " successful!\n") in
 
         (* save final configuration *)
         match config_out with
