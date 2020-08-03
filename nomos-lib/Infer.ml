@@ -62,7 +62,7 @@ let rec remove_stars_exp exp = match exp with
   | A.Lab(x,k,p) -> A.Lab(x, k, remove_stars_aug p)
   | A.Case(x,branches) -> A.Case(x, remove_stars_branches branches)
   | A.PLab(x,k,p) -> A.PLab(x, k, remove_stars_aug p)
-  | A.PCase(x,branches) -> A.PCase(x, remove_stars_branches branches)
+  | A.PCase(x,pbranches) -> A.PCase(x, remove_stars_pbranches pbranches)
   | A.Flip(pr,p1,p2) -> A.Flip(pr, remove_stars_aug p1, remove_stars_aug p2)
   | A.Send(x,w,p) -> A.Send(x,w, remove_stars_aug p)
   | A.Recv(x,y,p) -> A.Recv(x,y, remove_stars_aug p)
@@ -95,6 +95,12 @@ and remove_stars_branches bs = match bs with
       (l, remove_stars_aug p)::
       (remove_stars_branches bs')
 
+and remove_stars_pbranches bs = match bs with
+    [] -> []
+  | (l,pr,p)::bs' ->
+      (l, pr, remove_stars_aug p)::
+      (remove_stars_pbranches bs')
+      
 and remove_stars_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = remove_stars_exp p}
 
 and remove_stars_faug {A.func_data = d; A.func_structure = e} = {A.func_data = d; A.func_structure = remove_stars_fexp e}
@@ -193,7 +199,7 @@ let rec substitute_exp exp psols msols = match exp with
   | A.Lab(x,k,p) -> A.Lab(substitute_mode x msols, k, substitute_aug p psols msols)
   | A.Case(x,branches) -> A.Case(substitute_mode x msols, substitute_branches branches psols msols)
   | A.PLab(x,k,p) -> A.PLab(substitute_mode x msols, k, substitute_aug p psols msols)
-  | A.PCase(x,branches) -> A.PCase(substitute_mode x msols, substitute_branches branches psols msols)
+  | A.PCase(x,pbranches) -> A.PCase(substitute_mode x msols, substitute_pbranches pbranches psols msols)
   | A.Flip(pr,p1,p2) -> A.Flip(pr, substitute_aug p1 psols msols, substitute_aug p2 psols msols)
   | A.Send(x,w,p) -> A.Send(substitute_mode x msols, substitute_mode w msols, substitute_aug p psols msols)
   | A.Recv(x,y,p) -> A.Recv(substitute_mode x msols, substitute_mode y msols, substitute_aug p psols msols)
@@ -225,6 +231,12 @@ and substitute_branches bs psols msols = match bs with
   | (l,p)::bs' ->
       (l, substitute_aug p psols msols)::
       (substitute_branches bs' psols msols)
+
+and substitute_pbranches bs psols msols = match bs with
+    [] -> []
+  | (l,pr, p)::bs' ->
+      (l, pr, substitute_aug p psols msols)::
+      (substitute_pbranches bs' psols msols)
 
 and substitute_aug {A.st_data = d; A.st_structure = p} psols msols = {A.st_data = d; A.st_structure = substitute_exp p psols msols}
 
@@ -303,7 +315,7 @@ let rec removeU_exp exp = match exp with
   | A.Lab(x,k,p) -> A.Lab(removeU x, k, removeU_aug p)
   | A.Case(x,branches) -> A.Case(removeU x, removeU_branches branches)
   | A.PLab(x,k,p) -> A.PLab(removeU x, k, removeU_aug p)
-  | A.PCase(x,branches) -> A.PCase(removeU x, removeU_branches branches)
+  | A.PCase(x,pbranches) -> A.PCase(removeU x, removeU_pbranches pbranches)
   | A.Flip(pr,p1,p2) -> A.Flip(pr, removeU_aug p1, removeU_aug p2)
   | A.Send(x,w,p) -> A.Send(removeU x, removeU w, removeU_aug p)
   | A.Recv(x,y,p) -> A.Recv(removeU x, removeU y, removeU_aug p)
@@ -329,6 +341,12 @@ and removeU_branches bs = match bs with
   | (l,p)::bs' ->
       (l, removeU_aug p)::
       (removeU_branches bs')
+
+and removeU_pbranches bs = match bs with
+    [] -> []
+  | (l,pr, p)::bs' ->
+      (l, pr, removeU_aug p)::
+      (removeU_pbranches bs')
 
 and removeU_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = removeU_exp p}
 

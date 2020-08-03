@@ -308,10 +308,20 @@ sharedid:
     ;
 
 branches :
-    | k = ID; RRARROW; p = st; b = branches2 { (k, p)::b }    
+    | k = ID; RRARROW; p = st; b = branches2 { (k, p)::b }   
+    ; 
 
 branches2 :
     | BAR; b = branches { b }
+    | RPAREN { [] }
+    ;
+
+pbranches :
+    | k = ID; RRARROW; p = st; b = pbranches2 { (k, 0., p)::b }   
+    ; 
+
+pbranches2 :
+    | BAR; b = pbranches { b }
     | RPAREN { [] }
     ;
 
@@ -361,7 +371,7 @@ st:
     |  CASE; x = linid; LPAREN; b = branches                             { {st_structure = Ast.Case(x,b); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
-    |  PCASE; x = linid; LPAREN; b = branches                            { {st_structure = Ast.PCase(x,b); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  PCASE; x = linid; LPAREN; b = pbranches                           { {st_structure = Ast.PCase(x,b); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
     |  FLIP; LBRACE; x = FLOAT; RBRACE; LPAREN; HH; RRARROW; p1 = st; BAR; TT; RRARROW; p2 = st; RPAREN

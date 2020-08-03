@@ -111,7 +111,7 @@ and elab_exps env dcls = match dcls with
     (* already checked validity during first pass *)
       dcl::(elab_exps' env dcls')
   | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p), ext')::dcls' ->
-      let p' = Cost.apply_cost p in (* applying the cost model *)
+      let p = Cost.apply_cost p in (* applying the cost model *)
       let () =
         begin
           match !F.syntax with                    (* print reconstructed term *)
@@ -121,20 +121,32 @@ and elab_exps env dcls = match dcls with
             | F.Explicit -> (* maybe only if there is a cost model... *)
                 if !F.verbosity >= 2
                 then print_string ("% with cost model " ^ pp_costs () ^ "\n"
-                                  ^ (PP.pp_decl env (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'))) ^ "\n")
+                                  ^ (PP.pp_decl env (A.ExpDecDef(f,m,(delta,pot,(x,a)),p))) ^ "\n")
                 else ()
         end
       in
-      let () = try TC.checkfexp false env delta pot p' (x,a) ext' m (* approx. type check *)
+      let p_pr = try TC.checkfexp false env delta pot p (x,a) ext' m TC.NonProb (* approx. type check *)
                with ErrorMsg.Error ->
                   (* if verbosity >= 2, type-check again, this time with tracing *)
                   if !F.verbosity >= 2
                     then
                       begin
                         print_string ("% tracing type checking...\n")
-                        ; TC.checkfexp true env delta pot p' (x,a) ext' m
+                        ; TC.checkfexp true env delta pot p (x,a) ext' m TC.NonProb
                       end (* will re-raise ErrorMsg.Error *)
-                  else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
+                  else raise ErrorMsg.Error (* re-raise if not in verbose mode *)
+      in
+      let p' = try TC.checkfexp false env delta pot p_pr (x,a) ext' m TC.Prob (* prob. type check *)
+               with ErrorMsg.Error ->
+                  (* if verbosity >= 2, type-check again, this time with tracing *)
+                  if !F.verbosity >= 2
+                    then
+                      begin
+                        print_string ("% tracing type checking...\n")
+                        ; TC.checkfexp true env delta pot p_pr (x,a) ext' m TC.Prob
+                      end (* will re-raise ErrorMsg.Error *)
+                  else raise ErrorMsg.Error (* re-raise if not in verbose mode *)
+      in
       (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'), ext')::(elab_exps' env dcls')
   | ((A.Exec(f), ext') as dcl)::dcls' ->
       begin
@@ -223,7 +235,7 @@ let rec check_declared_proc env p = match p.A.st_structure with
   | A.Lab(_x,_k,q) -> check_declared_proc env q
   | A.Case(_x,branches) -> check_declared_branches env branches
   | A.PLab(_x,_k,q) -> check_declared_proc env q
-  | A.PCase(_x,branches) -> check_declared_branches env branches
+  | A.PCase(_x,pbranches) -> check_declared_pbranches env pbranches
   | A.Flip(_pr,q1,q2) ->
       let () = check_declared_proc env q1 in
       let () = check_declared_proc env q2 in
@@ -255,6 +267,12 @@ and check_declared_branches env bs = match bs with
   | (_l,p)::bs' ->
       let () = check_declared_proc env p in
       check_declared_branches env bs'
+
+and check_declared_pbranches env bs = match bs with
+    [] -> ()
+  | (_l,_pr,p)::bs' ->
+      let () = check_declared_proc env p in
+      check_declared_pbranches env bs'
 
 and check_declared_prog env fexp = match fexp.A.func_structure with
     A.Command(p) -> check_declared_proc env p
@@ -384,7 +402,7 @@ let rec gen_constraints env dcls = match dcls with
     [] -> ()
   | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p),ext)::dcls' ->
       let () = well_formedness env f m delta x ext in
-      let () = TC.checkfexp false env delta pot p (x,a) ext m in
+      let _p = TC.checkfexp false env delta pot p (x,a) ext m TC.Prob in
       gen_constraints env dcls'
   | (A.TpDef _,_ext)::dcls' -> gen_constraints env dcls'
   | (A.Exec _,_ext)::dcls' -> gen_constraints env dcls';;

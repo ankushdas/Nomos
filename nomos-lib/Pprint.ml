@@ -295,7 +295,7 @@ let rec pp_exp env i exp = match exp with
   | A.Lab(x,k,p) -> pp_chan x ^ "." ^ k ^ " ;\n" ^ pp_exp_indent env i p
   | A.Case(x,bs) -> "case " ^ pp_chan x ^ " ( " ^ pp_branches env (i+8+len (pp_chan x)) bs ^ " )"
   | A.PLab(x,k,p) -> pp_chan x ^ ".." ^ k ^ " ;\n" ^ pp_exp_indent env i p
-  | A.PCase(x,bs) -> "pcase " ^ pp_chan x ^ " ( " ^ pp_branches env (i+9+len (pp_chan x)) bs ^ " )"
+  | A.PCase(x,bs) -> "pcase " ^ pp_chan x ^ " ( " ^ pp_pbranches env (i+9+len (pp_chan x)) bs ^ " )"
   | A.Flip(pr,p1,p2) ->
       let pstr = pp_prob pr in
       let bs = [("HH", p1); ("TT", p2)] in
@@ -349,6 +349,16 @@ and pp_branches env i bs = match bs with
       ^ pp_branches_indent env i bs'
 
 and pp_branches_indent env i bs = spaces (i-2) ^ "| " ^ pp_branches env i bs
+
+and pp_pbranches env i bs = match bs with
+    [] -> ""
+  | [(l,pr,p)] ->
+      pp_exp_after env i (l ^ pp_prob pr ^ " => ") p.A.st_structure
+  | (l,pr, p)::bs' ->
+      pp_exp_after env i (l ^ pp_prob pr ^ " => ") p.A.st_structure ^ "\n"
+      ^ pp_pbranches_indent env i bs'
+
+and pp_pbranches_indent env i bs = spaces (i-2) ^ "| " ^ pp_pbranches env i bs
 
 and pp_fexp_list env i l =
   match l with

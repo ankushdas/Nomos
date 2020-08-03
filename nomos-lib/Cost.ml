@@ -40,7 +40,7 @@ and cost_recv d exp = match exp with
   | A.Case(x,branches) -> work d (A.Case(x, cost_recv_branches branches))
 
   | A.PLab(x,k,p) -> A.PLab(x, k, cost_recv_aug p)
-  | A.PCase(x,branches) -> work d (A.PCase(x, cost_recv_branches branches))
+  | A.PCase(x,pbranches) -> work d (A.PCase(x, cost_recv_pbranches pbranches))
   | A.Flip(pr,p1,p2) -> A.Flip(pr, cost_recv_aug p1, cost_recv_aug p2)
 
   | A.Send(x,w,p) -> A.Send(x,w,cost_recv_aug p)
@@ -76,6 +76,11 @@ and cost_recv_branches bs = match bs with
   | (l,p)::branches ->
       (l, cost_recv_aug p)::(cost_recv_branches branches)
 
+and cost_recv_pbranches bs = match bs with
+    [] -> []
+  | (l,pr,p)::branches ->
+      (l, pr, cost_recv_aug p)::(cost_recv_pbranches branches)
+
 and cost_send d exp = match exp with
     A.Fwd(x,y) -> A.Fwd(x,y)
   | A.Spawn(x,g,xs,p) -> A.Spawn(x,g,xs, cost_send_aug p)
@@ -85,7 +90,7 @@ and cost_send d exp = match exp with
   | A.Case(x,branches) -> A.Case(x, cost_send_branches branches)
 
   | A.PLab(x,k,p) -> work d (A.PLab(x, k, cost_send_aug p))
-  | A.PCase(x,branches) -> A.PCase(x, cost_send_branches branches)
+  | A.PCase(x,pbranches) -> A.PCase(x, cost_send_pbranches pbranches)
   | A.Flip(pr,p1,p2) -> A.Flip(pr, cost_send_aug p1, cost_send_aug p2)
 
   | A.Send(x,w,p) -> work d (A.Send(x,w, cost_send_aug p))
@@ -121,6 +126,11 @@ and cost_send_branches bs = match bs with
   | (l,p)::branches ->
       (l, cost_send_aug p)::(cost_send_branches branches)
 
+and cost_send_pbranches bs = match bs with
+    [] -> []
+  | (l,pr,p)::branches ->
+      (l, pr, cost_send_aug p)::(cost_send_pbranches branches)
+
 and cost_flip d exp = match exp with
     A.Fwd(x,y) -> A.Fwd(x,y)
   | A.Spawn(x,g,xs,p) -> A.Spawn(x,g,xs, cost_flip_aug p)
@@ -130,7 +140,7 @@ and cost_flip d exp = match exp with
   | A.Case(x,branches) -> A.Case(x, cost_flip_branches branches)
 
   | A.PLab(x,k,p) -> A.PLab(x, k, cost_flip_aug p)
-  | A.PCase(x,branches) -> A.PCase(x, cost_flip_branches branches)
+  | A.PCase(x,pbranches) -> A.PCase(x, cost_flip_pbranches pbranches)
   | A.Flip(pr,p1,p2) -> work d (A.Flip(pr, cost_flip_aug p1, cost_flip_aug p2))
 
   | A.Send(x,w,p) -> A.Send(x,w, cost_flip_aug p)
@@ -164,7 +174,12 @@ and cost_flip_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_str
 and cost_flip_branches bs = match bs with
     [] -> []
   | (l,p)::branches ->
-      (l, cost_flip_aug p)::(cost_flip_branches branches);;
+      (l, cost_flip_aug p)::(cost_flip_branches branches)
+
+and cost_flip_pbranches bs = match bs with
+    [] -> []
+  | (l,pr,p)::branches ->
+      (l, pr, cost_flip_aug p)::(cost_flip_pbranches branches);;
 
 let apply_cost {A.func_data = d; A.func_structure = fexp} =
   {A.func_data = d; A.func_structure = cost_tick fexp};;

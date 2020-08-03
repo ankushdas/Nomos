@@ -136,9 +136,9 @@ and 'a st_expr =
   | Case of chan * 'a branches                              (* case x (...) *)
 
   (* PNomos specific *)
-  | PLab of chan * label * 'a st_aug_expr                       (* x..k  ; P *)
-  | PCase of chan * 'a branches                                 (* pcase x (l => Ql) *)
-  | Flip of float * 'a st_aug_expr * 'a st_aug_expr  (* flip {p} (H => Q | T => Q) *)
+  | PLab of chan * label * 'a st_aug_expr                   (* x..k  ; P *)
+  | PCase of chan * 'a pbranches                            (* pcase x (l => Ql) *)
+  | Flip of float * 'a st_aug_expr * 'a st_aug_expr         (* flip {p} (H => Q | T => Q) *)
 
   (* tensor or lolli *)
   | Send of chan * chan * 'a st_aug_expr                    (* send x w ; P *)
@@ -187,6 +187,10 @@ and printable =
 and 'a branch = label * 'a st_aug_expr
 
 and 'a branches = 'a branch list                          (* (l1 => P1 | ... | ln => Pn) *)
+
+and 'a pbranch = label * float * 'a st_aug_expr
+
+and 'a pbranches = 'a pbranch list                        (* (l1{p1} => P1 | ... | ln{pn} => Pn) *)
 
 and 'a arg =
     STArg of chan
@@ -316,7 +320,7 @@ let rec subst c' c expr = match expr with
   | Lab(x,k,p) -> Lab(sub c' c x, k, subst_aug c' c p)
   | Case(x,branches) -> Case(sub c' c x, subst_branches c' c branches)
   | PLab(x,k,p) -> PLab(sub c' c x, k, subst_aug c' c p)
-  | PCase(x,branches) -> PCase(x, subst_branches c' c branches)
+  | PCase(x,pbranches) -> PCase(x, subst_pbranches c' c pbranches)
   | Flip(pr,p1,p2) -> Flip(pr, subst_aug c' c p1, subst_aug c' c p2)
   | Send(x,w,p) -> Send(sub c' c x, sub c' c w, subst_aug c' c p)
   | Recv(x,y,p) ->
@@ -359,6 +363,11 @@ and subst_branches c' c bs = match bs with
     [] -> []
   | (l,p)::bs' ->
       (l, subst_aug c' c p)::(subst_branches c' c bs')
+
+and subst_pbranches c' c bs = match bs with
+    [] -> []
+  | (l,pr,p)::bs' ->
+      (l, pr, subst_aug c' c p)::(subst_pbranches c' c bs')
 
 and subst_aug c' c {st_structure = exp; st_data = d} =
   {st_structure = subst c' c exp; st_data = d}
@@ -441,7 +450,7 @@ and esubstv v' v exp = match exp with
   | Lab(x,k,p) -> Lab(x, k, esubstv_aug v' v p)
   | Case(x,branches) -> Case(x, esubstv_branches v' v branches)
   | PLab(x,k,p) -> PLab(x, k, esubstv_aug v' v p)
-  | PCase(x,branches) -> PCase(x, esubstv_branches v' v branches)
+  | PCase(x,pbranches) -> PCase(x, esubstv_pbranches v' v pbranches)
   | Flip(pr, p1, p2) -> Flip(pr, esubstv_aug v' v p1, esubstv_aug v' v p2)
   | Send(x,w,p) -> Send(x, w, esubstv_aug v' v p)
   | Recv(x,y,p) -> Recv(x, y, esubstv_aug v' v p)
@@ -471,7 +480,12 @@ and esubstv v' v exp = match exp with
 and esubstv_branches v' v bs = match bs with
     [] -> []
   | (l,p)::bs' ->
-  (l, esubstv_aug v' v p)::(esubstv_branches v' v bs');;
+  (l, esubstv_aug v' v p)::(esubstv_branches v' v bs')
+
+and esubstv_pbranches v' v bs = match bs with
+    [] -> []
+  | (l,pr,p)::bs' ->
+  (l, pr, esubstv_aug v' v p)::(esubstv_pbranches v' v bs');;
 
 let rec fsubst_ctx ctx' ctx expr = match ctx',ctx with
     (STArg c')::ctx', (STyped (c,_t))::ctx ->

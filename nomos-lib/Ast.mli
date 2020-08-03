@@ -81,7 +81,7 @@ and 'a st_expr =
   | Lab of chan * label * 'a st_aug_expr
   | Case of chan * 'a branches
   | PLab of chan * label * 'a st_aug_expr
-  | PCase of chan * 'a branches
+  | PCase of chan * 'a pbranches
   | Flip of float * 'a st_aug_expr * 'a st_aug_expr
   | Send of chan * chan * 'a st_aug_expr
   | Recv of chan * chan * 'a st_aug_expr
@@ -112,6 +112,8 @@ and printable =
 [@@deriving sexp]
 and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list
+and 'a pbranch = label * float * 'a st_aug_expr
+and 'a pbranches = 'a pbranch list
 and 'a arg = STArg of chan | FArg of 'a func_expr
 [@@deriving sexp]
 type parsed_expr = ext func_aug_expr
