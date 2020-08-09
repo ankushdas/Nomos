@@ -27,7 +27,7 @@
 %token LBRACE RBRACE
 %token HASH DOLLAR
 %token LARROW SEMI RRARROW
-%token RECV SEND CASE DOT CLOSE WAIT WORK PAY GET ACQUIRE ACCEPT RELEASE DETACH ABORT
+%token RECV SEND CASE DOT CLOSE WAIT WORK DEPOSIT PAY GET ACQUIRE ACCEPT RELEASE DETACH ABORT
 %right ANDALSO ORELSE
 %left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
 %right CONS
@@ -361,6 +361,9 @@ st:
                                                                                                                    ($endpos(x).Lexing.pos_lnum, $endpos(x).Lexing.pos_cnum - $endpos(x).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }   
     |  WORK; pot = potential; SEMI; p = st                               { {st_structure = Ast.Work(pot, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos(pot).Lexing.pos_lnum, $endpos(pot).Lexing.pos_cnum - $endpos(pot).Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} } 
+    |  DEPOSIT; pot = potential; SEMI; p = st                            { {st_structure = Ast.Deposit(pot, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(pot).Lexing.pos_lnum, $endpos(pot).Lexing.pos_cnum - $endpos(pot).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} } 
     |  PAY; x = linid; pot = potential; SEMI; p = st                     { {st_structure = Ast.Pay(x, pot, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),

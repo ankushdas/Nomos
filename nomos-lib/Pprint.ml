@@ -268,6 +268,9 @@ let rec pp_exp env i exp = match exp with
   | A.Work(pot, p) ->
       let potstr = pp_potpos pot in
       "work " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
+  | A.Deposit(pot, p) ->
+      let potstr = pp_potpos pot in
+      "deposit " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
   | A.Pay(x,pot,p) ->
       let potstr = pp_potpos pot in
       "pay " ^ pp_chan x ^ " " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
@@ -409,6 +412,9 @@ let pp_exp_prefix exp = match exp with
   | A.Work(pot, _p) ->
       let potstr = pp_potpos pot in 
       "work " ^ potstr ^ "; ..."
+  | A.Deposit(pot, _p) ->
+      let potstr = pp_potpos pot in 
+      "deposit " ^ potstr ^ "; ..."
   | A.Pay(x,pot,_p) ->
       let potstr = pp_potpos pot in
       "pay " ^ pp_chan x ^ " " ^ potstr ^ "; ..."

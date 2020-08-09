@@ -6,24 +6,22 @@ open Sexplib.Std
 
 type gas_accounts = int M.M(C.String).t [@@deriving sexp]
 
-let create_account sender initial_config =
-  let (tx, ch, gas_accs, types, config) = initial_config in
-  let new_gas_accs =
-    match M.find gas_accs sender with
-        None -> M.add_exn gas_accs ~key:sender ~data:0
-      | Some _ -> gas_accs
-  in
-  (tx, ch, new_gas_accs, types, config);;
+let create_account gas_accs sender =
+  match M.find gas_accs sender with
+      None ->
+        let () = if !F.verbosity >= 0 then print_string ("% account creation of " ^ sender ^ " successful!\n") in
+        M.add_exn gas_accs ~key:sender ~data:0
+    | Some _ ->
+        let () = if !F.verbosity >= 0 then print_string ("% warning: account of " ^ sender ^ " already exists!\n") in
+        gas_accs;;
 
-let deposit_gas sender d initial_config =
-  let (tx, ch, gas_accs, types, config) = initial_config in
-  let new_gas_accs =
-    match M.find gas_accs sender with
-        None -> C.eprintf "%% account for txn sender %s does not exist!\n" sender; exit 1
-      | Some bal ->
-          M.set gas_accs ~key:sender ~data:(bal+d)
-  in
-  (tx, ch, new_gas_accs, types, config);;
+let deposit gas_accs sender d =
+  match M.find gas_accs sender with
+      None -> C.eprintf "%% account for txn sender %s does not exist!\n" sender; exit 1
+    | Some bal ->
+        let () = if !F.verbosity >= 0 then print_string ("% deposit of " ^ string_of_int d ^ " gas units successful!\n") in
+        let () = if !F.verbosity >= 0 then print_string ("% account balance of " ^ sender ^ ": " ^ string_of_int (bal+d) ^"\n") in
+        M.set gas_accs ~key:sender ~data:(bal+d);;
 
 type res = Insufficient of int | Balance of int | NonBC;;
 

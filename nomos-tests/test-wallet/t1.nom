@@ -12,6 +12,7 @@ proc transaction create_wallet : (n : int) |{*}- ($d : 1) =
   $m <- money_proc <- n ;
   #sw <- wallet_proc <- $m ;
   print ("created a wallet with %d coins on channel %c\n", n, #sw);
+  deposit {100};
   close $d
 }
 

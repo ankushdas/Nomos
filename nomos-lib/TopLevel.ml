@@ -110,10 +110,14 @@ let save_config conf config_out =
   Sexp.save_hum config_out (E.sexp_of_blockchain_state conf)
 
 let create_account initial_config =
-  G.create_account !E.txnSender initial_config;;
+  let (tx, ch, gas_accs, types, config) = initial_config in
+  let new_gas_accs = G.create_account gas_accs !E.txnSender in
+  (tx, ch, new_gas_accs, types, config);;
 
 let deposit_gas d initial_config =
-  G.deposit_gas !E.txnSender d initial_config;;
+  let (tx, ch, gas_accs, types, config) = initial_config in
+  let new_gas_accs = G.deposit gas_accs !E.txnSender d in
+  (tx, ch, new_gas_accs, types, config);;
 
 let run (Transaction env) config =
   let rec run' config dcls =

@@ -79,6 +79,7 @@ and 'a st_expr =
   | Close of chan
   | Wait of chan * 'a st_aug_expr
   | Work of potential * 'a st_aug_expr
+  | Deposit of potential * 'a st_aug_expr
   | Pay of chan * potential * 'a st_aug_expr
   | Get of chan * potential * 'a st_aug_expr
   | Acquire of chan * chan * 'a st_aug_expr

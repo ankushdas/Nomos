@@ -113,6 +113,7 @@ rule token = parse
   | "close"             { CLOSE }
   | "wait"              { WAIT }
   | "work"              { WORK }
+  | "deposit"           { DEPOSIT }
   | "pay"               { PAY }
   | "get"               { GET }
   | "acquire"           { ACQUIRE }

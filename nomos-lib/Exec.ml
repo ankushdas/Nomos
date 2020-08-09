@@ -72,6 +72,8 @@ let txnNum = ref 0;;
 
 let txnSender = ref "";;
 
+let txnGas = ref 0;;
+
 let rec eval fexp = match fexp.A.func_structure with
     A.If(e1,e2,e3) ->
       begin
@@ -725,6 +727,21 @@ let work ch config =
           Changed config
     | _s -> raise ExecImpossible;;
 
+let deposit ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func,c,in_use,t,(w,pot),A.Deposit(k,p)) ->
+        let k = try_evaluate k in
+        if pot < k
+        then raise InsufficientPotential
+        else
+          let proc = Proc(func,c,in_use,t+1,(w,pot-k),p.A.st_structure) in
+          let () = txnGas := !txnGas + k in
+          let config = add_sem proc config in
+          Changed config
+    | _s -> raise ExecImpossible;;
+
 let paypot_S ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
@@ -1134,6 +1151,9 @@ let match_and_one_step env sem config =
 
             | A.Work _ ->
                 work c config
+            | A.Deposit _ ->
+                deposit c config
+            
             | A.Pay(c',_pot,_p) ->
                 if c = c'
                 then paypot_S c config
@@ -1328,15 +1348,15 @@ let empty_blockchain_state =
      types = M.empty (module Chan);
    });;
 
-let try_exec f c pot args initial_config env new_gas_accs types =
+let try_exec f c pot args initial_config env types =
   let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
   let config = add_sem sem initial_config in
   match step env config with
-      Fail -> (!txnNum + 1, !chan_num, new_gas_accs, types, initial_config)
+      Fail -> (!txnNum + 1, !chan_num, types, initial_config)
     | Success final_config ->
         begin
-          try (!txnNum + 1, !chan_num, new_gas_accs, types, verify_final_configuration c final_config)
-        with
+          try (!txnNum + 1, !chan_num, types, verify_final_configuration c final_config)
+          with
           | InsufficientPotential -> error "insufficient potential during execution"
                                     ; raise RuntimeError
           | UnconsumedPotential -> error "unconsumed potential during execution"
@@ -1365,14 +1385,19 @@ let exec env full_config (f, args) =
   let m = chan_mode env f in
   let c = cfresh m in
   let pot = try_evaluate (get_pot env f) in
-  let (res, new_gas_accs) = G.deduct gas_accs !txnSender pot in
+  let (res, deducted_gas_accs) = G.deduct gas_accs !txnSender pot in
+  let () = txnGas := 0 in
   match res with
       Insufficient bal ->
         let () = if !F.verbosity >= 0 then print_string ("% txn sender " ^ !txnSender ^ " does not have sufficient gas, needed: " ^ string_of_int pot ^ ", found:  " ^ string_of_int bal ^ "\n") in
         (!txnNum + 1, !chan_num, gas_accs, types, initial_config)
     | NonBC ->
         let () = if !F.verbosity >= 0 then print_string ("% running program in non-blockchain mode\n") in
-        try_exec f c pot args initial_config env new_gas_accs types
+        let (tx, ch, types, config) = try_exec f c pot args initial_config env types in
+        (tx, ch, deducted_gas_accs, types, config)
     | Balance bal ->
-        let () = if !F.verbosity >= 0 then print_string ("% gas successfully deducted, txn sender " ^ !txnSender ^ " now has " ^ string_of_int bal ^ " gas units\n") in
-        try_exec f c pot args initial_config env new_gas_accs types
+        let () = if !F.verbosity >= 0 then print_string ("% gas cost of txn: " ^ string_of_int pot ^ " units successfully deducted; txn sender " ^ !txnSender ^ " now has " ^ string_of_int bal ^ " gas units\n") in
+        let (tx, ch, types, config) = try_exec f c pot args initial_config env types in
+        let () = if !F.verbosity >= 0 then print_string ("% depositing leftover gas\n") in
+        let deposited_gas_accs = G.deposit deducted_gas_accs !txnSender !txnGas in
+        (tx, ch, deposited_gas_accs, types, config);;

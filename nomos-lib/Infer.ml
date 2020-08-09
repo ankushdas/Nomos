@@ -63,6 +63,9 @@ let rec remove_stars_exp exp = match exp with
   | A.Work(pot,p) ->
       let pot' = remove_star pot in
       A.Work(pot', remove_stars_aug p)
+  | A.Deposit(pot,p) ->
+      let pot' = remove_star pot in
+      A.Deposit(pot', remove_stars_aug p)
   | A.Pay(x,pot,p) ->
       let pot' = remove_star pot in
       A.Pay(x, pot', remove_stars_aug p)
@@ -186,6 +189,9 @@ let rec substitute_exp exp psols msols = match exp with
   | A.Work(pot,p) ->
       let pot' = substitute_pot pot psols in
       A.Work(pot', substitute_aug p psols msols)
+  | A.Deposit(pot,p) ->
+      let pot' = substitute_pot pot psols in
+      A.Deposit(pot', substitute_aug p psols msols)
   | A.Pay(x,pot,p) ->
       let pot' = substitute_pot pot psols in
       A.Pay(substitute_mode x msols, pot', substitute_aug p psols msols)
@@ -286,6 +292,7 @@ let rec removeU_exp exp = match exp with
   | A.Close(x) -> A.Close(removeU x)
   | A.Wait(x,q) -> A.Wait(removeU x, removeU_aug q)
   | A.Work(pot,p) -> A.Work(pot, removeU_aug p)
+  | A.Deposit(pot,p) -> A.Deposit(pot, removeU_aug p)
   | A.Pay(x,pot,p) -> A.Pay(removeU x, pot, removeU_aug p)
   | A.Get(x,pot,p) -> A.Get(removeU x, pot, removeU_aug p)
   | A.Acquire(x,y,p) -> A.Acquire(removeU x, removeU y, removeU_aug p)

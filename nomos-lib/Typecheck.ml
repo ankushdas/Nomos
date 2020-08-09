@@ -1366,6 +1366,14 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         then error (exp.A.st_data) ("potential not positive: " ^ pp_lt pot' zero)
         else check_exp' trace env delta (minus pot pot') p zc ext mode
       end
+  | A.Deposit(pot',p) ->
+      begin
+        if not (ge pot pot')
+        then error (exp.A.st_data) ("insufficient potential to deposit: " ^ pp_lt pot pot')
+        else if not (ge pot' zero)
+        then error (exp.A.st_data) ("potential not positive: " ^ pp_lt pot' zero)
+        else check_exp' trace env delta (minus pot pot') p zc ext mode
+      end
   | A.Pay(x,epot,p) ->
       begin
         if not (check_ltp x delta)

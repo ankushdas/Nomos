@@ -46,6 +46,7 @@ and cost_recv d exp = match exp with
   | A.Wait(x,p) -> work d (A.Wait(x, cost_recv_aug p))
 
   | A.Work(pot,p) -> A.Work(pot,cost_recv_aug p)
+  | A.Deposit(pot,p) -> A.Deposit(pot,cost_recv_aug p)
   | A.Pay(x,pot,p) -> A.Pay(x,pot,cost_recv_aug p)
   | A.Get(x,pot,p) -> A.Get(x,pot,cost_recv_aug p)
 
@@ -87,6 +88,7 @@ and cost_send d exp = match exp with
   | A.Wait(x,p) -> A.Wait(x, cost_send_aug p)
 
   | A.Work(pot,p) -> A.Work(pot, cost_send_aug p)
+  | A.Deposit(pot,p) -> A.Deposit(pot, cost_send_aug p)
   | A.Pay(x,pot,p) -> A.Pay(x,pot, cost_send_aug p)
   | A.Get(x,pot,p) -> A.Get(x,pot, cost_send_aug p)
 

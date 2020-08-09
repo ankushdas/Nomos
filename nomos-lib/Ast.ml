@@ -142,6 +142,8 @@ and 'a st_expr =
 
   (* work *)
   | Work of potential * 'a st_aug_expr                      (* work ; P or work{pot} ; P *)
+  (* deposit *)
+  | Deposit of potential * 'a st_aug_expr                   (* deposit ; P or deposit{pot} ; P *)
 
   (* pay/get potential |{p}>A, |{p}>A *)
   | Pay of chan * potential * 'a st_aug_expr                (* pay x {pot} ; P *)
@@ -314,6 +316,7 @@ let rec subst c' c expr = match expr with
   | Close(x) -> Close(sub c' c x)
   | Wait(x,q) -> Wait(sub c' c x, subst_aug c' c q)
   | Work(pot,p) -> Work(pot, subst_aug c' c p)
+  | Deposit(pot,p) -> Deposit(pot, subst_aug c' c p)
   | Pay(x,pot,p) -> Pay(sub c' c x, pot, subst_aug c' c p)
   | Get(x,pot,p) -> Get(sub c' c x, pot, subst_aug c' c p)
   | Acquire(x,y,p) ->
@@ -433,6 +436,7 @@ and esubstv v' v exp = match exp with
   | Close(x) -> Close(x)
   | Wait(x,q) -> Wait(x, esubstv_aug v' v q)
   | Work(pot,p) -> Work(pot, esubstv_aug v' v p)
+  | Deposit(pot,p) -> Deposit(pot, esubstv_aug v' v p)
   | Pay(x,pot,p) -> Pay(x, pot, esubstv_aug v' v p)
   | Get(x,pot,p) -> Get(x, pot, esubstv_aug v' v p)
   | Acquire(x,y,p) -> Acquire(x, y, esubstv_aug v' v p)
