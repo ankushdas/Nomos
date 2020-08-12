@@ -9,6 +9,7 @@
     "classnames": "2.2.6",
     "history": "4.10.1",
     "node-sass": "4.13.1",
+    "npm-force-resolutions": "0.0.3",
     "perfect-scrollbar": "1.5.0",
     "prop-types": "15.7.2",
     "react": "16.13.0",
@@ -17,8 +18,13 @@
     "react-google-maps": "9.4.5",
     "react-notification-alert": "0.0.12",
     "react-router-dom": "5.1.2",
-    "react-scripts": "3.4.0",
-    "reactstrap": "8.4.1"
+    "react-scripts": "^3.4.2",
+    "reactstrap": "8.4.1",
+    "serialize-javascript": "^4.0.0",
+    "terser-webpack-plugin": "^4.1.0"
+  },
+  "resolutions": {
+    "serialize-javascript": "3.1.0"
   },
   "scripts": {
     "start": "react-scripts start",
