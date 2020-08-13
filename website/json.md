@@ -19,9 +19,9 @@ ACCOUNT_LIST = [ { account : STRING
                  , balance : STRING}
 	       ]
 
-TRANSACTION_LIST = [ { channel : STRING
+CONTRACT_LIST = [ { channel : STRING
                      , type : STRING
-		     , GAS : INT
+		     , gas : INT
 		     }
 		   ]
 
@@ -91,7 +91,7 @@ TRANSACTION_LIST = [ { channel : STRING
 { response : "submit"
 , status : "success"
 , body : { state : STATE
-         , translist : TRANSACTION_LIST
+         , contlist : CONTRACT_LIST
 	 , acclist : ACCOUNT_LIST
          }
 }
