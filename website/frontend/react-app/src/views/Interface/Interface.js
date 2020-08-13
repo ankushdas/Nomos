@@ -4,9 +4,6 @@ import React from "react";
 // reactstrap components
 import {
   Button,
-  Modal,
-  ModalBody,
-  ModalFooter,
   Card,
   CardHeader,
   CardTitle,  
@@ -27,21 +24,9 @@ import {
 // react plugin for creating notifications over the dashboard
 import NotificationAlert from "react-notification-alert";
 
-const msgTypeCheckStarted = {
-    place: "br",
-    message: "Server contacted. Type Checking ...",
-    type: "info",
-    icon: "tim-icons icon-bell-55",
-    autoDismiss: 10
-}
-
-
-const msgTypeCheckResponse = msg => ({
-    place: "br",
-    message: msg,
-    type: "success",
-    icon: "tim-icons icon-bell-55"
-})
+import Messages from "./Messages.js"
+import Server from "./Server.js"
+import ModalButton from "./ModalButton.js"
 
 
 const listAccounts =
@@ -184,49 +169,44 @@ const loadTransaction =
 
 
 
+
 class Interface extends React.Component {
 
-constructor(props) {
+  constructor(props) {
     super(props);
 
     this.state = {
-        modalVisible: false,
 	loading: false,
         transactionCode: "(*Write or select a transaction.*)"
     };
     
-    this.toggleModal = this.toggleModal.bind(this);
     this.handleCheckTransaction = this.handleCheckTransaction.bind(this);
     this.handleTransactionTextChange = this.handleTransactionTextChange.bind(this);    
-}
+  }
+    
+  handleTransactionTextChange(event) {
+     this.setState({transactionCode: event.target.value});
+  }
 
-toggleModal(){
-    this.setState({
-        modalVisible: !this.state.modalVisible
-    });
-}
-
-async handleCheckTransaction() {
-  this.setState({loading:true});
-  this.notify(msgTypeCheckStarted);
-  const url = "https://5v1khg1b7b.execute-api.us-east-2.amazonaws.com/version1/execute";
-  const msg = {
-    method:"post",
-    headers: {"Content-Type": "application/json" },
-    body:JSON.stringify({code:this.state.transactionCode})
+  notify(arg) {
+    const options = {
+      place: arg.place,
+      message: (<div>{arg.message}</div>),
+      type: arg.type,
+      icon: "tim-icons icon-bell-55",
+      autoDismiss: arg.autoDismiss
     };
-  const response = await fetch(url,msg);
-  console.log(response);
-  // see https://developer.mozilla.org/en-US/docs/Web/API/Response
-  // I hope a json string from ocaml will allow us to use .json() instead of .text() below
-  const data = await response.text();
-  this.setState({loading:false});
-  this.notify(msgTypeCheckResponse(data));
-}
+    this.refs.notificationAlert.notificationAlert(options);
+  }
+    
+  async handleCheckTransaction() {
+    this.setState({loading:true});
+    this.notify(Messages.typeCheckStarted);
+    const response = await Server.requestTypeCheck(this.state.transactionCode);
+    this.setState({loading:false});
+    this.notify(Messages.typeCheckResponse(response));
+  }
 
-handleTransactionTextChange(event) {
-   this.setState({transactionCode: event.target.value});
-}
 
 transactionForm = () =>
   <Card>
@@ -302,52 +282,12 @@ transactionForm = () =>
 
 
 modalButton = () =>
-<div>
-<Button size="sm" color="secondary" onClick={this.toggleModal}>
-    Show
-</Button>
-<Modal isOpen={this.state.modalVisible} toggle={this.toggleModal} size="lg">
-    <div className="modal-header">
-      <h5 className="modal-title" id="exampleModalLabel">
-        Modal title
-      </h5>
-      <button
-        type="button"
-        className="close"
-        data-dismiss="modal"
-        aria-hidden="true"
-        onClick={this.toggleModal}
-      >
-        <i className="tim-icons icon-simple-remove" />
-      </button>
-    </div>
-	<ModalBody style={{maxHeight: "70rem", overflowY: "auto"}}>
-    <p>transaction code</p>
-    </ModalBody>
-    <ModalFooter>
-        <Button color="secondary" onClick={this.toggleModal}>
-            Close
-        </Button>
-        <Button
-	  color="primary"
-          disabled={this.state.loading}
-	 >
-            Save changes
-        </Button>
-    </ModalFooter>
-</Modal>
-</div>
+   <ModalButton
+   buttonLabel = "Show"
+   modalTitle = "title 1 "
+   modalBody = <p>ddd</p>
+   />
 
-notify = arg => {
-  const options = {
-    place: arg.place,
-    message: (<div>{arg.message}</div>),
-    type: arg.type,
-    icon: "tim-icons icon-bell-55",
-    autoDismiss: arg.autoDismiss
-  };
-  this.refs.notificationAlert.notificationAlert(options);
-};
 
 
 
@@ -466,7 +406,6 @@ listState = () =>
   render() {
     return (
         <div className="content">
-	
           <div className="react-notification-alert-container">
             <NotificationAlert ref="notificationAlert" />
           </div>
