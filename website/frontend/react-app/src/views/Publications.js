@@ -16,7 +16,7 @@ import {
 const publications =
 [
   { title : "Resource-Aware Session Types for Digital Contracts",
-    authors : "Ankush Das, Stephanie Balzer, Jan Hoffmann, and Frank Pfenning",
+    authors : "Ankush Das, Stephanie Balzer, Jan Hoffmann, Frank Pfenning, and Ishani Santurkar",
     venue : "IEEE Computer Security Foundations Symposium (CSF’21)",
     year : "2021",
     pdf : "https://www.cs.cmu.edu/~janh/assets/pdf/DasBHP19.pdf"
