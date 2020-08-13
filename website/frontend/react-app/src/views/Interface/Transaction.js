@@ -35,13 +35,35 @@ class Transaction extends React.Component {
 	 account : "Frank",
 	 gasBound : -1
       };
+      
       this.handleTextChange = this.handleTextChange.bind(this);
+      this.handleTypeCheck = this.handleTypeCheck.bind(this);
+      this.handleSubmit = this.handleSubmit.bind(this);
+      this.handleCancel = this.handleCancel.bind(this);            
    }
 
    handleTextChange(event){
       this.props.handleTextChange(event.target.value);
-   }  
+   }
 
+   handleTypeCheck(event){
+      const checked = this.props.handleCheckTransaction();
+      if (checked) {
+	 this.setState({typeChecked:true});
+      };
+   }
+
+   handleSubmit(event){
+      const account = this.state.account;
+      const gasBound = this.state.gasBound;      
+      this.props.handleSubmitTransaction(account,gasBound);
+      this.setState({typeChecked:false});
+   }
+
+   handleCancel(event){
+      this.setState({typeChecked:false});
+   }
+   
    render() {
       const transactionCode = this.props.transactionCode;
       const loading = this.props.loading;
@@ -100,7 +122,7 @@ class Transaction extends React.Component {
 		  <Button
 		      className="btn-fill"
 		      color="primary"
-		      onClick={this.props.handleCheckTransaction}
+		      onClick={this.handleTypeCheck}
 		      disabled={loading || typeChecked}		      
 		  >
 		     Type Check / Elaborate
@@ -110,6 +132,7 @@ class Transaction extends React.Component {
 		  <Button
 		      className="btn-fill"
 		      color="primary"
+		      onClick={this.handleSubmit}		      
 		      disabled={loading || !typeChecked}		      
 		  >
 		     Submit
@@ -119,7 +142,7 @@ class Transaction extends React.Component {
 		  <Button
 		      className="btn-fill"
 		      color="primary"
-		      onClick={this.props.cancelTransaction}		      
+		      onClick={this.handleCancel}		      
 		      disabled={loading || !typeChecked}
 		  >
 		     Cancel

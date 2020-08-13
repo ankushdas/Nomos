@@ -28,6 +28,7 @@ import Messages from "./Messages.js"
 import Server from "./Server.js"
 import ModalButton from "./ModalButton.js"
 import Transaction from "./Transaction.js"
+import ListTransactions from "./ListTransactions.js"
 
 
 const listAccounts =
@@ -178,11 +179,17 @@ class Interface extends React.Component {
 
      this.state = {
 	loading: false,
+	transactionCounter: 1,	
+	
 	transactionCode: "(*Write or select a transaction.*)",
-	blockchainState : ""
+	ocamlState : "",                /* Ocaml representation of the blockchain state*/
+	contractList : [] ,             /* Array of contracts */
+	accountList :  [] ,             /* Array of accounts */
+	transactionList :  [] ,         /* Array of past transactions */	
      };
     
      this.handleCheckTransaction = this.handleCheckTransaction.bind(this);
+     this.handleSubmitTransaction = this.handleSubmitTransaction.bind(this);     
      this.handleTransactionTextChange = this.handleTransactionTextChange.bind(this);
   }
     
@@ -190,6 +197,7 @@ class Interface extends React.Component {
      this.setState({transactionCode: text});
   }
 
+   
   notify(arg) {
     const options = {
       place: arg.place,
@@ -203,12 +211,36 @@ class Interface extends React.Component {
     
   async handleCheckTransaction() {
     this.setState({loading:true});
-    this.notify(Messages.typeCheckStarted);
+    this.notify(Messages.serverContacted("Type checking transaction"));
     const response = await Server.requestTypeCheck(this.state.transactionCode);
     this.setState({loading:false, transactionTypeChecked: true});
     this.notify(Messages.typeCheckResponse(response));
+    return true 
   }
 
+   async handleSubmitTransaction(account,gasBound) {
+      const transCounter = this.state.transactionCounter;
+      const transCode = this.state.transactionCode;
+      const transList = this.state.transactionList;
+
+      this.setState({loading:true});
+      this.notify(Messages.serverContacted("Submitting transaction"));
+
+      const response = await Server.requestSubmit(transCode);
+
+      this.setState(
+	 {transactionCounter : transCounter+1,
+	  transactionList : [{number:transCounter, code:transCode},...transList]
+	 }
+      );
+
+      this.setState({loading:false});
+      this.notify(Messages.typeCheckResponse(response));
+
+      return true
+   }
+
+   
 modalButton = () =>
    <ModalButton
    buttonLabel = "Show"
@@ -218,32 +250,6 @@ modalButton = () =>
 
 
 
-
-listTransactions = () =>
-  <Card className="card-plain">
-    <CardHeader>
-      <CardTitle tag="h4">Past Transactions</CardTitle>
-      <p className="category">The "Blockchain"</p>
-    </CardHeader>
-    <CardBody>
-     <div  style={{height:"35rem",overflowY:"auto"}}>
-      <Table className="tablesorter" responsive>
-        <thead className="text-primary">
-          <tr>
-            <th>Transaction #</th>
-            <th className="text-center">Source Code</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-          </tr>
-        </tbody>
-      </Table>
-    </div>		  
-    </CardBody>
-  </Card>
 
 
 listState = () =>
@@ -340,14 +346,14 @@ listState = () =>
 	  
           <Row>
              <Col md="8">
-		{/*here should be functions setting the loading variable */}
-		{/*the functions for checking and submitting transactions should be in Transaction.js */}		
-               <Transaction
+		{/* the handle checkTransaction function should return a boolean that indicates if the transaction was succesful
+		typeChecked can be updated based on the result  */}
+		<Transaction
 		   transactionCode = {this.state.transactionCode}
-		   blockChainSate = {this.state.blockchainState}
 		   handleTextChange = {this.handleTransactionTextChange}
 		   handleCheckTransaction = {this.handleCheckTransaction}
-		   loading = {this.state.loading}
+		   handleSubmitTransaction = {this.handleSubmitTransaction}		    
+ 		   loading = {this.state.loading}
 	       />
             </Col>
 	    <Col md="4">
@@ -362,7 +368,9 @@ listState = () =>
 	    {this.listState ()}
             </Col>
 	    <Col md="4">
-	      {this.listTransactions ()}	    
+	       <ListTransactions
+		   transList = {this.state.transactionList}
+	       />
 	    </Col>
           </Row>
         </div>
