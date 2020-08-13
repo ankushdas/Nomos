@@ -19,7 +19,7 @@ import Team from "views/Team.js";
 import Publications from "views/Publications.js";
 import Documentation from "views/Documentation.js";
 import Overview from "views/Overview.js";
-import Interface from "views/Interface.js";
+import Interface from "views/Interface/Interface.js";
 
 var routes = [
   {
