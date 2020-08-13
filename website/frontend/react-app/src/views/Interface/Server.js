@@ -15,8 +15,16 @@ async function requestTypeCheck (transactionCode) {
     return result
 }
 
+async function requestSubmit (transactionCode) {
+    const msg = jsonMessage ({ code:transactionCode });
+    // const response = await fetch(url,msg);
+    // const result = await response.text();
+    return "Server.js: Not implemented yet"
+}
+
 const Server = {
-    requestTypeCheck : requestTypeCheck
+    requestTypeCheck : requestTypeCheck,
+    requestSubmit : requestSubmit
 }
 
 export default Server;

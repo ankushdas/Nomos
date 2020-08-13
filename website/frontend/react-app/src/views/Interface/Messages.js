@@ -2,13 +2,13 @@
 
 const Messages = {
 
-    typeCheckStarted :
+    serverContacted : msg => (
 	{ place: "br",
-          message: "Server contacted. Type Checking ...",
+          message: "Server contacted. " + msg + " ..." ,
 	  type: "info",
 	  icon: "tim-icons icon-bell-55",
 	  autoDismiss: 10
-	},
+	}),
 
     typeCheckResponse : msg => ({
 	place: "br",
