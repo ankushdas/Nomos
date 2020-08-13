@@ -27,6 +27,7 @@ import NotificationAlert from "react-notification-alert";
 import Messages from "./Messages.js"
 import Server from "./Server.js"
 import ModalButton from "./ModalButton.js"
+import Transaction from "./Transaction.js"
 
 
 const listAccounts =
@@ -175,17 +176,18 @@ class Interface extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = {
+     this.state = {
 	loading: false,
-        transactionCode: "(*Write or select a transaction.*)"
-    };
+	transactionCode: "(*Write or select a transaction.*)",
+	blockchainState : ""
+     };
     
-    this.handleCheckTransaction = this.handleCheckTransaction.bind(this);
-    this.handleTransactionTextChange = this.handleTransactionTextChange.bind(this);    
+     this.handleCheckTransaction = this.handleCheckTransaction.bind(this);
+     this.handleTransactionTextChange = this.handleTransactionTextChange.bind(this);
   }
     
-  handleTransactionTextChange(event) {
-     this.setState({transactionCode: event.target.value});
+  handleTransactionTextChange(text) {
+     this.setState({transactionCode: text});
   }
 
   notify(arg) {
@@ -203,83 +205,9 @@ class Interface extends React.Component {
     this.setState({loading:true});
     this.notify(Messages.typeCheckStarted);
     const response = await Server.requestTypeCheck(this.state.transactionCode);
-    this.setState({loading:false});
+    this.setState({loading:false, transactionTypeChecked: true});
     this.notify(Messages.typeCheckResponse(response));
   }
-
-
-transactionForm = () =>
-  <Card>
-    <CardHeader>
-      <h6 className="title">Transaction</h6>
-    </CardHeader>
-    <CardBody>
-        <Row>
-          <Col md="12">
-          <FormGroup>
-             <Input
-	      style={{fontFamily:"Monaco,Consolas,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace"}}
-              type="textarea"
-	      resize="both"
-              onChange={this.handleTransactionTextChange}
-	      value={this.state.transactionCode}
-              rows="30"
-              />
-          </FormGroup>			  
-	 </Col>
-        </Row>
-    </CardBody>
-                <CardFooter>
-	<Row>
-          <Col md="5">
-	  </Col>
-          <Col md="4">
-                        <FormGroup>
-                          <label>Account</label>
-                          <Input
-                            defaultValue="Frank"
-                            placeholder=""
-                            type="text"
-			    disabled
-                          />
-                        </FormGroup>
-	  </Col>
-          <Col md="3">
-                        <FormGroup>
-                          <label>Gas Bound</label>
-                          <Input
-                            defaultValue=""
-                            placeholder=""
-                            type="text"
-			    disabled
-                          />
-                        </FormGroup>
-	  </Col>
-        </Row>
-	<Row>
-          <Col md="5">
-           <Button
-	     className="btn-fill"
-	     color="primary"
-             onClick={this.handleCheckTransaction}
-	   >
-             Type Check / Elaborate
-           </Button>
-	  </Col>
-          <Col md="4">
-           <Button className="btn-fill" color="primary" type="submit" disabled={this.state.loading}>
-             Cancel
-           </Button>
-	  </Col>
-          <Col md="3">
-           <Button className="btn-fill" color="primary" type="submit">
-             Submit
-           </Button>
-	  </Col>
-        </Row>	
-     </CardFooter>
-  </Card>
-
 
 modalButton = () =>
    <ModalButton
@@ -411,8 +339,16 @@ listState = () =>
           </div>
 	  
           <Row>
-            <Col md="8">
-               {this.transactionForm ()}
+             <Col md="8">
+		{/*here should be functions setting the loading variable */}
+		{/*the functions for checking and submitting transactions should be in Transaction.js */}		
+               <Transaction
+		   transactionCode = {this.state.transactionCode}
+		   blockChainSate = {this.state.blockchainState}
+		   handleTextChange = {this.handleTransactionTextChange}
+		   handleCheckTransaction = {this.handleCheckTransaction}
+		   loading = {this.state.loading}
+	       />
             </Col>
 	    <Col md="4">
 	      {loadTransaction}	    
