@@ -67,8 +67,8 @@ CONTRACT_LIST = [ { channel : STRING
 
 { response : "typecheck"
 , status : "success"
-, body : { state : STATE
-         , transaction : STRING
+, body : { transaction : STRING
+         , gasbound : INT
          }
 }
 

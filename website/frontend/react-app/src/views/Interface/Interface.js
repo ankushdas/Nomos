@@ -97,12 +97,33 @@ class Interface extends React.Component {
   }
     
   async handleCheckTransaction() {
-    this.setState({loading:true});
-    this.notify(Messages.serverContacted("Type checking transaction"));
-    const response = await Server.requestTypeCheck(this.state.transactionCode);
-    this.setState({loading:false, transactionTypeChecked: true});
-    this.notify(Messages.typeCheckResponse(response));
-    return true 
+     const transaction = this.state.transactionCode;
+     const ocamlState = this.state.ocamlState;
+     
+     this.setState({loading:true});
+     this.notify(Messages.serverContacted("Type checking transaction"));
+     
+     const response = await Server.requestTypeCheck(ocamlState,transaction);
+
+     if (response.status == "success") {
+	const newState = {
+	   loading:false,
+	   transactionCode: response.body.transaction,
+	   transactionTypeChecked: true
+	}
+	const gasBound = response.body.gasbound;
+	this.setState(newState);
+	this.notify(Messages.success(
+	   "Type checking and elaboration successful.\n \nReady to submit with gas bound " + String(gasBound) + ".")
+	);
+	return gasBound;
+     }
+     else {
+	const error = "Elaboration unsuccessful.\n" + response.error;
+	this.setState({loading:false});
+	this.notify(Messages.error(error));
+	return -1
+     }
   }
 
   async handleSubmitTransaction(account,gasBound) {
@@ -122,7 +143,7 @@ class Interface extends React.Component {
      );
 
      this.setState({loading:false});
-     this.notify(Messages.typeCheckResponse(response));
+     this.notify(Messages.success(response));
 
      return true
   }

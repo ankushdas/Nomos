@@ -26,7 +26,7 @@ class Transaction extends React.Component {
       this.state = {
 	 typeChecked : false,
 	 account : "Frank",
-	 gasBound : -1
+	 gasBound : ""
       };
       
       this.handleTextChange = this.handleTextChange.bind(this);
@@ -40,9 +40,9 @@ class Transaction extends React.Component {
    }
 
    handleTypeCheck(event){
-      const checked = this.props.handleCheckTransaction();
-      if (checked) {
-	 this.setState({typeChecked:true});
+      const gasBound = this.props.handleCheckTransaction();
+      if (gasBound >= 0) {
+	 this.setState({typeChecked:true, gasBound : String(gasBound)});
       };
    }
 
@@ -54,7 +54,7 @@ class Transaction extends React.Component {
    }
 
    handleCancel(event){
-      this.setState({typeChecked:false});
+      this.setState({typeChecked:false, gasBound : ""});
    }
    
    render() {
@@ -102,7 +102,7 @@ class Transaction extends React.Component {
                   <FormGroup>
                      <label>Gas Bound</label>
                      <Input
-                         defaultValue={this.state.gasBound}
+                         value={this.state.gasBound}
                          type="text"
 			 disabled
                      />
