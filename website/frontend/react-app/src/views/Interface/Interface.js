@@ -22,47 +22,14 @@ import NotificationAlert from "react-notification-alert";
 
 import Messages from "./Messages.js"
 import Server from "./Server.js"
+
 import Transaction from "./Transaction.js"
+import AddAccount from "./AddAccount.js"
+
 import ListTransactions from "./ListTransactions.js"
 import ListAccounts from "./ListAccounts.js"
 import ListContracts from "./ListContracts.js"
 
-
-const addAccount =
-  <Card className="text-center">
-    <CardBody>
-      <Form>
-	  <Row>
-           <Col className="pr-md-1" md="7">
-            <FormGroup>
-              <label>Account Name</label>
-              <Input
-                defaultValue="Frank"
-                placeholder="Username"
-                type="text"
-                />
-            </FormGroup>
-           </Col>
-n           <Col className="pl-md-1" md="5">
-           <FormGroup>
-             <label htmlFor="exampleInputEmail1">
-               Balance
-             </label>
-             <Input
-	       placeholder="amount" type="text" 
-               defaultValue="10000"
-	       />
-           </FormGroup>
-           </Col>
-           <Col md="12">
-           <Button className="btn-fill" color="primary" type="submit">
-             Create Gas Account
-           </Button>
-           </Col>	   
-         </Row>
-      </Form>
-    </CardBody>
-  </Card>
 
 const loadTransaction =
   <Card className="text-center">
@@ -109,7 +76,8 @@ class Interface extends React.Component {
      };
     
      this.handleCheckTransaction = this.handleCheckTransaction.bind(this);
-     this.handleSubmitTransaction = this.handleSubmitTransaction.bind(this);     
+     this.handleSubmitTransaction = this.handleSubmitTransaction.bind(this);
+     this.handleAddAccount = this.handleAddAccount.bind(this);     
      this.handleTransactionTextChange = this.handleTransactionTextChange.bind(this);
   }
     
@@ -117,7 +85,6 @@ class Interface extends React.Component {
      this.setState({transactionCode: text});
   }
 
-   
   notify(arg) {
     const options = {
       place: arg.place,
@@ -138,71 +105,79 @@ class Interface extends React.Component {
     return true 
   }
 
-   async handleSubmitTransaction(account,gasBound) {
-      const transCounter = this.state.transactionCounter;
-      const transCode = this.state.transactionCode;
-      const transList = this.state.transactionList;
+  async handleSubmitTransaction(account,gasBound) {
+     const transCounter = this.state.transactionCounter;
+     const transCode = this.state.transactionCode;
+     const transList = this.state.transactionList;
 
-      this.setState({loading:true});
-      this.notify(Messages.serverContacted("Submitting transaction"));
+     this.setState({loading:true});
+     this.notify(Messages.serverContacted("Submitting transaction"));
 
-      const response = await Server.requestSubmit(transCode);
+     const response = await Server.requestSubmit(transCode);
 
-      this.setState(
-	 {transactionCounter : transCounter+1,
-	  transactionList : [{number:transCounter, code:transCode},...transList]
-	 }
-      );
+     this.setState(
+	{transactionCounter : transCounter+1,
+	 transactionList : [{number:transCounter, code:transCode},...transList]
+	}
+     );
 
-      this.setState({loading:false});
-      this.notify(Messages.typeCheckResponse(response));
+     this.setState({loading:false});
+     this.notify(Messages.typeCheckResponse(response));
 
-      return true
-   }
-
-  render() {
-    return (
-        <div className="content">
-          <div className="react-notification-alert-container">
-            <NotificationAlert ref="notificationAlert" />
-          </div>
-	  
-          <Row>
-             <Col md="8">
-		{/* the handle checkTransaction function should return a boolean that indicates if the transaction was succesful
-		typeChecked can be updated based on the result  */}
-		<Transaction
-		   transactionCode = {this.state.transactionCode}
-		   handleTextChange = {this.handleTransactionTextChange}
-		   handleCheckTransaction = {this.handleCheckTransaction}
-		   handleSubmitTransaction = {this.handleSubmitTransaction}		    
- 		   loading = {this.state.loading}
-	       />
-            </Col>
-	    <Col md="4">
-	      {loadTransaction}	    
-   	      {addAccount}
-	       <ListAccounts
-		   accList = {this.state.accountList}
-	       />	    
-	    </Col>
-	  </Row>
-	  
-	  <Row>
-            <Col md="8">
-	       <ListContracts
-		   contList = {this.state.contractList}
-	       />
-            </Col>
-	    <Col md="4">
-	       <ListTransactions
-		   transList = {this.state.transactionList}
-	       />
-	    </Col>
-          </Row>
-        </div>
-    );
+     return true
   }
+
+   async handleAddAccount(account,balance) {
+
+   }
+   
+
+   render() {
+      return (
+         <div className="content">
+            <div className="react-notification-alert-container">
+             <NotificationAlert ref="notificationAlert" />
+           </div>
+ 	  
+           <Row>
+              <Col md="8">
+ 		{/* the handle checkTransaction function should return a boolean that indicates if the transaction was succesful
+ 		typeChecked can be updated based on the result  */}
+ 		<Transaction
+ 		   transactionCode = {this.state.transactionCode}
+ 		   handleTextChange = {this.handleTransactionTextChange}
+ 		   handleCheckTransaction = {this.handleCheckTransaction}
+ 		   handleSubmitTransaction = {this.handleSubmitTransaction}		    
+  		   loading = {this.state.loading}
+ 	       />
+             </Col>
+ 	    <Col md="4">
+ 	      {loadTransaction}	    
+    	       <AddAccount
+ 		   handleAddAccount = {this.handleAddAccount}		    
+  		   loading = {this.state.loading}
+	       />
+ 	       <ListAccounts
+ 		   accList = {this.state.accountList}
+ 	       />	    
+ 	    </Col>
+ 	  </Row>
+ 	  
+ 	  <Row>
+             <Col md="8">
+ 	       <ListContracts
+ 		   contList = {this.state.contractList}
+ 	       />
+             </Col>
+ 	    <Col md="4">
+ 	       <ListTransactions
+ 		   transList = {this.state.transactionList}
+ 	       />
+ 	    </Col>
+           </Row>
+         </div>
+     );
+   }
 }
 
 export default Interface;

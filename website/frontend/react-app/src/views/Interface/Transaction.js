@@ -71,7 +71,6 @@ class Transaction extends React.Component {
                <Col md="12">
 		  <FormGroup>
 	               <Input
-                         className="lined" 
 	 		 style={{fontFamily:monospaceFonts}}
 			 type="textarea"
 			 resize="both"
