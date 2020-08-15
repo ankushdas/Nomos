@@ -8,19 +8,12 @@ import {
    Button,
    Card,
    CardHeader,
-   CardTitle,  
    CardBody,
    CardFooter,
    FormGroup,
-   Form,
    Input,
-   Table,
    Row,
-   Col,
-   UncontrolledDropdown,
-   DropdownToggle,
-   DropdownMenu,
-   DropdownItem,
+   Col
 } from "reactstrap";
 
 const monospaceFonts = "Monaco,Consolas,Lucida Console,Liberation Mono,Bitstream Vera Sans Mono,Courier New, monospace"

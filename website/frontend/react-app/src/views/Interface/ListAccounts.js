@@ -9,41 +9,37 @@ import {
    Table
 } from "reactstrap";
 
-import ModalButton from "./ModalButton.js"
+
 
 const printRow = arg =>
    (
       <tr>
-	 <td>{String(arg.number)}</td>
+	 <td>{arg.account}</td>
 	 <td className="text-center">
-	    <ModalButton
-		buttonLabel = "Show"
-                modalTitle = {"Transaction #" + String(arg.number)}
-		modalBody = <pre>{arg.code}</pre>
-	       />
+	    {String(arg.balance)}
 	 </td>
       </tr>
    )
 
 
-const ListTransactions = props =>
+const ListAccounts = props =>
    (
       <Card className="card-plain">
 	 <CardHeader>
-	    <CardTitle tag="h4">Past Transactions</CardTitle>
-	    <p className="category">The "Blockchain"</p>
+	    <CardTitle tag="h4">Gas Accounts</CardTitle>
+	    <p className="category">Existing Accounts in the Current State</p>
 	 </CardHeader>
 	 <CardBody>
 	    <div  style={{height:"35rem",overflowY:"auto"}}>
 	       <Table className="tablesorter" responsive>
 		  <thead className="text-primary">
 		     <tr>
-			<th>Transaction #</th>
-			<th className="text-center">Source Code</th>
+			<th>Account Name</th>
+			<th className="text-center">Balance</th>
 		     </tr>
 		  </thead>
 		  <tbody>
-		     {props.transList.map(printRow)}
+		     {props.accList.map(printRow)}		     
 		  </tbody>
 	       </Table>
 	    </div>		  
@@ -52,4 +48,4 @@ const ListTransactions = props =>
    )
 
 
-export default ListTransactions
+export default ListAccounts
