@@ -8,10 +8,15 @@ const jsonMessage = msg => ({
 });
 
 
-async function requestTypeCheck (transactionCode) {
-    const msg = jsonMessage ({ code:transactionCode });
+async function requestTypeCheck (ocamlState,transactionCode) {
+    const body = {state : ocamlState
+		  , transaction : transactionCode
+		 };
+    const msg = jsonMessage ({ request : "typecheck"
+			       , body : body
+			     });
     const response = await fetch(url,msg);
-    const result = await response.text();
+    const result = await response.json();
     return result
 }
 
