@@ -5,14 +5,10 @@ import React from "react";
 import {
   Button,
   Card,
-  CardHeader,
-  CardTitle,  
   CardBody,
-  CardFooter,
   FormGroup,
   Form,
   Input,
-  Table,
   Row,
   Col,
   UncontrolledDropdown,
@@ -26,88 +22,10 @@ import NotificationAlert from "react-notification-alert";
 
 import Messages from "./Messages.js"
 import Server from "./Server.js"
-import ModalButton from "./ModalButton.js"
 import Transaction from "./Transaction.js"
 import ListTransactions from "./ListTransactions.js"
-
-
-const listAccounts =
-  <Card className="card-plain">
-    <CardHeader>
-      <CardTitle tag="h4">Gas Accounts</CardTitle>
-      <p className="category">Existing Accounts in the Current State</p>
-    </CardHeader>
-    <CardBody>
-     <div  style={{height:"35rem",overflowY:"auto"}}>
-      <Table className="tablesorter" responsive>
-        <thead className="text-primary">
-          <tr>
-            <th>Account Name</th>
-            <th className="text-center">Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Dakota Rice</td>
-            <td className="text-center">$36,738</td>
-          </tr>
-          <tr>
-            <td>Minerva Hooper</td>
-            <td className="text-center">$23,789</td>
-          </tr>
-          <tr>
-            <td>Dakota Rice</td>
-            <td className="text-center">$36,738</td>
-          </tr>
-          <tr>
-            <td>Minerva Hooper</td>
-            <td className="text-center">$23,789</td>
-          </tr>
-          <tr>
-            <td>Dakota Rice</td>
-            <td className="text-center">$36,738</td>
-          </tr>
-          <tr>
-            <td>Minerva Hooper</td>
-            <td className="text-center">$23,789</td>
-          </tr>
-          <tr>
-            <td>Dakota Rice</td>
-            <td className="text-center">$36,738</td>
-          </tr>
-          <tr>
-            <td>Minerva Hooper</td>
-            <td className="text-center">$23,789</td>
-          </tr>
-          <tr>
-            <td>Dakota Rice</td>
-            <td className="text-center">$36,738</td>
-          </tr>
-          <tr>
-            <td>Minerva Hooper</td>
-            <td className="text-center">$23,789</td>
-          </tr>
-          <tr>
-            <td>Dakota Rice</td>
-            <td className="text-center">$36,738</td>
-          </tr>
-          <tr>
-            <td>Minerva Hooper</td>
-            <td className="text-center">$23,789</td>
-          </tr>
-          <tr>
-            <td>Dakota Rice</td>
-            <td className="text-center">$36,738</td>
-          </tr>
-          <tr>
-            <td>Minerva Hooper</td>
-            <td className="text-center">$23,789</td>
-          </tr>
-        </tbody>
-      </Table>
-    </div>		  
-    </CardBody>
-  </Card>
+import ListAccounts from "./ListAccounts.js"
+import ListContracts from "./ListContracts.js"
 
 
 const addAccount =
@@ -125,7 +43,7 @@ const addAccount =
                 />
             </FormGroup>
            </Col>
-           <Col className="pl-md-1" md="5">
+n           <Col className="pl-md-1" md="5">
            <FormGroup>
              <label htmlFor="exampleInputEmail1">
                Balance
@@ -169,7 +87,9 @@ const loadTransaction =
   </Card>  
 
 
-
+const testAccList = [{account : "Jan", balance : 1000000}, {account : "Ankush", balance : 10}]
+const testContList = [{channel : "C1", type : "T", code: "sss", gas : 1000000},
+		      {channel : "C2", type : "TT", code: "ddd", gas : 22}]
 
 
 class Interface extends React.Component {
@@ -183,8 +103,8 @@ class Interface extends React.Component {
 	
 	transactionCode: "(*Write or select a transaction.*)",
 	ocamlState : "",                /* Ocaml representation of the blockchain state*/
-	contractList : [] ,             /* Array of contracts */
-	accountList :  [] ,             /* Array of accounts */
+	contractList : testContList ,             /* Array of contracts */
+	accountList :  testAccList ,             /* Array of accounts */
 	transactionList :  [] ,         /* Array of past transactions */	
      };
     
@@ -240,103 +160,6 @@ class Interface extends React.Component {
       return true
    }
 
-   
-modalButton = () =>
-   <ModalButton
-   buttonLabel = "Show"
-   modalTitle = "title 1 "
-   modalBody = <p>ddd</p>
-   />
-
-
-
-
-
-listState = () =>
-  <Card className="card-plain">
-    <CardHeader>
-      <CardTitle tag="h4">Blockchain State</CardTitle>
-      <p className="category">The Current Blockchain State</p>
-    </CardHeader>
-    <CardBody>
-     <div  style={{height:"35rem",overflowY:"auto"}}>
-      <Table className="tablesorter" responsive>
-        <thead className="text-primary">
-          <tr>
-            <th>Channel Name</th>
-            <th className="text-center">Session Type</th>
-            <th className="text-center">Process Code</th>
-            <th className="text-center">Gas</th>		
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-          <tr>
-            <td>1</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">{this.modalButton ()}</td>
-            <td className="text-center">2000</td>		
-          </tr>
-        </tbody>
-      </Table>
-    </div>		  
-    </CardBody>
-  </Card>
-    
-
   render() {
     return (
         <div className="content">
@@ -359,13 +182,17 @@ listState = () =>
 	    <Col md="4">
 	      {loadTransaction}	    
    	      {addAccount}
-	      {listAccounts}	    
+	       <ListAccounts
+		   accList = {this.state.accountList}
+	       />	    
 	    </Col>
 	  </Row>
 	  
 	  <Row>
             <Col md="8">
-	    {this.listState ()}
+	       <ListContracts
+		   contList = {this.state.contractList}
+	       />
             </Col>
 	    <Col md="4">
 	       <ListTransactions

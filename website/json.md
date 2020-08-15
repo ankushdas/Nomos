@@ -16,14 +16,15 @@ ERROR = { msg : STRING
         }
 
 ACCOUNT_LIST = [ { account : STRING
-                 , balance : STRING}
+                 , balance : INT}
 	       ]
 
 CONTRACT_LIST = [ { channel : STRING
-                     , type : STRING
-		     , gas : INT
-		     }
-		   ]
+                   , type : STRING
+                   , code : STRING
+                   , gas : INT
+		   }
+		]
 
 ## Creating an Account
 
