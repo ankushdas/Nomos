@@ -97,19 +97,18 @@ class Interface extends React.Component {
   }
     
   async handleCheckTransaction() {
-     const transaction = this.state.transactionCode;
+     const transCode = this.state.transactionCode;
      const ocamlState = this.state.ocamlState;
      
      this.setState({loading:true});
      this.notify(Messages.serverContacted("Type checking transaction"));
      
-     const response = await Server.requestTypeCheck(ocamlState,transaction);
+     const response = await Server.requestTypeCheck(ocamlState,transCode);
 
      if (response.status == "success") {
 	const newState = {
 	   loading:false,
 	   transactionCode: response.body.transaction,
-	   transactionTypeChecked: true
 	}
 	const gasBound = response.body.gasbound;
 	this.setState(newState);
@@ -126,30 +125,60 @@ class Interface extends React.Component {
      }
   }
 
-  async handleSubmitTransaction(account,gasBound) {
+  async handleSubmitTransaction(account) {
      const transCounter = this.state.transactionCounter;
-     const transCode = this.state.transactionCode;
      const transList = this.state.transactionList;
+     const transCode = this.state.transactionCode;
+     const ocamlState = this.state.ocamlState;     
 
      this.setState({loading:true});
      this.notify(Messages.serverContacted("Submitting transaction"));
 
-     const response = await Server.requestSubmit(transCode);
+     const response = await Server.requestSubmit(ocamlState,transCode,account);
 
-     this.setState(
-	{transactionCounter : transCounter+1,
-	 transactionList : [{number:transCounter, code:transCode},...transList]
-	}
-     );
+     if (response.status == "success") {
+	const newState = {
+	   transactionCounter: transCounter+1,
+	   transactionList: [{number:transCounter, code:transCode},...transList],
+	   loading: false,
+	   ocamlState: response.body.state,
+	   contractList: response.body.contlist,
+	   accountList: response.body.acclist
+	};
 
-     this.setState({loading:false});
-     this.notify(Messages.success(response));
-
-     return true
+	this.setState(newState);
+	this.notify(Messages.success("Transaction #" + transCounter + " posted."));
+     }
+     else {
+	const error = "Submissin failure.\n" + response.error;
+	this.setState({loading:false});
+	this.notify(Messages.error(error));
+     }
   }
 
    async handleAddAccount(account,balance) {
+      const ocamlState = this.state.ocamlState;
 
+      this.setState({loading:true});
+      this.notify(Messages.serverContacted("Creating gas account ..."));
+
+      const response = await Server.requestSubmit(ocamlState,account,balance);
+
+      if (response.status == "success") {
+	 const newState = {
+	    loading: false,
+	    ocamlState: response.body.state,
+	    accountList: response.body.acclist
+	 };
+
+	 this.setState(newState);
+	 this.notify(Messages.success("Account " + account + " created."));
+      }
+      else {
+	 const error = "Failed to create account.\n" + response.error;
+	 this.setState({loading:false});
+	 this.notify(Messages.error(error));
+      }
    }
    
 
