@@ -9,8 +9,8 @@ const jsonMessage = msg => ({
 
 
 async function requestTypeCheck (ocamlState,transactionCode) {
-    const body = {state : ocamlState
-		  , transaction : transactionCode
+    const body = {state : ocamlState,
+		  transaction : transactionCode
 		 };
     const msg = jsonMessage ({ request : "typecheck"
 			       , body : body
@@ -20,12 +20,32 @@ async function requestTypeCheck (ocamlState,transactionCode) {
     return result
 }
 
-async function requestSubmit (transactionCode) {
-    const msg = jsonMessage ({ code:transactionCode });
-    // const response = await fetch(url,msg);
-    // const result = await response.text();
-    return "Server.js: Not implemented yet"
+async function requestSubmit (ocamlState,transactionCode,account) {
+    const body = { state : ocamlState,
+		   transaction : transactionCode,
+		   account : account
+		 };
+    const msg = jsonMessage ({ request : "submit"
+			       , body : body
+			     });
+    const response = await fetch(url,msg);
+    const result = await response.json();
+    return result
 }
+
+async function createAccount (ocamlState,account,balance) {
+    const body = { state : ocamlState,
+		   account : account,
+		   balance : balance
+		 };
+    const msg = jsonMessage ({ request : "create"
+			       , body : body
+			     });
+    const response = await fetch(url,msg);
+    const result = await response.json();
+    return result
+}
+
 
 const Server = {
     requestTypeCheck : requestTypeCheck,

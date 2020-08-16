@@ -77,6 +77,7 @@ CONTRACT_LIST = [ { channel : STRING
 , error : ERROR
 }
 
+
 ## Submit Transaction
 
 ### Request
@@ -84,6 +85,7 @@ CONTRACT_LIST = [ { channel : STRING
 { request : "submit"
 , body : { state : STATE
          , transaction : STRING
+	 , account : STRING	 
          }
 }
 

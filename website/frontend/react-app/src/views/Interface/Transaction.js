@@ -48,9 +48,11 @@ class Transaction extends React.Component {
 
    handleSubmit(event){
       const account = this.state.account;
-      const gasBound = this.state.gasBound;      
-      this.props.handleSubmitTransaction(account,gasBound);
-      this.setState({typeChecked:false});
+      this.props.handleSubmitTransaction(account);
+      this.setState({
+	 typeChecked:false,
+	 gasBound:""
+      });
    }
 
    handleCancel(event){
