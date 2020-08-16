@@ -3,18 +3,8 @@ import React from "react";
 
 // reactstrap components
 import {
-  Button,
-  Card,
-  CardBody,
-  FormGroup,
-  Form,
-  Input,
   Row,
-  Col,
-  UncontrolledDropdown,
-  DropdownToggle,
-  DropdownMenu,
-  DropdownItem,
+  Col
 } from "reactstrap";
 
 // react plugin for creating notifications over the dashboard
@@ -25,33 +15,12 @@ import Server from "./Server.js"
 
 import Transaction from "./Transaction.js"
 import AddAccount from "./AddAccount.js"
+import LoadFile from "./LoadFile.js"
 
 import ListTransactions from "./ListTransactions.js"
 import ListAccounts from "./ListAccounts.js"
 import ListContracts from "./ListContracts.js"
 
-
-const loadTransaction =
-  <Card className="text-center">
-    <CardBody>
-      <Form>
-	  <Row>
-           <Col className="pr-md-1" md="12">
-	   <UncontrolledDropdown group>
-	     <DropdownToggle caret color="primary" data-toggle="dropdown">
-               Load Transaction
-	     </DropdownToggle>
-	     <DropdownMenu>
-               <DropdownItem>File 1</DropdownItem>
-               <DropdownItem>File 2</DropdownItem>
-               <DropdownItem>File 3</DropdownItem>
-	     </DropdownMenu>
-	   </UncontrolledDropdown>
-           </Col>	   
-         </Row>
-      </Form>
-    </CardBody>
-  </Card>  
 
 
 const testAccList = [{account : "Jan", balance : 1000000}, {account : "Ankush", balance : 10}]
@@ -78,10 +47,10 @@ class Interface extends React.Component {
      this.handleCheckTransaction = this.handleCheckTransaction.bind(this);
      this.handleSubmitTransaction = this.handleSubmitTransaction.bind(this);
      this.handleAddAccount = this.handleAddAccount.bind(this);     
-     this.handleTransactionTextChange = this.handleTransactionTextChange.bind(this);
+     this.setTransactionText = this.setTransactionText.bind(this);
   }
     
-  handleTransactionTextChange(text) {
+  setTransactionText(text) {
      this.setState({transactionCode: text});
   }
 
@@ -105,7 +74,7 @@ class Interface extends React.Component {
      
      const response = await Server.requestTypeCheck(ocamlState,transCode);
 
-     if (response.status == "success") {
+     if (response.status === "success") {
 	const newState = {
 	   loading:false,
 	   transactionCode: response.body.transaction,
@@ -136,7 +105,7 @@ class Interface extends React.Component {
 
      const response = await Server.requestSubmit(ocamlState,transCode,account);
 
-     if (response.status == "success") {
+     if (response.status === "success") {
 	const newState = {
 	   transactionCounter: transCounter+1,
 	   transactionList: [{number:transCounter, code:transCode},...transList],
@@ -164,7 +133,7 @@ class Interface extends React.Component {
 
       const response = await Server.requestSubmit(ocamlState,account,balance);
 
-      if (response.status == "success") {
+      if (response.status === "success") {
 	 const newState = {
 	    loading: false,
 	    ocamlState: response.body.state,
@@ -195,14 +164,16 @@ class Interface extends React.Component {
  		typeChecked can be updated based on the result  */}
  		<Transaction
  		   transactionCode = {this.state.transactionCode}
- 		   handleTextChange = {this.handleTransactionTextChange}
+ 		   handleTextChange = {this.setTransactionText}
  		   handleCheckTransaction = {this.handleCheckTransaction}
  		   handleSubmitTransaction = {this.handleSubmitTransaction}		    
   		   loading = {this.state.loading}
  	       />
              </Col>
  	    <Col md="4">
- 	      {loadTransaction}	    
+ 	       <LoadFile
+		   updateText = {this.setTransactionText}
+	       />
     	       <AddAccount
  		   handleAddAccount = {this.handleAddAccount}		    
   		   loading = {this.state.loading}

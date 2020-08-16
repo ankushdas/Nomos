@@ -1,0 +1,57 @@
+type insurance = /\ <{*}| &{submit : int -> +{success : money * |{*}> \/ insurance,
+                                              failure : |{*}> \/ insurance}}
+
+type verifier = /\ <{*}| &{verify : int -> +{valid : |{*}> \/ verifier,
+                                             invalid : |{*}> \/ verifier}}
+
+proc contract verify : . |{*}- (#sv : verifier) =
+{
+  $lv <- accept #sv ;
+  get $lv {*} ;
+  case $lv (
+    verify => claim = recv $lv ;
+              if claim > 0
+              then
+                $lv.valid ;
+                pay $lv {*} ;
+                #sv <- detach $lv ;
+                #sv <- verify <-
+              else
+                $lv.invalid ;
+                pay $lv {*} ;
+                #sv <- detach $lv ;
+                #sv <- verify <-
+  )
+}
+
+type money = &{subtract : money * money}
+
+proc contract insurer : (#sv : verifier), ($m : money) |{*}- (#si : insurance) =
+{
+  $li <- accept #si ;
+  get $li {*} ;
+  case $li (
+    submit => claim = recv $li ;
+              $lv <- acquire #sv ;
+              pay $lv {*} ;
+              $lv.verify ;
+              send $lv claim ;
+              case $lv (
+                valid => get $lv {*} ;
+                         $li.success ;
+                         $m.subtract ;
+                         $r <- recv $m ;
+                         send $li $r ;
+                         pay $li {*} ;
+                         #sv <- release $lv ;
+                         #si <- detach $li ;
+                         #si <- insurer <- #sv $m
+              | invalid => get $lv {*} ;
+                           #li.failure ;
+                           pay $li {*} ;
+                           #sv <- release $lv ;
+                           #si <- detach $li ;
+                           #si <- insurer <- #sv $m
+              )
+  )
+}

@@ -1,0 +1,102 @@
+type ballot = /\ <{*}| +{open : int -> +{vote : int -> |{*}> \/ ballot,
+                                         novote : |{*}> \/ ballot},
+                         closed : int ^ |{*}> \/ ballot}
+
+type vote_list = +{cons : |{*}> vote_list, nil : 1}
+
+proc asset cons : ($t : vote_list) |{*}- ($l : vote_list) =
+{
+  $l.cons ;
+  pay $l {*} ;
+  $l <- $t
+}
+
+type voters = &{check : <{*}| int -> +{success : voters,
+                                       failure : voters},
+                size : <{*}| int ^ voters}
+
+proc contract open_election : (T : int), ($vs : voters), ($c1 : vote_list), ($c2 : vote_list) |{*}- (#sb : ballot) =
+{
+  $lb <- accept #sb ;
+  get $lb {*} ;
+  $lb.open ;
+  v = recv $lb ;
+  $vs.check ;
+  pay $vs {*} ;
+  send $vs v ;
+  case $vs (
+    success => $lb.vote ;
+               c = recv $lb ;
+               if c > 0
+               then
+                $c1n <- cons <- $c1 ;
+                pay $lb {*} ;
+                #sb <- detach $lb ;
+                #sb <- check <- T $vs $c1n $c2
+               else
+                $c2n <- cons <- $c2 ;
+                pay $lb {*} ;
+                #sb <- detach $lb ;
+                #sb <- check <- T $vs $c1 $c2n
+  | failure => $lb.novote ;
+               pay $lb {*} ;
+               #sb <- detach $lb ;
+               #sb <- check <- T $vs $c1 $c2
+  )
+}
+
+proc asset count_helper : (n : int), ($c : vote_list) |{*}- ($s : int ^ 1) =
+{
+  case $c (
+    cons => get $c {*} ;
+            let n = n+1 ;
+            $s <- count_helper <- n $c
+  | nil => wait $c ;
+           send $s n ;
+           close $s
+  )
+}
+
+proc asset count_list : ($c : vote_list) |{*}- ($s : int ^ 1) =
+{
+  let n = 0 ;
+  $s <- count_helper <- n $c
+}
+
+proc contract count : (T : int), ($vs : voters), ($c1 : vote_list), ($c2 : vote_list) |{*}- (#sb : ballot) =
+{
+  $s1 <- count_list <- $c1 ;
+  $s2 <- count_list <- $c2 ;
+  s1 = recv $s1 ;
+  s2 = recv $s2 ;
+  wait $s1 ;
+  wait $s2 ;
+  if s1 > s2
+  then
+    #sb <- closed_election <- s1 $vs
+  else
+    #sb <- closed_election <- s2 $vs
+}
+
+proc contract check : (T : int), ($vs : voters), ($c1 : vote_list), ($c2 : vote_list) |{*}- (#sb : ballot) =
+{
+  $vs.size ;
+  pay $vs {*} ;
+  n = recv $vs ;
+  if n = T
+  then
+    #sb <- count <- T $vs $c1 $c2
+  else
+    #sb <- open_election <- T $vs $c1 $c2
+}
+
+proc contract closed_election : (w : int), ($vs : voters) |{*}- (#sb : ballot) =
+{
+  $lb <- accept #sb ;
+  get $lb {*} ;
+  $lb.closed ;
+  send $lb w ;
+  pay $lb {*} ;
+  #sb <- detach $lb ;
+  #sb <- closed_election <- w $vs
+}

@@ -1,0 +1,47 @@
+type leakage = &{init : leakage,
+                 leak : msg -o leakage,
+                 deliver : msglist * leakage}
+
+type msg = 1
+
+type msglist = +{cons : msg * msglist,
+                 nil : 1}
+
+proc asset cons : ($x : msg), ($t : msglist) |- ($l : msglist) =
+{
+  $l.cons ;
+  send $l $x ;
+  $l <- $t
+}
+
+proc asset nil : . |- ($l : msglist) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc asset delete_all : ($l : msglist) |- ($c : 1) =
+{
+  case $l (
+    cons => $m <- recv $l ;
+            wait $m ;
+            $c <- delete_all <- $l
+  | nil => $c <- $l
+  )
+}
+
+proc asset leaker : ($i : msglist) |- ($l : leakage) =
+{
+  case $l (
+    init => $c <- delete_all <- $i ;
+            wait $c ;
+            $i <- nil <- ;
+            $l <- leaker <- $i
+  | leak => $m <- recv $l ;
+            $i <- cons <- $m $i ;
+            $l <- leaker <- $i
+  | deliver => send $l $i ;
+               $i <- nil <- ;
+               $l <- leaker <- $i
+  )
+}
