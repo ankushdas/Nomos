@@ -49,7 +49,8 @@ async function createAccount (ocamlState,account,balance) {
 
 const Server = {
     requestTypeCheck : requestTypeCheck,
-    requestSubmit : requestSubmit
+    requestSubmit : requestSubmit,
+    createAccount : createAccount
 }
 
 export default Server;

@@ -7,17 +7,13 @@ import React from "react";
 import {
    Button,
    Card,
-   CardHeader,
    CardBody,
-   CardFooter,
    FormGroup,
    Input,
    Row,
    Col,
    Form
 } from "reactstrap";
-
-const monospaceFonts = "Monaco,Consolas,Lucida Console,Liberation Mono,Bitstream Vera Sans Mono,Courier New, monospace"
 
 
 class AddAccount extends React.Component {
@@ -36,11 +32,11 @@ class AddAccount extends React.Component {
    }
 
    handleAccountChange(event){
-      this.state.account = event.target.value;
+      this.setState({account: event.target.value});
    }
    
    handleBalanceChange(event){
-      this.state.balance = parseInt(event.target.value,10);
+      this.setState({balance: parseInt(event.target.value,10)});
    }
 
    handleSubmit(event){
@@ -64,6 +60,7 @@ class AddAccount extends React.Component {
 			   <Input
 			       value={account}			       
 			       type="text"
+			       onChange={this.handleAccountChange}			       
                                disabled={loading}	 			       
 			   />
 			</FormGroup>
@@ -72,7 +69,8 @@ class AddAccount extends React.Component {
 			<FormGroup>
 			   <label>Balance</label>
 			   <Input
-			       value={balance}			       
+			       value={balance}
+			       onChange={this.handleBalanceChange}			       			       
 			       type="text"
                                disabled={loading}	 			     
 			   />

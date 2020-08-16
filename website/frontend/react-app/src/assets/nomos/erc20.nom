@@ -1,0 +1,137 @@
+type money = &{add : <{*}| money -o money,
+               subtract : <{*}| int -> +{sufficient : money * money,
+                                         insufficient : money},
+               value : <{*}| int ^ money,
+               Coins : <{*}| 1}
+
+proc asset wallet : (n : int) |{*}- ($m : money) =
+{
+  case $m (
+    add => get $m {*} ;
+           $m1 <- recv $m ;
+           $m1.value ;
+           pay $m1 {*} ;
+           n1 = recv $m1 ;
+           $m1.Coins ;
+           pay $m1 {*} ;
+           wait $m1 ;
+           let n = n+n1 ;
+           $m <- wallet <- n
+  | subtract => get $m {*} ;
+                n1 = recv $m ;
+                if n > n1
+                then
+                  $m.sufficient ;
+                  $m1 <- wallet <- n1 ;
+                  send $m $m1 ;
+                  let n = n - n1 ;
+                  work {*} ;
+                  $m <- wallet <- n
+                else
+                  $m.insufficient ;
+                  work {*} ;
+                  $m <- wallet <- n
+  | value => get $m {*} ;
+             send $m n ;
+             $m <- wallet <- n
+  | Coins => get $m {*} ;
+             close $m
+  )
+}
+
+type erc20token = /\ <{*}| &{totalSupply : int ^ |{*}> \/ erc20token,
+                             balanceOf : int -> int ^ |{*}> \/ erc20token,
+                             transfer : int -> int -> int -> |{*}> \/ erc20token,
+                             transferFrom : int -> int -> int -> |{*}> \/ erc20token,
+                             approve : int -> int -> int -> |{*}> \/ erc20token,
+                             allowance : int -> int -> int ^ |{*}> \/ erc20token}
+
+type balance_dict = &{get_balance : int -> int ^ balance_dict,
+                      transfer : int -> int -> int -> balance_dict}
+
+type allowance_dict = &{get_allowance : int -> int -> int ^ allowance_dict,
+                        set_allowance : int -> int -> int -> allowance_dict}
+
+proc contract erc20contract : ($allows : allowance_dict), ($bals : balance_dict), (N : int) |{*}- (#se : erc20token) =
+{
+  $le <- accept #se ;
+  get $le {*} ;
+  case $le (
+    totalSupply => send $le N ;
+                   pay $le {*} ;
+                   #se <- detach $le ;
+                   #se <- erc20contract <- $allows $bals N
+  | balanceOf => addr = recv $le ;
+                 $bals.get_balance ;
+                 send $bals addr ;
+                 val = recv $bals ;
+                 send $le val ;
+                 pay $le {*} ;
+                 #se <- detach $le ;
+                 #se <- erc20contract <- $allows $bals N
+  | transfer => from = recv $le ;
+                to = recv $le ;
+                amt = recv $le ;
+                $allows.get_allowance ;
+                send $allows from ;
+                send $allows to ;
+                allowance = recv $allows ;
+                if amt > allowance
+                then
+                  pay $le {*} ;
+                  #se <- detach $le ;
+                  work {*} ;
+                  #se <- erc20contract <- $allows $bals N
+                else
+                  $bals.transfer ;
+                  send $bals from ;
+                  send $bals to ;
+                  send $bals amt ;
+                  pay $le {*} ;
+                  #se <- detach $le ;
+                  work {*} ;
+                  #se <- erc20contract <- $allows $bals N
+  | transferFrom => from = recv $le ;
+                    to = recv $le ;
+                    amt = recv $le ;
+                    $allows.get_allowance ;
+                    send $allows from ;
+                    send $allows to ;
+                    allowance = recv $allows ;
+                    if amt > allowance
+                    then
+                      pay $le {*} ;
+                      #se <- detach $le ;
+                      work {*} ;
+                      #se <- erc20contract <- $allows $bals N
+                    else
+                      $bals.transfer ;
+                      send $bals from ;
+                      send $bals to ;
+                      send $bals amt ;
+                      pay $le {*} ;
+                      #se <- detach $le ;
+                      work {*} ;
+                      #se <- erc20contract <- $allows $bals N
+  | approve => from = recv $le ;
+               to = recv $le ;
+               allowance = recv $le ;
+               $allows.set_allowance ;
+               send $allows from ;
+               send $allows to ;
+               send $allows allowance ;
+               pay $le {*} ;
+               #se <- detach $le ;
+               #se <- erc20contract <- $allows $bals N
+  | allowance => from = recv $le ;
+                 to = recv $le ;
+                 $allows.get_allowance ;
+                 send $allows from ;
+                 send $allows to ;
+                 allowance = recv $allows ;
+                 send $le allowance ;
+                 pay $le {*} ;
+                 #se <- detach $le ;
+                 #se <- erc20contract <- $allows $bals N        
+  )
+}

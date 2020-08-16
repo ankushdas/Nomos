@@ -1,0 +1,13 @@
+proc asset emp : . |{*}- ($l : 1) = 
+{
+  close $l
+}
+
+proc transaction main : . |{*}- ($d : 1) =
+{
+  $a <- emp <- ;
+  wait $a ;
+  close $d
+}
+
+exec main

@@ -1,0 +1,63 @@
+type money = &{value : <{*}| int ^ money,
+               Coins : <{*}| lCoin}
+type lCoin = 1
+
+proc asset emp : . |{*}- ($l : lCoin) = 
+{
+  close $l
+}
+
+proc asset empty_wallet : . |{*}- ($m : money) = 
+{
+  $l <- emp <- ;
+  let n = 0 ;
+  $m <- wallet <- n $l
+}
+
+proc asset wallet : (n : int), ($l : lCoin) |{*}- ($m : money) = 
+{
+    case $m (
+      value => get $m {*};
+               send $m n;
+               $m <- wallet <- n $l 
+    | Coins => get $m {*} ;
+               $m <- $l
+    )
+}
+
+type dictionary = &{add : <{*}| int -> money -o dictionary,
+                    delete : <{*}| int -> money * dictionary,
+                    check : <{*}| int -> bool ^ dictionary,
+                    size : <{*}| int ^ dictionary}
+
+proc asset dummy : (n : int) |{*}- ($d : dictionary) =
+{
+  case $d (
+    add => get $d {*} ;
+            key = recv $d ;
+            $v <- recv $d ;
+            $v.Coins ;
+            pay $v {*} ;
+            wait $v ;
+            let n = n+1 ;
+            $d <- dummy <- n
+  | delete => get $d {*} ;
+              key = recv $d ;
+              $v <- empty_wallet <- ;
+              send $d $v ;
+              let n = n-1 ;
+              $d <- dummy <- n 
+  | check => get $d {*} ;
+              key = recv $d ;
+              if key > 0
+              then
+                send $d true ;
+                $d <- dummy <- n
+              else
+                send $d false ;
+                $d <- dummy <- n
+  | size => get $d {*} ;
+            send $d n ;
+            $d <- dummy <- n
+  )
+}
