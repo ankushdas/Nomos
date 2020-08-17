@@ -78,7 +78,7 @@ class AddAccount extends React.Component {
 		     </Col>
 		     <Col md="12">
 			<Button
-			    className="btn-fill"
+			    block
                             color="primary"
 			    onClick={this.handleSubmit}
                             disabled={loading}	 			     			    
