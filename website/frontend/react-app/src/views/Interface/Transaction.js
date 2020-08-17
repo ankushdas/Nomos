@@ -16,7 +16,12 @@ import {
    Col
 } from "reactstrap";
 
+import {Controlled as CodeMirror} from 'react-codemirror2'
+import 'codemirror/theme/night.css';
+
+
 const monospaceFonts = "Monaco,Consolas,Lucida Console,Liberation Mono,Bitstream Vera Sans Mono,Courier New, monospace"
+
 
 
 class Transaction extends React.Component {
@@ -29,14 +34,9 @@ class Transaction extends React.Component {
 	 gasBound : ""
       };
       
-      this.handleTextChange = this.handleTextChange.bind(this);
       this.handleTypeCheck = this.handleTypeCheck.bind(this);
       this.handleSubmit = this.handleSubmit.bind(this);
       this.handleCancel = this.handleCancel.bind(this);            
-   }
-
-   handleTextChange(event){
-      this.props.handleTextChange(event.target.value);
    }
 
    handleTypeCheck(event){
@@ -72,15 +72,18 @@ class Transaction extends React.Component {
             <Row>
                <Col md="12">
 		  <FormGroup>
-	               <Input
-	 		 style={{fontFamily:monospaceFonts}}
-			 type="textarea"
-			 resize="both"
-			 onChange={this.handleTextChange}
-			 value={transactionCode}
-	                 rows="30"
-                         disabled={loading || typeChecked}	 
-		     />
+                   <CodeMirror
+                       value={transactionCode}
+                       options={{
+			  lineNumbers: true,
+			  spellcheck: false,
+			  autocorrect: false,
+			  readOnly: ((loading || typeChecked) ? "nocursor" : false ) 
+		       }}
+	               onBeforeChange={(editor, data, value) => {
+			     this.props.handleTextChange(value);			     
+			  }}
+	           />
 		  </FormGroup>			  
 	       </Col>
             </Row>
