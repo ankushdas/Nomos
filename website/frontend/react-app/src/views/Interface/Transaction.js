@@ -114,18 +114,18 @@ class Transaction extends React.Component {
 	    <Row>
                <Col md="5">
 		  <Button
-		      className="btn-fill"
 		      color="primary"
+                      block		      
 		      onClick={this.handleTypeCheck}
 		      disabled={loading || typeChecked}		      
 		  >
-		     Type Check / Elaborate
+		     Check / Elaborate
 		  </Button>
 	       </Col>
                <Col md="4">
 		  <Button
-		      className="btn-fill"
 		      color="primary"
+                      block		      
 		      onClick={this.handleSubmit}		      
 		      disabled={loading || !typeChecked}		      
 		  >
@@ -134,8 +134,8 @@ class Transaction extends React.Component {
 	       </Col>
                <Col md="3">
 		  <Button
-		      className="btn-fill"
 		      color="primary"
+                      block		      
 		      onClick={this.handleCancel}		      
 		      disabled={loading || !typeChecked}
 		  >

@@ -4,7 +4,7 @@ import React from "react";
 // reactstrap components
 import {
   Row,
-  Col
+  Col,
 } from "reactstrap";
 
 // react plugin for creating notifications over the dashboard
@@ -156,12 +156,10 @@ class Interface extends React.Component {
          <div className="content">
             <div className="react-notification-alert-container">
              <NotificationAlert ref="notificationAlert" />
-           </div>
- 	  
-           <Row>
+            </div>
+
+            <Row>
               <Col md="8">
- 		{/* the handle checkTransaction function should return a boolean that indicates if the transaction was succesful
- 		typeChecked can be updated based on the result  */}
  		<Transaction
  		   transactionCode = {this.state.transactionCode}
  		   handleTextChange = {this.setTransactionText}
