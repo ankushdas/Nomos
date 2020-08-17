@@ -23,7 +23,6 @@ import { Router, Route, Redirect } from "react-router-dom";
 import AdminLayout from "layouts/Admin/Admin.js";
 
 import "assets/scss/black-dashboard-react.scss";
-import "assets/demo/demo.css";
 import "assets/css/nucleo-icons.css";
 
 const hist = createBrowserHistory();
