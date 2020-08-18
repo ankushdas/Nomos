@@ -2,7 +2,7 @@ DUNE=dune
 
 .PHONY: all rast nomos clean
 
-all: nomos
+all: nomos nomosjson
 
 rast-editor:
 	cd rast-src; \
@@ -59,6 +59,9 @@ regression:
 
 nomos:
 	@${DUNE} build nomos-bin/nomos.exe
+
+nomosjson:
+	@${DUNE} build nomos-bin/nomosjson.exe
 
 clean:
 	@${DUNE} clean
