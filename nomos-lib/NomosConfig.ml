@@ -195,3 +195,26 @@ let nomos_command =
           let () = maybe_deposit deposit config_in config_out in
           let () = maybe_tc_and_run_txn tc_only file config_in config_out in
           ());;
+
+  (* need 
+
+  - main function
+
+    * parse json string input to json
+    * either error or one of the three valid cases
+    * parse state from sexp string
+    * call create_account, submit, or type_check
+    * create response json
+    * convert response json to string
+
+  - create_account (state:(ocaml type), account_name, balance) -> new_sate:(ocaml type)
+
+  - type_check (state, transaction:string) -> (elaborated_transaction:string, gas_bound:int)
+
+  - submit (state, elaborated_transaction, account) -> new_state
+
+  - account_list (state) -> json_acouunt_list
+
+  - contract_list (state) -> json_contract_list
+
+   *)
