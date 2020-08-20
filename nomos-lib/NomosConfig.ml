@@ -65,6 +65,7 @@ let out_conf_file =
 (*********************)
 (* Utility Functions *)
 (*********************)
+
 let maybe_load_config config_in_opt =
   match config_in_opt with
   | None -> E.empty_blockchain_state
@@ -108,32 +109,25 @@ let set_flags verbosity cost_model syntax randomness txn_sender run_only =
   let () = set_bc_mode run_only in
   ();;
 
-let maybe_create_account create config_in config_out =
+let maybe_create_account create initial_config =
   if create
   then
-    let initial_config = maybe_load_config config_in in
     let final_config = TL.create_account initial_config in
+    final_config
+  else
+    initial_config;;
 
-    (* save final configuration *)
-    match config_out with
-        None -> ()
-      | Some(path) -> TL.save_config final_config path;;
 
-let maybe_deposit deposit config_in config_out =
+let maybe_deposit deposit initial_config =
   match deposit with
-      None -> ()
+      None -> initial_config
     | Some d ->
-        let initial_config = maybe_load_config config_in in
         let final_config = TL.deposit_gas d initial_config in
+        final_config;;
 
-        (* save final configuration *)
-        match config_out with
-            None -> ()
-          | Some(path) -> TL.save_config final_config path;;
-
-let maybe_tc_and_run_txn tc_only file config_in config_out =
+let maybe_tc_and_run_txn tc_only file initial_config =
   match file with
-      None -> ()
+      None -> initial_config
     | Some file ->
         (* parse *)
         let trans = TL.read file in
@@ -146,17 +140,23 @@ let maybe_tc_and_run_txn tc_only file config_in config_out =
 
         if tc_only
         then
-          ()
+          initial_config
         else
           (* run transaction *)
-          let initial_config = maybe_load_config config_in in
           let final_config = TL.run env initial_config in
           let () = if !F.verbosity >= 0 then print_string ("% runtime successful!\n") in
+          final_config;;
 
-          (* save final configuration *)
-          match config_out with
-              None -> ()
-            | Some(path) -> TL.save_config final_config path;;
+let maybe_save_config final_config config_out_file =
+    (* save final configuration *)
+    match config_out_file with
+        None -> ()
+      | Some(path) -> TL.save_config final_config path;;
+
+
+(*****************)
+(* Main Commands *)
+(*****************)
 
 let nomos_command =
   C.Command.basic
@@ -171,9 +171,9 @@ let nomos_command =
           ~doc:"syntax: implicit, explicit"
         and tc_only = flag "-tc" no_arg
           ~doc:"type check only"
-        and config_in = flag "-i" (optional in_conf_file)
+        and config_in_file = flag "-i" (optional in_conf_file)
           ~doc:"input configuration file path"
-        and config_out = flag "-o" (optional out_conf_file)
+        and config_out_file = flag "-o" (optional out_conf_file)
           ~doc:"output configuration file path"
         and txn_sender = flag "-ts" (optional string)
           ~doc:"transaction sender's address"
@@ -188,12 +188,14 @@ let nomos_command =
         and file = anon(maybe ("filename" %: nomos_file)) in
         fun () ->
           (* check flag consistency *)
-          let () = check_validity_cmdline_options run_only tc_only config_in config_out txn_sender create deposit file in
+          let () = check_validity_cmdline_options run_only tc_only config_in_file config_out_file txn_sender create deposit file in
           (* set flags *)
           let () = set_flags verbosity cost_model syntax randomness txn_sender run_only in
-          let () = maybe_create_account create config_in config_out in
-          let () = maybe_deposit deposit config_in config_out in
-          let () = maybe_tc_and_run_txn tc_only file config_in config_out in
+          let config = maybe_load_config config_in_file in
+          let config = maybe_create_account create config in
+          let config = maybe_deposit deposit config in
+          let config = maybe_tc_and_run_txn tc_only file config in
+          let () = maybe_save_config config config_out_file in
           ());;
 
 let rec concatenate strlist = match strlist with
