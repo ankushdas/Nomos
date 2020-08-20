@@ -12,6 +12,8 @@ module F = NomosFlags
 module E = Exec
 module Map = C.Map
 
+module J = Yojson
+           
 (************************)
 (* Command Line Options *)
 (************************)

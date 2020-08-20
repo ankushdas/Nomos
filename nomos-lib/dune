@@ -1,6 +1,6 @@
 (library
  (name lib)
- (libraries core clp)
+ (libraries core clp yojson)
  (preprocess (pps ppx_let ppx_sexp_conv)))
 
 (menhir
