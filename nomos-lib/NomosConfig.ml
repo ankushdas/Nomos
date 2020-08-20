@@ -196,6 +196,22 @@ let nomos_command =
           let () = maybe_tc_and_run_txn tc_only file config_in config_out in
           ());;
 
+let rec concatenate strlist = match strlist with
+    [] -> ""
+  | [s] -> s
+  | s::ss -> s ^ " " ^ concatenate ss;;
+
+let json_command =
+  C.Command.basic
+    ~summary:"Input a JSON string representing blockchain state"
+    C.Command.Let_syntax.(
+      let%map_open
+        json_string_list  = anon (sequence ("filename" %: string))
+      in
+      fun () ->
+        let concatenated_string = concatenate json_string_list in
+        print_string ("Hello " ^ concatenated_string ^ "\n"))
+
   (* need 
 
   - main function
