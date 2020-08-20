@@ -1,3 +1,5 @@
+(* Communicator Code *)
+
 type msg = +{SEND : int ^ 1,
              ECHO : int ^ 1,
              READY : int ^ 1}
@@ -117,12 +119,17 @@ proc contract communicator : (sid : int), (rid : int), ($l : list_msgs),
   )
 }
 
+(* Dealer Code *)
+
 proc asset create_send_msg : (m : int) |- ($msg : msg) =
 {
   $msg.SEND ;
   send $msg m ;
   close $msg
 }
+
+type recv_comms = &{next : comm -o recv_comms,
+                    comms_done : action}
 
 proc transaction dealer_init : (id : int), (m : int) |- ($d : recv_comms) =
 {
@@ -131,16 +138,6 @@ proc transaction dealer_init : (id : int), (m : int) |- ($d : recv_comms) =
   $d <- dealer_recv <- id m $comms
 }
 
-proc transaction adversary_init : (id : int) |- ($d : recv_comms) =
-{
-  print ("created adversary with id %d\n", id);
-  $comms <- nil <- ;
-  $d <- adversary_recv <- id $comms
-}
-
-type recv_comms = &{next : comm -o recv_comms,
-                    comms_done : action}
-
 proc transaction dealer_recv : (id : int), (m : int), ($comms : list_comms) |- ($d : recv_comms) =
 {
   case $d (
@@ -148,16 +145,6 @@ proc transaction dealer_recv : (id : int), (m : int), ($comms : list_comms) |- (
             $comms_new <- cons <- $comms #c ;
             $d <- dealer_recv <- id m $comms_new
   | comms_done => $d <- dealer <- id m $comms
-  )
-}
-
-proc transaction adversary_recv : (id : int), ($comms : list_comms) |- ($d : recv_comms) =
-{
-  case $d (
-    next => #c <- recv $d ;
-            $comms_new <- cons <- $comms #c ;
-            $d <- adversary_recv <- id $comms_new
-  | comms_done => $d <- adversary <- id $comms
   )
 }
 
@@ -198,6 +185,44 @@ proc asset print_msgs : ($l : list_msgs) |- ($p : 1) =
   )
 }
 
+proc transaction dealer_send_msgs : (id : int), (m : int), ($dcs : list_comms) |- ($d : +{DONE : int ^ 1, NEXT : action}) =
+{
+  case $dcs (
+    cons => #dc <- recv $dcs ;
+            print ("dealer activated by ENV: sending message on %c\n", #dc);
+            $ldc <- acquire #dc ;
+            $ldc.SEND ;
+            $msg <- create_send_msg <- m ;
+            send $ldc $msg ;
+            #dc <- release $ldc ;
+            print ("dealer: sent number %d on %c\n", m, #dc);
+            $d <- dealer_send_msgs <- id m $dcs
+   | nil => wait $dcs ;
+            $d.DONE ;
+            send $d m ;
+            close $d
+  )
+}
+
+(* Adversary Code *)
+
+proc transaction adversary_init : (id : int) |- ($d : recv_comms) =
+{
+  print ("created adversary with id %d\n", id);
+  $comms <- nil <- ;
+  $d <- adversary_recv <- id $comms
+}
+
+proc transaction adversary_recv : (id : int), ($comms : list_comms) |- ($d : recv_comms) =
+{
+  case $d (
+    next => #c <- recv $d ;
+            $comms_new <- cons <- $comms #c ;
+            $d <- adversary_recv <- id $comms_new
+  | comms_done => $d <- adversary <- id $comms
+  )
+}
+
 proc transaction adversary : (id : int), ($comms : list_comms) |- ($d : action) =
 {
   case $d (
@@ -226,24 +251,7 @@ proc transaction print_adversary_msgs : (id : int),
   )
 }
 
-proc transaction dealer_send_msgs : (id : int), (m : int), ($dcs : list_comms) |- ($d : +{DONE : int ^ 1, NEXT : action}) =
-{
-  case $dcs (
-    cons => #dc <- recv $dcs ;
-            print ("dealer activated by ENV: sending message on %c\n", #dc);
-            $ldc <- acquire #dc ;
-            $ldc.SEND ;
-            $msg <- create_send_msg <- m ;
-            send $ldc $msg ;
-            #dc <- release $ldc ;
-            print ("dealer: sent number %d on %c\n", m, #dc);
-            $d <- dealer_send_msgs <- id m $dcs
-   | nil => wait $dcs ;
-            $d.DONE ;
-            send $d m ;
-            close $d
-  )
-}
+(* Party Code *)
 
 proc transaction cons : ($tl : list_comms), (#d : comm) |- ($l : list_comms) =
 {
@@ -480,6 +488,15 @@ proc transaction party_send_readys : (id : int), (echoT : int), (readyT : int), 
             $p <- party_recv_echos_readys <- id echoT readyT deliverT m num_echos num_readys #dc $sent_comms $recv_comms $checked_comms
   )
 }
+
+(* Wrapper Code *)
+
+proc transaction wrapper_async : . |- ($w : 1) =
+{
+  abort
+}
+
+(* Initialization Code *)
 
 type dealer_adversary_parties = action * recv_comms * list_parties
 
