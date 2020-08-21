@@ -35,12 +35,15 @@ let pmsg str ext note =
   );;
 
 let error_msg cat ext note =
-    ( anyErrors := true
-    ; if !F.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
-      then pmsg (err_string cat ^ " error") ext note
-      else () );;
+  ( anyErrors := true
+  ; if !F.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
+    then pmsg (err_string cat ^ " error") ext note
+    else () );;
 
 (* Print the given error message and then abort compilation *)
-exception Error
+exception LexError of string
+exception ParseError of string
+exception TypeError of string
+exception RuntimeError of string
 
 let error cat ext msg = ( error_msg cat ext msg ; raise Error );;

@@ -30,10 +30,10 @@ val infer : raw_transaction -> transaction
 val set_sender : string -> unit
 
 (* create account for a new txn sender *)
-val create_account : E.blockchain_state -> E.blockchain_state
+val create_account : string -> E.blockchain_state -> E.blockchain_state
 
 (* deposit gas into txn sender's account *)
-val deposit_gas : int -> E.blockchain_state -> E.blockchain_state
+val deposit_gas : string -> int -> E.blockchain_state -> E.blockchain_state
 
 (* execute all the execs in an environment *)
 val exec : transaction -> unit

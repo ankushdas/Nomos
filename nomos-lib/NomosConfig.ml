@@ -112,17 +112,16 @@ let set_flags verbosity cost_model syntax randomness txn_sender run_only =
 let maybe_create_account create initial_config =
   if create
   then
-    let final_config = TL.create_account initial_config in
+    let final_config = TL.create_account !E.txnSender initial_config in
     final_config
   else
     initial_config;;
-
 
 let maybe_deposit deposit initial_config =
   match deposit with
       None -> initial_config
     | Some d ->
-        let final_config = TL.deposit_gas d initial_config in
+        let final_config = TL.deposit_gas !E.txnSender d initial_config in
         final_config;;
 
 let maybe_tc_and_run_txn tc_only file initial_config =
@@ -154,9 +153,9 @@ let maybe_save_config final_config config_out_file =
       | Some(path) -> TL.save_config final_config path;;
 
 
-(*****************)
-(* Main Commands *)
-(*****************)
+(****************)
+(* Main Command *)
+(****************)
 
 let nomos_command =
   C.Command.basic
@@ -198,6 +197,26 @@ let nomos_command =
           let () = maybe_save_config config config_out_file in
           ());;
 
+
+(******************)
+(* JSON Functions *)
+(******************)
+
+let create_account initial_state account_name balance =
+  let state = initial_state in
+  let state = TL.create_account account_name state in
+  let state = TL.deposit_gas account_name balance state in
+  state;;
+
+let account_list state =
+  let (_tx, _ch, gas_accs, _types, _config) = state in
+  gas_accs;;
+
+let contract_list state =
+  let (_tx, _ch, _gas_accs, _types, config) = state in
+  let chantps = config.E.types in
+  chantps;;
+
 let rec concatenate strlist = match strlist with
     [] -> ""
   | [s] -> s
@@ -227,7 +246,7 @@ let json_command =
 
   - create_account (state:(ocaml type), account_name, balance) -> new_sate:(ocaml type)
 
-  - type_check (state, transaction:string) -> (elaborated_transaction:string, gas_bound:int)
+  - type_check (transaction:string) -> (elaborated_transaction:string)
 
   - submit (state, elaborated_transaction, account) -> new_state
 

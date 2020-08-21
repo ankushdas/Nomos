@@ -31,7 +31,7 @@ let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
     pos_cnum = 0;
   }
 
-let reset () = ErrorMsg.reset ()
+let ereset () = ErrorMsg.reset ()
 
 let print_position _outx lexbuf =
   let pos = lexbuf.L.lex_curr_p in
@@ -55,19 +55,26 @@ let read_with_error file =
 (* open file and parse into environment *)
 let read file =
   let rec read_env file =
-    let () = reset () in                          (* internal lexer and parser state *)
+    let () = ereset () in                         (* internal lexer and parser state *)
     (*
     let () = I.reset () in                        (* resets the LP solver *)
     *)
     let inx = read_with_error file in             (* read file *)
     let lexbuf = Lexing.from_string inx in        (* lex file *)
-    let _ = init lexbuf file in
+    let () = init lexbuf file in
     let (imports, (env, _ext)) = parse_with_error lexbuf in  (* parse file *)
     let imports' = List.map (Filename.concat (Filename.dirname file)) imports in
     let envs = List.map read_env imports' in
     (List.concat (envs @ [env]) : environment)
   in
     RawTransaction (read_env file)
+
+let read_txn txn =
+  let () = ereset () in
+  let lexbuf = Lexing.from_string txn in
+  let () = init lexbuf "txn.nom" in
+  let (_imports, (env, _ext)) = parse_with_error lexbuf in
+  RawTransaction env;;
 
 (* check validity and typecheck environment *)
 let infer (RawTransaction decls) =
@@ -109,14 +116,14 @@ let load_config config_in =
 let save_config conf config_out =
   Sexp.save_hum config_out (E.sexp_of_blockchain_state conf)
 
-let create_account initial_config =
+let create_account txnsender initial_config =
   let (tx, ch, gas_accs, types, config) = initial_config in
-  let new_gas_accs = G.create_account gas_accs !E.txnSender in
+  let new_gas_accs = G.create_account gas_accs txnsender in
   (tx, ch, new_gas_accs, types, config);;
 
-let deposit_gas d initial_config =
+let deposit_gas txnsender d initial_config =
   let (tx, ch, gas_accs, types, config) = initial_config in
-  let new_gas_accs = G.deposit gas_accs !E.txnSender d in
+  let new_gas_accs = G.deposit gas_accs txnsender d in
   (tx, ch, new_gas_accs, types, config);;
 
 let run (Transaction env) config =
