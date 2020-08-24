@@ -540,5 +540,4 @@ let solve_and_print () =
         let () = if !F.verbosity >= 2 then print_mode_solution msols in
         (psols, msols)
     | S.Infeasible ->
-        let () = if !F.verbosity >= 1 then print_string ("Infeasible LP!\n") in
-        raise ErrorMsg.Error;;
+        raise (ErrorMsg.TypeError "Infeasible LP!");;

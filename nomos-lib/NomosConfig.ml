@@ -135,7 +135,13 @@ let maybe_tc_and_run_txn tc_only file initial_config =
         let () = if !F.verbosity >= 0 then print_string ("% parsing successful!\n") in
         (* typecheck *)
         let env = try TL.infer trans
-                  with ErrorMsg.Error -> C.eprintf "%% compilation failed!\n"; exit 1
+                  with
+                    | ErrorMsg.LexError msg -> print_string msg; exit 1
+                    | ErrorMsg.ParseError msg -> print_string msg; exit 1
+                    | ErrorMsg.TypeError msg -> print_string msg; exit 1
+                    | ErrorMsg.PragmaError msg -> print_string msg; exit 1
+                    | ErrorMsg.RuntimeError msg -> print_string msg; exit 1
+
         in
         let () = if !F.verbosity >= 0 then print_string ("% compilation successful!\n") in
 
@@ -199,26 +205,6 @@ let nomos_command =
           let () = maybe_save_config config config_out_file in
           ());;
 
-
-(******************)
-(* JSON Functions *)
-(******************)
-
-let create_account initial_state account_name balance =
-  let state = initial_state in
-  let state = TL.create_account account_name state in
-  let state = TL.deposit_gas account_name balance state in
-  state;;
-
-let account_list state =
-  let (_tx, _ch, gas_accs, _types, _config) = state in
-  gas_accs;;
-
-let contract_list state =
-  let (_tx, _ch, _gas_accs, _types, config) = state in
-  let chantps = config.E.types in
-  chantps;;
-
 let rec concatenate strlist = match strlist with
     [] -> ""
   | [s] -> s
@@ -233,27 +219,4 @@ let json_command =
       in
       fun () ->
         let concatenated_string = concatenate json_string_list in
-        print_string ("Hello " ^ concatenated_string ^ "\n"))
-
-  (* need 
-
-  - main function
-
-    * parse json string input to json
-    * either error or one of the three valid cases
-    * parse state from sexp string
-    * call create_account, submit, or type_check
-    * create response json
-    * convert response json to string
-
-  - create_account (state:(ocaml type), account_name, balance) -> new_sate:(ocaml type)
-
-  - type_check (transaction:string) -> (elaborated_transaction:string)
-
-  - submit (state, elaborated_transaction, account) -> new_state
-
-  - account_list (state) -> json_acouunt_list
-
-  - contract_list (state) -> json_contract_list
-
-   *)
+        print_string ("Hello " ^ concatenated_string ^ "\n"));;

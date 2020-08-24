@@ -2,7 +2,7 @@ module A = Ast
 
 val elab_decls :
   (A.decl * 'a) list ->
-  (A.decl * A.ext) list -> (A.decl * A.ext) list option
+  (A.decl * A.ext) list -> (A.decl * A.ext) list
 val check_redecl :
   (A.decl * ((int * int) * (int * int) * string) option) list -> unit
 val check_valid :

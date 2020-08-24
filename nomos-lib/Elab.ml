@@ -21,6 +21,7 @@ module TC = Typecheck
 module E = TpError
 module I = Infer
 module F = NomosFlags
+module EM = ErrorMsg
 
 let error = ErrorMsg.error ErrorMsg.Type;;
 
@@ -121,7 +122,7 @@ and elab_exps env dcls = match dcls with
         end
       in
       let () = try TC.checkfexp false env delta pot p' (x,a) ext' m (* approx. type check *)
-               with ErrorMsg.Error ->
+               with EM.TypeError msg ->
                   (* if verbosity >= 2, type-check again, this time with tracing *)
                   if !F.verbosity >= 2
                     then
@@ -129,7 +130,7 @@ and elab_exps env dcls = match dcls with
                         print_string ("% tracing type checking...\n")
                         ; TC.checkfexp true env delta pot p' (x,a) ext' m
                       end (* will re-raise ErrorMsg.Error *)
-                  else raise ErrorMsg.Error (* re-raise if not in verbose mode *) in
+                  else raise (ErrorMsg.TypeError msg) (* re-raise if not in verbose mode *) in
       (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'), ext')::(elab_exps' env dcls')
   | ((A.Exec(f), ext') as dcl)::dcls' ->
       begin
@@ -147,13 +148,10 @@ and elab_exps env dcls = match dcls with
  *)
 let elab_decls env dcls =
   (* first pass: check validity of types and create internal names *)
-  try
   let env' = elab_tps env dcls in
   (* second pass: perform reconstruction and type checking *)
   let env'' = elab_exps' env' env' in
-  Some env''
-
-  with ErrorMsg.Error -> None;;
+  env'';;
 
  (**************************)
  (* Checking Redeclaration *)

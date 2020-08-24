@@ -85,10 +85,7 @@ let infer (RawTransaction decls) =
   (* may only be at beginning of file; apply now *)
   let decls' = EL.commit_channels decls decls in
   (* allow for mutually recursive definitions in the same file *)
-  let env = match EL.elab_decls decls' decls' with
-                Some env' -> env'
-              | None -> raise ErrorMsg.Error  (* error during elaboration *)
-  in
+  let env = EL.elab_decls decls' decls' in
   let t1 = Unix.gettimeofday () in
   let env = EL.remove_stars env in
   let env = EL.removeU env in

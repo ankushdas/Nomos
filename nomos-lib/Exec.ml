@@ -5,6 +5,8 @@ module PP = Pprint
 module M = C.Map
 module F = NomosFlags
 module G = GasAcct
+module EM = ErrorMsg
+open Sexplib.Std
 
 exception InsufficientPotential (* not enough potential to work or pay *)
 
@@ -24,7 +26,6 @@ exception StarPotential (* star potential encountered at runtime *)
 
 exception RuntimeError (* should never happen at runtime *)
 
-open Sexplib.Std
 type sem =
     (* Proc(chan, in_use, time, (work, pot), P) *)
     Proc of string * A.chan * A.chan list * int * (int * int) * A.ext A.st_expr
@@ -1238,7 +1239,7 @@ and iterate_and_one_step env sems config stepped =
           | Unchanged config -> iterate_and_one_step env sems' config stepped
           | Aborted -> Fail;;
 
-let error = ErrorMsg.error_msg ErrorMsg.Runtime None;;
+let error m = raise (EM.RuntimeError (ErrorMsg.error_msg ErrorMsg.Runtime None m));;
 
 type state =
   {
@@ -1272,25 +1273,19 @@ let check_and_add (top : Chan.t) (sem : sem) (st : state): state option =
               match p with
                   A.Accept _ ->
                     { st' with gamma = c::st.gamma; delta = delta' }
-                | _ -> error "shared process not blocking on accept";
-                       raise RuntimeError)
+                | _ -> error "shared process not blocking on accept")
           | A.Pure -> { st' with delta = c::delta' }
-          | A.Linear -> (error "linear channel in final state";
-                         raise RuntimeError)
-          | A.Transaction -> (error "transaction still running";
-                              raise RuntimeError)
-          | A.Unknown -> (error "process mode Unknown during runtime";
-                          raise RuntimeError)
-          | A.MVar _ -> (error "process mode MVar during runtime";
-                         raise RuntimeError)))
+          | A.Linear -> error "linear channel in final state"
+          | A.Transaction -> error "transaction still running"
+          | A.Unknown -> error "process mode Unknown during runtime"
+          | A.MVar _ -> error "process mode MVar during runtime"))
   | (Msg(c, _, _, msg)) ->
       let (_, _, m) = c in
       match m with
           A.Transaction ->
             if eq_name c top
             then Some { st with config = remove_sem c st.config }
-            else (error "transaction message not for main transaction";
-                  raise RuntimeError)
+            else error "transaction message not for main transaction"
         | A.Pure -> (
             match msg with
               A.MLabI (c, _, cplus)
@@ -1307,8 +1302,7 @@ let check_and_add (top : Chan.t) (sem : sem) (st : state): state option =
                   (checked_remove cplus st.delta)
             | A.MClose c ->
                 Some { st with delta = add_chan c st.delta })
-        | _ -> error "dangling message";
-               raise RuntimeError
+        | _ -> error "dangling message"
 
 (* verify the configuration after a transaction has executed *)
 let verify_final_configuration top config =
@@ -1326,8 +1320,7 @@ let verify_final_configuration top config =
   let (st_final, sems_final) = st_fixpoint st0 sems0 in
   let config' = st_final.config in
   if List.length sems_final > 0
-    then (error "could not add some sems to final configuration";
-          raise RuntimeError)
+    then error "could not add some sems to final configuration"
     else config'
 
 type type_map = A.stype M.M(C.String).t [@@deriving sexp]
@@ -1357,20 +1350,13 @@ let try_exec f c pot args initial_config env types =
         begin
           try (!txnNum + 1, !chan_num, types, verify_final_configuration c final_config)
           with
-          | InsufficientPotential -> error "insufficient potential during execution"
-                                    ; raise RuntimeError
-          | UnconsumedPotential -> error "unconsumed potential during execution"
-                                  ; raise RuntimeError
-          | PotentialMismatch -> error "potential mismatch during execution"
-                                ; raise RuntimeError
-          | MissingBranch -> error "missing branch during execution"
-                            ; raise RuntimeError
-          | ChannelMismatch -> error "channel name mismatch found at runtime"
-                              ; raise RuntimeError
-          | UndefinedProcess -> error "undefined process found at runtime"
-                                ; raise RuntimeError
-          | StarPotential -> error "potential * found at runtime"
-                            ; raise RuntimeError
+            | InsufficientPotential -> error "insufficient potential during execution"
+            | UnconsumedPotential -> error "unconsumed potential during execution"
+            | PotentialMismatch -> error "potential mismatch during execution"
+            | MissingBranch -> error "missing branch during execution"
+            | ChannelMismatch -> error "channel name mismatch found at runtime"
+            | UndefinedProcess -> error "undefined process found at runtime"
+            | StarPotential -> error "potential * found at runtime"
         end;;
 
 (* exec env C (f, args) = C'

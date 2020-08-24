@@ -25,25 +25,31 @@ let err_string cat = match cat with
 let tabToSpace = String.map (fun c -> match c with | '\t' -> ' ' | c -> c);;
 
 let omap f opt = match opt with
-    None -> None
-  | Some x -> Some (f x);;
+    None -> ""
+  | Some x -> (f x);;
 
 let pmsg str ext note =
-  ( ignore (omap (fun x -> print_string (Mark.show x)) ext)
-  ; List.iter print_string [":"; str; ":"; note; "\n"]
-  ; ignore (omap (fun x -> print_string (tabToSpace (Mark.show_source x))) ext)
-  );;
+  let filepos = omap Mark.show ext in
+  let error_msg = ":" ^ str ^ ":" ^ note ^ "\n" in
+  let source = omap (fun x -> tabToSpace (Mark.show_source x)) ext in
+  filepos ^ error_msg ^ source;;
 
 let error_msg cat ext note =
   ( anyErrors := true
-  ; if !F.verbosity >= 0 (* verbosity < 0: don't print error messages! *)
-    then pmsg (err_string cat ^ " error") ext note
-    else () );;
+  ; pmsg (err_string cat ^ " error") ext note);;
 
 (* Print the given error message and then abort compilation *)
 exception LexError of string
 exception ParseError of string
 exception TypeError of string
+exception PragmaError of string
 exception RuntimeError of string
 
-let error cat ext msg = ( error_msg cat ext msg ; raise Error );;
+let error cat ext msg =
+  let errormsg = error_msg cat ext msg in
+  match cat with
+      Lex -> raise (LexError errormsg)
+    | Parse -> raise (ParseError errormsg)
+    | Type -> raise (TypeError errormsg)
+    | Pragma -> raise (PragmaError errormsg)
+    | Runtime -> raise (RuntimeError errormsg);;
