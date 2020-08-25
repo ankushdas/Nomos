@@ -39,9 +39,7 @@
 
 
 file :
-  | imports = list(import); vl = list(decl) EOF { (imports, (vl, Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
-                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
-                                             $startpos.Lexing.pos_fname))) }
+  | imports = list(import); vl = list(decl) EOF { (imports, vl) }
      ;
 
 import :

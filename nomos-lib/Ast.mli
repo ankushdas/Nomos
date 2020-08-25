@@ -121,7 +121,7 @@ type decl =
   | ExpDecDef of expname * mode * (context * potential * chan_tp) *
       parsed_expr
   | Exec of expname
-type program = (decl * ext) list * ext
+type program = (decl * ext) list
 type file = string list * program
 type 'a value =
     IntV of int

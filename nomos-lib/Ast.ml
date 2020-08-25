@@ -210,7 +210,7 @@ type decl =
     parsed_expr
   | Exec of expname                           (* exec f *)
 
-type program = (decl * ext) list * ext
+type program = (decl * ext) list
 
 type file = (string list * program) (* imports plus the actual program *)
 

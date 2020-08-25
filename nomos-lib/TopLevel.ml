@@ -62,7 +62,7 @@ let read file =
     let inx = read_with_error file in             (* read file *)
     let lexbuf = Lexing.from_string inx in        (* lex file *)
     let () = init lexbuf file in
-    let (imports, (env, _ext)) = parse_with_error lexbuf in  (* parse file *)
+    let (imports, env) = parse_with_error lexbuf in  (* parse file *)
     let imports' = List.map (Filename.concat (Filename.dirname file)) imports in
     let envs = List.map read_env imports' in
     (List.concat (envs @ [env]) : environment)
@@ -73,7 +73,7 @@ let read_txn txn =
   let () = ereset () in
   let lexbuf = Lexing.from_string txn in
   let () = init lexbuf "txn.nom" in
-  let (_imports, (env, _ext)) = parse_with_error lexbuf in
+  let (_imports, env) = parse_with_error lexbuf in
   RawTransaction env;;
 
 (* check validity and typecheck environment *)
