@@ -1,10 +1,13 @@
 module C = Core
 module M = C.Map
 module F = NomosFlags
+module EM = ErrorMsg
 
 open Sexplib.Std
 
 type gas_accounts = int M.M(C.String).t [@@deriving sexp]
+
+let error m = EM.error EM.GasAcct None m;;
 
 let create_account gas_accs sender =
   match M.find gas_accs sender with
@@ -17,7 +20,7 @@ let create_account gas_accs sender =
 
 let deposit gas_accs sender d =
   match M.find gas_accs sender with
-      None -> C.eprintf "%% account for txn sender %s does not exist!\n" sender; exit 1
+      None -> error ("% account for txn sender " ^ sender ^ " does not exist!\n")
     | Some bal ->
         let () = if !F.verbosity >= 0 then print_string ("% deposit of " ^ string_of_int d ^ " gas units successful!\n") in
         let () = if !F.verbosity >= 0 then print_string ("% account balance of " ^ sender ^ ": " ^ string_of_int (bal+d) ^"\n") in
@@ -30,7 +33,7 @@ let deduct gas_accs sender gas =
   then
     begin
     match M.find gas_accs sender with
-        None -> C.eprintf "%% account for txn sender %s does not exist!\n" sender; exit 1
+        None -> error ("% account for txn sender " ^ sender ^ " does not exist!\n")
       | Some bal ->
           if gas > bal
           then (Insufficient bal, M.set gas_accs ~key:sender ~data:0)

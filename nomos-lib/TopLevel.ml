@@ -13,6 +13,7 @@ module StdList = Stdlib.List
 module LEX = Lexer
 module L = Lexing
 module G = GasAcct
+module EM = ErrorMsg
 
 type environment = (A.decl * A.ext) list
 
@@ -33,24 +34,28 @@ let init (lexbuf : Lexing.lexbuf) (fname : string) : unit =
 
 let ereset () = ErrorMsg.reset ()
 
-let print_position _outx lexbuf =
+let print_position lexbuf =
   let pos = lexbuf.L.lex_curr_p in
-  C.printf "%s:%d:%d" pos.L.pos_fname
-    pos.L.pos_lnum (pos.L.pos_cnum - pos.L.pos_bol + 1)
+  pos.L.pos_fname ^ ":" ^
+  string_of_int (pos.L.pos_lnum) ^ ":" ^
+  string_of_int (pos.L.pos_cnum - pos.L.pos_bol + 1);;
 
 (* lex and parse using Menhir, then return list of declarations *)
 let parse_with_error lexbuf =
   try Parser.file Lexer.token lexbuf with
   | LEX.SyntaxError msg ->
-      (C.printf "LEXING FAILURE: %a: %s\n" print_position lexbuf msg;
-      exit 1)
+      let lex_error = "Lexing Failure: " ^ print_position lexbuf ^ ": " ^ msg in
+      raise (EM.LexError lex_error)
   | Parser.Error ->
-      (C.printf "PARSING FAILURE: %a\n" print_position lexbuf; exit 1)
+      let parse_error = "Parsing Failure: " ^ print_position lexbuf in
+      raise (EM.ParseError parse_error);;
 
 (* try to read a file, or print failure *)
 let read_with_error file =
-  try C.In_channel.read_all file with
-  | Sys_error s -> (C.eprintf "Failed to load file:\n- %s\n" s; exit 1)
+  try C.In_channel.read_all file
+  with Sys_error msg ->
+    let errormsg = "Failed to load file:\n- " ^ msg ^ "\n" in
+    raise (EM.FileError errormsg);;
 
 (* open file and parse into environment *)
 let read file =

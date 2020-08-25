@@ -1239,7 +1239,7 @@ and iterate_and_one_step env sems config stepped =
           | Unchanged config -> iterate_and_one_step env sems' config stepped
           | Aborted -> Fail;;
 
-let error m = raise (EM.RuntimeError (ErrorMsg.error_msg ErrorMsg.Runtime None m));;
+let error m = EM.error EM.Runtime None m;;
 
 type state =
   {

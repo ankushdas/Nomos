@@ -22,6 +22,7 @@ module E = TpError
 module I = Infer
 module F = NomosFlags
 module EM = ErrorMsg
+module IO = InOut
 
 let error = ErrorMsg.error ErrorMsg.Type;;
 
@@ -108,6 +109,7 @@ and elab_exps env dcls = match dcls with
       dcl::(elab_exps' env dcls')
   | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p), ext')::dcls' ->
       let p' = Cost.apply_cost p in (* applying the cost model *)
+      let () = IO.add_cost_exp (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'),ext') in
       let () =
         begin
           match !F.syntax with                    (* print reconstructed term *)

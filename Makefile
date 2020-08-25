@@ -43,11 +43,15 @@ nomos-editor:
 	ocamlc Pprint.mli; \
 	ocamlc TpError.mli; \
 	ocamlc Typecheck.mli; \
+	ocamlfind ocamlc -thread -linkpkg -package core GasAcct.mli; \
+	ocamlc InOut.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core Infer.mli; \
 	ocamlc Elab.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core GasAcct.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core Exec.mli; \
+	ocamlfind ocamlc -thread -linkpkg -package core TopLevel.mli; \
 	ocamlfind ocamlc -thread -linkpkg -package core NomosConfig.mli; \
+	ocamlfind ocamlc -thread -linkpkg -package core JsonConfig.mli; \
 	cd ..
 
 

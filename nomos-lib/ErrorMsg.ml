@@ -10,14 +10,18 @@ type error_cat =
   | Parse
   | Type
   | Pragma
-  | Runtime;;
+  | Runtime
+  | GasAcct
+  | File;;
 
 let err_string cat = match cat with
     Lex -> "lex"
   | Parse -> "parse"
   | Type -> "type"
   | Pragma -> "pragma"
-  | Runtime -> "runtime";;
+  | Runtime -> "runtime"
+  | GasAcct -> "gas account"
+  | File -> "file";;
 
 (* We turn tabs into spaces because they are counted as a single character in
     the extents, so in order for the emphasis to be correct we need each
@@ -44,6 +48,8 @@ exception ParseError of string
 exception TypeError of string
 exception PragmaError of string
 exception RuntimeError of string
+exception GasAcctError of string
+exception FileError of string
 
 let error cat ext msg =
   let errormsg = error_msg cat ext msg in
@@ -52,4 +58,6 @@ let error cat ext msg =
     | Parse -> raise (ParseError errormsg)
     | Type -> raise (TypeError errormsg)
     | Pragma -> raise (PragmaError errormsg)
-    | Runtime -> raise (RuntimeError errormsg);;
+    | Runtime -> raise (RuntimeError errormsg)
+    | GasAcct -> raise (GasAcctError errormsg)
+    | File -> raise (FileError errormsg);;

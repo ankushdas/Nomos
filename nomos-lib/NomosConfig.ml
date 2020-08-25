@@ -11,8 +11,11 @@ module TC = Typecheck
 module F = NomosFlags
 module E = Exec
 module Map = C.Map
+module EM = ErrorMsg
 
 module J = Yojson
+
+let error m = EM.error EM.Pragma None m;;
            
 (************************)
 (* Command Line Options *)
@@ -20,12 +23,12 @@ module J = Yojson
 
 let set_cost_model s =
   match F.parseCost s with
-      None -> (C.eprintf "%% cost model %s not recognized\n" s; exit 1)
-    | Some cm -> F.work := cm
+      None -> error ("% cost model " ^ s ^ " not recognized\n")
+    | Some cm -> F.work := cm;;
 
 let set_syntax s =
   match F.parseSyntax s with
-      None -> (C.eprintf "%% syntax %s not recognized\n" s; exit 1)
+      None -> error ("% syntax " ^ s ^ " not recognized\n")
     | Some syn -> F.syntax := syn
 
 let set_txn_sender s =
@@ -40,10 +43,7 @@ let check_extension filename ext =
   if Filename.check_suffix filename ext
   then filename
   else
-    begin
-      C.eprintf "'%s' does not have %s extension.\n%!" filename ext;
-      exit 1
-    end
+    EM.error EM.File None ("'" ^ filename ^ "' does not have " ^ ext ^ " extension!\n");;
     
 let file (ext : string) =
   C.Command.Arg_type.create
@@ -51,8 +51,7 @@ let file (ext : string) =
       match C.Sys.is_file filename with
           `No | `Unknown ->
             begin
-              C.eprintf "'%s' is not a regular file.\n%!" filename;
-              exit 1
+              EM.error EM.File None ("'" ^ filename ^ "' is not a regular file!\n")
             end
         | `Yes -> check_extension filename ext)
 
@@ -78,8 +77,9 @@ let create_or_deposit txn_sender create deposit =
       None ->
         begin
           match create, deposit with
-              true, _ -> C.eprintf "%% txn sender must be specified (flag ts) to create account\n"; exit 1
-            | _, Some _ -> C.eprintf "%% txn sender must be specified (flag ts) to deposit gas\n"; exit 1
+              true, _ ->
+                error ("% txn sender must be specified (flag ts) to create account\n")
+            | _, Some _ -> error ("%% txn sender must be specified (flag ts) to deposit gas\n")
             | false, None -> ()
         end
     | Some _ -> ();;
@@ -89,7 +89,7 @@ let check_file_validity create deposit file =
       false, None ->
         begin
           match file with
-              None -> C.eprintf "%% file must be specified\n"; exit 1
+              None -> EM.error EM.File None ("% file must be specified\n")
             | Some _ -> ()
         end
     | _, _ -> ();;
