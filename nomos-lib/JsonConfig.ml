@@ -42,7 +42,9 @@ let submit state txn account_name =
     let env = TL.infer raw_env in
     BSuccess(TL.run env state)
   with
-    EM.LexError m | EM.ParseError m | EM.TypeError m | EM.PragmaError m | EM.RuntimeError m ->
+      EM.LexError m | EM.ParseError m
+    | EM.TypeError m | EM.PragmaError m | EM.RuntimeError m
+    | EM.GasAcctError m | EM.FileError m ->
       BFailure(m);;
 (* need 
 

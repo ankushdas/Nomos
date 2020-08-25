@@ -136,11 +136,13 @@ let maybe_tc_and_run_txn tc_only file initial_config =
         (* typecheck *)
         let env = try TL.infer trans
                   with
-                    | ErrorMsg.LexError msg -> print_string msg; exit 1
-                    | ErrorMsg.ParseError msg -> print_string msg; exit 1
-                    | ErrorMsg.TypeError msg -> print_string msg; exit 1
-                    | ErrorMsg.PragmaError msg -> print_string msg; exit 1
-                    | ErrorMsg.RuntimeError msg -> print_string msg; exit 1
+                    | EM.LexError msg
+                    | EM.ParseError msg
+                    | EM.TypeError msg
+                    | EM.PragmaError msg
+                    | EM.RuntimeError msg
+                    | EM.GasAcctError msg
+                    | EM.FileError msg -> print_string msg; exit 1
 
         in
         let () = if !F.verbosity >= 0 then print_string ("% compilation successful!\n") in
