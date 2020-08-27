@@ -2,6 +2,7 @@ module TL = TopLevel
 module E = Exec
 module EM = ErrorMsg
 module F = NomosFlags
+module C = Core         
 
 val create_account :
   TL.E.blockchain_state -> string -> int -> TL.E.blockchain_state
@@ -17,3 +18,5 @@ val type_check : string -> elaboratedTxn
 type output_state = BSuccess of E.blockchain_state | BFailure of string
 
 val submit : TL.E.blockchain_state -> string -> string -> output_state
+
+val json_command : C.Command.t  

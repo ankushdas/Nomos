@@ -2,6 +2,9 @@ module TL = TopLevel
 module E = Exec
 module EM = ErrorMsg
 module F = NomosFlags
+module C = Core
+         
+module J = Yojson
 
 (******************)
 (* JSON Functions *)
@@ -46,7 +49,26 @@ let submit state txn account_name =
     | EM.TypeError m | EM.PragmaError m | EM.RuntimeError m
     | EM.GasAcctError m | EM.FileError m ->
       BFailure(m);;
-(* need 
+
+
+let rec concatenate strlist = match strlist with
+    [] -> ""
+  | [s] -> s
+  | s::ss -> s ^ " " ^ concatenate ss;;
+
+let json_command =
+  C.Command.basic
+    ~summary:"Input a JSON string representing blockchain state"
+    C.Command.Let_syntax.(
+      let%map_open
+        json_string_list  = anon (sequence ("filename" %: string))
+      in
+      fun () ->
+        let concatenated_string = concatenate json_string_list in
+        print_string ("Hello " ^ concatenated_string ^ "\n"));;
+  
+
+  (* need 
 
   - main function
 

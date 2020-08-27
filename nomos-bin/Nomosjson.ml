@@ -1,4 +1,4 @@
-module NC = Lib.NomosConfig
+module NC = Lib.JsonConfig
 module C = Core
 
 let () =
