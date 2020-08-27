@@ -1,19 +1,17 @@
 (* Communicator Code *)
 
-(* Type of messages exchanged: SEND, ECHO or READY along with an integer *)
 type msg = +{SEND : int ^ 1,
              ECHO : int ^ 1,
              READY : int ^ 1}
 
-(* Messages to wrapper comms: sender id ^ receiver id ^ msg *)
-type wrapper_msg = int ^ int ^ msg
+type comm = /\ &{ SEND : msg -o \/ comm,
+                  FETCH : +{ no : \/ comm,
+                             yes : msg * \/ comm },
+                  DELAY : int -> \/ comm,
+                  LEAK : list_msgs * \/ comm}
 
-type wrapper_comm = /\ &{ SEND : wrapper_msg -o \/ wrapper_comm,
-                          FETCH : +{ no : \/ wrapper_comm,
-                                     yes : wrapper_msg * \/ wrapper_comm }}
-
-type list_wrapper_comms = +{cons : wrapper_comm * list_comms,
-                            nil : 1}
+type list_comms = +{cons : comm * list_comms,
+                    nil : 1}
 
 type list_msgs = +{cons : msg * list_msgs,
                    nil : 1}
