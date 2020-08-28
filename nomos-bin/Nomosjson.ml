@@ -1,5 +1,3 @@
-module NC = Lib.JsonConfig
-module C = Core
+module JC = Lib.JsonConfig
 
-let () =
-  C.Command.run ~version:"1.0" ~build_info:"stable" NC.json_command;;
+let () = JC.main;;

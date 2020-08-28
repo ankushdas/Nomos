@@ -2,9 +2,9 @@ module TL = TopLevel
 module E = Exec
 module EM = ErrorMsg
 module F = NomosFlags
+
 module C = Core
-         
-module J = Yojson
+module J = Yojson.Basic
 
 (******************)
 (* JSON Functions *)
@@ -51,21 +51,15 @@ let submit state txn account_name =
       BFailure(m);;
 
 
-let rec concatenate strlist = match strlist with
-    [] -> ""
-  | [s] -> s
-  | s::ss -> s ^ " " ^ concatenate ss;;
+let main =
+  let stdin = C.In_channel.stdin in
+  let stdout = C.Out_channel.stdout in  
+  let json_input = J.from_channel ?fname:(Some "json-query") stdin in
+  (* let request = json_input |> J.Util.member "request" |> J.Util.to_string in *)
 
-let json_command =
-  C.Command.basic
-    ~summary:"Input a JSON string representing blockchain state"
-    C.Command.Let_syntax.(
-      let%map_open
-        json_string_list  = anon (sequence ("filename" %: string))
-      in
-      fun () ->
-        let concatenated_string = concatenate json_string_list in
-        print_string ("Hello " ^ concatenated_string ^ "\n"));;
+  let json_body = J.Util.member "body" json_input in
+  J.to_channel ?std:(Some true) stdout json_body
+
   
 
   (* need 
