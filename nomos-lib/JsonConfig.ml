@@ -10,15 +10,33 @@ module J = Yojson.Basic
 (* JSON Functions *)
 (******************)
 
-let create_account initial_state account_name balance =
-  let state = initial_state in
-  let state = TL.create_account account_name state in
-  let state = TL.deposit_gas account_name balance state in
-  state;;
+let blockchain_state_of_string str =
+  E.blockchain_state_of_sexp (C.Sexp.of_string str)
 
+let blockchain_state_to_string conf =
+  C.Sexp.to_string (E.sexp_of_blockchain_state conf)
+
+type output_state = BSuccess of E.blockchain_state | BFailure of string;;
+  
 let account_list state =
   let (_tx, _ch, gas_accs, _types, _config) = state in
-  gas_accs;;
+  let f (acc,balance) =
+    `Assoc [ ("account", `String acc)
+           ; ("balance", `Int balance)]
+  in
+  `List (List.map f (C.Map.to_alist gas_accs))
+
+let create_account initial_state account_name balance =
+  let state = TL.create_account account_name initial_state in
+  let state = TL.deposit_gas account_name balance state in
+  let str_state = blockchain_state_to_string state in
+  let body =
+  `Assoc [("state",`String str_state)
+         ;("accList", account_list state)]
+  in
+  `Assoc [("response",`String "create")
+         ;("body", body)]
+
 
 let contract_list state =
   let (_tx, _ch, _gas_accs, _types, config) = state in
@@ -35,7 +53,7 @@ let type_check txn =
     EM.LexError m | EM.ParseError m | EM.TypeError m | EM.PragmaError m | EM.RuntimeError m ->
       TFailure(m);;
 
-type output_state = BSuccess of E.blockchain_state | BFailure of string;;
+
 
 let submit state txn account_name =
   try
@@ -48,18 +66,34 @@ let submit state txn account_name =
       EM.LexError m | EM.ParseError m
     | EM.TypeError m | EM.PragmaError m | EM.RuntimeError m
     | EM.GasAcctError m | EM.FileError m ->
-      BFailure(m);;
+                       BFailure(m);;
 
-
+exception Json_error of string
+                      
 let main =
   let stdin = C.In_channel.stdin in
   let stdout = C.Out_channel.stdout in  
   let json_input = J.from_channel ?fname:(Some "json-query") stdin in
-  (* let request = json_input |> J.Util.member "request" |> J.Util.to_string in *)
-
+  let request = json_input |> J.Util.member "request" |> J.Util.to_string in
   let json_body = J.Util.member "body" json_input in
-  J.to_channel ?std:(Some true) stdout json_body
-
+  let initial_state =
+    let str_state = json_body |> J.Util.member "state" |> J.Util.to_string in
+    blockchain_state_of_string str_state
+  in
+  let json_response = 
+    match request with
+    | "create" ->
+       let account = json_body |> J.Util.member "account" |> J.Util.to_string in
+       let balance = json_body |> J.Util.member "balance" |> J.Util.to_int in
+       create_account initial_state account balance
+    | "typecheck" ->
+       raise (EM.LexError "")
+    | "submit" ->
+       raise (EM.LexError "")
+    | _ ->
+       raise (Json_error ("Unknown request: " ^ request))
+  in
+  J.to_channel ?std:(Some true) stdout json_response
   
 
   (* need 
