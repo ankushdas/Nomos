@@ -23,8 +23,8 @@ val save : string -> unit
 (* read an environment from a file *)
 val read : string -> raw_transaction
 
-(* read a transaction from a channel *)
-val read_txn :  Stdlib.in_channel -> raw_transaction
+(* read a transaction from a string *)
+val read_txn : string -> raw_transaction
 
 (* typecheck and eliminate stars *)
 val infer : raw_transaction -> transaction

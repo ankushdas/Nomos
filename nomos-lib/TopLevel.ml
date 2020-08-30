@@ -74,9 +74,9 @@ let read file =
   in
     RawTransaction (read_env file)
 
-let read_txn in_chan =
+let read_txn txn =
   let () = ereset () in
-  let lexbuf = Lexing.from_channel in_chan in
+  let lexbuf = Lexing.from_string txn in
   let () = init lexbuf "txn.nom" in
   let (_imports, env) = parse_with_error lexbuf in
   RawTransaction env;;
