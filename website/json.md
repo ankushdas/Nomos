@@ -33,7 +33,7 @@ CONTRACT_LIST = [ { channel : STRING
 { request : "create"
 , body : { state : STATE
          , account : STRING
-	 , balance : STRING
+	 , balance : INT
          }
 }
 

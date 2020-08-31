@@ -13,8 +13,6 @@ module E = Exec
 module Map = C.Map
 module EM = ErrorMsg
 
-module J = Yojson
-
 let error m = EM.error EM.Pragma None m;;
            
 (************************)
@@ -206,19 +204,3 @@ let nomos_command =
           let config = maybe_tc_and_run_txn tc_only file config in
           let () = maybe_save_config config config_out_file in
           ());;
-
-let rec concatenate strlist = match strlist with
-    [] -> ""
-  | [s] -> s
-  | s::ss -> s ^ " " ^ concatenate ss;;
-
-let json_command =
-  C.Command.basic
-    ~summary:"Input a JSON string representing blockchain state"
-    C.Command.Let_syntax.(
-      let%map_open
-        json_string_list  = anon (sequence ("filename" %: string))
-      in
-      fun () ->
-        let concatenated_string = concatenate json_string_list in
-        print_string ("Hello " ^ concatenated_string ^ "\n"));;
