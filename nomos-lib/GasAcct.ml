@@ -15,8 +15,7 @@ let create_account gas_accs sender =
         let () = if !F.verbosity >= 0 then print_string ("% account creation of " ^ sender ^ " successful!\n") in
         M.add_exn gas_accs ~key:sender ~data:0
     | Some _ ->
-        let () = if !F.verbosity >= 0 then print_string ("% warning: account of " ^ sender ^ " already exists!\n") in
-        gas_accs;;
+        let () = error ("% warning: account of " ^ sender ^ " already exists!\n");;
 
 let deposit gas_accs sender d =
   match M.find gas_accs sender with

@@ -7,6 +7,8 @@ module F = NomosFlags
 (* JSON Functions *)
 (******************)
 
+type output_state = BSuccess of E.blockchain_state | BFailure of string;;
+
 let create_account initial_state account_name balance =
   let state = initial_state in
   let state = TL.create_account account_name state in
@@ -31,8 +33,6 @@ let type_check txn =
   with
     EM.LexError m | EM.ParseError m | EM.TypeError m | EM.PragmaError m | EM.RuntimeError m ->
       TFailure(m);;
-
-type output_state = BSuccess of E.blockchain_state | BFailure of string;;
 
 let submit state txn account_name =
   try
