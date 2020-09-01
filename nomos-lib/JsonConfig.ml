@@ -10,22 +10,12 @@ module J = Yojson.Basic
 (* JSON Functions *)
 (******************)
 
-<<<<<<< HEAD
-type output_state = BSuccess of E.blockchain_state | BFailure of string;;
-
-let create_account initial_state account_name balance =
-  let state = initial_state in
-  let state = TL.create_account account_name state in
-  let state = TL.deposit_gas account_name balance state in
-  state;;
-=======
 let blockchain_state_of_string str =
   E.blockchain_state_of_sexp (C.Sexp.of_string str)
 
 let blockchain_state_to_string conf =
   C.Sexp.to_string (E.sexp_of_blockchain_state conf)
 
->>>>>>> 3f3b04729a28c8c0e94a73646a2bc4174214ebe8
 
 let account_list state =
   let (_tx, _ch, gas_accs, _types, _config) = state in
