@@ -1,9 +1,0 @@
-#test error
-
-type ping  = +{ping : pong}
-type pong  = &{pong : ping}
-
-prog p1 : (x : ping) |- (sink : 1) =
-  case x
-  ( ping => x.pong; x <- p1 <- sink
-  )
