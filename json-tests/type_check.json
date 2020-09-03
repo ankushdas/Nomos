@@ -1,0 +1,25 @@
+{
+  "request": "typecheck",
+  "body": {
+    "state": "(0 0 ((ankush 0)) () ((conf ()) (conts ()) (shared ()) (types ())))", 
+    "transaction": "import contract.nom
+
+proc transaction main1 : . |{*}- ($d : 1) =
+{
+  let n = 1000 ;
+  $c <- create_wallet <- n ;
+  $d <- $c
+}
+
+proc transaction create_wallet : (n : int) |{*}- ($d : 1) =
+{
+  $m <- money_proc <- n ;
+  #sw <- wallet_proc <- $m ;
+  print (\"created a wallet with %d coins on channel %c\n\", n, #sw);
+  deposit {100};
+  close $d
+}
+
+exec main1"
+  }
+}
