@@ -51,6 +51,7 @@ let report_error response msg details =
 
   
 let create_account initial_state account_name balance =
+  let () = F.verbosity := -1 in
   let state = TL.create_account account_name initial_state in
   let state = TL.deposit_gas account_name balance state in
   let str_state = blockchain_state_to_string state in
@@ -67,6 +68,7 @@ let create_account initial_state account_name balance =
 
 let type_check _state txn =
   try
+    let () = F.verbosity := -1 in
     let TL.RawTransaction _txn' = TL.read_txn txn in
     let body =
       `Assoc [("transaction",`String "XX: I need to pring txn' here")
