@@ -10,3 +10,11 @@ TODOS:
 - uninferred_txn () and inferred_txn (transaction)
 - Check that there is a single exec
 - Get rid of Nomos.MakeChannel
+
+- type_check : add pretty printed transaction
+- type_check : add check that there is 1 and only 1 exec
+- type_check : get the gas bound for that exec
+- create_account : error if account already exists
+- type_check : infer gas bound
+- submit : should receive a non-starred potential annotation program, check for it
+- all printing to file

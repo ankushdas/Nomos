@@ -83,10 +83,6 @@ let type_check _state txn =
     | EM.RuntimeError m ->
        report_error "typecheck" m ""
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 3f3b04729a28c8c0e94a73646a2bc4174214ebe8
 let submit state txn account_name =
   try
     let () = F.verbosity := -1 in
