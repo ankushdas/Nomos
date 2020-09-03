@@ -3,7 +3,7 @@
   "body": {
     "state": "(0 0 ((ankush 200)) () ((conf ()) (conts ()) (shared ()) (types ())))", 
     "account": "ankush",
-    "transaction": "type money =  <{*}| \&{value : int ^ |{*}> money,
+    "transaction": "type money =  <{*}| &{value : int ^ |{*}> money,
                       plus : money -o |{*}> money,
                       minus : int -> +{sufficient : money * |{*}> money,
                                        insufficient : |{*}> money},
@@ -92,10 +92,10 @@ proc contract wallet_proc : ($m : money) |{*}- (#sw : wallet) =
 }
 
 
-type wallet = /\ <{*}| &{add : money -o |{*}> \/ wallet,
-                         sub : int -> +{sufficient : money * |{*}> \/ wallet,
-                                        insufficient : |{*}> \/ wallet},
-                         val : int ^ |{*}> \/ wallet}
+type wallet = /\\ <{*}| &{add : money -o |{*}> \\/ wallet,
+                         sub : int -> +{sufficient : money * |{*}> \\/ wallet,
+                                        insufficient : |{*}> \\/ wallet},
+                         val : int ^ |{*}> \\/ wallet}
 
 
 proc transaction main1 : . |{*}- ($d : 1) =
