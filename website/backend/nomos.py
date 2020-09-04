@@ -24,7 +24,8 @@ def run_nomos(json_input):
         try:
                 nomos_output = subprocess.check_output (
 		                [nomos_bin],
-                                input=json_input )
+                                input=json_input,
+                                test=True)
         except subprocess.CalledProcessError as e:
                 nomos_output = e.output
 
