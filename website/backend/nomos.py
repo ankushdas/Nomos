@@ -38,6 +38,4 @@ def main(event, context):
         #run Nomos
         nomos_output = run_nomos(json_input)
 
-        return nomos_output
-
-
+        return (json.loads(nomos_output))
