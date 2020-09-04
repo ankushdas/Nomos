@@ -20,8 +20,7 @@ import {Controlled as CodeMirror} from 'react-codemirror2'
 import 'codemirror/theme/night.css';
 
 
-const monospaceFonts = "Monaco,Consolas,Lucida Console,Liberation Mono,Bitstream Vera Sans Mono,Courier New, monospace"
-
+/* const monospaceFonts = "Monaco,Consolas,Lucida Console,Liberation Mono,Bitstream Vera Sans Mono,Courier New, monospace"*/
 
 
 class Transaction extends React.Component {
