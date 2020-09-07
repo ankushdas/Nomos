@@ -3,9 +3,9 @@ This is the AWS Lambda deployment package for Nomos
 
 1) Create the contents of the package
 
-   - bin/nomos should be the updated Nomos binary:
+   - bin/nomosjson should be the updated Nomos Json binary:
 
-     cp ~/repositories/nomos/_build/default/nomos-bin/nomos.exe bin/nomos
+     cp ~/repositories/nomos/_build/default/nomos-bin/nomosjson.exe bin/nomosjson
 
    - nomos.py should be the latest AWS lambda function from the raml-website git repository:
 

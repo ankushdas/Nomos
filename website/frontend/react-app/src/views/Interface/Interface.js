@@ -23,7 +23,6 @@ import ListContracts from "./ListContracts.js"
 
 
 
-const testAccList = [{account : "Jan", balance : 1000000}, {account : "Ankush", balance : 10}]
 const testContList = [{channel : "C1", type : "T", code: "sss", gas : 1000000},
 		      {channel : "C2", type : "TT", code: "ddd", gas : 22}]
 
@@ -38,9 +37,10 @@ class Interface extends React.Component {
 	transactionCounter: 1,	
 	
 	transactionCode: "(*Write or select a transaction.*)",
-	ocamlState : "",                /* Ocaml representation of the blockchain state*/
+	/* Ocaml sexp representation of the blockchain state*/
+	ocamlState : "(0 0 () () ((conf ()) (conts ()) (shared ()) (types ())))",
 	contractList : testContList ,             /* Array of contracts */
-	accountList :  testAccList ,             /* Array of accounts */
+	accountList :  [] ,             /* Array of accounts */
 	transactionList :  [] ,         /* Array of past transactions */	
      };
     
@@ -131,7 +131,7 @@ class Interface extends React.Component {
       this.setState({loading:true});
       this.notify(Messages.serverContacted("Creating gas account ..."));
 
-      const response = await Server.requestSubmit(ocamlState,account,balance);
+      const response = await Server.createAccount(ocamlState,account,balance);
 
       if (response.status === "success") {
 	 const newState = {
