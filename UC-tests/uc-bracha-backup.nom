@@ -1,0 +1,709 @@
+type msg = +{SEND : int ^ 1,
+             ECHO : int ^ 1,
+             READY : int ^ 1}
+
+type comm = /\ &{ SEND : msg -o \/ comm,
+                  FETCH : +{ no : \/ comm,
+                             yes : msg * \/ comm },
+                  DELAY : int -> \/ comm,
+                  LEAK : list_msgs * \/ comm}
+
+type list_comms = +{cons : comm * list_comms,
+                    nil : 1}
+
+type list_msgs = +{cons : msg * list_msgs,
+                   nil : 1}
+
+proc asset mnil : . |- ($l : list_msgs) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc asset mcons : ($m : msg), ($tl : list_msgs) |- ($l : list_msgs) =
+{
+  $l.cons ;
+  send $l $m ;
+  $l <- $tl
+}
+
+proc asset mappend : ($m : msg), ($tl : list_msgs) |- ($l : list_msgs) =
+{
+  case $tl (
+    cons => $x <- recv $tl ;
+            $l.cons ;
+            send $l $x ;
+            $l <- mappend <- $m $tl
+  | nil => wait $tl ;
+           $l.cons ;
+           send $l $m ;
+           $l.nil ;
+           close $l
+  )
+}
+
+proc asset msg_append : ($l1 : list_msgs), ($l2 : list_msgs) |- ($l : list_msgs) =
+{
+  case $l1 (
+    cons => $x <- recv $l1 ;
+            $l.cons ;
+            send $l $x ;
+            $l <- msg_append <- $l1 $l2
+  | nil => wait $l1 ;
+           $l <- $l2
+  )
+}
+
+proc asset copy_msg : ($m : msg) |- ($l : msg * msg) =
+{
+  case $m (
+    SEND => v = recv $m ;
+            $m1 <- create_send_msg <- v ;
+            $m2 <- create_send_msg <- v ;
+            wait $m ;
+            send $l $m1 ;
+            $l <- $m2
+  | ECHO => v = recv $m ;
+            $m1 <- create_echo_msg <- v ;
+            $m2 <- create_echo_msg <- v ;
+            wait $m ;
+            send $l $m1 ;
+            $l <- $m2
+  | READY =>  v = recv $m ;
+              $m1 <- create_ready_msg <- v ;
+              $m2 <- create_ready_msg <- v ;
+              wait $m ;
+              send $l $m1 ;
+              $l <- $m2
+  )
+}
+
+proc contract communicator : (sid : int), (rid : int), ($l : list_msgs),
+  (D : int), (D_hat : int), ($leaks : list_msgs) |- (#dc : comm) =
+{
+  $ldc <- accept #dc ;
+  case $ldc (
+    SEND => $msg <- recv $ldc ;
+            (* print ("%d-%d comm acquired by %d: message received\n", sid, rid, sid); *)
+            #dc <- detach $ldc ;
+            $lmsg <- copy_msg <- $msg ;
+            $msg <- recv $lmsg ;
+            $lnew <- mappend <- $msg $l ;
+            $leaks_new <- mappend <- $lmsg $leaks ;
+            let D = 1 ;
+            #dc <- communicator <- sid rid $lnew D D_hat $leaks_new
+  
+  | FETCH => let D = if D = 0 then 0 else (D-1);
+             if D = 0
+             then
+                case $l (
+                  cons => $m <- recv $l ;
+                          $ldc.yes ;
+                          (* print ("%d-%d comm acquired by %d: message delivered\n", sid, rid, rid); *)
+                          send $ldc $m ;
+                          #dc <- detach $ldc ;
+                          #dc <- communicator <- sid rid $l D D_hat $leaks
+                 | nil => wait $l ;
+                          $ldc.no ;
+                          (* print ("%d-%d comm acquired by %d: no message\n", sid, rid, rid); *)
+                          $lnew <- mnil <- ;
+                          #dc <- detach $ldc ;
+                          #dc <- communicator <- sid rid $lnew D D_hat $leaks
+                )
+             else
+                $ldc.no ;
+                print ("%d-%d comm acquired by %d: value of D decreased to %d\n", sid, rid, rid, D);
+                #dc <- detach $ldc ;
+                #dc <- communicator <- sid rid $l D D_hat $leaks
+  
+  | DELAY => T = recv $ldc ;
+             let D = D + T ;
+             let D_hat = D_hat + T ;
+             #dc <- detach $ldc ;
+             #dc <- communicator <- sid rid $l D D_hat $leaks
+  
+  | LEAK => send $ldc $leaks ;
+            $leaks <- mnil <- ;
+            #dc <- detach $ldc ;
+            #dc <- communicator <- sid rid $l D D_hat $leaks
+  )
+}
+
+proc asset create_send_msg : (m : int) |- ($msg : msg) =
+{
+  $msg.SEND ;
+  send $msg m ;
+  close $msg
+}
+
+proc transaction dealer_init : (id : int), (m : int) |- ($d : recv_comms) =
+{
+  print ("created dealer with id %d and number %d\n", id, m);
+  $comms <- nil <- ;
+  $d <- dealer_recv <- id m $comms
+}
+
+proc transaction adversary_init : (id : int) |- ($d : adv_recv_comms) =
+{
+  print ("created adversary with id %d\n", id);
+  $comms <- nil <- ;
+  $d <- adversary_recv <- id $comms
+}
+
+type recv_comms = &{next : comm -o recv_comms,
+                    comms_done : action}
+
+type adv_recv_comms = &{next : comm -o adv_recv_comms,
+                        comms_done : adversary_action}
+
+proc transaction dealer_recv : (id : int), (m : int), ($comms : list_comms) |- ($d : recv_comms) =
+{
+  case $d (
+    next => #c <- recv $d ;
+            $comms_new <- cons <- $comms #c ;
+            $d <- dealer_recv <- id m $comms_new
+  | comms_done => $d <- dealer <- id m $comms
+  )
+}
+
+proc transaction adversary_recv : (id : int), ($comms : list_comms) |- ($d : adv_recv_comms) =
+{
+  case $d (
+    next => #c <- recv $d ;
+            $comms_new <- cons <- $comms #c ;
+            $d <- adversary_recv <- id $comms_new
+  | comms_done => $d <- adversary <- id $comms
+  )
+}
+
+type action = &{ACTIVATE : +{DONE : int ^ 1,
+                             NEXT : action}}
+
+type adversary_action = &{ACTIVATE : list_msgs * +{DONE : 1,
+                                                   NEXT : adversary_action}}
+
+proc transaction dealer : (id : int), (m : int), ($dcs : list_comms) |- ($d : action) =
+{
+  case $d (
+    ACTIVATE => $d <- dealer_send_msgs <- id m $dcs
+  )
+}
+
+proc transaction adversary : (id : int), ($dcs : list_comms) |- ($d : adversary_action) =
+{
+  case $d (
+    ACTIVATE => $l <- mnil <- ;
+                $d <- adversary_get_leaks <- id $dcs $l
+  )
+}
+
+proc transaction adversary_get_leaks : (id : int), ($dcs : list_comms),
+  ($l : list_msgs) |- ($d : list_msgs * +{DONE : 1, NEXT : adversary_action}) =
+{
+  case $dcs (
+    cons => #dc <- recv $dcs ;
+            $ldc <- acquire #dc ;
+            $ldc.LEAK ;
+            $dl <- recv $ldc ;
+            $ln <- msg_append <- $dl $l ;
+            #dc <- release $ldc ;
+            $d <- adversary_get_leaks <- id $dcs $ln
+  | nil => wait $dcs ;
+           send $d $l ;
+           $d.DONE ;
+           close $d
+  )
+}
+
+proc transaction dealer_send_msgs : (id : int), (m : int), ($dcs : list_comms) |- ($d : +{DONE : int ^ 1, NEXT : action}) =
+{
+  case $dcs (
+    cons => #dc <- recv $dcs ;
+            print ("dealer activated by ENV: sending message on %c\n", #dc);
+            $ldc <- acquire #dc ;
+            $ldc.SEND ;
+            $msg <- create_send_msg <- m ;
+            send $ldc $msg ;
+            #dc <- release $ldc ;
+            print ("dealer: sent number %d on %c\n", m, #dc);
+            $d <- dealer_send_msgs <- id m $dcs
+   | nil => wait $dcs ;
+            $d.DONE ;
+            send $d m ;
+            close $d
+  )
+}
+
+proc transaction cons : ($tl : list_comms), (#d : comm) |- ($l : list_comms) =
+{
+  $l.cons ;
+  send $l #d ;
+  $l <- $tl
+}
+
+proc transaction nil : . |- ($l : list_comms) =
+{
+  $l.nil ;
+  close $l
+}
+
+type recv_dealer_comm = comm -o recv_party_comms
+
+type recv_party_comms = &{nextsend : comm -o recv_party_comms,
+                          nextrecv : comm -o recv_party_comms,
+                          getid : int ^ recv_party_comms,
+                          comms_done : action}
+
+proc transaction party_init : (id : int), (echoT : int), (readyT : int), (deliverT : int) |- ($p : recv_dealer_comm) =
+{
+  print ("created party with id %d\n", id);
+  #dc <- recv $p ;
+  $send_comms <- nil <- ;
+  $recv_comms <- nil <- ;
+  $p <- party_recv_comms <- id echoT readyT deliverT #dc $send_comms $recv_comms
+}
+
+proc asset process_send_msg : ($msg : msg) |- ($mval : int ^ 1) =
+{
+  case $msg (
+    SEND => m = recv $msg ;
+            send $mval m ;
+            $mval <- $msg
+  | ECHO => print ("ECHO message received instead of SEND\n") ;
+            abort
+  | READY => print ("READY message received instead of SEND\n") ;
+             abort
+  )
+}
+
+proc transaction throw : ($l : list_comms) |- ($c : 1) =
+{
+  case $l (
+    cons => #sd <- recv $l ;
+            $c <- throw <- $l
+  | nil => $c <- $l
+  )
+}
+
+proc transaction party_recv_comms : (id : int), (echoT : int), (readyT : int), (deliverT : int),
+  (#dc : comm), ($send_comms : list_comms), ($recv_comms : list_comms) |- ($p : recv_party_comms) =
+{
+  case $p (
+    nextsend => #sc <- recv $p ;
+                (* print ("received %c sender comm on party %d\n", #sc, id); *)
+                $send_comms_new <- cons <- $send_comms #sc ;
+                $p <- party_recv_comms <- id echoT readyT deliverT #dc $send_comms_new $recv_comms
+  | nextrecv => #rc <- recv $p ;
+                (* print ("received %c receiver comm on party %d\n", #rc, id); *)
+                $recv_comms_new <- cons <- $recv_comms #rc ;
+                $p <- party_recv_comms <- id echoT readyT deliverT #dc $send_comms $recv_comms_new
+  | getid => send $p id ;
+             $p <- party_recv_comms <- id echoT readyT deliverT #dc $send_comms $recv_comms
+  | comms_done => print ("party %d: received all comms\n", id);
+                  $p <- party_recv_from_dealer <- id echoT readyT deliverT #dc $send_comms $recv_comms
+  )
+}
+
+proc transaction party_recv_from_dealer : (id : int), (echoT : int), (readyT : int), (deliverT : int),
+  (#dc : comm), ($send_comms : list_comms), ($recv_comms : list_comms) |- ($p : action) =
+{
+  case $p (
+    ACTIVATE =>
+      $ldc <- acquire #dc ;
+      $ldc.FETCH ;
+      print ("party %d activated by ENV: fetching for message from dealer\n", id);
+      case $ldc (
+        no => #dc <- release $ldc ;
+              $p.NEXT ;
+              $p <- party_recv_from_dealer <- id echoT readyT deliverT #dc $send_comms $recv_comms
+       | yes => $msg <- recv $ldc ;
+                #dc <- release $ldc ;
+                $mval <- process_send_msg <- $msg ;
+                m = recv $mval ;
+                wait $mval ;
+                $sent_comms <- nil <- ;
+                $p <- party_send_echos <- id echoT readyT deliverT m #dc $send_comms $sent_comms $recv_comms
+      )
+  )
+}
+
+proc asset create_echo_msg : (m : int) |- ($msg : msg) =
+{
+  $msg.ECHO ;
+  send $msg m ;
+  close $msg
+}
+
+proc transaction party_send_echos : (id : int), (echoT : int), (readyT : int), (deliverT : int), (m : int), (#dc : comm),
+  ($unsent_comms : list_comms), ($sent_comms : list_comms), ($recv_comms : list_comms) |- ($p : +{ DONE : int ^ 1, NEXT : action}) =
+{
+  case $unsent_comms (
+    cons => #sd <- recv $unsent_comms ;
+            $ld <- acquire #sd ;
+            $ld.SEND ;
+            $msg <- create_echo_msg <- m ;
+            send $ld $msg ;
+            #sd <- release $ld ;
+            print ("party %d activated by ENV: sending ECHO message on %c\n", id, #sd);
+            $new_sent_comms <- cons <- $sent_comms #sd ;
+            $p <- party_send_echos <- id echoT readyT deliverT m #dc $unsent_comms $new_sent_comms $recv_comms
+  | nil => wait $unsent_comms ;
+          let num_echos = 0;
+          let num_readys = 0;
+          $checked_comms <- nil <- ;
+          $p.NEXT ;
+          $p <- party_recv_echos_readys <- id echoT readyT deliverT m num_echos num_readys #dc $sent_comms $recv_comms $checked_comms
+  )
+}
+
+proc transaction process_party_msg : (id : int), (m : int),
+  (num_echos : int), (num_readys : int), (#sd : comm), ($msg : msg) |- ($mval : int ^ int ^ 1) =
+{
+  case $msg (
+    SEND => print ("party %d: SEND message received on %c instead of ECHO or READY\n", id, #sd) ;
+            abort
+  | ECHO => recv_m = recv $msg ;
+            if m <> recv_m
+            then
+              print ("party %d: ECHO message received on %c with number %d, expected %d\n", id, #sd, recv_m, m);
+              abort
+            else
+              print ("party %d activated by ENV: ECHO message received on %c with number %d\n", id, #sd, recv_m);
+              let num_echos_new = num_echos + 1 ;
+              let num_readys_new = num_readys ;
+              send $mval num_echos_new ;
+              send $mval num_readys_new ;
+              wait $msg ;
+              close $mval
+   | READY => recv_m = recv $msg ;
+              if m <> recv_m
+              then
+                print ("party %d: READY message received on %c with number %d, expected %d\n", id, #sd, recv_m, m);
+                abort
+              else
+                print ("party %d activated by ENV: READY message received on %c with number %d\n", id, #sd, recv_m);
+                let num_echos_new = num_echos ;
+                let num_readys_new = num_readys + 1 ;
+                send $mval num_echos_new ;
+                send $mval num_readys_new ;
+                wait $msg ;
+                close $mval
+  )
+}
+
+proc transaction party_recv_echos_readys : (id : int), (echoT : int), (readyT : int), (deliverT : int),
+  (m : int), (num_echos : int), (num_readys : int),
+  (#dc : comm), ($send_comms : list_comms),
+  ($unchecked_comms : list_comms), ($checked_comms : list_comms) |- ($p : action) =
+{
+  case $p (
+    ACTIVATE =>
+      case $unchecked_comms (
+        cons => #sd <- recv $unchecked_comms ;
+                $ld <- acquire #sd ;
+                $ld.FETCH ;
+                case $ld (
+                  no => #sd <- release $ld ;
+                        $new_checked_comms <- cons <- $checked_comms #sd ;
+                        $p.NEXT ;
+                        $p <- party_recv_echos_readys <- id echoT readyT deliverT m num_echos num_readys #dc $send_comms $unchecked_comms $new_checked_comms
+                | yes => $msg <- recv $ld ;
+                        #sd <- release $ld ;
+                        $mval <- process_party_msg <- id m num_echos num_readys #sd $msg ;
+                        num_echos_new = recv $mval ;
+                        num_readys_new = recv $mval ;
+                        wait $mval ;
+                        $new_checked_comms <- cons <- $checked_comms #sd ;
+                        $p.NEXT ;
+                        $p <- party_recv_echos_readys <- id echoT readyT deliverT m num_echos_new num_readys_new #dc $send_comms $unchecked_comms $new_checked_comms
+                )
+       | nil => wait $unchecked_comms ;
+                if num_readys >= deliverT
+                then
+                  $dums <- throw <- $send_comms ;
+                  $dumc <- throw <- $checked_comms ;
+                  wait $dums ;
+                  wait $dumc ;
+                  print ("party %d activated by ENV: received %d READY messages, now outputting %d and terminating\n", id, num_readys, m);
+                  $p.DONE ;
+                  send $p m ;
+                  close $p
+                else
+                  if num_echos >= echoT || num_readys >= readyT
+                  then
+                    $sent_comms <- nil <- ;
+                    print ("party %d activated by ENV: received %d ECHO and %d READY messages, now sending READY messages\n", id, num_echos, num_readys);
+                    $p <- party_send_readys <- id echoT readyT deliverT m num_echos num_readys #dc $send_comms $sent_comms $checked_comms
+                  else
+                    $new_checked_comms <- nil <- ;
+                    $p.NEXT ;
+                    $p <- party_recv_echos_readys <- id echoT readyT deliverT m num_echos num_readys #dc $send_comms $checked_comms $new_checked_comms
+      )
+  )
+}
+
+proc asset create_ready_msg : (m : int) |- ($msg : msg) =
+{
+  $msg.READY ;
+  send $msg m ;
+  close $msg
+}
+
+proc transaction party_send_readys : (id : int), (echoT : int), (readyT : int), (deliverT : int), (m : int),
+  (num_echos : int), (num_readys : int), (#dc : comm),
+  ($unsent_comms : list_comms), ($sent_comms : list_comms), ($recv_comms : list_comms) |- ($p : +{ DONE : int ^ 1, NEXT : action}) =
+{
+  case $unsent_comms (
+    cons => #sd <- recv $unsent_comms ;
+            $ld <- acquire #sd ;
+            $ld.SEND ;
+            $msg <- create_ready_msg <- m ;
+            send $ld $msg ;
+            #sd <- release $ld ;
+            print ("party %d activated by ENV: sending READY message on %c\n", id, #sd);
+            $new_sent_comms <- cons <- $sent_comms #sd ;
+            $p <- party_send_readys <- id echoT readyT deliverT m num_echos num_readys #dc $unsent_comms $new_sent_comms $recv_comms
+    | nil => wait $unsent_comms ;
+            $checked_comms <- nil <- ;
+            $p.NEXT ;
+            $p <- party_recv_echos_readys <- id echoT readyT deliverT m num_echos num_readys #dc $sent_comms $recv_comms $checked_comms
+  )
+}
+
+type dealer_adversary_parties = action * adv_recv_comms * list_parties
+
+type list_parties = +{cons : recv_party_comms * list_parties,
+                      nil : 1}
+
+proc transaction create_parties : (N : int), (echoT : int), (readyT : int), (deliverT : int),
+  (dealer_id : int), ($d : recv_comms), ($a : adv_recv_comms) |- ($ps : dealer_adversary_parties) =
+{
+  if N = 0
+  then
+    print ("all parties created\n");
+    $d.comms_done ;
+    send $ps $d ;
+    send $ps $a ;
+    $ps.nil ;
+    close $ps
+  else
+    $nomsgs <- mnil <- ;
+    $nolmsgs <- mnil <- ;
+    let D = 1 ;
+    let D_hat = 1 ;
+    #dcp <- communicator <- dealer_id N $nomsgs D D_hat $nolmsgs ;
+    $d.next ;
+    send $d #dcp ;
+    $a.next ;
+    send $a #dcp ;
+    let M = N-1;
+    $ps_tl <- create_parties <- M echoT readyT deliverT dealer_id $d $a ;
+    $p <- party_init <- N echoT readyT deliverT ;
+    send $p #dcp ;
+    print ("created %d-%d comm: %c\n", dealer_id, N, #dcp);
+    $d <- recv $ps_tl ;
+    $a <- recv $ps_tl ;
+    send $ps $d ;
+    send $ps $a ;
+    $ps.cons ;
+    send $ps $p ;
+    $ps <- $ps_tl
+}
+
+proc transaction pcons : ($tl : list_parties), ($p : recv_party_comms) |- ($l : list_parties) =
+{
+  $l.cons ;
+  send $l $p ;
+  $l <- $tl
+}
+
+proc transaction pnil : . |- ($l : list_parties) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc transaction pappend : ($l1 : list_parties), ($l2 : list_parties) |- ($l : list_parties) =
+{
+  case $l1 (
+    cons => $p <- recv $l1 ;
+            $l.cons ;
+            send $l $p ;
+            $l <- pappend <- $l1 $l2
+  | nil => wait $l1 ;
+           $l <- $l2
+  )
+}
+
+proc transaction get_party : ($ps : list_parties), (I : int), ($tl : list_parties) |- ($ips : recv_party_comms * list_parties) =
+{
+  case $ps (
+    cons => $p <- recv $ps ;
+            $p.getid ;
+            id = recv $p ;
+            if I = id
+            then
+              send $ips $p ;
+              $ips <- pappend <- $ps $tl
+            else
+              $newtl <- pcons <- $tl $p ;
+              $ips <- get_party <- $ps I $newtl
+  | nil => print ("could not find party with id: %d\n", I);
+           abort
+  )
+}
+
+proc transaction create_p2p_communicator : (I : int), (J : int),
+  ($ps : list_parties), ($a : adv_recv_comms) |- ($pso : adv_recv_comms * list_parties) =
+{
+  $nomsgs <- mnil <- ;
+  $nolmsgs <- mnil <- ;
+  let D = 1 ;
+  let D_hat = 1 ;
+  #pcp <- communicator <- I J $nomsgs D D_hat $nolmsgs ;
+  print ("created %d-%d comm: %c\n", I, J, #pcp);
+  $nilI <- pnil <- ;
+  $ips <- get_party <- $ps I $nilI ;
+  $i <- recv $ips ;
+  $nilJ <- pnil <- ;
+  $jps <- get_party <- $ips J $nilJ ;
+  $j <- recv $jps ;
+  $i.nextsend ;
+  send $i #pcp ;
+  (* print ("sent %c comm to sender party %d\n", #pcp, I); *)
+  $j.nextrecv ;
+  send $j #pcp ;
+  (* print ("sent %c comm to receiver party %d\n", #pcp, J); *)
+  $onlyjps <- pcons <- $jps $j ;
+  $bothijps <- pcons <- $onlyjps $i ;
+  $a.next ;
+  send $a #pcp ;
+  send $pso $a ;
+  $pso <- $bothijps
+}
+
+proc transaction create_all_communicators : (I : int), (J : int), (N : int), ($ps_in : list_parties), ($a : adv_recv_comms) |- ($ps_out : adversary_action * list_parties) =
+{
+  if I = N+1
+  then
+    print ("all p2p comms created\n");
+    $a.comms_done ;
+    send $ps_out $a ;
+    $ps_out <- $ps_in
+  else
+    if J = N+1
+    then
+      let In = I+1;
+      let Jn = 1;
+      $ps_out <- create_all_communicators <- In Jn N $ps_in $a
+    else
+      let In = I;
+      let Jn = J+1;
+      if I = J
+      then
+        $ps_out <- create_all_communicators <- In Jn N $ps_in $a
+      else
+        $ps <- create_p2p_communicator <- I J $ps_in $a ;
+        $a <- recv $ps ;
+        $ps_out <- create_all_communicators <- In Jn N $ps $a
+}
+
+type list_actions = +{cons : action * list_actions,
+                      nil : 1}
+
+proc transaction acons : ($p : action), ($tl : list_actions) |- ($l : list_actions) =
+{
+  case $tl (
+    cons => $e <- recv $tl ;
+            $l.cons ;
+            send $l $e ;
+            $l <- acons <- $p $tl
+   | nil => wait $tl ;
+            $l.cons ;
+            send $l $p ;
+            $l.nil ;
+            close $l
+  )
+}
+
+proc transaction anil : . |- ($l : list_actions) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc transaction send_done_msgs : ($ps : list_parties), ($d : action), ($a : adversary_action) |-
+  ($as : adversary_action * list_actions) =
+{
+  case $ps (
+    cons => $p <- recv $ps ;
+            $astl <- send_done_msgs <- $ps $d $a ;
+            $p.comms_done ;
+            $as.cons ;
+            send $as $p ;
+            $as <- $astl
+  | nil => wait $ps ;
+           $as.cons ;
+           send $as $d ;
+           $as.cons ;
+           send $as $a ;
+           $as.nil ;
+           close $as
+  )
+}
+
+proc transaction activate_dealer_and_parties : ($activated : list_actions), ($unactivated : list_actions) |- ($dn : 1) =
+{
+  case $unactivated (
+    cons => $a <- recv $unactivated ;
+            $a.ACTIVATE ;
+            case $a (
+              DONE => m = recv $a ;
+                      wait $a ;
+                      $dn <- activate_dealer_and_parties <- $activated $unactivated
+            | NEXT => $activated_new <- acons <- $a $activated ;
+                      $dn <- activate_dealer_and_parties <- $activated_new $unactivated
+            )
+  | nil => wait $unactivated ;
+           $dn <- end_or_recurse <- $activated
+  )
+}
+
+proc transaction end_or_recurse : ($activated : list_actions) |- ($dn : 1) =
+{
+  case $activated (
+    cons => $a <- recv $activated ;
+            $activated_new <- anil <- ;
+            $unactivated_new <- acons <- $a $activated ;
+            $dn <- activate_dealer_and_parties <- $activated_new $unactivated_new
+  | nil => wait $activated ;
+           close $dn
+  )
+}
+
+proc transaction environment : . |- ($mn : 1) =
+{
+  let N = 5 ;
+  let echoT = 4 ;
+  let readyT = 4 ;
+  let deliverT = 4 ;
+  let m = 1729 ;
+  let dealer_id = 0;
+  let adversary_id = 6 ;
+  $d <- dealer_init <- dealer_id m ;
+  $a <- adversary_init <- adversary_id ;
+  $ps <- create_parties <- N echoT readyT deliverT dealer_id $d $a ;
+  $d <- recv $ps ;
+  $a <- recv $ps ;
+  let I = 1;
+  let J = 1;
+  $ps_out <- create_all_communicators <- I J N $ps $a ;
+  $a <- recv $ps_out ;
+  $dps <- send_done_msgs <- $ps_out $d $a ;
+  $activated <- anil <- ;
+  $dn <- activate_dealer_and_parties <- $activated $dps ;
+  wait $dn ;
+  close $mn
+}
+
+exec environment
