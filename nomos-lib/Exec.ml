@@ -328,15 +328,10 @@ let remove_cont c config =
 let get_cont c config =
   match M.find config.conts c with
       None -> raise ExecImpossible
-    | Some c' -> c'
+    | Some c' -> c';;
 
 let add_chan_tp c t config =
-  { config with types = M.add_exn config.types ~key:c ~data:t }
-
-let get_pot env f =
-  match A.lookup_expdec env f with
-      None -> raise UndefinedProcess
-    | Some(_ctx,pot,_zc,_m) -> pot;;
+  { config with types = M.add_exn config.types ~key:c ~data:t };;
 
 let eq_name (_s1,c1,_m1) (_s2,c2,_m2) = c1 = c2;;
 
@@ -450,7 +445,7 @@ let spawn env ch config =
       Proc(func,d,in_use,t,(w,pot),A.Spawn(x,f,xs,q)) ->
         let m = chan_mode env f in
         let c' = cfresh m in
-        let pot' = try_evaluate (get_pot env f) in
+        let pot' = try_evaluate (A.get_pot env f) in
         if pot < pot'
         then raise InsufficientPotential
         else
@@ -490,7 +485,7 @@ let expand env ch config =
   match s with
       Proc(_func,c,in_use,t,(w,pot),A.ExpName(x,f,xs)) ->
         let p = expd_def env x f xs in
-        let pot' = try_evaluate (get_pot env f) in
+        let pot' = try_evaluate (A.get_pot env f) in
         if pot <> pot'
         then raise PotentialMismatch
         else
@@ -1370,7 +1365,7 @@ let exec env full_config (f, args) =
   let () = chan_num := ch in
   let m = chan_mode env f in
   let c = cfresh m in
-  let pot = try_evaluate (get_pot env f) in
+  let pot = try_evaluate (A.get_pot env f) in
   let (res, deducted_gas_accs) = G.deduct gas_accs !txnSender pot in
   let () = txnGas := 0 in
   match res with

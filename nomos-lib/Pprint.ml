@@ -479,3 +479,7 @@ let pp_decl env dcl = match dcl with
     ^ pp_chan_tp (x,a) ^ " = \n" ^
     (pp_fexp_indent env 2 p.A.func_structure)
   | A.Exec(f) -> "exec " ^ f;;
+
+let pp_progh env decls = List.fold_left (fun s (d, _ext) -> s ^ "\n" ^ pp_decl env d) "" decls;;
+
+let pp_prog env = pp_progh env env;;

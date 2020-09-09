@@ -2,6 +2,10 @@ module TL = TopLevel
 module E = Exec
 module EM = ErrorMsg
 module F = NomosFlags
+module PP = Pprint
+module EL = Elab
+module A = Ast
+module R = Arith
 
 module C = Core
 module J = Yojson.Basic
@@ -31,8 +35,8 @@ let contract_list state =
   let (_tx, _ch, _gas_accs, _types, config) = state in
   let chantps = config.E.types in
   let f (channel,typ) =
-    `Assoc [ ("channel", `String (Pprint.pp_chan channel))
-           ; ("type", `String (Pprint.pp_tp_simple typ))
+    `Assoc [ ("channel", `String (PP.pp_chan channel))
+           ; ("type", `String (PP.pp_tp_simple typ))
            ; ("code", `String "")
            ; ("gas", `String "") ]
   in
@@ -72,15 +76,22 @@ let create_account initial_state account_name balance =
     | EM.GasAcctError m ->
        report_error "account creation" m "";;
 
-(*Jan: I need to print a transaction at XX below but don't know how.*)
+let eval pot = match pot with
+    A.Star -> raise (EM.TypeError "star potential found: impossible!")
+  | A.Arith p -> R.evaluate p;;
 
 let type_check _state txn =
   try
     let () = F.verbosity := -1 in
-    let TL.RawTransaction _txn' = TL.read_txn txn in
+    let raw_env = TL.read_txn txn in
+    let inferred_txn = TL.infer raw_env in
+    let TL.Transaction env = inferred_txn in
+    let f = EL.get_one_exec env 0 "" in
+    let pot = A.get_pot env f in
+    let gas = eval pot in
     let body =
-      `Assoc [("transaction",`String "XX: I need to pring txn' here")
-             ;("gasbound", `Int (-99))]
+      `Assoc [("transaction",`String (PP.pp_prog env))
+             ;("gasbound", `Int gas)]
     in
     `Assoc [("response",`String "typecheck")
            ;("status", `String "success")

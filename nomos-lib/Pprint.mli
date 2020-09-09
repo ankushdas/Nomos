@@ -18,3 +18,4 @@ val pp_fexp : 'a -> int -> 'b A.func_expr -> string
 val pp_exp_prefix : 'a A.st_expr -> string
 val pp_msg : 'a A.msg -> string
 val pp_decl : 'a -> A.decl -> string
+val pp_prog : (A.decl * 'a) list -> string

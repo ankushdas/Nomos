@@ -8,6 +8,8 @@ val check_redecl :
 val check_valid :
   (A.decl * 'a) list ->
   (A.decl * ((int * int) * (int * int) * string) option) list -> unit
+val get_one_exec :
+  (A.decl * 'a) list -> int -> string -> string
 val commit_channels :
   (A.decl * 'a) list -> (A.decl * 'b) list -> (A.decl * 'b) list
 val remove_stars : (A.decl * 'a) list -> (A.decl * 'a) list

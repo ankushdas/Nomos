@@ -165,3 +165,4 @@ val fsubst_ctx :
   'a arg list -> argument list -> 'a func_aug_expr -> 'a func_aug_expr
 val msubst : str * string * mode -> 'a * string * 'b -> 'c msg -> 'c msg
 val split_last : 'a list -> 'a list * 'a
+val get_pot : (decl * 'a) list -> expname -> potential

@@ -491,3 +491,8 @@ let split_last l =
     match revl with
         [] -> raise AstImpossible
       | e::es -> (List.rev es, e);;
+
+let get_pot env f =
+  match lookup_expdec env f with
+      None -> raise AstImpossible
+    | Some(_ctx,pot,_zc,_m) -> pot;;
