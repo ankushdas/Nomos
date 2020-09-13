@@ -35,13 +35,14 @@ class Transaction extends React.Component {
       
       this.handleTypeCheck = this.handleTypeCheck.bind(this);
       this.handleSubmit = this.handleSubmit.bind(this);
-      this.handleCancel = this.handleCancel.bind(this);            
+      this.handleCancel = this.handleCancel.bind(this);
+      this.handleAccountChange = this.handleAccountChange.bind(this);      
    }
 
    async handleTypeCheck(event){
       const res = await this.props.handleCheckTransaction();
       if (res.transaction != null) {
-	 this.setState({typedTransaction:res.transaction, gasBound : String(res.gasBound)});
+	 this.setState({typedTransaction:res.transaction, gasBound : String(res.bound)});
       };
    }
 
@@ -57,12 +58,18 @@ class Transaction extends React.Component {
 
    handleCancel(event){
       this.setState({typedTransaction:null, gasBound : ""});
+      this.props.handleCancel();
+   }
+
+   handleAccountChange(event){
+      this.setState({account: event.target.value});
    }
    
    render() {
       const transactionCode = this.props.transactionCode;
       const loading = this.props.loading;
-      const typeChecked = this.state.typedTransaction == null;
+      const account = this.state.account;
+      const typeChecked = this.state.typedTransaction != null;
       return (
       <Card>
 	 <CardHeader>
@@ -96,9 +103,9 @@ class Transaction extends React.Component {
                   <FormGroup>
                      <label>Account</label>
                      <Input
-                         defaultValue="Frank"
-                         placeholder=""
+                         value={account}
                          type="text"
+			 onChange={this.handleAccountChange}			 
 			 disabled={loading || !typeChecked}
                      />
                   </FormGroup>

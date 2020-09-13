@@ -19,7 +19,16 @@ const printRow = arg =>
 	    <ModalButton
 		buttonLabel = "Show"
                 modalTitle = {"Transaction #" + String(arg.number)}
-		modalBody = <pre>{arg.code}</pre>
+ 	        modalBody = <div>
+		              <p>
+	      		        <em>Account of Sender: </em>
+  			        {arg.account}
+			      </p>
+			      <p>
+ 			        <em>Transaction Code:</em>
+			      </p>
+	                      <pre>{arg.code}</pre>
+                           </div>
 	       />
 	 </td>
       </tr>

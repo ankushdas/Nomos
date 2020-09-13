@@ -22,11 +22,6 @@ import ListAccounts from "./ListAccounts.js"
 import ListContracts from "./ListContracts.js"
 
 
-
-const testContList = [{channel : "C1", type : "T", code: "sss", gas : 1000000},
-		      {channel : "C2", type : "TT", code: "ddd", gas : 22}]
-
-
 class Interface extends React.Component {
 
   constructor(props) {
@@ -35,17 +30,18 @@ class Interface extends React.Component {
      this.state = {
 	loading: false,
 	transactionCounter: 1,	
-	
 	transactionCode: "(*Write or select a transaction.*)",
+        savedTransactionCode: "",
 	/* Ocaml sexp representation of the blockchain state*/
 	ocamlState : "(0 0 () () ((conf ()) (conts ()) (shared ()) (types ())))",
-	contractList : testContList ,             /* Array of contracts */
+	contractList : [] ,             /* Array of contracts */
 	accountList :  [] ,             /* Array of accounts */
 	transactionList :  [] ,         /* Array of past transactions */	
      };
     
      this.handleCheckTransaction = this.handleCheckTransaction.bind(this);
      this.handleSubmitTransaction = this.handleSubmitTransaction.bind(this);
+     this.handleCancelSubmit = this.handleCancelSubmit.bind(this);     
      this.handleAddAccount = this.handleAddAccount.bind(this);     
      this.setTransactionText = this.setTransactionText.bind(this);
   }
@@ -78,6 +74,7 @@ class Interface extends React.Component {
 	const newState = {
 	   loading:false,
 	   transactionCode: response.body.transcode,
+           savedTransactionCode: transCode
 	}
 	const gasBound = response.body.gasbound;
 	const ocamlTxn = response.body.transaction;	
@@ -92,8 +89,13 @@ class Interface extends React.Component {
 	const errorMsg = response.error.msg;
 	this.setState({loading:false});
 	this.notify(Messages.error(errorHeading,errorMsg));
-	return -1
+	return {bound: -1, transaction: null};
      }
+  }
+
+  handleCancelSubmit() {
+     const savedTransCode = this.state.savedTransactionCode;
+     this.setState ({transactionCode: savedTransCode});
   }
 
   async handleSubmitTransaction(account,ocamlTxn) {
@@ -101,6 +103,7 @@ class Interface extends React.Component {
      const transList = this.state.transactionList;
      const transCode = this.state.transactionCode;
      const ocamlState = this.state.ocamlState;     
+     const savedTransCode = this.state.savedTransactionCode;     
 
      this.setState({loading:true});
      this.notify(Messages.serverContacted("Submitting transaction"));
@@ -110,11 +113,12 @@ class Interface extends React.Component {
      if (response.status === "success") {
 	const newState = {
 	   transactionCounter: transCounter+1,
-	   transactionList: [{number:transCounter, code:transCode},...transList],
+	   transactionList: [{number:transCounter, code:transCode, account:account},...transList],
 	   loading: false,
 	   ocamlState: response.body.state,
 	   contractList: response.body.contlist,
-	   accountList: response.body.acclist
+	   accountList: response.body.acclist,
+           transactionCode: savedTransCode
 	};
 
 	this.setState(newState);
@@ -123,7 +127,7 @@ class Interface extends React.Component {
      else {
 	const errorHeading = "Submissin failure.";
 	const errorMsg = response.error.msg;
-	this.setState({loading:false});
+	this.setState({loading:false, transactionCode:savedTransCode});
 	this.notify(Messages.error(errorHeading,errorMsg));
      }
   }
@@ -168,7 +172,8 @@ class Interface extends React.Component {
  		   transactionCode = {this.state.transactionCode}
  		   handleTextChange = {this.setTransactionText}
  		   handleCheckTransaction = {this.handleCheckTransaction}
- 		   handleSubmitTransaction = {this.handleSubmitTransaction}		    
+ 		   handleSubmitTransaction = {this.handleSubmitTransaction}
+                   handleCancel = {this.handleCancelSubmit}
   		   loading = {this.state.loading}
  	       />
              </Col>
