@@ -211,7 +211,11 @@ let check_declared_ctx env ext ctx =
   check_declared_list env ext ord;;
 
 let rec get_one_exec dcls cnt g = match dcls with
-    [] -> if cnt = 1 then g else raise (EM.TypeError "more than 1 exec in transaction")
+    [] ->
+      if cnt = 1
+      then g
+      else if cnt = 0 then raise (EM.TypeError "no execs in transaction")
+      else raise (EM.TypeError "more than 1 exec in transaction")
   | (A.Exec(f), _ext)::dcls' -> get_one_exec dcls' (cnt+1) f
   | (A.TpDef _, _ext)::dcls' | (A.ExpDecDef _, _ext)::dcls' -> get_one_exec dcls' cnt g;;
 
