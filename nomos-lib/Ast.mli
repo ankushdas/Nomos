@@ -108,19 +108,28 @@ and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list
 and 'a arg = STArg of chan | FArg of 'a func_expr
 type parsed_expr = ext func_aug_expr
+[@@deriving sexp]
+
 type typed_expr = func_tp func_aug_expr
 type argument = Functional of string * func_tp | STyped of chan * stype
+[@@deriving sexp]
 type chan_tp = chan * stype
+[@@deriving sexp]
+             
 type context = {
   shared : chan_tp list;
   linear : chan_tp list;
   ordered : argument list;
-}
+  }
+[@@deriving sexp]             
+             
 type decl =
     TpDef of tpname * stype
   | ExpDecDef of expname * mode * (context * potential * chan_tp) *
       parsed_expr
   | Exec of expname
+[@@deriving sexp]                 
+          
 type program = (decl * ext) list
 type file = string list * program
 type 'a value =
