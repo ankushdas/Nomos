@@ -20,9 +20,9 @@ async function requestTypeCheck (ocamlState,transactionCode) {
     return result
 }
 
-async function requestSubmit (ocamlState,transactionCode,account) {
+async function requestSubmit (ocamlState,ocamlTxn,account) {
     const body = { state : ocamlState,
-		   transaction : transactionCode,
+		   transaction : ocamlTxn,
 		   account : account
 		 };
     const msg = jsonMessage ({ request : "submit"

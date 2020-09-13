@@ -1,10 +1,10 @@
 module A = Ast
 module E = Exec
 
-type environment = (A.decl * A.ext) list
+type environment = (A.decl * A.ext) list [@@deriving sexp]
 
-type raw_transaction = RawTransaction of environment
-type transaction = Transaction of environment
+type raw_transaction = RawTransaction of environment [@@deriving sexp]
+type transaction = Transaction of environment [@@deriving sexp]
 
 (* flags like cost model, etc should be set by modifying the relevant globals *)
 
