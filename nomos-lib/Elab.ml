@@ -210,10 +210,10 @@ let check_declared_ctx env ext ctx =
   let {A.shared = _s ; A.linear = _l ; A.ordered = ord} = ctx in
   check_declared_list env ext ord;;
 
-let rec get_one_exec dcls cnt f = match dcls with
-    [] -> if cnt = 1 then f else raise (EM.TypeError "more than 1 exec in transaction")
+let rec get_one_exec dcls cnt g = match dcls with
+    [] -> if cnt = 1 then g else raise (EM.TypeError "more than 1 exec in transaction")
   | (A.Exec(f), _ext)::dcls' -> get_one_exec dcls' (cnt+1) f
-  | (A.TpDef _, _ext)::dcls' | (A.ExpDecDef _, _ext)::dcls' -> get_one_exec dcls' cnt f;;
+  | (A.TpDef _, _ext)::dcls' | (A.ExpDecDef _, _ext)::dcls' -> get_one_exec dcls' cnt g;;
 
 let rec check_valid env dcls = match dcls with
     [] -> ()
