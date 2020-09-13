@@ -87,9 +87,10 @@ class Interface extends React.Component {
 	return gasBound;
      }
      else {
-	const error = "Elaboration unsuccessful.\n" + response.error;
+	const errorHeading = "Elaboration unsuccessful.";
+	const errorMsg = response.error.msg;
 	this.setState({loading:false});
-	this.notify(Messages.error(error));
+	this.notify(Messages.error(errorHeading,errorMsg));
 	return -1
      }
   }
@@ -119,9 +120,10 @@ class Interface extends React.Component {
 	this.notify(Messages.success("Transaction #" + transCounter + " posted."));
      }
      else {
-	const error = "Submissin failure.\n" + response.error;
+	const errorHeading = "Submissin failure.";
+	const errorMsg = response.error.msg;
 	this.setState({loading:false});
-	this.notify(Messages.error(error));
+	this.notify(Messages.error(errorHeading,errorMsg));
      }
   }
 
@@ -144,9 +146,10 @@ class Interface extends React.Component {
 	 this.notify(Messages.success("Account " + account + " created."));
       }
       else {
-	 const error = "Failed to create account.\n" + response.error;
+	 const errorHeading = "Failed to create account.";
+	 const errorMsg =  response.error.msg;
 	 this.setState({loading:false});
-	 this.notify(Messages.error(error));
+	 this.notify(Messages.error(errorHeading,errorMsg));
       }
    }
    
