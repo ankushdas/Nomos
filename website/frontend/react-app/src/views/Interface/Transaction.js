@@ -28,7 +28,7 @@ class Transaction extends React.Component {
    constructor(props) {
       super(props);
       this.state = {
-	 typeChecked : false,
+	 typedTransaction : null,
 	 account : "Frank",
 	 gasBound : ""
       };
@@ -39,30 +39,30 @@ class Transaction extends React.Component {
    }
 
    async handleTypeCheck(event){
-      const gasBound = await this.props.handleCheckTransaction();
-      console.log(gasBound);
-      if (gasBound >= 0) {
-	 this.setState({typeChecked:true, gasBound : String(gasBound)});
+      const res = await this.props.handleCheckTransaction();
+      if (res.transaction != null) {
+	 this.setState({typedTransaction:res.transaction, gasBound : String(res.gasBound)});
       };
    }
 
    handleSubmit(event){
       const account = this.state.account;
-      this.props.handleSubmitTransaction(account);
+      const txn = this.state.typedTransaction;
+      this.props.handleSubmitTransaction(account,txn);
       this.setState({
-	 typeChecked:false,
-	 gasBound:""
+	 typedTransaction: null,
+	 gasBound: ""
       });
    }
 
    handleCancel(event){
-      this.setState({typeChecked:false, gasBound : ""});
+      this.setState({typedTransaction:null, gasBound : ""});
    }
    
    render() {
       const transactionCode = this.props.transactionCode;
       const loading = this.props.loading;
-      const typeChecked = this.state.typeChecked;
+      const typeChecked = this.state.typedTransaction == null;
       return (
       <Card>
 	 <CardHeader>

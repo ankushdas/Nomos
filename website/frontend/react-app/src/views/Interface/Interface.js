@@ -77,14 +77,15 @@ class Interface extends React.Component {
      if (response.status === "success") {
 	const newState = {
 	   loading:false,
-	   transactionCode: response.body.transaction,
+	   transactionCode: response.body.transcode,
 	}
 	const gasBound = response.body.gasbound;
+	const ocamlTxn = response.body.transaction;	
 	this.setState(newState);
 	this.notify(Messages.success(
 	   "Type checking and elaboration successful.\n \nReady to submit with gas bound " + String(gasBound) + ".")
 	);
-	return gasBound;
+	return {bound: gasBound, transaction: ocamlTxn};
      }
      else {
 	const errorHeading = "Elaboration unsuccessful.";
@@ -95,7 +96,7 @@ class Interface extends React.Component {
      }
   }
 
-  async handleSubmitTransaction(account) {
+  async handleSubmitTransaction(account,ocamlTxn) {
      const transCounter = this.state.transactionCounter;
      const transList = this.state.transactionList;
      const transCode = this.state.transactionCode;
@@ -104,7 +105,7 @@ class Interface extends React.Component {
      this.setState({loading:true});
      this.notify(Messages.serverContacted("Submitting transaction"));
 
-     const response = await Server.requestSubmit(ocamlState,transCode,account);
+     const response = await Server.requestSubmit(ocamlState,ocamlTxn,account);
 
      if (response.status === "success") {
 	const newState = {
