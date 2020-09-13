@@ -38,8 +38,9 @@ class Transaction extends React.Component {
       this.handleCancel = this.handleCancel.bind(this);            
    }
 
-   handleTypeCheck(event){
-      const gasBound = this.props.handleCheckTransaction();
+   async handleTypeCheck(event){
+      const gasBound = await this.props.handleCheckTransaction();
+      console.log(gasBound);
       if (gasBound >= 0) {
 	 this.setState({typeChecked:true, gasBound : String(gasBound)});
       };
