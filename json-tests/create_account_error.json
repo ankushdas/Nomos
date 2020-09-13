@@ -1,0 +1,8 @@
+{
+  "request": "create",
+  "body": {
+    "state": "(0 0 ((ankush 0)) () ((conf ()) (conts ()) (shared ()) (types ())))", 
+    "account": "ankush",
+    "balance": 440
+  }
+}
