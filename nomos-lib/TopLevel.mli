@@ -48,7 +48,7 @@ val read_and_exec : string -> unit
 val show_channels : unit -> unit
 
 (* used for the command line *)
-val run : transaction -> E.blockchain_state -> E.blockchain_state
+val run : transaction -> E.blockchain_state -> E.blockchain_state * int
 
 val load_config : string -> E.blockchain_state
 

@@ -111,7 +111,7 @@ let submit state txn account_name =
     let () = TL.set_sender account_name in
     let raw_env = TL.read_txn txn in
     let env = TL.infer raw_env in
-    let state = TL.run env state in
+    let (state, _leftover_gas) = TL.run env state in
     let str_state = blockchain_state_to_string state in
     let body =
       `Assoc [("state",`String str_state)

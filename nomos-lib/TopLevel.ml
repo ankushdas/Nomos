@@ -144,7 +144,8 @@ let run (Transaction env) config =
       | _dcl::dcls' -> run' config dcls'
       | [] -> config
   in
-    run' config env
+  let leftover = E.leftover_gas () in
+  (run' config env, leftover)
 
 (********************)
 (* Interactive Mode *)
@@ -160,7 +161,9 @@ let save path = save_config !gconfig path
 
 let set_sender sender = E.txnSender := sender
 
-let exec env = gconfig := run env !gconfig
+let exec env =
+  let (new_config, _leftover) = run env !gconfig in
+  gconfig := new_config;;
 
 let read_and_exec path = read path |> infer |> exec
 
