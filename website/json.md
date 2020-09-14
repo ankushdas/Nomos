@@ -99,6 +99,7 @@ CONTRACT_LIST = [ { channel : STRING
 , body : { state : STATE
          , contlist : CONTRACT_LIST
 	 , acclist : ACCOUNT_LIST
+	 , gascost : INT
          }
 }
 

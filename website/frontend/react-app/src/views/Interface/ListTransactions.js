@@ -21,11 +21,15 @@ const printRow = arg =>
                 modalTitle = {"Transaction #" + String(arg.number)}
  	        modalBody = <div>
 		              <p>
-	      		        <em>Account of Sender: </em>
+	      		        <em>Account of sender: </em>
   			        {arg.account}
 			      </p>
+		              <p>
+	      		        <em>Gas cost: </em>
+  			        {String(arg.gasCost)}
+			      </p>
 			      <p>
- 			        <em>Transaction Code:</em>
+ 			        <em>Transaction code:</em>
 			      </p>
 	                      <pre>{arg.code}</pre>
                            </div>

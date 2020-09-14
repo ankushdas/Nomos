@@ -115,12 +115,19 @@ let submit state txn account_name =
   try
     let () = F.verbosity := -1 in
     let () = TL.set_sender account_name in
-    let (state, _leftover_gas) = TL.run txn state in
+    let initial_gas =
+      let TL.Transaction env = txn in
+      let f = EL.get_one_exec env 0 "" in
+      let pot = A.get_pot env f in
+      eval pot
+    in
+    let (state, leftover_gas) = TL.run txn state in
     let str_state = blockchain_state_to_string state in
     let body =
       `Assoc [("state",`String str_state)
              ;("contlist", contract_list state)
-             ;("acclist", account_list state)]
+             ;("acclist", account_list state)
+             ;("gascost", `Int (initial_gas - leftover_gas))]
     in
     `Assoc [("response",`String "submit")
            ;("status", `String "success")

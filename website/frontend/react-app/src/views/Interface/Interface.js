@@ -111,9 +111,10 @@ class Interface extends React.Component {
      const response = await Server.requestSubmit(ocamlState,ocamlTxn,account);
 
      if (response.status === "success") {
+	const usedGas = response.body.gascost;
 	const newState = {
 	   transactionCounter: transCounter+1,
-	   transactionList: [{number:transCounter, code:transCode, account:account},...transList],
+	   transactionList: [{number:transCounter, code:transCode, account:account, gasCost:usedGas},...transList],
 	   loading: false,
 	   ocamlState: response.body.state,
 	   contractList: response.body.contlist,
