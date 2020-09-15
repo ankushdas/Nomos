@@ -22,11 +22,6 @@ import ListAccounts from "./ListAccounts.js"
 import ListContracts from "./ListContracts.js"
 
 
-
-const testContList = [{channel : "C1", type : "T", code: "sss", gas : 1000000},
-		      {channel : "C2", type : "TT", code: "ddd", gas : 22}]
-
-
 class Interface extends React.Component {
 
   constructor(props) {
@@ -35,17 +30,18 @@ class Interface extends React.Component {
      this.state = {
 	loading: false,
 	transactionCounter: 1,	
-	
 	transactionCode: "(*Write or select a transaction.*)",
+        savedTransactionCode: "",
 	/* Ocaml sexp representation of the blockchain state*/
 	ocamlState : "(0 0 () () ((conf ()) (conts ()) (shared ()) (types ())))",
-	contractList : testContList ,             /* Array of contracts */
+	contractList : [] ,             /* Array of contracts */
 	accountList :  [] ,             /* Array of accounts */
 	transactionList :  [] ,         /* Array of past transactions */	
      };
     
      this.handleCheckTransaction = this.handleCheckTransaction.bind(this);
      this.handleSubmitTransaction = this.handleSubmitTransaction.bind(this);
+     this.handleCancelSubmit = this.handleCancelSubmit.bind(this);     
      this.handleAddAccount = this.handleAddAccount.bind(this);     
      this.setTransactionText = this.setTransactionText.bind(this);
   }
@@ -77,51 +73,63 @@ class Interface extends React.Component {
      if (response.status === "success") {
 	const newState = {
 	   loading:false,
-	   transactionCode: response.body.transaction,
+	   transactionCode: response.body.transcode,
+           savedTransactionCode: transCode
 	}
 	const gasBound = response.body.gasbound;
+	const ocamlTxn = response.body.transaction;	
 	this.setState(newState);
 	this.notify(Messages.success(
 	   "Type checking and elaboration successful.\n \nReady to submit with gas bound " + String(gasBound) + ".")
 	);
-	return gasBound;
+	return {bound: gasBound, transaction: ocamlTxn};
      }
      else {
-	const error = "Elaboration unsuccessful.\n" + response.error;
+	const errorHeading = "Elaboration unsuccessful.";
+	const errorMsg = response.error.msg;
 	this.setState({loading:false});
-	this.notify(Messages.error(error));
-	return -1
+	this.notify(Messages.error(errorHeading,errorMsg));
+	return {bound: -1, transaction: null};
      }
   }
 
-  async handleSubmitTransaction(account) {
+  handleCancelSubmit() {
+     const savedTransCode = this.state.savedTransactionCode;
+     this.setState ({transactionCode: savedTransCode});
+  }
+
+  async handleSubmitTransaction(account,ocamlTxn) {
      const transCounter = this.state.transactionCounter;
      const transList = this.state.transactionList;
      const transCode = this.state.transactionCode;
      const ocamlState = this.state.ocamlState;     
+     const savedTransCode = this.state.savedTransactionCode;     
 
      this.setState({loading:true});
      this.notify(Messages.serverContacted("Submitting transaction"));
 
-     const response = await Server.requestSubmit(ocamlState,transCode,account);
+     const response = await Server.requestSubmit(ocamlState,ocamlTxn,account);
 
      if (response.status === "success") {
+	const usedGas = response.body.gascost;
 	const newState = {
 	   transactionCounter: transCounter+1,
-	   transactionList: [{number:transCounter, code:transCode},...transList],
+	   transactionList: [{number:transCounter, code:transCode, account:account, gasCost:usedGas},...transList],
 	   loading: false,
 	   ocamlState: response.body.state,
 	   contractList: response.body.contlist,
-	   accountList: response.body.acclist
+	   accountList: response.body.acclist,
+           transactionCode: savedTransCode
 	};
 
 	this.setState(newState);
 	this.notify(Messages.success("Transaction #" + transCounter + " posted."));
      }
      else {
-	const error = "Submissin failure.\n" + response.error;
-	this.setState({loading:false});
-	this.notify(Messages.error(error));
+	const errorHeading = "Submissin failure.";
+	const errorMsg = response.error.msg;
+	this.setState({loading:false, transactionCode:savedTransCode});
+	this.notify(Messages.error(errorHeading,errorMsg));
      }
   }
 
@@ -144,9 +152,10 @@ class Interface extends React.Component {
 	 this.notify(Messages.success("Account " + account + " created."));
       }
       else {
-	 const error = "Failed to create account.\n" + response.error;
+	 const errorHeading = "Failed to create account.";
+	 const errorMsg =  response.error.msg;
 	 this.setState({loading:false});
-	 this.notify(Messages.error(error));
+	 this.notify(Messages.error(errorHeading,errorMsg));
       }
    }
    
@@ -164,7 +173,8 @@ class Interface extends React.Component {
  		   transactionCode = {this.state.transactionCode}
  		   handleTextChange = {this.setTransactionText}
  		   handleCheckTransaction = {this.handleCheckTransaction}
- 		   handleSubmitTransaction = {this.handleSubmitTransaction}		    
+ 		   handleSubmitTransaction = {this.handleSubmitTransaction}
+                   handleCancel = {this.handleCancelSubmit}
   		   loading = {this.state.loading}
  	       />
              </Col>

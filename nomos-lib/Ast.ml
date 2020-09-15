@@ -189,19 +189,25 @@ and 'a arg =
 
 
 type parsed_expr = ext func_aug_expr
+[@@deriving sexp]
+
 type typed_expr = func_tp func_aug_expr
 
 type argument =
   | Functional of string * func_tp
   | STyped of chan * stype
+[@@deriving sexp]            
 
 type chan_tp = chan * stype
+[@@deriving sexp]
+             
 type context =
   {
     shared: chan_tp list;
     linear: chan_tp list;
     ordered: argument list
   }
+[@@deriving sexp]  
 
 type decl =
   | TpDef of tpname * stype                   (* type a = A *)
@@ -209,6 +215,8 @@ type decl =
     (context * potential * chan_tp) *         (* proc 'mode' f : Delta |{p}- c : C = expression *)
     parsed_expr
   | Exec of expname                           (* exec f *)
+[@@deriving sexp]
+          
 
 type program = (decl * ext) list
 

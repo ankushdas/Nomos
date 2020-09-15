@@ -28,40 +28,48 @@ class Transaction extends React.Component {
    constructor(props) {
       super(props);
       this.state = {
-	 typeChecked : false,
+	 typedTransaction : null,
 	 account : "Frank",
 	 gasBound : ""
       };
       
       this.handleTypeCheck = this.handleTypeCheck.bind(this);
       this.handleSubmit = this.handleSubmit.bind(this);
-      this.handleCancel = this.handleCancel.bind(this);            
+      this.handleCancel = this.handleCancel.bind(this);
+      this.handleAccountChange = this.handleAccountChange.bind(this);      
    }
 
-   handleTypeCheck(event){
-      const gasBound = this.props.handleCheckTransaction();
-      if (gasBound >= 0) {
-	 this.setState({typeChecked:true, gasBound : String(gasBound)});
+   async handleTypeCheck(event){
+      const res = await this.props.handleCheckTransaction();
+      if (res.transaction != null) {
+	 this.setState({typedTransaction:res.transaction, gasBound : String(res.bound)});
       };
    }
 
    handleSubmit(event){
       const account = this.state.account;
-      this.props.handleSubmitTransaction(account);
+      const txn = this.state.typedTransaction;
+      this.props.handleSubmitTransaction(account,txn);
       this.setState({
-	 typeChecked:false,
-	 gasBound:""
+	 typedTransaction: null,
+	 gasBound: ""
       });
    }
 
    handleCancel(event){
-      this.setState({typeChecked:false, gasBound : ""});
+      this.setState({typedTransaction:null, gasBound : ""});
+      this.props.handleCancel();
+   }
+
+   handleAccountChange(event){
+      this.setState({account: event.target.value});
    }
    
    render() {
       const transactionCode = this.props.transactionCode;
       const loading = this.props.loading;
-      const typeChecked = this.state.typeChecked;
+      const account = this.state.account;
+      const typeChecked = this.state.typedTransaction != null;
       return (
       <Card>
 	 <CardHeader>
@@ -95,9 +103,9 @@ class Transaction extends React.Component {
                   <FormGroup>
                      <label>Account</label>
                      <Input
-                         defaultValue="Frank"
-                         placeholder=""
+                         value={account}
                          type="text"
+			 onChange={this.handleAccountChange}			 
 			 disabled={loading || !typeChecked}
                      />
                   </FormGroup>

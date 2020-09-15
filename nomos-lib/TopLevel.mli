@@ -1,10 +1,10 @@
 module A = Ast
 module E = Exec
 
-type environment = (A.decl * A.ext) list
+type environment = (A.decl * A.ext) list [@@deriving sexp]
 
-type raw_transaction = RawTransaction of environment
-type transaction = Transaction of environment
+type raw_transaction = RawTransaction of environment [@@deriving sexp]
+type transaction = Transaction of environment [@@deriving sexp]
 
 (* flags like cost model, etc should be set by modifying the relevant globals *)
 
@@ -48,7 +48,7 @@ val read_and_exec : string -> unit
 val show_channels : unit -> unit
 
 (* used for the command line *)
-val run : transaction -> E.blockchain_state -> E.blockchain_state
+val run : transaction -> E.blockchain_state -> E.blockchain_state * int
 
 val load_config : string -> E.blockchain_state
 

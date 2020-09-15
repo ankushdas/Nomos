@@ -1324,6 +1324,8 @@ type type_map = A.stype M.M(C.String).t [@@deriving sexp]
 type blockchain_state = int * int * G.gas_accounts * type_map * configuration
 [@@deriving sexp]
 
+let leftover_gas () = !txnGas;;
+
 let empty_blockchain_state =
   (0,
    0,

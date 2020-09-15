@@ -14,11 +14,16 @@ module LEX = Lexer
 module L = Lexing
 module G = GasAcct
 module EM = ErrorMsg
+open Sexplib.Std
 
 type environment = (A.decl * A.ext) list
+[@@deriving sexp]                 
 
 type raw_transaction = RawTransaction of environment
+[@@deriving sexp]
+                                       
 type transaction = Transaction of environment
+[@@deriving sexp]                                
 
 (*********************************)
 (* Loading and Elaborating Files *)
@@ -144,7 +149,8 @@ let run (Transaction env) config =
       | _dcl::dcls' -> run' config dcls'
       | [] -> config
   in
-    run' config env
+  let leftover = E.leftover_gas () in
+  (run' config env, leftover)
 
 (********************)
 (* Interactive Mode *)
@@ -160,7 +166,9 @@ let save path = save_config !gconfig path
 
 let set_sender sender = E.txnSender := sender
 
-let exec env = gconfig := run env !gconfig
+let exec env =
+  let (new_config, _leftover) = run env !gconfig in
+  gconfig := new_config;;
 
 let read_and_exec path = read path |> infer |> exec
 

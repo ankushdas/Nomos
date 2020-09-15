@@ -150,7 +150,7 @@ let maybe_tc_and_run_txn tc_only file initial_config =
           initial_config
         else
           (* run transaction *)
-          let final_config = TL.run env initial_config in
+          let (final_config, _leftover_gas) = TL.run env initial_config in
           let () = if !F.verbosity >= 0 then print_string ("% runtime successful!\n") in
           final_config;;
 

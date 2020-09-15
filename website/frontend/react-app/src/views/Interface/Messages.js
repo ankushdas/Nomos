@@ -1,4 +1,4 @@
-
+import React from "react";
 
 const Messages = {
 
@@ -18,9 +18,9 @@ const Messages = {
       autoDismiss: 10      
    }),
 
-   error : msg => ({
+   error : (heading,msg) => ({
       place: "br",
-      message: msg,
+      message: <div>{heading}<br></br><em>{msg}</em></div>,
       type: "danger",
       icon: "tim-icons icon-bell-55"
    })

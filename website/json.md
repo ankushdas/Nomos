@@ -11,6 +11,8 @@ The encoding should hopefully be UTF-8.
 
 STATE = *OCaml's serialized blockchain state*
 
+TRANS = *OCaml's serialized transaction code*
+
 ERROR = { msg : STRING
         , details : STRING
         }
@@ -67,7 +69,8 @@ CONTRACT_LIST = [ { channel : STRING
 
 { response : "typecheck"
 , status : "success"
-, body : { transaction : STRING
+, body : { transaction : TRANS
+         , transcode : STRING
          , gasbound : INT
          }
 }
@@ -84,7 +87,7 @@ CONTRACT_LIST = [ { channel : STRING
 
 { request : "submit"
 , body : { state : STATE
-         , transaction : STRING
+         , transaction : TRANS
 	 , account : STRING	 
          }
 }
@@ -96,6 +99,7 @@ CONTRACT_LIST = [ { channel : STRING
 , body : { state : STATE
          , contlist : CONTRACT_LIST
 	 , acclist : ACCOUNT_LIST
+	 , gascost : INT
          }
 }
 

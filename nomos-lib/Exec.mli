@@ -52,3 +52,5 @@ val exec :
   -> blockchain_state
 
 val txnSender : string ref
+
+val leftover_gas : unit -> int
