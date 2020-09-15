@@ -77,7 +77,7 @@ let create_account initial_state account_name balance =
        report_error "account creation" m "";;
 
 let eval pot = match pot with
-    A.Star -> raise (EM.TypeError "star potential found: impossible!")
+    A.Star -> raise (EM.TypeError "impossible: star potential found after inference!")
   | A.Arith p -> R.evaluate p;;
 
 let type_check _state txn =
