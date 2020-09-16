@@ -125,34 +125,34 @@ let maybe_deposit deposit initial_config =
         final_config;;
 
 let maybe_tc_and_run_txn tc_only file initial_config =
-  match file with
-      None -> initial_config
-    | Some file ->
-        (* parse *)
-        let trans = TL.read file in
-        let () = if !F.verbosity >= 0 then print_string ("% parsing successful!\n") in
-        (* typecheck *)
-        let env = try TL.infer trans
-                  with
-                    | EM.LexError msg
-                    | EM.ParseError msg
-                    | EM.TypeError msg
-                    | EM.PragmaError msg
-                    | EM.RuntimeError msg
-                    | EM.GasAcctError msg
-                    | EM.FileError msg -> print_string msg; exit 1
+  try
+    match file with
+        None -> initial_config
+      | Some file ->
+          (* parse *)
+          let trans = TL.read file in
+          let () = if !F.verbosity >= 0 then print_string ("% parsing successful!\n") in
+          (* typecheck *)
+          let env = TL.infer trans in
+          let () = if !F.verbosity >= 0 then print_string ("% compilation successful!\n") in
 
-        in
-        let () = if !F.verbosity >= 0 then print_string ("% compilation successful!\n") in
-
-        if tc_only
-        then
-          initial_config
-        else
-          (* run transaction *)
-          let (final_config, _leftover_gas) = TL.run env initial_config in
-          let () = if !F.verbosity >= 0 then print_string ("% runtime successful!\n") in
-          final_config;;
+          if tc_only
+          then
+            initial_config
+          else
+            (* run transaction *)
+            let (final_config, _leftover_gas) = TL.run env initial_config in
+            let () = if !F.verbosity >= 0 then print_string ("% runtime successful!\n") in
+            final_config
+            
+  with
+    | EM.LexError msg
+    | EM.ParseError msg
+    | EM.TypeError msg
+    | EM.PragmaError msg
+    | EM.RuntimeError msg
+    | EM.GasAcctError msg
+    | EM.FileError msg -> print_string (msg ^ "\n"); exit 1;;
 
 let maybe_save_config final_config config_out_file =
     (* save final configuration *)
