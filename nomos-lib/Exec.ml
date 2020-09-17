@@ -1339,22 +1339,23 @@ let empty_blockchain_state =
    });;
 
 let try_exec f c pot args initial_config env types =
-  let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
-  let config = add_sem sem initial_config in
-  match step env config with
-      Fail -> (!txnNum + 1, !chan_num, types, initial_config)
-    | Success final_config ->
-        begin
-          try (!txnNum + 1, !chan_num, types, verify_final_configuration c final_config)
-          with
-            | InsufficientPotential -> error "insufficient potential during execution"
-            | UnconsumedPotential -> error "unconsumed potential during execution"
-            | PotentialMismatch -> error "potential mismatch during execution"
-            | MissingBranch -> error "missing branch during execution"
-            | ChannelMismatch -> error "channel name mismatch found at runtime"
-            | UndefinedProcess -> error "undefined process found at runtime"
-            | StarPotential -> error "potential * found at runtime"
-        end;;
+  try
+    begin
+      let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
+      let config = add_sem sem initial_config in
+      match step env config with
+          Fail -> (!txnNum + 1, !chan_num, types, initial_config)
+        | Success final_config ->
+            (!txnNum + 1, !chan_num, types, verify_final_configuration c final_config)          
+    end
+  with
+    | InsufficientPotential -> error "insufficient potential during execution"
+    | UnconsumedPotential -> error "unconsumed potential during execution"
+    | PotentialMismatch -> error "potential mismatch during execution"
+    | MissingBranch -> error "missing branch during execution"
+    | ChannelMismatch -> error "channel name mismatch found at runtime"
+    | UndefinedProcess -> error "undefined process found at runtime"
+    | StarPotential -> error "potential * found at runtime";;
 
 (* exec env C (f, args) = C'
  * env is the elaborated environment

@@ -88,6 +88,7 @@ let eval pot = match pot with
 let type_check _state txn =
   try
     let () = F.verbosity := -1 in
+    let () = F.work := F.Send in
     let raw_env = TL.read_txn txn in
     let inferred_txn = TL.infer raw_env in
     let TL.Transaction env = inferred_txn in
@@ -114,6 +115,7 @@ let type_check _state txn =
 let submit state txn account_name =
   try
     let () = F.verbosity := -1 in
+    let () = F.work := F.Send in
     let () = TL.set_sender account_name in
     let initial_gas =
       let TL.Transaction env = txn in
