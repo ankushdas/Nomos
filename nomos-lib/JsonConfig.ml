@@ -85,12 +85,12 @@ let eval pot = match pot with
     A.Star -> raise (EM.TypeError "impossible: star potential found after inference!")
   | A.Arith p -> R.evaluate p;;
 
-let type_check _state txn =
+let type_check state txn =
   try
     let () = F.verbosity := -1 in
     let () = F.work := F.Send in
     let raw_env = TL.read_txn txn in
-    let inferred_txn = TL.infer raw_env in
+    let inferred_txn = TL.infer state raw_env in
     let TL.Transaction env = inferred_txn in
     let f = EL.get_one_exec env 0 "" in
     let pot = A.get_pot env f in

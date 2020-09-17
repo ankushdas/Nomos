@@ -27,7 +27,7 @@ val read : string -> raw_transaction
 val read_txn : string -> raw_transaction
 
 (* typecheck and eliminate stars *)
-val infer : raw_transaction -> transaction
+val infer : E.blockchain_state -> raw_transaction -> transaction
 
 (* sets the current transaction sender *)
 val set_sender : string -> unit

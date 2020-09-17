@@ -130,10 +130,10 @@ let maybe_tc_and_run_txn tc_only file initial_config =
         None -> initial_config
       | Some file ->
           (* parse *)
-          let trans = TL.read file in
+          let rawtxn = TL.read file in
           let () = if !F.verbosity >= 0 then print_string ("% parsing successful!\n") in
           (* typecheck *)
-          let env = TL.infer trans in
+          let env = TL.infer initial_config rawtxn in
           let () = if !F.verbosity >= 0 then print_string ("% compilation successful!\n") in
 
           if tc_only

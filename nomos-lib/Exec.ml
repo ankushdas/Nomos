@@ -27,7 +27,7 @@ exception StarPotential (* star potential encountered at runtime *)
 exception RuntimeError (* should never happen at runtime *)
 
 type sem =
-    (* Proc(chan, in_use, time, (work, pot), P) *)
+    (* Proc(procname, chan, in_use, time, (work, pot), P) *)
     Proc of string * A.chan * A.chan list * int * (int * int) * A.ext A.st_expr
     (* Msg(chan, time, (work, pot), M) *)
   | Msg of A.chan * int * (int * int) * A.ext A.msg

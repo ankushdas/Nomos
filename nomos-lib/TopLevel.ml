@@ -86,8 +86,15 @@ let read_txn txn =
   let (_imports, env) = parse_with_error lexbuf in
   RawTransaction env;;
 
+let toEnv types =
+  let typelist = Map.to_alist types in
+  List.map (fun (v,a) -> (A.TpDef(v,a), None)) typelist;;
+
 (* check validity and typecheck environment *)
-let infer (RawTransaction decls) =
+let infer state (RawTransaction decls) =
+  let (_tx, _ch, _gas_accs, types, _config) = state in
+  let orig_env = toEnv types in
+  let decls = orig_env @ decls in
   let t0 = Unix.gettimeofday () in
   let () = EL.check_redecl decls in           (* may raise ErrorMsg.Error *)
   let () = EL.check_valid decls decls in
@@ -170,8 +177,8 @@ let exec env =
   let (new_config, _leftover) = run env !gconfig in
   gconfig := new_config;;
 
-let read_and_exec path = read path |> infer |> exec
+let read_and_exec path = read path |> infer !gconfig |> exec
 
 let show_channels () =
   let (_, _, _, _, {E.types = types; _}) = !gconfig in
-  C.Map.iteri types ~f:(fun ~key:k ~data:v -> C.printf "%s: %s\n" (PP.pp_chan k) (PP.pp_tp_simple v))
+  Map.iteri types ~f:(fun ~key:k ~data:v -> C.printf "%s: %s\n" (PP.pp_chan k) (PP.pp_tp_simple v))
