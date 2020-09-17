@@ -110,19 +110,37 @@ let set_flags verbosity cost_model syntax randomness txn_sender run_only =
   ();;
 
 let maybe_create_account create initial_config =
-  if create
-  then
-    let final_config = TL.create_account !E.txnSender initial_config in
-    final_config
-  else
-    initial_config;;
+  try
+    if create
+    then
+      let final_config = TL.create_account !E.txnSender initial_config in
+      final_config
+    else
+      initial_config
+  with
+    | EM.LexError msg
+    | EM.ParseError msg
+    | EM.TypeError msg
+    | EM.PragmaError msg
+    | EM.RuntimeError msg
+    | EM.GasAcctError msg
+    | EM.FileError msg -> print_string msg; exit 1;;
 
 let maybe_deposit deposit initial_config =
-  match deposit with
-      None -> initial_config
-    | Some d ->
-        let final_config = TL.deposit_gas !E.txnSender d initial_config in
-        final_config;;
+  try
+    match deposit with
+        None -> initial_config
+      | Some d ->
+          let final_config = TL.deposit_gas !E.txnSender d initial_config in
+          final_config
+  with
+    | EM.LexError msg
+    | EM.ParseError msg
+    | EM.TypeError msg
+    | EM.PragmaError msg
+    | EM.RuntimeError msg
+    | EM.GasAcctError msg
+    | EM.FileError msg -> print_string msg; exit 1;;
 
 let maybe_tc_and_run_txn tc_only file initial_config =
   try
