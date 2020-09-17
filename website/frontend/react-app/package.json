@@ -26,7 +26,8 @@
     "terser-webpack-plugin": "^4.1.0"
   },
   "resolutions": {
-    "serialize-javascript": "3.1.0"
+    "serialize-javascript": "3.1.0",
+    "node-fetch": "^2.6.1"
   },
   "scripts": {
     "start": "react-scripts start",
