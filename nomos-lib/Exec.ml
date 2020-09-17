@@ -1318,10 +1318,8 @@ let verify_final_configuration top config =
     then error "could not add some sems to final configuration"
     else config'
 
-type type_map = A.stype M.M(C.String).t [@@deriving sexp]
-
-(* transaction num * channel num * type names * configuration *)
-type blockchain_state = int * int * G.gas_accounts * type_map * configuration
+(* transaction num * channel num * environment * configuration *)
+type blockchain_state = int * int * G.gas_accounts * A.decl list * configuration
 [@@deriving sexp]
 
 let leftover_gas () = !txnGas;;
@@ -1330,7 +1328,7 @@ let empty_blockchain_state =
   (0,
    0,
    M.empty (module C.String),
-   M.empty (module C.String),
+   [],
    {
      conf = M.empty (module Chan);
      conts = M.empty (module Chan);
@@ -1357,13 +1355,13 @@ let try_exec f c pot args initial_config env types =
     | UndefinedProcess -> error "undefined process found at runtime"
     | StarPotential -> error "potential * found at runtime";;
 
-(* exec env C (f, args) = C'
+(* exec env C state (f, args) = C'
  * env is the elaborated environment
  * C is a full configuration
  * C' is final, poised configuration
  *)
-let exec env full_config (f, args) =
-  let (tx, ch, gas_accs, types, initial_config) = full_config in
+let exec env state (f, args) =
+  let (tx, ch, gas_accs, types, initial_config) = state in
   let () = txnNum := tx in
   let () = chan_num := ch in
   let m = chan_mode env f in

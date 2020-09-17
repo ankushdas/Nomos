@@ -39,8 +39,7 @@ type configuration =
     types  : map_chan_tp;
   }
 
-type type_map = A.stype M.M(C.String).t [@@deriving sexp]
-type blockchain_state = int * int * G.gas_accounts * type_map * configuration [@@deriving sexp]
+type blockchain_state = int * int * G.gas_accounts * A.decl list * configuration [@@deriving sexp]
 val empty_blockchain_state : blockchain_state
 
 val pp_sem : sem -> string

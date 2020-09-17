@@ -86,15 +86,11 @@ let read_txn txn =
   let (_imports, env) = parse_with_error lexbuf in
   RawTransaction env;;
 
-let toEnv types =
-  let typelist = Map.to_alist types in
-  List.map (fun (v,a) -> (A.TpDef(v,a), None)) typelist;;
-
 (* check validity and typecheck environment *)
 let infer state (RawTransaction decls) =
-  let (_tx, _ch, _gas_accs, types, _config) = state in
-  let orig_env = toEnv types in
-  let decls = orig_env @ decls in
+  let (_tx, _ch, _gas_accs, config_env, _config) = state in
+  let config_env_with_ext = List.map (fun d -> (d, None)) config_env in
+  let decls = config_env_with_ext @ decls in
   let t0 = Unix.gettimeofday () in
   let () = EL.check_redecl decls in           (* may raise ErrorMsg.Error *)
   let () = EL.check_valid decls decls in
@@ -150,10 +146,10 @@ let run (Transaction env) config =
           let config' = E.exec env config (f, []) in
           (* may raise Exec.RuntimeError *)
           run' config' dcls'
-      | (A.TpDef(n, t), _ext)::dcls' ->
-          let (tx, ch, ga, types, conf) = config in
-          run' (tx, ch, ga, Map.set types ~key:n ~data:t, conf) dcls'
-      | _dcl::dcls' -> run' config dcls'
+      | (A.TpDef _ as dcl, _ext)::dcls'
+      | (A.ExpDecDef _ as dcl, _ext)::dcls' ->
+          let (tx, ch, ga, env, conf) = config in
+          run' (tx, ch, ga, dcl::env, conf) dcls'
       | [] -> config
   in
   let leftover = E.leftover_gas () in
