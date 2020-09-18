@@ -88,33 +88,34 @@ let read_txn txn =
 
 (* check validity and typecheck environment *)
 let infer state (RawTransaction decls) =
-  let (_tx, _ch, _gas_accs, config_env, _config) = state in
-  let config_env_with_ext = List.map (fun d -> (d, None)) config_env in
-  let decls = config_env_with_ext @ decls in
+  let (_tx, _ch, _gas_accs, config_env_noext, _config) = state in
+  let config_env = List.map (fun d -> (d, None)) config_env_noext in
+  let env = config_env @ decls in
   let t0 = Unix.gettimeofday () in
   let () = EL.check_redecl decls in           (* may raise ErrorMsg.Error *)
-  let () = EL.check_valid decls decls in
+  let () = EL.check_valid env decls in
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
-  let decls' = EL.commit_channels decls decls in
+  let decls' = EL.commit_channels env decls in
+  let env' = config_env @ decls' in
   (* allow for mutually recursive definitions in the same file *)
-  let env = EL.elab_decls decls' decls' in
+  let elab_decls = EL.elab_decls env' decls' in
   let t1 = Unix.gettimeofday () in
-  let env = EL.remove_stars env in
-  let env = EL.removeU env in
+  let elab_decls = EL.remove_stars elab_decls in
+  let elab_decls = EL.removeU elab_decls in
+  let elab_env = config_env @ elab_decls in
   let () = if !F.verbosity >= 2 then print_string ("========================================================\n") in
-  let () = if !F.verbosity >= 2 then print_string (StdList.fold_left (fun str dcl -> str ^ (PP.pp_decl env dcl) ^ "\n") ""
-    (StdList.map (fun (x,_) -> x) env)) in
-  let () = EL.gen_constraints env env in
+  let () = if !F.verbosity >= 2 then print_string (PP.pp_prog elab_decls) in
+  let () = EL.gen_constraints elab_env elab_decls in
   let (psols,msols) = I.solve_and_print () in
-  let env = EL.substitute env psols msols in
+  let inferred_decls = EL.substitute elab_decls psols msols in
   let t2 = Unix.gettimeofday () in
   let () = if !F.verbosity >= 1 then print_string ("========================================================\n") in
-  let () = if !F.verbosity >= 1 then print_string (StdList.fold_left (fun str (dcl, _) -> str ^ (PP.pp_decl env dcl) ^ "\n") "" env) in
+  let () = if !F.verbosity >= 1 then print_string (PP.pp_prog inferred_decls) in
   let () = if !F.verbosity >= 0 then print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
   let () = if !F.verbosity >= 0 then print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
   let () = if !F.verbosity >= 0 then I.print_stats () in
-  Transaction env
+  Transaction (config_env @ inferred_decls)
 
 (**********************)
 (* Executing Programs *)

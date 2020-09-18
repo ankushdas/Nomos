@@ -60,54 +60,27 @@ let check_nonneg pot ext =
 (* Elaboration, First Pass *)
 (***************************)
 
-
-(* elab_tps env decls = env'
- * elaborates all type definitions in decls to generate env'
- * This checks them for validity and creates internal names.
- * Expressions are passed through unchanged, but process declarations
- * are checked for the validity of the types used.
+(* elab_decl env decls = env'
+ * checks that types are contractive and sub-synchronizing.
+ * checks that declaration has no duplicates.
+ * checks types in declaration are sub-synchronizing.
+ * checks potential is non-negative.
+ * type checks the process also.
  *)
-let rec elab_tps env dcls = match dcls with
+let rec elab_decl env dcls = match dcls with
     [] -> []
   | ((A.TpDef(v,a), ext') as dcl)::dcls' ->
       let () = if TC.contractive a then ()
                else error ext' ("type " ^ PP.pp_tp env a ^ " not contractive") in
       (*let () = TC.valid env TC.Zero a ext in*)
       let () = TC.ssync_tp env (A.TpName(v)) ext' in
-      dcl::(elab_tps env dcls')
-  | ((A.ExpDecDef(_f,_m,(delta,pot,(x,a)),_), ext') as dcl)::dcls' ->
+      dcl::(elab_decl env dcls')
+  | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p), ext')::dcls' ->
       (* do not print process declaration so they are printed close to their use *)
       let () = if dups ((x,a)::delta.linear) then error ext' ("duplicate variable in process declaration") else () in
-      (*let () = valid_delta env delta ext in*)
-      (*let () = TC.valid env TC.Zero a ext in*)
       let () = TC.ssync_tp env a ext' in
+      (* let _ctx = ssync_ctx env delta ext' in *)
       let () = check_nonneg pot ext' in
-      dcl::(elab_tps env dcls')
-  | dcl::dcls' -> dcl::(elab_tps env dcls');;
-
-(****************************)
-(* Elaboration, Second Pass *)
-(****************************)
-
-exception ElabImpossible;;
-
-(* elab_env env decls = env' if all declarations in decls
- * are well-typed with respect to env, elaborating to env'
- * raises exception otherwise.
- * Assumes that types have already been elaborated in the first pass
- *)
-let rec elab_exps' env dcls = match dcls with
-    [] -> []
-  | ((A.TpDef _), _)::_ -> (* do not print type definition again *)
-      elab_exps env dcls
-  | (_, _)::_ ->
-      elab_exps env dcls
-and elab_exps env dcls = match dcls with
-    [] -> []
-  | ((A.TpDef _, _) as dcl)::dcls' ->
-    (* already checked validity during first pass *)
-      dcl::(elab_exps' env dcls')
-  | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p), ext')::dcls' ->
       let p' = Cost.apply_cost p in (* applying the cost model *)
       let () = IO.add_cost_exp (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'),ext') in
       let () =
@@ -115,7 +88,7 @@ and elab_exps env dcls = match dcls with
           match !F.syntax with                    (* print reconstructed term *)
               F.Implicit ->
               (* ask Ankush *)
-                ErrorMsg.error ErrorMsg.Pragma ext' "implicit syntax currently not supported"
+                EM.error EM.Pragma ext' "implicit syntax currently not supported"
             | F.Explicit -> (* maybe only if there is a cost model... *)
                 if !F.verbosity >= 2
                 then print_string ("% with cost model " ^ pp_costs () ^ "\n"
@@ -132,15 +105,15 @@ and elab_exps env dcls = match dcls with
                         print_string ("% tracing type checking...\n")
                         ; TC.checkfexp true env delta pot p' (x,a) ext' m
                       end (* will re-raise ErrorMsg.Error *)
-                  else raise (ErrorMsg.TypeError msg) (* re-raise if not in verbose mode *) in
-      (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'), ext')::(elab_exps' env dcls')
+                  else raise (EM.TypeError msg) (* re-raise if not in verbose mode *) in
+      (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'), ext')::(elab_decl env dcls')
   | ((A.Exec(f), ext') as dcl)::dcls' ->
       begin
         match A.lookup_expdec env f with
             Some (ctx,_pot,_zc,_m) ->
               if List.length ctx.A.ordered > 0
               then error ext' ("process " ^ f ^ " has a non-empty context, cannot be executed")
-              else dcl::elab_exps' env dcls'
+              else dcl::(elab_decl env dcls')
           | None -> error ext' ("process " ^ f ^ " undefined")
       end;;
 
@@ -149,22 +122,22 @@ and elab_exps env dcls = match dcls with
  * Returns NONE if there is a static error
  *)
 let elab_decls env dcls =
-  (* first pass: check validity of types and create internal names *)
-  let env' = elab_tps env dcls in
-  (* second pass: perform reconstruction and type checking *)
-  let env'' = elab_exps' env' env' in
+  (* first pass: check validity of types and type check processes *)
+  let env'' = elab_decl env dcls in
   env'';;
 
- (**************************)
- (* Checking Redeclaration *)
- (**************************)
+exception ElabImpossible;;
 
- (* Because of mutual recursion, we cannot redefine or
-  * redeclare types or processes
-  *)
+(**************************)
+(* Checking Redeclaration *)
+(**************************)
 
- let is_tpdef env a = match A.lookup_tp env a with None -> false | Some _ -> true;;
- let is_expdecdef env f = match A.lookup_expdef env f with None -> false | Some _ -> true;;
+(* Because of mutual recursion, we cannot redefine or
+ * redeclare types or processes
+ *)
+
+let is_tpdef env a = match A.lookup_tp env a with None -> false | Some _ -> true;;
+let is_expdecdef env f = match A.lookup_expdef env f with None -> false | Some _ -> true;;
 
 let rec check_redecl dcls = match dcls with
     [] -> ()
