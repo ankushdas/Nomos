@@ -91,18 +91,3 @@ type wallet = /\ <{*}| &{add : money -o |{*}> \/ wallet,
                          sub : int -> +{sufficient : money * |{*}> \/ wallet,
                                         insufficient : |{*}> \/ wallet},
                          val : int ^ |{*}> \/ wallet}
-
-(*
- * start with an empty configuration
- * write the empty configuration to a file -> call this file "blockchain0.state"
- * read "blockchain0.state" and create a (currently empty) configuration out of it
- * create a file with a list of transactions -> for wallet contract, call this "wallet.trans"
- * a transaction is just a function call, i.e. 0: create_wallet(1000)
- * this should create a contract process: (#ch1 <- wallet_proc <- ...)
- * now, write this configuration to "blockchain1.state"
- * wallet.trans -> 1: create_wallet(100)
- * this creates a contract process : (#ch2 <- wallet_proc <- ...)
- * wallet.trans -> 2: transfer(#ch1, #ch2, 20)
- * ./run.exe -input blockchain0.state -trans wallet0.trans -output blockchain1.state -src test-wallet.nom
- * ./run.exe -input blockchain1.state -trans wallet1.trans -output blockchain2.state -src test-wallet.nom
-*)
