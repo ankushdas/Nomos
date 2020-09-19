@@ -13,7 +13,8 @@ const overview =
     </CardHeader>
     <CardBody>
       <p>
-        What is Nomos?
+        <b>Nomos is a domain-specific language based on resource-aware session types for programming digital
+        contracts.</b>
       </p>
     </CardBody>
   </Card>
@@ -27,7 +28,13 @@ const benefits =
     </CardHeader>
     <CardBody>
       <p>
-        List some of the benefits.
+        <b>The Nomos language provides 4 key benefits:</b>
+        <ol>
+        <li>a session-type based mechanism for expressing the contract protocol</li>
+        <li>a resource type system for expressing and automatically inferring the gas bound of a transaction</li>
+        <li>a linear type system to handle assets</li>
+        <li>a design guarantee of no re-entrancy attacks</li>
+        </ol>
       </p>
     </CardBody>
   </Card>
@@ -41,7 +48,12 @@ const webinterface =
     </CardHeader>
     <CardBody>
       <p>
-        you can try out Nomos online
+        <b>Try out the web interface for Nomos! You can </b>
+          <ol>
+          <li>create gas account</li>
+          <li>type check and submit transactions</li>
+          <li>automatically infer the gas cost of transactions</li>
+          </ol> <a href="/interface">Click Here</a>
       </p>
     </CardBody>
   </Card>
@@ -56,7 +68,9 @@ const code =
     </CardHeader>
     <CardBody>
       <p>
-        Nomos is open source software. Link to github.
+        <b>Nomos is available open-source with comprehensive documentation
+        and installation instructions. <a href="https://github.com/ankushdas/Nomos" target="_blank">Click Here</a> to
+        go the GitHub repository.</b>
       </p>
     </CardBody>
   </Card>
@@ -69,17 +83,17 @@ class Overview extends React.Component {
         <div className="content">
           <Row>
             <Col md="12">
-	    {overview}
+	            {overview}
             </Col>
           </Row>
 	  <Row>
-	    <Col md="4">
+	    <Col md="5">
 	    {benefits}
 	    </Col>
 	    <Col md="4">
 	    {webinterface}
 	    </Col>
-	    <Col md="4">
+	    <Col md="3">
 	    {code}
 	    </Col>
 	  </Row>
