@@ -3,9 +3,7 @@ TODOS:
 
 - Check if configuration is poised
 - Add polymorphism
-- Check that there is a single exec
 - Get rid of Nomos.MakeChannel
 
 - submit : should receive a non-starred potential annotation program, check for it
 - all printing to file
-- read_txn should return env (no need of ext list)

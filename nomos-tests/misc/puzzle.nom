@@ -1,3 +1,7 @@
+(*
+  puzzle
+*)
+
 type puzzle = /\ <{*}| &{update: int -> money -o |{*}> \/ puzzle,
                          submit: int ^ &{success: int -> money * |{*}> \/ puzzle,
                                          failure: |{*}> \/ puzzle}}
