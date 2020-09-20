@@ -2,7 +2,7 @@
   "name": "nomos-website",
   "version": "1.1.0",
   "private": true,
-  "homepage": "https://nomos.lang",
+  "homepage": "https://nomos-lang.org",
   "dependencies": {
     "@types/react": "16.9.23",
     "chart.js": "2.9.3",
