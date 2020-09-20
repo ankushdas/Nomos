@@ -1,5 +1,10 @@
 open Sexplib.Std
 
+let prog_code = ref None;;
+
+let set_prog_code s =
+  prog_code := Some s;;
+
 (* ((line1, col1), (line2, col2), filename) : ext *)
 (* inclusive on left, exclusive on right *)
 type ext = (int * int) * (int * int) * string [@@deriving sexp]

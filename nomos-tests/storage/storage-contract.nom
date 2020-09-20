@@ -16,6 +16,12 @@ proc contract storage_process : (n : int) |{*}- (#s : storage) =
 proc transaction create_zero_storage : . |{*}- ($d : 1) =
 {
   let n = 0 ;
+  #ss : storage <- Nomos.MakeChannel 2 ;
+  $ls <- acquire #ss ;
+  $ls.setter ;
+  pay $ls {*} ;
+  send $ls 0 ;
+  #ss <- release $ls ;
   #s <- storage_process <- n ;
   close $d
 }
