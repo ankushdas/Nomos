@@ -98,7 +98,7 @@ const printPub = pub =>
        </p>
      </td>
      <td className="td-actions text-right">
-      <a href={pub.pdf} target="_blank">
+     <a href={pub.pdf} target="_blank" rel="noopener noreferrer">
       <Button
         color="link"
         id="tooltip636901683"
