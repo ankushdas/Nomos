@@ -68,8 +68,7 @@ const code =
     </CardHeader>
     <CardBody>
       <p>
-        <b>Nomos is available open-source with comprehensive documentation
-        and installation instructions. <a href="https://github.com/ankushdas/Nomos" target="_blank">Click Here</a> to
+        <b>Nomos is available open-source with comprehensive documentation and installation instructions. <a href="https://github.com/ankushdas/Nomos" target="_blank" rel="noopener noreferrer">Click Here</a> to
         go the GitHub repository.</b>
       </p>
     </CardBody>
