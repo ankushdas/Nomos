@@ -40,6 +40,14 @@ I have to find out how to do that. Probably with
 
    npm run build
 
+## CSS
+
+The css files are generated from the scss files that are stored in the
+directory src/assents/scss. To generate the css files after modifying
+the scss run the command
+
+   npm run map-sass
+
 ## Black Dashboard React
 
 This frontend is based on the template black-dashboard-react.
