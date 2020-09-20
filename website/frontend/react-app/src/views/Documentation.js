@@ -5,6 +5,8 @@ import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import docPath from './doc.md'
 
+const input = '# Nomos Doc\n\nStart Nomos doc'
+
 class Documentation extends React.Component {
   constructor(props) {
     super(props)
@@ -34,7 +36,7 @@ class Documentation extends React.Component {
                 <CardBody>
                   <p>
                     <div className="content">
-                      <ReactMarkdown source={this.state.terms} />
+                      <ReactMarkdown source={input} />
                     </div>
                   </p>
                 </CardBody>
