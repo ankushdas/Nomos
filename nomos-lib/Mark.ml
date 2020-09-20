@@ -32,15 +32,19 @@ let rec count_whitespace i s =
   else i;;
 
 let show_source ((line1, col1), (line2, col2), file) =
-  try SafeIO.withOpenIn file (fun instream -> 
-  match inputLines line1 instream with
-    | None -> "[location at end of file]\n"
-    | Some first_line ->
-      if line1 = line2
-      then first_line ^ "\n" ^ createLine col1 col2 ^ "\n"
-      else let second_line = (match inputLines (line2-line1) instream with
-                              | None -> "<eof>"
-                              | Some (line) -> line)
+  try SafeIO.withOpenIn file (fun instream ->
+    match inputLines line1 instream with
+      | None -> "[location at end of file]\n"
+      | Some first_line ->
+          if line1 = line2
+          then first_line ^ "\n" ^ createLine col1 col2 ^ "\n"
+          else
+            let second_line =
+              begin
+                match inputLines (line2-line1) instream with
+                  | None -> "<eof>"
+                  | Some (line) -> line
+              end
             in
             let ws_count = count_whitespace 0 second_line in
             let error_line = first_line ^ " ... "

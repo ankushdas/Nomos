@@ -30,11 +30,11 @@ let tabToSpace = String.map (fun c -> match c with | '\t' -> ' ' | c -> c);;
 
 let omap f opt = match opt with
     None -> ""
-  | Some x -> (f x);;
+  | Some x -> (f x) ^ ": ";;
 
 let pmsg str ext note =
-  let filepos = omap Mark.show ext in
-  let error_msg = ":" ^ str ^ ":" ^ note ^ "\n" in
+  let filepos = (omap Mark.show ext) in
+  let error_msg = str ^ ": " ^ note ^ "\n" in
   let source = omap (fun x -> tabToSpace (Mark.show_source x)) ext in
   filepos ^ error_msg ^ source;;
 
