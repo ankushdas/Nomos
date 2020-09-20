@@ -1,7 +1,7 @@
 // reactstrap components
 import { Card, CardHeader, CardBody, CardTitle, Row, Col } from "reactstrap";
 
-import React, { Component } from 'react'
+import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import docPath from './doc.md'
 
