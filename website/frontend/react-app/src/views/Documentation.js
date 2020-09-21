@@ -3,9 +3,7 @@ import { Card, CardHeader, CardBody, CardTitle, Row, Col } from "reactstrap";
 
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
-import docPath from "assets/nomos/doc.md"
-
-const input = '# Nomos Doc\n\nStart Nomos doc'
+import docPath from "markdown/documentation.md"
 
 class Documentation extends React.Component {
   constructor(props) {
