@@ -1,0 +1,132 @@
+type account = <{*}| &{dep : money -o 1}
+
+type money = <{*}| &{value : int ^ |{*}> money,
+                     add : money -o |{*}> money,
+                     delete : |{*}> 1}
+
+type auction = /\ <{*}| +{running : &{bid : account -o money -o |{*}> \/ auction,
+                                      collect : |{*}> \/ auction},
+                          ended : |{*}> \/ auction}
+
+proc contract running_auction : (owner : address), ($bl : bidlist) |{*}- (#a : auction) =
+{
+  $la <- accept #a ;
+  get $la {*} ;
+  $la.running ;
+  case $la (
+    bid => $acc <- recv $la ;
+           $m <- recv $la ;
+           pay $la {*} ;
+           #a <- detach $la ;
+           $bln <- addbid <- $acc $m $bl ;
+           #a <- running_auction <- owner $bln
+  | collect => let id = Nomos.GetTxnSender() ;
+               if owner == id
+               then
+                 pay $la {*} ;
+                 #a <- detach $la ;
+                 $d <- return_bids <- $bl ;
+                 wait $d ;
+                 #a <- ended_auction <- owner
+               else
+                 pay $la {*} ;
+                 #a <- detach $la ;
+                 #a <- running_auction <- owner $bl
+  )
+}
+
+proc contract ended_auction : (owner : address) |{*}- (#a : auction) =
+{
+  $la <- accept #a ;
+  get $la {*} ;
+  $la.ended ;
+  pay $la {*} ;
+  #a <- detach $la ;
+  #a <- ended_auction <- owner
+}
+
+type bidlist = +{cons : |{*}> account * money * bidlist,
+                 nil : 1}
+
+proc asset init_bids : . |{*}- ($l : bidlist) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc asset addbid : ($x : account), ($b : money), ($tl : bidlist) |{*}- ($l : bidlist) =
+{
+  $l.cons ;
+  pay $l {*} ;
+  send $l $x ;
+  send $l $b ;
+  $l <- $tl
+}
+
+proc asset return_bids : ($bl : bidlist) |{*}- ($d : 1) =
+{
+  case $bl (
+    cons => get $bl {*} ;
+            $acc <- recv $bl ;
+            $m <- recv $bl ;
+            pay $acc {*} ;
+            $acc.dep ;
+            send $acc $m ;
+            wait $acc ;
+            $d <- return_bids <- $bl
+  | nil => $d <- $bl
+  )
+}
+
+proc transaction create_auction : . |{*}- ($d : 1) =
+{
+  let o = Nomos.GetTxnSender() ;
+  $bl <- init_bids <- ;
+  #a <- running_auction <- o $bl ;
+  close $d
+}
+
+proc asset money_proc : (amt : int) |{*}- ($m : money) =
+{
+  get $m {*} ;
+  case $m (
+    value => send $m amt ;
+             pay $m {*} ;
+             $m <- money_proc <- amt
+  | add => $n <- recv $m ;
+           pay $n {*} ;
+           $n.value ;
+           nv = recv $n ;
+           let amtn = amt + nv ;
+           get $n {*} ;
+           pay $n {*} ;
+           $n.delete ;
+           get $n {*} ;
+           wait $n ;
+           pay $m {*} ;
+           $m <- money_proc <- amtn
+  | delete => pay $m {*} ;
+              deposit {*} ;
+              close $m
+  )
+}
+
+proc asset acc_proc : ($m : money) |{*}- ($a : account) =
+{
+  get $a {*} ;
+  case $a (
+    dep => $n <- recv $a ;
+           pay $m {*} ;
+           $m.add ;
+           send $m $n ;
+           get $m {*} ;
+           pay $m {*} ;
+           $m.delete ;
+           get $m {*} ;
+           wait $m ;
+           deposit {*} ;
+           close $a
+  )
+}
+
+exec create_auction
