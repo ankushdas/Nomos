@@ -6,6 +6,7 @@ module PP = Pprint
 module EL = Elab
 module A = Ast
 module R = Arith
+module M = Mark
 
 module C = Core
 module J = Yojson.Basic
@@ -88,6 +89,7 @@ let eval pot = match pot with
 let type_check state txn =
   try
     let () = F.verbosity := -1 in
+    let () = M.set_prog_code txn in
     let () = F.work := F.Send in
     let raw_env = TL.read_txn txn in
     let inferred_txn = TL.infer state raw_env in

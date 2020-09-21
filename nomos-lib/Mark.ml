@@ -1,5 +1,10 @@
 open Sexplib.Std
 
+let prog_code = ref None;;
+
+let set_prog_code s =
+  prog_code := Some s;;
+
 (* ((line1, col1), (line2, col2), filename) : ext *)
 (* inclusive on left, exclusive on right *)
 type ext = (int * int) * (int * int) * string [@@deriving sexp]
@@ -52,6 +57,9 @@ let show_source ((line1, col1), (line2, col2), file) =
             let indicator = createLine col1 (String.length first_line + 5 + col2 - ws_count) in
             error_line ^ "\n" ^ indicator ^ "\n")
 
-  with Sys_error s -> s;;
+  with Sys_error s ->
+    match !prog_code with
+        None -> s
+      | Some _txn -> "";;
 
 type 'a marked = 'a * ext option
