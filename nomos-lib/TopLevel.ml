@@ -49,10 +49,10 @@ let print_position lexbuf =
 let parse_with_error lexbuf =
   try Parser.file Lexer.token lexbuf with
   | LEX.SyntaxError msg ->
-      let lex_error = "Lexing Failure: " ^ print_position lexbuf ^ ": " ^ msg in
+      let lex_error = "Lexing Failure: " ^ print_position lexbuf ^ ": " ^ msg ^ "\n" in
       raise (EM.LexError lex_error)
   | Parser.Error ->
-      let parse_error = "Parsing Failure: " ^ print_position lexbuf in
+      let parse_error = "Parsing Failure: " ^ print_position lexbuf ^ "\n" in
       raise (EM.ParseError parse_error);;
 
 (* try to read a file, or print failure *)

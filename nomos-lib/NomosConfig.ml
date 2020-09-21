@@ -170,7 +170,7 @@ let maybe_tc_and_run_txn tc_only file initial_config =
     | EM.PragmaError msg
     | EM.RuntimeError msg
     | EM.GasAcctError msg
-    | EM.FileError msg -> print_string (msg ^ "\n"); exit 1;;
+    | EM.FileError msg -> print_string msg; exit 1;;
 
 let maybe_save_config final_config config_out_file =
     (* save final configuration *)

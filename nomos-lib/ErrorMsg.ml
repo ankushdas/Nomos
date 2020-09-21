@@ -28,14 +28,18 @@ let err_string cat = match cat with
     character to be one column wide. *)
 let tabToSpace = String.map (fun c -> match c with | '\t' -> ' ' | c -> c);;
 
-let omap f opt = match opt with
+let omap1 f opt = match opt with
     None -> ""
   | Some x -> (f x) ^ ": ";;
 
+let omap2 f opt = match opt with
+    None -> ""
+  | Some x -> (f x);;
+
 let pmsg str ext note =
-  let filepos = (omap Mark.show ext) in
+  let filepos = (omap1 Mark.show ext) in
   let error_msg = str ^ ": " ^ note ^ "\n" in
-  let source = omap (fun x -> tabToSpace (Mark.show_source x)) ext in
+  let source = omap2 (fun x -> tabToSpace (Mark.show_source x)) ext in
   filepos ^ error_msg ^ source;;
 
 let error_msg cat ext note =

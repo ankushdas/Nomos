@@ -477,7 +477,7 @@ let pp_decl env dcl = match dcl with
     let potstr = pp_pot pot in
     "proc " ^ pp_outer_mode m ^ " " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ potstr ^ "- "
     ^ pp_chan_tp (x,a) ^ " = \n" ^
-    (pp_fexp_indent env 2 p.A.func_structure)
+    (pp_fexp_indent env 0 p.A.func_structure)
   | A.Exec(f) -> "exec " ^ f;;
 
 let pp_progh env decls = List.fold_left (fun s (d, _ext) -> s ^ pp_decl env d ^ "\n") "" decls;;
