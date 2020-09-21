@@ -1,10 +1,10 @@
-type account = <{*}| &{dep : money -o 1}
+type account = <{*}| &{dep : bid_money -o 1}
 
-type money = <{*}| &{value : int ^ |{*}> money,
-                     add : money -o |{*}> money,
-                     delete : |{*}> 1}
+type bid_money = <{*}| &{value : int ^ |{*}> bid_money,
+                         add : bid_money -o |{*}> bid_money,
+                         delete : |{*}> 1}
 
-type auction = /\ <{*}| +{running : &{bid : account -o money -o |{*}> \/ auction,
+type auction = /\ <{*}| +{running : &{bid : account -o bid_money -o |{*}> \/ auction,
                                       collect : |{*}> \/ auction},
                           ended : |{*}> \/ auction}
 
@@ -45,7 +45,7 @@ proc contract ended_auction : (owner : address) |{*}- (#a : auction) =
   #a <- ended_auction <- owner
 }
 
-type bidlist = +{cons : |{*}> account * money * bidlist,
+type bidlist = +{cons : |{*}> account * bid_money * bidlist,
                  nil : 1}
 
 proc asset init_bids : . |{*}- ($l : bidlist) =
@@ -54,7 +54,7 @@ proc asset init_bids : . |{*}- ($l : bidlist) =
   close $l
 }
 
-proc asset addbid : ($x : account), ($b : money), ($tl : bidlist) |{*}- ($l : bidlist) =
+proc asset addbid : ($x : account), ($b : bid_money), ($tl : bidlist) |{*}- ($l : bidlist) =
 {
   $l.cons ;
   pay $l {*} ;
@@ -86,13 +86,13 @@ proc transaction create_auction : . |{*}- ($d : 1) =
   close $d
 }
 
-proc asset money_proc : (amt : int) |{*}- ($m : money) =
+proc asset bid_money_proc : (amt : int) |{*}- ($m : bid_money) =
 {
   get $m {*} ;
   case $m (
     value => send $m amt ;
              pay $m {*} ;
-             $m <- money_proc <- amt
+             $m <- bid_money_proc <- amt
   | add => $n <- recv $m ;
            pay $n {*} ;
            $n.value ;
@@ -104,14 +104,14 @@ proc asset money_proc : (amt : int) |{*}- ($m : money) =
            get $n {*} ;
            wait $n ;
            pay $m {*} ;
-           $m <- money_proc <- amtn
+           $m <- bid_money_proc <- amtn
   | delete => pay $m {*} ;
               deposit {*} ;
               close $m
   )
 }
 
-proc asset acc_proc : ($m : money) |{*}- ($a : account) =
+proc asset acc_proc : ($m : bid_money) |{*}- ($a : account) =
 {
   get $a {*} ;
   case $a (

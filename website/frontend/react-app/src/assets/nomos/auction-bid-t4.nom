@@ -7,10 +7,10 @@ proc transaction bid : . |{*}- ($d : 1) =
   case $la (
     running => $la.bid ;
                let bal = 0 ;
-               $m <- money_proc <- bal ;
+               $m <- bid_money_proc <- bal ;
                $a <- acc_proc <- $m ;
                let bid = 10000 ;
-               $m <- money_proc <- bid ;
+               $m <- bid_money_proc <- bid ;
                send $la $a ;
                send $la $m ;
                get $la {*} ;
