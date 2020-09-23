@@ -58,7 +58,7 @@ const publications =
   },
 
   { title : "Polarized Substructural Session Types",
-    authors : "Ankush Das and Shaz Qadeer",
+    authors : "Frank Pfenning and Dennis Griffith",
     venue : "18th International Conference on Foundations of Software Science and Computation Structures (FoSSaCS).",
     year : "2015",
     pdf : "https://www.cs.cmu.edu/~fp/papers/fossacs15.pdf"
