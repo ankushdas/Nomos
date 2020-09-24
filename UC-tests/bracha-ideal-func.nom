@@ -10,4 +10,5 @@ type wrapper_comm2 = &{eventually : tx -> pid -> wrapper_comm2,
 type wrapper_comm3 = +{send : tx ^ pid ^ wrapper_comm3,
                        done : 1}
 
-type party_comm = /\ tx -> \/ party_comm
+type party_comm = +{send : tx -> party_comm,
+                    done : 1}
