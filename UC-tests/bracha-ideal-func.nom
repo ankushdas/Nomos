@@ -1,14 +1,17 @@
 type dealer_comm = tx ^ 1
 
-type leaked_msg = piud ^ tx ^ 1
+type leaked_msg = pid ^ tx ^ 1
 
-type wrapper_comm1 = &{leak : leaked_msg -o wrapper_comm2}
+type wrapper_comm1 = &{leak : leaked_msg -o wrapper_comm11}
 
-type wrapper_comm2 = &{eventually : tx -> pid -> wrapper_comm2,
+type wrapper_comm11 = +{ok : wrapper_comm2}
+
+type wrapper_comm2 = &{eventually : tx -> pid -> wrapper_comm22,
                        done : wrapper_comm3}
+
+type wrapper_comm22 = +{ok : wrapper_comm2}
 
 type wrapper_comm3 = +{send : tx ^ pid ^ wrapper_comm3,
                        done : 1}
 
-type party_comm = +{send : tx -> party_comm,
-                    done : 1}
+type party_comm = tx -> 1
