@@ -398,13 +398,28 @@ let well_formedness env f m delta x ext = match m with
   | A.Unknown
   | A.MVar _ -> raise ElabImpossible
 
+let sum_prob_ctx delta =
+  let {A.shared = sdelta; A.linear = ldelta; A.ordered = odelta} = delta in
+  let sum_func = fun (_x,a) -> TC.sum_prob a in
+  let () = List.iter sum_func sdelta in
+  let () = List.iter sum_func ldelta in
+  let sum_ofunc =
+    fun x -> match x with A.Functional _ -> () | A.STyped(_x,a) -> TC.sum_prob a
+  in
+  let () = List.iter sum_ofunc odelta in
+  ();;
+
 let rec gen_constraints env dcls = match dcls with
     [] -> ()
   | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p),ext)::dcls' ->
       let () = well_formedness env f m delta x ext in
       let _p = TC.checkfexp false env delta pot p (x,a) ext m TC.Prob in
+      let () = TC.sum_prob a in
+      let () = sum_prob_ctx delta in
       gen_constraints env dcls'
-  | (A.TpDef _,_ext)::dcls' -> gen_constraints env dcls'
+  | (A.TpDef(_v,a),_ext)::dcls' ->
+      let () = TC.sum_prob a in
+      gen_constraints env dcls'
   | (A.Exec _,_ext)::dcls' -> gen_constraints env dcls';;
 
 let rec substitute dcls psols msols = match dcls with

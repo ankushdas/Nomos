@@ -255,7 +255,7 @@ and eq_tp env seen tp tp' = match tp, tp' with
 and eq_pchoice env seen pcs pcs' = match pcs, pcs' with
     [], [] -> true
   | (l,pr,a)::pchoice, (l',pr',a')::pchoice' ->
-      l = l' && R.fequals pr pr' && eq_tp' env seen a a'
+      l = l' && eq pr pr' && eq_tp' env seen a a'
       && eq_pchoice env seen pchoice pchoice'
   | _pcs, [] -> false
   | [], _pcs' -> false
@@ -330,7 +330,7 @@ and sub_pichoice env seen pcs pcs' = match pcs with
       if (List.length lab_match != 1)
       then false
       else let (_, pr', a') = List.nth lab_match 0 in 
-      R.fequals pr pr' && sub_tp' env seen a a' && sub_pichoice env seen pchoice pcs'
+      eq pr pr' && sub_tp' env seen a a' && sub_pichoice env seen pchoice pcs'
 
 and sub_ichoice env seen cs cs' = match cs with
     [] -> true
@@ -348,7 +348,7 @@ and sub_pechoice env seen pcs pcs' = match pcs' with
       if (List.length lab_match != 1)
       then false
       else let (_, pr, a) = List.nth lab_match 0 in 
-      R.fequals pr pr' && sub_tp' env seen a a' && sub_pechoice env seen pcs pchoice'
+      eq pr pr' && sub_tp' env seen a a' && sub_pechoice env seen pcs pchoice'
 
 and sub_echoice env seen cs cs' = match cs' with
     [] -> true
@@ -718,19 +718,22 @@ let is_argtype p = match p with
 
 let filter_args l = List.filter (fun p -> is_argtype p) l;;
 
+let pr_zero = A.Arith(R.Float 0.0);;
+let pr_one = A.Arith(R.Float 1.0);;
+
 let rec plabprob k pchoices ext = match pchoices with
     [] -> ()
   | (l,prob,_a)::pchoices' ->
       if k = l
       then
         begin
-          if R.fequals prob 1.0
+          if eq prob pr_one
           then plabprob k pchoices' ext
           else error ext ("prob. mismatch of label " ^ l ^ ": expected {1}, found: " ^ PP.pp_prob prob)
         end
       else
         begin
-          if R.fequals prob 0.0
+          if eq prob pr_zero
           then plabprob k pchoices' ext
           else error ext ("prob. mismatch of label " ^ l ^ ": expected {0}, found: " ^ PP.pp_prob prob)
         end
@@ -766,14 +769,23 @@ let rec gen_pchoices pchoices k = match pchoices with
     [] -> []
   | (l,_pr,a)::pchoices' ->
       if k = l
-      then (l,1.0,a)::(gen_pchoices pchoices' k)
-      else (l,0.0,a)::(gen_pchoices pchoices' k);;
+      then (l,pr_one,a)::(gen_pchoices pchoices' k)
+      else (l,pr_zero,a)::(gen_pchoices pchoices' k);;
 
 let gen_tp k a = match a with
     A.PPlus(pchoices) -> A.PPlus(gen_pchoices pchoices k)
   | A.PWith(pchoices) -> A.PWith(gen_pchoices pchoices k)
   | _a -> raise UnknownTypeError;;
 
+let add pr1 pr2 = match pr1, pr2 with
+    A.Arith p1, A.Arith p2 -> A.Arith(R.Add(p1,p2))
+  | A.Star, _ -> A.Star
+  | _, A.Star -> A.Star;;
+
+let mult pr1 pr2 = match pr1, pr2 with
+    A.Arith p1, A.Arith p2 -> A.Arith(R.Mult(p1,p2))
+  | A.Star, _ -> A.Star
+  | _, A.Star -> A.Star;;
 
 let rec add_choices env x pcs pcs' ext = match pcs, pcs' with
     [], [] -> []
@@ -782,7 +794,7 @@ let rec add_choices env x pcs pcs' ext = match pcs, pcs' with
       then error ext ("label mismatch in " ^ PP.pp_chan x ^ ": " ^ l ^ " <> " ^ l')
       else if not (subtp env a a')
       then error ext ("type mismatch in " ^ PP.pp_chan x ^ ": " ^ PP.pp_tp_compact env a ^ " <> " ^ PP.pp_tp_compact env a')
-      else (l, prob +. prob', a)::(add_choices env x pcstl pcstl' ext)
+      else (l, add prob prob', a)::(add_choices env x pcstl pcstl' ext)
   | _, _ -> error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ": unequal lengths");;
 
 let rec add_ptypes env c a a' ext = match a, a' with
@@ -794,7 +806,7 @@ let rec add_ptypes env c a a' ext = match a, a' with
 
 let rec mult_choices env pr pcs = match pcs with
     [] -> []
-  | (l,prob,a)::pcstl -> (l, pr *. prob, a)::(mult_choices env pr pcstl);;
+  | (l,prob,a)::pcstl -> (l, mult pr prob, a)::(mult_choices env pr pcstl);;
 
 let rec mult_ptype env pr a = match a with
     A.TpName(v) -> mult_ptype env pr (A.expd_tp env v)
@@ -809,6 +821,14 @@ let rec weighted_psum env c al ext = match al with
       let a' = weighted_psum env c al' ext in
       let pra = mult_ptype env pr a in
       add_ptypes env c pra a' ext;;
+
+let comp p =
+  let one = R.Float(1.0) in
+  R.Sub(one,p);;
+
+let comp_star pr = match pr with
+    A.Arith p -> A.Arith (comp p)
+  | A.Star -> A.Star;;
 
 let rec action env p c a = match p.A.st_structure with
     A.Fwd(_x,_y) -> a
@@ -833,7 +853,7 @@ let rec action env p c a = match p.A.st_structure with
       if eq_name x c
       then a
       else weighted_psum env c (action_pbranches env pbranches c a) p.A.st_data
-  | A.Flip(pr,q1,q2) -> weighted_psum env c (action_pbranches env [("HH", pr, q1); ("TT", 1.-.pr, q2)] c a) p.A.st_data
+  | A.Flip(pr,q1,q2) -> weighted_psum env c (action_pbranches env [("HH", pr, q1); ("TT", comp_star pr, q2)] c a) p.A.st_data
   | A.Send(x,w,q) ->
       if eq_name x c || eq_name w c
       then a
@@ -999,6 +1019,9 @@ let create_app l en =
       A.App(ale) -> A.App(ale @ [en])
     | a -> A.App([faug a lext ; en]);;
 
+let pot_branch pr = match pr with
+    A.Star -> A.Star
+  | A.Arith _pr -> A.Arith (I.fresh_potvar ());;
 (*******************************)
 (* Main Type Checking Function *)
 (*******************************)
@@ -1558,8 +1581,8 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
               | A.PWith(pchoices) ->
                   let (deltal, potl, pbranches') = check_pbranchesR trace env delta pbranches z pchoices (exp.A.st_data) mode prmode in
                   let () = match_probs_ctx env delta deltal (exp.A.st_data) in
-                  if not (eq pot (A.Arith potl))
-                  then error (exp.A.st_data) ("potential mismatch in pcase: " ^ pp_uneq pot (A.Arith potl))
+                  if not (eq pot potl)
+                  then error (exp.A.st_data) ("potential mismatch in pcase: " ^ pp_uneq pot potl)
                   else staug (A.PCase(x,pbranches')) exp.A.st_data
               | A.PPlus _ | A.One
               | A.Plus _ | A.With _
@@ -1578,8 +1601,8 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
                 let (deltal, potl, cl, pbranches') = check_pbranchesL trace env delta x pchoices pbranches zc (exp.A.st_data) mode prmode in
                 let () = match_probs_ctx env delta deltal (exp.A.st_data) in
                 let () = match_probs env z c cl (exp.A.st_data) in
-                if not (eq pot (A.Arith potl))
-                then error (exp.A.st_data) ("potential mismatch in pcase: " ^ pp_uneq pot (A.Arith potl))
+                if not (eq pot potl)
+                then error (exp.A.st_data) ("potential mismatch in pcase: " ^ pp_uneq pot potl)
                 else staug (A.PCase(x,pbranches')) exp.A.st_data
             | A.PWith _ | A.One
             | A.Plus _ | A.With _
@@ -1590,26 +1613,27 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
                 error (exp.A.st_data) ("invalid type of " ^ PP.pp_chan x ^
                                        ", expected prob. internal choice, found: " ^ PP.pp_tp_compact env a)
       end
-  | A.Flip(pr,p1,p2) ->
+  | A.Flip(A.Arith pr,p1,p2) ->
       begin
         let deltaHH = if prob prmode then gen_prob_ctx env delta p1 None else delta in
         let deltaTT = if prob prmode then gen_prob_ctx env delta p2 None else delta in
         let (z,c) = zc in
         let cHH = if prob prmode then gen_prob_tpR env p1 z c else c in
         let cTT = if prob prmode then gen_prob_tpR env p2 z c else c in
-        let potHH = I.fresh_probvar () in
-        let potTT = I.fresh_probvar () in
-        let prpotHH = R.Mult(R.Float(pr), potHH) in
-        let prpotTT = R.Mult(R.Float(1. -. pr), potTT) in
+        let potHH = I.fresh_potvar () in
+        let potTT = I.fresh_potvar () in
+        let prpotHH = R.Mult(pr, potHH) in
+        let prpotTT = R.Mult(comp pr, potTT) in
         let potHHTT = R.Add(prpotHH, prpotTT) in
         let p1' = check_exp' trace env deltaHH (A.Arith potHH) p1 (z,cHH) (p1.A.st_data) mode prmode in
         let p2' = check_exp' trace env deltaTT (A.Arith potTT) p2 (z,cTT) (p2.A.st_data) mode prmode in
-        let () = match_probs_ctx env delta [("HH", pr, deltaHH); ("TT", 1.0 -. pr, deltaTT)] (exp.A.st_data) in
-        let () = match_probs env z c [("HH", pr, cHH); ("TT", 1.0 -. pr, cTT)] (exp.A.st_data) in
+        let () = match_probs_ctx env delta [("HH", A.Arith pr, deltaHH); ("TT", A.Arith (comp pr), deltaTT)] (exp.A.st_data) in
+        let () = match_probs env z c [("HH", A.Arith pr, cHH); ("TT", A.Arith (comp pr), cTT)] (exp.A.st_data) in
         if not (eq pot (A.Arith potHHTT))
         then error (exp.A.st_data) ("potential mismatch in flip: " ^ pp_uneq pot (A.Arith potHHTT))
-        else staug (A.Flip(pr,p1',p2')) exp.A.st_data
+        else staug (A.Flip(A.Arith pr,p1',p2')) exp.A.st_data
       end
+  | A.Flip(A.Star,_p1,_p2) -> raise UnknownTypeError
   | A.Send(x,w,p) ->
       begin
         if not (check_tp w delta)
@@ -2188,13 +2212,13 @@ and check_pbranchesR trace env delta branches z pchoices ext mode prmode = match
         let () = if trace then print_string ("| " ^ l1 ^ " => \n") else () in
         let () = if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext in
         let deltal = if prob prmode then gen_prob_ctx env delta p None else delta in
-        let potl = I.fresh_probvar () in
-        let prpotl = R.Mult(R.Float(prc), potl) in
-        let p' = check_exp' trace env deltal (A.Arith potl) p (z,c) (p.A.st_data) mode prmode in
+        let potl = pot_branch prc in
+        let prpotl = mult prc potl in
+        let p' = check_exp' trace env deltal potl p (z,c) (p.A.st_data) mode prmode in
         let (deltatl, pottl, branchestl') = check_pbranchesR trace env delta branchestl z pchoicestl ext mode prmode in
-        ((l1, prc, deltal)::deltatl, R.Add(prpotl, pottl), (l1,prc,p')::branchestl')
+        ((l1, prc, deltal)::deltatl, add prpotl pottl, (l1,prc,p')::branchestl')
       end
-  | [], [] -> ([], R.Float(0.), [])
+  | [], [] -> ([], A.Arith (R.Float(0.)), [])
   | (l,_pr,_p)::_branches', [] ->
       E.error_label_missing_alt (l) ext
   | [], (l,_prob,_c)::_choices' ->
@@ -2206,15 +2230,15 @@ and check_pbranchesL trace env delta x pchoices branches zc ext mode prmode = ma
         let () = if trace then print_string ("| " ^ l1 ^ " => \n") else () in
         let () = if l1 = l2 then () else E.error_label_mismatch (l1, l2) ext in
         let deltal = if prob prmode then gen_prob_ctx env delta p (Some x) else delta in
-        let potl = I.fresh_probvar () in
-        let prpotl = R.Mult(R.Float(prc), potl) in
+        let potl = pot_branch prc in
+        let prpotl = mult prc potl in
         let (z,c) = zc in
         let cl = if prob prmode then gen_prob_tpR env p z c else c in
-        let p' = check_exp' trace env (update_tp env x a deltal) (A.Arith potl) p (z,cl) (p.A.st_data) mode prmode in
+        let p' = check_exp' trace env (update_tp env x a deltal) potl p (z,cl) (p.A.st_data) mode prmode in
         let (deltatl, pottl, ctl, branchestl') = check_pbranchesL trace env delta x pchoicestl branchestl zc ext mode prmode in
-        ((l1, prc, deltal)::deltatl, R.Add(prpotl, pottl), (l1, prc, cl)::ctl, (l2,prc,p')::branchestl')
+        ((l1, prc, deltal)::deltatl, add prpotl pottl, (l1, prc, cl)::ctl, (l2,prc,p')::branchestl')
       end
-  | [], [] -> ([], R.Float(0.), [], [])
+  | [], [] -> ([], A.Arith (R.Float(0.)), [], [])
   | [], (l,_pr,_p)::_branches' ->
       E.error_label_missing_alt (l) ext
   | (l,_prob,_a)::_choices', [] ->
@@ -2324,3 +2348,31 @@ let transaction env f delta x ext =
   else if not (mode_lin_list ldelta)
   then error ext ("transaction process " ^ f ^ " has linear context not at linear mode: " ^ PP.pp_lsctx env ldelta)
   else ();;
+
+let rec sum_prob tp = match tp with
+    A.Plus(choices) | A.With(choices) -> sum_prob_choices choices
+  | A.PPlus(pchoices) | A.PWith(pchoices) ->
+      let sum = sum_prob_pchoices pchoices in
+      let _b = eq sum pr_one in
+      ()
+  | A.Tensor(a,b,_m) | A.Lolli(a,b,_m) ->
+      let () = sum_prob a in
+      let () = sum_prob b in
+      ()
+  | A.One | A.TpName _ -> ()
+  | A.PayPot(_,a) | A.GetPot(_,a)
+  | A.Up(a) | A.Down(a)
+  | A.FArrow(_,a) | A.FProduct(_,a) -> sum_prob a
+
+and sum_prob_choices cs = match cs with
+    [] -> ()
+  | (_l,a)::cs' ->  
+      let () = sum_prob a in
+      sum_prob_choices cs'
+
+and sum_prob_pchoices pcs = match pcs with
+    [] -> pr_zero
+  | (_l,pr,a)::pcs' ->
+      let () = sum_prob a in
+      let prtl = sum_prob_pchoices pcs' in
+      add pr prtl;;

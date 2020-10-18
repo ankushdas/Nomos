@@ -6,7 +6,8 @@ module C = Core
 module M = C.Map
 module PP = Pprint
 module F = NomosFlags
-module ClpS = S.Clp (S.Clp_std_options);;
+module ClpS = S.Clp (S.Clp_std_options)
+module ClpS2 = S.Clp (S.Clp_std_options)
 
 exception InferImpossible;;
 
@@ -15,15 +16,32 @@ exception InferImpossible;;
 (************************************************************)
 let vnum = ref 0;;
 
-let fresh () =
-  let v = "_v" ^ string_of_int !vnum in
+let fresh_potvar () =
+  let v = "_q" ^ string_of_int !vnum in
   let () = vnum := !vnum + 1 in
-  v;;
+  R.Var(v);;
 
 let remove_star pot = match pot with
     A.Star ->
-      let v = fresh () in
-      A.Arith(R.Var(v))
+      let v = fresh_potvar () in
+      A.Arith(v)
+  | A.Arith e -> A.Arith e;;
+
+(***************************************************************)
+(* Substituting probability variables for * in PPlus and PWith *)
+(***************************************************************)
+
+let probnum = ref 0;;
+
+let fresh_probvar () =
+  let pr = "_pr" ^ string_of_int !probnum in
+  let () = probnum := !probnum + 1 in
+  R.Var(pr);;
+
+let remove_star_prob prob = match prob with
+    A.Star ->
+      let v = fresh_probvar () in
+      A.Arith(v)
   | A.Arith e -> A.Arith e;;
 
 let rec remove_stars_tp tp = match tp with
@@ -47,7 +65,7 @@ and remove_stars_choices choices = match choices with
   | [] -> []
 
 and remove_stars_pchoices pchoices = match pchoices with
-    (l,pot,a)::pchoices' -> (l, pot, remove_stars_tp a)::(remove_stars_pchoices pchoices')
+    (l,prob,a)::pchoices' -> (l, remove_star_prob prob, remove_stars_tp a)::(remove_stars_pchoices pchoices')
   | [] -> []
 
 and remove_stars_ftp ftp = match ftp with
@@ -63,7 +81,7 @@ let rec remove_stars_exp exp = match exp with
   | A.Case(x,branches) -> A.Case(x, remove_stars_branches branches)
   | A.PLab(x,k,p) -> A.PLab(x, k, remove_stars_aug p)
   | A.PCase(x,pbranches) -> A.PCase(x, remove_stars_pbranches pbranches)
-  | A.Flip(pr,p1,p2) -> A.Flip(pr, remove_stars_aug p1, remove_stars_aug p2)
+  | A.Flip(pr,p1,p2) -> A.Flip(remove_star_prob pr, remove_stars_aug p1, remove_stars_aug p2)
   | A.Send(x,w,p) -> A.Send(x,w, remove_stars_aug p)
   | A.Recv(x,y,p) -> A.Recv(x,y, remove_stars_aug p)
   | A.Close(x) -> A.Close(x)
@@ -98,7 +116,7 @@ and remove_stars_branches bs = match bs with
 and remove_stars_pbranches bs = match bs with
     [] -> []
   | (l,pr,p)::bs' ->
-      (l, pr, remove_stars_aug p)::
+      (l, remove_star_prob pr, remove_stars_aug p)::
       (remove_stars_pbranches bs')
       
 and remove_stars_aug {A.st_data = d; A.st_structure = p} = {A.st_data = d; A.st_structure = remove_stars_exp p}
@@ -182,7 +200,7 @@ and substitute_choices choices psols msols = match choices with
   | [] -> []
 
 and substitute_pchoices pchoices psols msols = match pchoices with
-    (l,pot,a)::pchoices' -> (l, pot, substitute_tp a psols msols)::(substitute_pchoices pchoices' psols msols)
+    (l,prob,a)::pchoices' -> (l, substitute_pot prob psols, substitute_tp a psols msols)::(substitute_pchoices pchoices' psols msols)
   | [] -> []
 
 and substitute_ftp ftp psols msols = match ftp with
@@ -200,7 +218,7 @@ let rec substitute_exp exp psols msols = match exp with
   | A.Case(x,branches) -> A.Case(substitute_mode x msols, substitute_branches branches psols msols)
   | A.PLab(x,k,p) -> A.PLab(substitute_mode x msols, k, substitute_aug p psols msols)
   | A.PCase(x,pbranches) -> A.PCase(substitute_mode x msols, substitute_pbranches pbranches psols msols)
-  | A.Flip(pr,p1,p2) -> A.Flip(pr, substitute_aug p1 psols msols, substitute_aug p2 psols msols)
+  | A.Flip(pr,p1,p2) -> A.Flip(substitute_pot pr psols, substitute_aug p1 psols msols, substitute_aug p2 psols msols)
   | A.Send(x,w,p) -> A.Send(substitute_mode x msols, substitute_mode w msols, substitute_aug p psols msols)
   | A.Recv(x,y,p) -> A.Recv(substitute_mode x msols, substitute_mode y msols, substitute_aug p psols msols)
   | A.Close(x) -> A.Close(substitute_mode x msols)
@@ -235,7 +253,7 @@ and substitute_branches bs psols msols = match bs with
 and substitute_pbranches bs psols msols = match bs with
     [] -> []
   | (l,pr, p)::bs' ->
-      (l, pr, substitute_aug p psols msols)::
+      (l, substitute_pot pr psols, substitute_aug p psols msols)::
       (substitute_pbranches bs' psols msols)
 
 and substitute_aug {A.st_data = d; A.st_structure = p} psols msols = {A.st_data = d; A.st_structure = substitute_exp p psols msols}
@@ -370,22 +388,6 @@ and removeU_fexp fexp = match fexp with
   | A.GetTxnSender -> A.GetTxnSender
   | A.Command(p) -> A.Command(removeU_aug p);;
 
-
-(***************************************************************)
-(* Substituting probability variables for * in PPlus and PWith *)
-(***************************************************************)
-
-let probnum = ref 0;;
-
-let probfresh () =
-  let pr = "_pr" ^ string_of_int !probnum in
-  let () = probnum := !probnum + 1 in
-  pr;;
-
-let fresh_probvar () =
-  let x = probfresh () in
-  R.Var x;;
-
 (**************)
 (* LP solving *)
 (**************)
@@ -423,10 +425,12 @@ type entry =
     Var of float * string
   | Const of float;;
 
+exception NonLinear;;
+
 let get_entry p = match p with
     R.Mult(R.Float(n), R.Var(v)) -> Var(n, v)
   | R.Mult(R.Float(n), R.Float(_o)) -> Const(n)
-  | _p -> raise InferImpossible;;
+  | _p -> raise NonLinear;;
 
 let rec get_expr_list e = match e with
     R.Float(n) ->

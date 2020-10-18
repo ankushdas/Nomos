@@ -45,6 +45,9 @@ type str =
 type chan = str * string * mode       (* channel name with modes *)
 [@@deriving sexp]
 
+type probability = potential
+[@@deriving sexp]
+
 type stype =
     Plus of choices                   (* +{l : Al} *)
   | With of choices                   (* &{l : Al} *)
@@ -64,7 +67,7 @@ type stype =
 
 and choices = (label * stype) list
 
-and pchoices = (label * float * stype) list
+and pchoices = (label * probability * stype) list
 
 type arglist =
   | Single of string * ext 
@@ -138,7 +141,7 @@ and 'a st_expr =
   (* PNomos specific *)
   | PLab of chan * label * 'a st_aug_expr                   (* x..k  ; P *)
   | PCase of chan * 'a pbranches                            (* pcase x (l => Ql) *)
-  | Flip of float * 'a st_aug_expr * 'a st_aug_expr         (* flip {p} (H => Q | T => Q) *)
+  | Flip of probability * 'a st_aug_expr * 'a st_aug_expr   (* flip {p} (H => Q | T => Q) *)
 
   (* tensor or lolli *)
   | Send of chan * chan * 'a st_aug_expr                    (* send x w ; P *)
@@ -188,7 +191,7 @@ and 'a branch = label * 'a st_aug_expr
 
 and 'a branches = 'a branch list                          (* (l1 => P1 | ... | ln => Pn) *)
 
-and 'a pbranch = label * float * 'a st_aug_expr
+and 'a pbranch = label * probability * 'a st_aug_expr
 
 and 'a pbranches = 'a pbranch list                        (* (l1{p1} => P1 | ... | ln{pn} => Pn) *)
 

@@ -24,6 +24,8 @@ type str = Hash | Dollar
 [@@deriving sexp]
 type chan = str * string * mode
 [@@deriving sexp]
+type probability = potential
+[@@deriving sexp]
 type stype =
     Plus of choices
   | With of choices
@@ -41,7 +43,7 @@ type stype =
   | FProduct of func_tp * stype
 [@@deriving sexp]
 and choices = (label * stype) list
-and pchoices = (label * float * stype) list
+and pchoices = (label * probability * stype) list
 type arglist = Single of string * ext | Curry of (string * ext) * arglist
 [@@deriving sexp]
 type arith_operator = Add | Sub | Mult | Div
@@ -82,7 +84,7 @@ and 'a st_expr =
   | Case of chan * 'a branches
   | PLab of chan * label * 'a st_aug_expr
   | PCase of chan * 'a pbranches
-  | Flip of float * 'a st_aug_expr * 'a st_aug_expr
+  | Flip of probability * 'a st_aug_expr * 'a st_aug_expr
   | Send of chan * chan * 'a st_aug_expr
   | Recv of chan * chan * 'a st_aug_expr
   | Close of chan
@@ -112,7 +114,7 @@ and printable =
 [@@deriving sexp]
 and 'a branch = label * 'a st_aug_expr
 and 'a branches = 'a branch list
-and 'a pbranch = label * float * 'a st_aug_expr
+and 'a pbranch = label * probability * 'a st_aug_expr
 and 'a pbranches = 'a pbranch list
 and 'a arg = STArg of chan | FArg of 'a func_expr
 [@@deriving sexp]

@@ -66,7 +66,7 @@ label_stype :
     ;
 
 lab_p_stype :
-    | l = ID; LBRACE; p = FLOAT; RBRACE; COLON; t = stype         { (l, p, t) }
+    | l = ID; p = potential; COLON; t = stype         { (l, p, t) }
     ;
 
 sp_stype:
@@ -317,7 +317,7 @@ branches2 :
     ;
 
 pbranches :
-    | k = ID; RRARROW; p = st; b = pbranches2 { (k, 0., p)::b }   
+    | k = ID; RRARROW; p = st; b = pbranches2 { (k,Ast.Star, p)::b }   
     ; 
 
 pbranches2 :
@@ -374,8 +374,8 @@ st:
     |  PCASE; x = linid; LPAREN; b = pbranches                           { {st_structure = Ast.PCase(x,b); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
-    |  FLIP; LBRACE; x = FLOAT; RBRACE; LPAREN; HH; RRARROW; p1 = st; BAR; TT; RRARROW; p2 = st; RPAREN
-                                                                         { {st_structure = Ast.Flip(x,p1,p2); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  FLIP; pr = potential; LPAREN; HH; RRARROW; p1 = st; BAR; TT; RRARROW; p2 = st; RPAREN
+                                                                         { {st_structure = Ast.Flip(pr,p1,p2); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                     ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                     $startpos.Lexing.pos_fname)} }
     |  CLOSE; x = linid                                                  { {st_structure = Ast.Close(x); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),

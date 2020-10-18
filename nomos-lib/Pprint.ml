@@ -36,12 +36,7 @@ let pp_arith e = pp_arith_prec 0 e;;
 (*******************************)
 
 (* pp_pot p = "{p}", "" if p = 0 *)
-let rec pp_pot e = match e with
-    A.Arith (R.Float n) ->
-      if R.fequals n 0.
-      then ""
-      else pp_poth e
-  | e -> pp_poth e
+let rec pp_pot e = pp_poth e
 
 and pp_poth e = match e with
     A.Star -> "{*}"
@@ -77,7 +72,7 @@ let pp_rel_opr opr = match opr with
     A.And -> "&&"
   | A.Or -> "||";;
 
-let pp_prob pr = "{" ^ string_of_float pr ^ "}";;
+let pp_prob pr = pp_pot pr;;
 
 (***********************)
 (* Externalizing types *)

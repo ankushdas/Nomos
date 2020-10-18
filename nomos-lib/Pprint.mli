@@ -8,7 +8,7 @@ val pp_potpos : A.potential -> string
 val pp_arith_opr : A.arith_operator -> string
 val pp_comp_opr : A.comp_operator -> string
 val pp_rel_opr : A.rel_operator -> string
-val pp_prob : float -> string
+val pp_prob : A.probability -> string
 val spaces : int -> string
 val len : string -> int
 val pp_mode : A.mode -> string

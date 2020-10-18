@@ -163,9 +163,11 @@ val check_printable_list :
   A.printable list -> 'a A.arg list -> int -> int -> unit
 val is_argtype : A.printable -> bool
 val filter_args : A.printable list -> A.printable list
+val pr_zero : A.potential
+val pr_one : A.potential
 val plabprob :
   string ->
-  (string * float * 'a) list ->
+  (string * A.potential * 'a) list ->
   ((int * int) * (int * int) * string) option -> unit
 val in_ctx : 'a * string * 'b -> 'c A.arg list -> bool
 val find_sigtp :
@@ -174,28 +176,33 @@ val get_typeL :
   (A.decl * 'a) list ->
   A.expname -> 'b A.arg list -> 'c * string * 'd -> A.stype
 val get_typeR : (A.decl * 'a) list -> A.expname -> A.stype
-val gen_pchoices : ('a * 'b * 'c) list -> 'a -> ('a * float * 'c) list
+val gen_pchoices : ('a * 'b * 'c) list -> 'a -> ('a * A.potential * 'c) list
 val gen_tp : A.label -> A.stype -> A.stype
+val add : A.potential -> A.potential -> A.potential
+val mult : A.potential -> A.potential -> A.potential
 val add_choices :
   (A.decl * 'a) list ->
   PP.A.str * string * PP.A.mode ->
-  (string * float * PP.A.stype) list ->
-  (string * float * PP.A.stype) list ->
+  (string * A.potential * PP.A.stype) list ->
+  (string * A.potential * PP.A.stype) list ->
   ((int * int) * (int * int) * string) option ->
-  (string * float * PP.A.stype) list
+  (string * A.potential * PP.A.stype) list
 val add_ptypes :
   (A.decl * 'a) list ->
   PP.A.str * string * PP.A.mode ->
   A.stype ->
   A.stype -> ((int * int) * (int * int) * string) option -> A.stype
 val mult_choices :
-  'a -> float -> ('b * float * 'c) list -> ('b * float * 'c) list
-val mult_ptype : (A.decl * 'a) list -> float -> A.stype -> A.stype
+  'a ->
+  A.potential -> ('b * A.potential * 'c) list -> ('b * A.potential * 'c) list
+val mult_ptype : (A.decl * 'a) list -> A.potential -> A.stype -> A.stype
 val weighted_psum :
   (A.decl * 'a) list ->
   PP.A.str * string * PP.A.mode ->
-  ('b * float * A.stype) list ->
+  ('b * A.potential * A.stype) list ->
   ((int * int) * (int * int) * string) option -> A.stype
+val comp : R.arith -> R.arith
+val comp_star : A.potential -> A.potential
 val action :
   (A.decl * 'a) list ->
   ((int * int) * (int * int) * string) option A.st_aug_expr ->
@@ -204,7 +211,7 @@ val action_pbranches :
   (A.decl * 'a) list ->
   ((int * int) * (int * int) * string) option A.pbranches ->
   PP.A.str * string * PP.A.mode ->
-  A.stype -> (A.label * float * A.stype) list
+  A.stype -> (A.label * A.potential * A.stype) list
 val action_branches :
   (A.decl * 'a) list ->
   ((int * int) * (int * int) * string) option A.branches ->
@@ -223,19 +230,20 @@ val gen_prob_ctx :
   A.context ->
   ((int * int) * (int * int) * string) option A.st_aug_expr ->
   ('b * string * 'c) option -> A.context
-val label_errormsg : 'a -> (string * float * PP.A.stype) list -> string
+val label_errormsg :
+  'a -> (string * PP.A.probability * PP.A.stype) list -> string
 val prob_error :
   'a ->
   PP.A.str * string * PP.A.mode ->
   PP.A.stype ->
   PP.A.stype ->
-  (string * float * PP.A.stype) list ->
+  (string * PP.A.probability * PP.A.stype) list ->
   ((int * int) * (int * int) * string) option -> 'b
 val match_probs :
   (A.decl * 'a) list ->
   PP.A.str * string * PP.A.mode ->
   PP.A.stype ->
-  (string * float * PP.A.stype) list ->
+  (string * PP.A.probability * PP.A.stype) list ->
   ((int * int) * (int * int) * string) option -> unit
 val extract : 'a * 'b * 'c -> (('d * 'b * 'e) * 'f) list -> 'f
 val extract_ord : 'a * string * 'b -> A.argument list -> A.stype
@@ -251,13 +259,14 @@ val oextractl :
 val match_probs_ctx :
   (A.decl * 'a) list ->
   A.context ->
-  (string * float * A.context) list ->
+  (string * PP.A.probability * A.context) list ->
   ((int * int) * (int * int) * string) option -> unit
 type probmode = Prob | NonProb
 val prob : probmode -> bool
 val faug : 'a A.func_expr -> 'a -> 'a A.func_aug_expr
 val staug : 'a A.st_expr -> 'a -> 'a A.st_aug_expr
 val create_app : 'a A.func_aug_expr -> 'a A.func_aug_expr -> 'a A.func_expr
+val pot_branch : A.potential -> A.potential
 val check_fexp_simple' :
   bool ->
   (A.decl * 'a) list ->
@@ -333,7 +342,8 @@ val check_pbranchesR :
   A.ext ->
   PP.A.mode ->
   probmode ->
-  (A.label * float * A.context) list * A.R.arith * A.ext A.pbranches
+  (A.label * PP.A.probability * A.context) list * A.potential *
+  A.ext A.pbranches
 val check_pbranchesL :
   bool ->
   (A.decl * 'a) list ->
@@ -345,8 +355,8 @@ val check_pbranchesL :
   A.ext ->
   PP.A.mode ->
   probmode ->
-  (A.label * float * A.context) list * A.R.arith *
-  (A.label * float * PP.A.stype) list * A.ext A.pbranches
+  (A.label * PP.A.probability * A.context) list * A.potential *
+  (A.label * PP.A.probability * PP.A.stype) list * A.ext A.pbranches
 val check_branchesR :
   bool ->
   (A.decl * 'a) list ->
@@ -401,3 +411,6 @@ val transaction :
   A.context ->
   PP.A.str * string * PP.A.mode ->
   ((int * int) * (int * int) * string) option -> unit
+val sum_prob : A.stype -> unit
+val sum_prob_choices : A.choices -> unit
+val sum_prob_pchoices : A.pchoices -> A.potential
