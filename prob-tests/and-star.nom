@@ -1,0 +1,28 @@
+type A = p+{H{*} : 1, T{*} : 1}
+type B = p+{H{*} : 1, T{*} : 1}
+
+proc asset and : ($x : A), ($y : A) |{*}- ($z : B) =
+{
+  pcase $x (
+    H => pcase $y (
+      H => $z..H ;
+           wait $x ;
+           wait $y ;
+           close $z
+    | T => $z..T ;
+           wait $x ;
+           wait $y ;
+           close $z
+    )
+  | T => pcase $y (
+      H => $z..T ;
+           wait $x ;
+           wait $y ;
+           close $z
+    | T => $z..T ;
+           wait $x ;
+           wait $y ;
+           close $z
+    )
+  )
+}
