@@ -27,9 +27,7 @@ class Documentation extends React.Component {
             <Col md="12">
               <Card>
                 <CardHeader>
-                  <CardTitle tag="h2">
-                    Nomos Documentation
-                  </CardTitle>
+                  <h3 className="card-category">Nomos Documentation</h3>
                 </CardHeader>
                 <CardBody>
                   <p>

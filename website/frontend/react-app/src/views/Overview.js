@@ -6,7 +6,7 @@ import { Card, CardHeader, CardBody, CardTitle, Row, Col } from "reactstrap";
 const overview =
   <Card>
     <CardHeader>
-      <h5 className="card-category">Overview</h5>
+      <h3 className="card-category">Overview</h3>
       <CardTitle tag="h2">
         Nomos - A Programming Language for Digital Contracts
       </CardTitle>
