@@ -23,7 +23,7 @@ const jan = {
   inst : "Carnegie Mellon University",
   link : "https://www.cs.cmu.edu/~janh/",
   img  : require("assets/img/jan.jpg"),
-  desc : "Nomos developer and Associate Professor of Computer Science at Carnegie Mellon"
+  desc : "Nomos Developer and Associate Professor of Computer Science at Carnegie Mellon"
 }
 
 const frank = {
@@ -31,21 +31,29 @@ const frank = {
   inst : "Carnegie Mellon University",
   link : "https://www.cs.cmu.edu/~fp/",
   img  : require("assets/img/frank.jpg"),
-  desc : "Nomos developer and Professor of Computer Science at Carnegie Mellon"
+  desc : "Nomos Developer and Professor of Computer Science at Carnegie Mellon"
 }
 
 const ishani = {
   name : "Ishani Santurkar",
   inst : "Carnegie Mellon University",
   img  : require("assets/img/ishani.jpg"),
-  desc : "Nomos developer and bachelor student majoring in Computer Science at Carnegie Mellon"
+  desc : "Nomos Developer and Bachelor student majoring in Computer Science at Carnegie Mellon"
 }
 
 const stephen = {
   name : "Stephen McIntosh",
   inst : "Carnegie Mellon University",
   img  : require("assets/img/stephen.jpg"),
-  desc : "Nomos developer and bachelor student majoring in Computer Science at Carnegie Mellon"
+  desc : "Nomos Developer and Bachelor student majoring in Computer Science at Carnegie Mellon"
+}
+
+const stephanie = {
+  name : "Stephanie Balzer",
+  inst : "Carnegie Mellon University",
+  link : "https://www.cs.cmu.edu/~balzers/",
+  img  : require("assets/img/sb.jpg"),
+  desc : "Nomos contributor and Research Faculty at Carnegie Mellon"
 }
 
 const teamMember = arg => (
@@ -105,6 +113,9 @@ class Team extends React.Component {
             </Col>
             <Col md="4">
               {teamMember (stephen)}	    
+            </Col>
+            <Col md="4">
+              {teamMember (stephanie)}	    
             </Col>
           </Row>
         </div>
