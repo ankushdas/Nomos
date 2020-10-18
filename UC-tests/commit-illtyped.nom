@@ -1,0 +1,180 @@
+type StoF = +{commit : bool ^ StoF_committed}
+
+type StoF_committed = +{open : StoF_done}
+
+type StoF_done = 1
+
+type RtoF = &{commit : RtoF_committed}
+
+type RtoF_committed = &{open : bool -> RtoF_done}
+
+type RtoF_done = 1
+
+type dummy = 1
+
+type ZtoS = &{commit : bool -> ZtoS_committed}
+
+type ZtoS_committed = &{open : 1}
+
+type ZtoR = +{commit : ZtoR_committed}
+
+type ZtoR_committed = +{open : bool ^ 1}
+
+proc asset ideal_sender_proc_init : (#env : ZtoS) |- ($fcom : StoF) =
+{
+  $lenv <- acquire #env ;
+  $lenv.FETCH ;
+  case $lenv (
+    commit => bit = recv $lenv ;
+              $fcom.commit ;
+              send $fcom bit ;
+              $env <- sender_proc_committed <- $fcom
+  )
+}
+
+proc asset sender_proc_committed : ($fcom : StoF_committed) |- ($env : ZtoS_committed) =
+{
+  case $env (
+    open => $fcom.open ;
+            wait $fcom ;
+            close $env
+  )
+}
+
+proc asset receiver_proc_init : ($fcom : RtoF) |- ($env : ZtoR) =
+{
+  case $fcom (
+    commit => $env.commit ;
+              $env <- receiver_proc_committed <- $fcom
+  )
+}
+
+proc asset receiver_proc_committed : ($fcom : RtoF_committed) |- ($env : ZtoR_committed) =
+{
+  case $fcom (
+    open => bit = recv $fcom ;
+            $env.open ;
+            send $env bit ;
+            wait $fcom ;
+            close $env
+  )
+}
+
+type StoRO = &{hash : bool -> int -> int ^ StoRO_forwarder}
+
+type StoRO_forwarder = &{sendcommittoR : int -> StoRO_open}
+
+type StoRO_open = &{open : bool -> int -> 1}
+
+proc asset real_sender_init : ($ro : StoRO) |- ($env : ZtoS) =
+{
+  let nonce = 100 ;
+  case $env (
+    commit => bit = recv $env ;
+              $ro.hash ;
+              send $ro bit ;
+              send $ro nonce ;
+              n = recv $ro ;
+              $env <- real_sender_committed <- $ro n bit nonce
+  )
+}
+
+proc asset real_sender_committed : ($ro : StoRO_forwarder), (n : int), (bit : bool), (nonce : int) |- ($env : ZtoS_committed) =
+{
+  $ro.sendcommittoR ;
+  send $ro n ;
+  $env <- real_sender_forwarded <- $ro bit nonce
+}
+
+proc asset real_sender_forwarded : ($ro : StoRO_open), (bit : bool), (nonce : int) |- ($env : ZtoS_committed) =
+{
+  case $env (
+    open => $ro.open ;
+            send $ro bit ;
+            send $ro nonce ;
+            wait $ro ;
+            close $env
+  )
+}
+
+type RtoRO = +{commit : int ^ RtoRO_open}
+
+type RtoRO_open = +{open : bool ^ int ^ RtoRO_hash}
+
+type RtoRO_hash = &{hash : bool -> int -> int ^ 1}
+
+proc asset real_receiver_init : ($ro : RtoRO) |- ($env : ZtoR) =
+{
+  case $ro (
+    commit => n = recv $ro ;
+              $env.commit ;
+              case $ro (
+                open => bit = recv $ro ;
+                        nonce = recv $ro ;
+                        $ro.hash ;
+                        send $ro bit ;
+                        send $ro nonce ;
+                        n1 = recv $ro ;
+                        if n = n1
+                        then
+                          $env.open ;
+                          send $env b ;
+                          wait $ro ;
+                          close $env
+                        else
+                          abort
+              )
+  )
+}
+
+
+
+
+
+(*
+proc asset ideal_func_start : ($s : sender), ($r : receiver) |- ($f : dummy) =
+{
+  case $s (
+    commit =>                 (* (s : bool ^ sender_committed), (r : receiver) |- (f :dummy) *)
+              b = recv $s ;    (* (b : bool), (s : sender_committed), (r : receiver) |- (f : dummy) *)
+              $r.commit ;      (* (b : bool), (s : sender_committed), (r : receiver_committed) |- (f : dummy) *)
+              $f <- ideal_func_after_commit <- b $s $r
+  )
+}
+
+proc asset ideal_func_after_commit : (b : bool), ($s : sender_committed), ($r : receiver_committed) |- ($f : dummy) =
+{
+  case $s (
+    open =>                   (* (b : bool), (s : sender_done), (r : receiver_committed) |- (f : dummy) *)
+            $r.open ;         (* (b : bool), (s : sender_done), (r : bool -> receiver_done) |- (f : dummy) *)
+            send $r b ;       (* (b : bool), (s : sender_done), (r : receiver_done) |- (f : dummy) *)
+                              (* (b : bool), (s : 1), (r : 1) |- (f : 1) *)
+            wait $s ;         (* (b : bool), (r : 1) |- (f : 1) *)
+            wait $r ;         (* (b : bool) |- (f : 1) *)
+            close $f
+  )
+}
+
+proc ideal_func_start_alternative : (s : sender), (r : receiver) |- (f : dummy) =
+{
+  r.commit ;                  % (s : sender), (r : receiver_committed) |- (f : dummy)
+  case s (
+    commit =>                 % (s : bool ^ sender_committed), (r : receiver_committed) |- (f :dummy)
+              b = recv s ;    % (b : bool), (s : sender_committed), (r : receiver_committed) |- (f : dummy)
+              f <- ideal_func_after_commit <- b s r
+  )
+}
+
+(* TODO: random oracle should satisfy 1-to-1 invariant *)
+type random_oracle = &{query : bool -> int -> int ^ random_oracle}
+
+proc asset real_protocol_start : ($s : sender), ($r : receiver) |- ($f : dummy) =
+{
+  case $s (
+    commit =>                 (* (s : bool ^ sender_committed), (r : receiver) |- (f :dummy) *)
+              b = recv $s ;    (* (b : bool), (s : sender_committed), (r : receiver) |- (f : dummy) *)
+              $r.commit ;      (* (b : bool), (s : sender_committed), (r : receiver_committed) |- (f : dummy) *)
+              $f <- ideal_func_after_commit <- b $s $r
+  )
+}
+*)
