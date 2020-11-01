@@ -198,6 +198,12 @@ let rec eq_ftp tp tp' = match tp, tp' with
   | A.VarT v, A.VarT v' -> v = v'
   | _, _ -> false;;
 
+type probmode = Prob | NonProb;;
+
+let prob prmode = match prmode with
+    Prob -> true
+  | NonProb -> false;;
+
 let rec mem_seen env seen a a' = match seen with
     (b,b')::seen' ->
       if b = a && b' = a' then true
@@ -207,163 +213,169 @@ let rec mem_seen env seen a a' = match seen with
   | [] -> false;;
 
 (* eq_tp env con seen A A' = true if (A = A'), defined coinductively *)
-let rec eq_tp' env seen a a' =
+let rec eq_tp' env seen a a' prmode =
   if !F.verbosity >= 3
-  then print_string ("comparing " ^ PP.pp_tp env a ^ "\nand\n" ^ PP.pp_tp env a' ^ "\n")
+  then print_string ("comparing\n" ^ PP.pp_tp env a ^ "\nand\n" ^ PP.pp_tp env a' ^ "\n")
   else ()
-  ; eq_tp env seen a a'
+  ; eq_tp env seen a a' prmode
 
-and eq_tp env seen tp tp' = match tp, tp' with
+and eq_tp env seen tp tp' prmode = match tp, tp' with
     A.Plus(choice), A.Plus(choice') ->
-      eq_choice env seen choice choice'
+      eq_choice env seen choice choice' prmode
   | A.With(choice), A.With(choice') ->
-      eq_choice env seen choice choice'
+      eq_choice env seen choice choice' prmode
   | A.PPlus(pchoice), A.PPlus(pchoice') ->
-      eq_pchoice env seen pchoice pchoice'
+      eq_pchoice env seen pchoice pchoice' prmode
   | A.PWith(pchoice), A.PWith(pchoice') ->
-      eq_pchoice env seen pchoice pchoice'
+      eq_pchoice env seen pchoice pchoice' prmode
   | A.Tensor(s,t,m), A.Tensor(s',t',m') ->
-      eqmode m m' && eq_tp' env seen s s' && eq_tp' env seen t t'
+      eqmode m m' && eq_tp' env seen s s' prmode && eq_tp' env seen t t' prmode
   | A.Lolli(s,t,m), A.Lolli(s',t',m') ->
-      eqmode m m' && eq_tp' env seen s s' && eq_tp' env seen t t'
+      eqmode m m' && eq_tp' env seen s s' prmode && eq_tp' env seen t t' prmode
   | A.One, A.One -> true
 
   | A.PayPot(pot,a), A.PayPot(pot',a') ->
-      eq pot pot' && eq_tp' env seen a a'
+      eq pot pot' && eq_tp' env seen a a' prmode
   | A.GetPot(pot,a), A.GetPot(pot',a') ->
-      eq pot pot' && eq_tp' env seen a a'
+      eq pot pot' && eq_tp' env seen a a' prmode
 
   | A.Up(a), A.Up(a') ->
-      eq_tp' env seen a a'
+      eq_tp' env seen a a' prmode
   | A.Down(a), A.Down(a') ->
-      eq_tp' env seen a a'
+      eq_tp' env seen a a' prmode
 
   | A.FArrow(t,a), A.FArrow(t',a') ->
-      eq_ftp t t' && eq_tp' env seen a a'
+      eq_ftp t t' && eq_tp' env seen a a' prmode
   | A.FProduct(t,a), A.FProduct(t',a') ->
-      eq_ftp t t' && eq_tp' env seen a a'
+      eq_ftp t t' && eq_tp' env seen a a' prmode
 
   | A.TpName(a), A.TpName(a') ->
-      eq_name_name env seen a a' (* coinductive type equality *)
+      eq_name_name env seen a a' prmode (* coinductive type equality *)
   | A.TpName(a), a' ->
-      eq_tp' env seen (A.expd_tp env a) a'
+      eq_tp' env seen (A.expd_tp env a) a' prmode
   | a, A.TpName(a') ->
-      eq_tp' env seen a (A.expd_tp env a')
+      eq_tp' env seen a (A.expd_tp env a') prmode
 
   | _a, _a' -> false
 
-and eq_pchoice env seen pcs pcs' = match pcs, pcs' with
+and eq_pchoice env seen pcs pcs' prmode = match pcs, pcs' with
     [], [] -> true
   | (l,pr,a)::pchoice, (l',pr',a')::pchoice' ->
-      l = l' && eq pr pr' && eq_tp' env seen a a'
-      && eq_pchoice env seen pchoice pchoice'
+      let prcheck = if prob prmode then eq pr pr' else true in
+      l = l' && prcheck && eq_tp' env seen a a' prmode &&
+      eq_pchoice env seen pchoice pchoice' prmode
   | _pcs, [] -> false
   | [], _pcs' -> false
 
-and eq_choice env seen cs cs' = match cs, cs' with
+and eq_choice env seen cs cs' prmode = match cs, cs' with
     [], [] -> true
   | (l,a)::choice, (l',a')::choice' -> (* order must be equal *)
-      l = l' && eq_tp' env seen a a'
-      && eq_choice env seen choice choice'
+      l = l' && eq_tp' env seen a a' prmode &&
+      eq_choice env seen choice choice' prmode
   | _cs, [] -> false
   | [], _cs' -> false
 
-and eq_name_name env seen a a' =
+and eq_name_name env seen a a' prmode =
   if mem_seen env seen a a' then true
-  else eq_tp' env ((a,a')::seen) (A.expd_tp env a) (A.expd_tp env a');;
+  else eq_tp' env ((a,a')::seen) (A.expd_tp env a) (A.expd_tp env a') prmode;;
 
-let eqtp env tp tp' = eq_tp' env [] tp tp';; 
+let eqtp env tp tp' prmode = eq_tp' env [] tp tp' prmode;; 
 
 (* ******************* *)
 (* Subtyping Algorithm *)
 (* ******************* *)
 
-let rec sub_tp' env seen a a' =
+let rec sub_tp' env seen a a' prmode =
   if !F.verbosity >= 3
-  then print_string ("comparing " ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
+  then print_string ("comparing\n" ^ PP.pp_tp env a ^ " and " ^ PP.pp_tp env a' ^ "\n")
   else ()
-  ; sub_tp env seen a a'
+  ; sub_tp env seen a a' prmode
 
-and sub_tp env seen tp tp' = match tp, tp' with
+and sub_tp env seen tp tp' prmode = match tp, tp' with
     A.Plus(choice), A.Plus(choice') ->
-      sub_ichoice env seen choice choice'
+      sub_ichoice env seen choice choice' prmode
   | A.With(choice), A.With(choice') ->
-      sub_echoice env seen choice choice'
+      sub_echoice env seen choice choice' prmode
   | A.PPlus(pchoice), A.PPlus(pchoice') ->
-      sub_pichoice env seen pchoice pchoice'
+      sub_pichoice env seen pchoice pchoice' prmode
   | A.PWith(pchoice), A.PWith(pchoice') ->
-      sub_pechoice env seen pchoice pchoice'
+      sub_pechoice env seen pchoice pchoice' prmode
   | A.Tensor(s,t,m), A.Tensor(s',t',m') ->
-      eqmode m m' && sub_tp' env seen s s' && sub_tp' env seen t t'
+      eqmode m m' && sub_tp' env seen s s' prmode && sub_tp' env seen t t' prmode
   | A.Lolli(s,t,m), A.Lolli(s',t',m') ->
-      eqmode m m' && sub_tp' env seen s' s && sub_tp' env seen t t'
+      eqmode m m' && sub_tp' env seen s' s prmode && sub_tp' env seen t t' prmode
   | A.One, A.One -> true
 
   | A.PayPot(pot,a), A.PayPot(pot',a') ->
-      eq pot pot' && sub_tp' env seen a a'
+      eq pot pot' && sub_tp' env seen a a' prmode
   | A.GetPot(pot,a), A.GetPot(pot',a') ->
-      eq pot pot' && sub_tp' env seen a a'
+      eq pot pot' && sub_tp' env seen a a' prmode
 
   | A.Up(a), A.Up(a') ->
-      sub_tp' env seen a a'
+      sub_tp' env seen a a' prmode
   | A.Down(a), A.Down(a') ->
-      sub_tp' env seen a a'
+      sub_tp' env seen a a' prmode
 
   | A.FArrow(t,a), A.FArrow(t',a') ->
-      eq_ftp t t' && sub_tp' env seen a a'
+      eq_ftp t t' && sub_tp' env seen a a' prmode
   | A.FProduct(t,a), A.FProduct(t',a') ->
-      eq_ftp t t' && sub_tp' env seen a a'
+      eq_ftp t t' && sub_tp' env seen a a' prmode
 
   | A.TpName(a), A.TpName(a') ->
-      sub_name_name env seen a a' (* coinductive subtyping *)
+      sub_name_name env seen a a' prmode (* coinductive subtyping *)
   | A.TpName(a), a' ->
-      sub_tp' env seen (A.expd_tp env a) a'
+      sub_tp' env seen (A.expd_tp env a) a' prmode
   | a, A.TpName(a') ->
-      sub_tp' env seen a (A.expd_tp env a')
+      sub_tp' env seen a (A.expd_tp env a') prmode
 
   | _a, _a' -> false
 
-and sub_pichoice env seen pcs pcs' = match pcs with
+and sub_pichoice env seen pcs pcs' prmode = match pcs with
     [] -> true
   | (l,pr,a)::pchoice -> 
       let lab_match = List.find_all (fun (l', _, _) -> l = l') pcs' in
       if (List.length lab_match != 1)
       then false
-      else let (_, pr', a') = List.nth lab_match 0 in 
-      eq pr pr' && sub_tp' env seen a a' && sub_pichoice env seen pchoice pcs'
+      else
+        let (_, pr', a') = List.nth lab_match 0 in
+        let prcheck = if prob prmode then eq pr pr' else true in
+        prcheck && sub_tp' env seen a a' prmode && sub_pichoice env seen pchoice pcs' prmode
 
-and sub_ichoice env seen cs cs' = match cs with
+and sub_ichoice env seen cs cs' prmode = match cs with
     [] -> true
   | (l,a)::choice -> 
       let lab_match = List.find_all (fun (l', _) -> l = l') cs' in
       if (List.length lab_match != 1)
       then false
       else let (_, a') = List.nth lab_match 0 in 
-      sub_tp' env seen a a' && sub_ichoice env seen choice cs'
+      sub_tp' env seen a a' prmode && sub_ichoice env seen choice cs' prmode
 
-and sub_pechoice env seen pcs pcs' = match pcs' with
+and sub_pechoice env seen pcs pcs' prmode = match pcs' with
     [] -> true
   | (l',pr',a')::pchoice' -> 
       let lab_match = List.find_all (fun (l, _, _) -> l = l') pcs in
       if (List.length lab_match != 1)
       then false
-      else let (_, pr, a) = List.nth lab_match 0 in 
-      eq pr pr' && sub_tp' env seen a a' && sub_pechoice env seen pcs pchoice'
+      else
+        let (_, pr, a) = List.nth lab_match 0 in
+        let prcheck = if prob prmode then eq pr pr' else true in
+        prcheck && sub_tp' env seen a a' prmode && sub_pechoice env seen pcs pchoice' prmode
 
-and sub_echoice env seen cs cs' = match cs' with
+and sub_echoice env seen cs cs' prmode = match cs' with
     [] -> true
   | (l',a')::choice' -> 
       let lab_match = List.find_all (fun (l, _) -> l = l') cs in
       if (List.length lab_match != 1)
       then false
-      else let (_, a) = List.nth lab_match 0 in 
-      sub_tp' env seen a a' && sub_echoice env seen cs choice'
+      else
+        let (_, a) = List.nth lab_match 0 in 
+        sub_tp' env seen a a' prmode && sub_echoice env seen cs choice' prmode
 
-and sub_name_name env seen a a' =
+and sub_name_name env seen a a' prmode =
   if mem_seen env seen a a' then true
-  else sub_tp' env ((a,a')::seen) (A.expd_tp env a) (A.expd_tp env a');;
+  else sub_tp' env ((a,a')::seen) (A.expd_tp env a) (A.expd_tp env a') prmode;;
 
-let subtp env tp tp' = sub_tp' env [] tp tp';;
+let subtp env tp tp' prmode = sub_tp' env [] tp tp' prmode;;
 
 (*
   Sub-Synchronizing Session Types
@@ -403,7 +415,7 @@ let rec ssync env seen tp c_opt ext =
           match c_opt with
               None -> error ext ("type not sub-synchronizing")
             | Some c -> 
-                if subtp env a c
+                if subtp env a c Prob
                 then ssync env seen a None ext
                 else error ext ("type not sub-synchronizing")
         end
@@ -546,7 +558,7 @@ let update_tp env x t delta =
   let delta = remove_tp x delta in
   add_chan env (x,t) delta;;
 
-let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx with
+let rec match_ctx env sig_ctx ctx delta sig_len len ext prmode = match sig_ctx, ctx with
     (A.STyped (sc,st))::sig_ctx', (A.STArg c)::ctx' ->
       begin
         if not (check_tp c delta)
@@ -560,8 +572,8 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
             begin
               let t = find_stp c delta ext in
               (* "subtype is sufficient with subsync types" *)
-              if subtp env t st
-              then match_ctx env sig_ctx' ctx' delta sig_len len ext
+              if subtp env t st prmode
+              then match_ctx env sig_ctx' ctx' delta sig_len len ext prmode
               else error ext ("shared type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
             end
@@ -569,8 +581,8 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
             begin
               let t = find_ltp c delta ext in
               (* "subtype is sufficient with subsync types" *)
-              if subtp env t st
-              then match_ctx env sig_ctx' ctx' (remove_tp c delta) sig_len len ext
+              if subtp env t st prmode
+              then match_ctx env sig_ctx' ctx' (remove_tp c delta) sig_len len ext prmode
               else error ext ("linear type mismatch: type of " ^ PP.pp_chan c ^ " : " ^ PP.pp_tp_compact env t ^
                           " does not match type in declaration: " ^ PP.pp_tp_compact env st)
             end
@@ -582,7 +594,7 @@ let rec match_ctx env sig_ctx ctx delta sig_len len ext = match sig_ctx, ctx wit
         else
           let t = find_ftp v delta in
           if eq_ftp st t
-          then match_ctx env sig_ctx' ctx' delta sig_len len ext
+          then match_ctx env sig_ctx' ctx' delta sig_len len ext prmode
           else error ext ("functional type mismatch: type of " ^ v ^ " : " ^ PP.pp_ftp_simple t ^
                       " does not match type in declaration: " ^ PP.pp_ftp_simple st)
       end
@@ -792,7 +804,7 @@ let rec add_choices env x pcs pcs' ext = match pcs, pcs' with
   | (l,prob,a)::pcstl, (l',prob',a')::pcstl' ->
       if l <> l'
       then error ext ("label mismatch in " ^ PP.pp_chan x ^ ": " ^ l ^ " <> " ^ l')
-      else if not (subtp env a a')
+      else if not (subtp env a a' Prob)
       then error ext ("type mismatch in " ^ PP.pp_chan x ^ ": " ^ PP.pp_tp_compact env a ^ " <> " ^ PP.pp_tp_compact env a')
       else (l, add prob prob', a)::(add_choices env x pcstl pcstl' ext)
   | _, _ -> error ext ("prob. mismatch in type of " ^ PP.pp_chan x ^ ": unequal lengths");;
@@ -953,7 +965,7 @@ let prob_error env x a a' al ext =
 
 let match_probs env x a al ext =
   let a' = weighted_psum env x al ext in
-  if subtp env a a'
+  if subtp env a a' Prob
   then ()
   else prob_error env x a a' al ext
 
@@ -1003,12 +1015,6 @@ let match_probs_ctx env delta deltal ext =
   let _o = List.map match_ofunc odelta in
   ();;
 
-
-type probmode = Prob | NonProb;;
-
-let prob prmode = match prmode with
-    Prob -> true
-  | NonProb -> false;;
 
 let faug exp data = {A.func_structure = exp; A.func_data = data};;
 let staug exp data = {A.st_structure = exp; A.st_data = data};;
@@ -1341,7 +1347,7 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
             else
               let a = find_stp y delta (exp.A.st_data) in
               (* "subtype is sufficient with subsync types" *)
-              if subtp env a c
+              if subtp env a c prmode
               then staug (A.Fwd(x,y)) exp.A.st_data
               else error (exp.A.st_data) ("left type " ^ PP.pp_tp_compact env a ^ " not subtype of right type " ^
               PP.pp_tp_compact env c)
@@ -1358,7 +1364,7 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
             else if not (eq pot zero)
             then error (exp.A.st_data) ("unconsumed potential: " ^ pp_uneq pot zero)
             (* "subtype is sufficient with subsync types" *)
-            else if subtp env a c
+            else if subtp env a c prmode
             then staug (A.Fwd(x,y)) exp.A.st_data
             else error (exp.A.st_data) ("left type " ^ PP.pp_tp_compact env a ^ " not equal to right type " ^
                        PP.pp_tp_compact env c)
@@ -1382,7 +1388,7 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
               then error (exp.A.st_data) ("cannot spawn at mode " ^ PP.pp_mode mdef ^ " when current mode is " ^ PP.pp_mode mode)
               else
                 let ctx = join ctx in
-                let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) (exp.A.st_data) in
+                let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) (exp.A.st_data) prmode in
                 let q' = check_exp' trace env (add_chan env (x,a') delta') (minus pot lpot) q zc ext mode prmode in
                 staug (A.Spawn(x,f,xs,q')) exp.A.st_data
       end
@@ -1407,12 +1413,12 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
               else if not (eq_mode x z)
               then E.error_mode_mismatch (x, z) (exp.A.st_data)
               (* "subtype is sufficient with subsync types" *)
-              else if not (subtp env a' c)
+              else if not (subtp env a' c prmode)
               then error (exp.A.st_data) ("type mismatch on right, expected: " ^ PP.pp_tp_compact env a' ^
                               ", found: " ^ PP.pp_tp_compact env c)
               else
                 let ctx = join ctx in
-                let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) (exp.A.st_data) in
+                let delta' = match_ctx env ctx xs delta (List.length ctx) (List.length xs) (exp.A.st_data) prmode in
                 if List.length delta'.linear <> 0
                 then error (exp.A.st_data) ("unconsumed channel(s) from linear context: " ^ PP.pp_lsctx env delta'.linear)
                 else staug (A.ExpName(x,f,xs)) exp.A.st_data
@@ -1633,7 +1639,12 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
         then error (exp.A.st_data) ("potential mismatch in flip: " ^ pp_uneq pot (A.Arith potHHTT))
         else staug (A.Flip(A.Arith pr,p1',p2')) exp.A.st_data
       end
-  | A.Flip(A.Star,_p1,_p2) -> raise UnknownTypeError
+  | A.Flip(A.Star,p1,p2) ->
+      begin
+        let p1' = check_exp' trace env delta pot p1 zc (p1.A.st_data) mode prmode in
+        let p2' = check_exp' trace env delta pot p2 zc (p2.A.st_data) mode prmode in
+        staug (A.Flip(A.Star,p1',p2')) exp.A.st_data
+      end
   | A.Send(x,w,p) ->
       begin
         if not (check_tp w delta)
@@ -1660,7 +1671,7 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
                       if not (eqmode m mw)
                       then error (exp.A.st_data) ("mode mismatch, expected at tensor: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
                       (* subtype is sufficient with subsync types *)
-                      else if not (subtp env a' a)
+                      else if not (subtp env a' a prmode)
                       then error (exp.A.st_data)
                                  ("type mismatch: type of " ^ PP.pp_chan w ^
                                   ", expected: " ^ PP.pp_tp_compact env a ^
@@ -1685,7 +1696,7 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
                     if not (eqmode m mw)
                     then error (exp.A.st_data) ("mode mismatch, expected at lolli: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
                     (* "subtype is sufficient with subsync types" *)
-                    else if not (subtp env a' a)
+                    else if not (subtp env a' a prmode)
                     then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
                                     ", found: " ^ PP.pp_tp_compact env a')
@@ -1722,7 +1733,7 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
                       if not (eqmode m mw)
                       then error (exp.A.st_data) ("mode mismatch, expected at tensor: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
                       (* "subtype is sufficient with subsync types" *)
-                      else if not (subtp env a' a)
+                      else if not (subtp env a' a prmode)
                       then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan w ^
                                       ", expected: " ^ PP.pp_tp_compact env a ^
                                       ", found: " ^ PP.pp_tp_compact env a')
@@ -1746,7 +1757,7 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
                     if not (eqmode m mw)
                     then error (exp.A.st_data) ("mode mismatch, expected at lolli: " ^ PP.pp_mode m ^ ", found: " ^ PP.pp_chan w)
                     (* "subtype is sufficient with subsync types" *)
-                    else if not (subtp env a' a)
+                    else if not (subtp env a' a prmode)
                     then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan w ^
                                     ", expected: " ^ PP.pp_tp_compact env a ^
                                     ", found: " ^ PP.pp_tp_compact env a')
@@ -1837,7 +1848,7 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
           then E.error_mode_shared_comm (x) (exp.A.st_data)
           else
           (* "subtype is sufficient with subsync types" *)
-          if not (subtp env c A.One)
+          if not (subtp env c A.One prmode)
           then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan x ^ ", expected: 1, " ^
                           "found: " ^ PP.pp_tp_compact env c)
           else staug (A.Close(x)) exp.A.st_data
@@ -1849,7 +1860,7 @@ and check_exp trace env delta pot exp zc ext mode prmode = match (exp.A.st_struc
         else
           let a = find_ltp x delta (exp.A.st_data) in
           (* "subtype is sufficient with subsync types" *)
-          if not (subtp env a A.One)
+          if not (subtp env a A.One prmode)
           then error (exp.A.st_data) ("type mismatch: type of " ^ PP.pp_chan x ^ ", expected: 1, " ^
                           " found: " ^ PP.pp_tp_compact env a)
           else

@@ -40,45 +40,48 @@ val eqmode : A.mode -> A.mode -> bool
 val mode_spawn : A.mode -> A.mode -> bool
 val mode_recv : A.mode -> A.mode -> bool
 val eq_ftp : A.func_tp -> A.func_tp -> bool
+type probmode = Prob | NonProb
+val prob : probmode -> bool
 val mem_seen : 'a -> ('b * 'b) list -> 'b -> 'b -> bool
 val eq_tp' :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> PP.A.stype -> PP.A.stype -> bool
+  (A.tpname * A.tpname) list -> PP.A.stype -> PP.A.stype -> probmode -> bool
 val eq_tp :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> PP.A.stype -> PP.A.stype -> bool
+  (A.tpname * A.tpname) list -> PP.A.stype -> PP.A.stype -> probmode -> bool
 val eq_pchoice :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> A.pchoices -> A.pchoices -> bool
+  (A.tpname * A.tpname) list -> A.pchoices -> A.pchoices -> probmode -> bool
 val eq_choice :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> A.choices -> A.choices -> bool
+  (A.tpname * A.tpname) list -> A.choices -> A.choices -> probmode -> bool
 val eq_name_name :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> A.tpname -> A.tpname -> bool
-val eqtp : (A.decl * 'a) list -> PP.A.stype -> PP.A.stype -> bool
+  (A.tpname * A.tpname) list -> A.tpname -> A.tpname -> probmode -> bool
+val eqtp : (A.decl * 'a) list -> PP.A.stype -> PP.A.stype -> probmode -> bool
 val sub_tp' :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> PP.A.stype -> PP.A.stype -> bool
+  (A.tpname * A.tpname) list -> PP.A.stype -> PP.A.stype -> probmode -> bool
 val sub_tp :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> PP.A.stype -> PP.A.stype -> bool
+  (A.tpname * A.tpname) list -> PP.A.stype -> PP.A.stype -> probmode -> bool
 val sub_pichoice :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> A.pchoices -> A.pchoices -> bool
+  (A.tpname * A.tpname) list -> A.pchoices -> A.pchoices -> probmode -> bool
 val sub_ichoice :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> A.choices -> A.choices -> bool
+  (A.tpname * A.tpname) list -> A.choices -> A.choices -> probmode -> bool
 val sub_pechoice :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> A.pchoices -> A.pchoices -> bool
+  (A.tpname * A.tpname) list -> A.pchoices -> A.pchoices -> probmode -> bool
 val sub_echoice :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> A.choices -> A.choices -> bool
+  (A.tpname * A.tpname) list -> A.choices -> A.choices -> probmode -> bool
 val sub_name_name :
   (A.decl * 'a) list ->
-  (A.tpname * A.tpname) list -> A.tpname -> A.tpname -> bool
-val subtp : (A.decl * 'a) list -> PP.A.stype -> PP.A.stype -> bool
+  (A.tpname * A.tpname) list -> A.tpname -> A.tpname -> probmode -> bool
+val subtp :
+  (A.decl * 'a) list -> PP.A.stype -> PP.A.stype -> probmode -> bool
 val ssync :
   (A.decl * 'a) list ->
   A.tpname list ->
@@ -135,7 +138,8 @@ val match_ctx :
   A.argument list ->
   'b A.arg list ->
   A.context ->
-  int -> int -> ((int * int) * (int * int) * string) option -> A.context
+  int ->
+  int -> ((int * int) * (int * int) * string) option -> probmode -> A.context
 val join : A.context -> A.argument list
 val lookup_var : string -> A.argument list -> A.func_tp option
 val lookup_ftp :
@@ -261,8 +265,6 @@ val match_probs_ctx :
   A.context ->
   (string * PP.A.probability * A.context) list ->
   ((int * int) * (int * int) * string) option -> unit
-type probmode = Prob | NonProb
-val prob : probmode -> bool
 val faug : 'a A.func_expr -> 'a -> 'a A.func_aug_expr
 val staug : 'a A.st_expr -> 'a -> 'a A.st_aug_expr
 val create_app : 'a A.func_aug_expr -> 'a A.func_aug_expr -> 'a A.func_expr

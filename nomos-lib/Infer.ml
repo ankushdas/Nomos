@@ -31,7 +31,7 @@ let remove_star pot = match pot with
 (* Substituting probability variables for * in PPlus and PWith *)
 (***************************************************************)
 
-let probnum = ref 0;;
+let probnum = ref 1;;
 
 let fresh_probvar () =
   let pr = "_pr" ^ string_of_int !probnum in
@@ -65,7 +65,9 @@ and remove_stars_choices choices = match choices with
   | [] -> []
 
 and remove_stars_pchoices pchoices = match pchoices with
-    (l,prob,a)::pchoices' -> (l, remove_star_prob prob, remove_stars_tp a)::(remove_stars_pchoices pchoices')
+    (l,prob,a)::pchoices' ->
+      let prob' = remove_star_prob prob in
+      (l, prob', remove_stars_tp a)::(remove_stars_pchoices pchoices')
   | [] -> []
 
 and remove_stars_ftp ftp = match ftp with

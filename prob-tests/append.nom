@@ -1,7 +1,7 @@
 type A = 1
 
 type plistA1 = p+{cons{0.8} : A * plistA1, nil{0.2} : 1}
-type plistA2 = p+{cons{1.0} : A * plistA2, nil{0.0} : 1}
+type plistA2 = p+{cons{*} : A * plistA2, nil{*} : 1}
 
 proc asset append : ($l1 : plistA1), ($l2 : plistA2) |{*}- ($l : plistA2) =
 {
