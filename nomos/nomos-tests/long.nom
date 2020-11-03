@@ -1,0 +1,18 @@
+type wallet = int ^ wallet
+
+(*type finish_auction = int -> wallet * \/ auction*)
+
+type auction = /\ +{running: int -> wallet -o \/ auction, finish: int -> (+{some : wallet * wallet, none : 1}) * \/ auction}
+
+proc asset wallet_proc: (n:int) |- ($w: wallet) = {
+	send $w n; $w <- wallet_proc <- n
+}
+
+proc contract auction_proc: . |- (#a: auction) = {
+	$la <- accept #a ;
+  $la.running; 
+  addr1 = recv $la ;
+  $c1 <- recv $la ;
+  #a <- detach $la ;					(* (addr1 : int), ($c1 : wallet) |- (#a : auction) *)
+  #a <- auction_proc <-
+}
