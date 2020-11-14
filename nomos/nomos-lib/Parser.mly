@@ -28,6 +28,7 @@
 %token HASH DOLLAR
 %token LARROW SEMI RRARROW
 %token RECV SEND CASE DOT CLOSE WAIT WORK DEPOSIT PAY GET ACQUIRE ACCEPT RELEASE DETACH ABORT
+%token MAP INSERT DELETE SIZE NEW
 %right ANDALSO ORELSE
 %left EQUALS NEQ GREATER LESS GREATEREQ LESSEQ
 %right CONS
@@ -88,6 +89,8 @@ stype :
     | COIN                                                                      { Ast.Coin }
     | x = ID                                                                    { Ast.TpName(x) }
     | LPAREN; s = stype; RPAREN                                                 { s }
+    | MAP; LESS; kt = ftype; COMMA; vt = ftype; GREATER                         { Ast.FMap(kt,vt) }
+    | MAP; LESS; kt = ftype; COMMA; vt = stype; GREATER                         { Ast.STMap(kt,vt) }
     ;
 
 ftype :
@@ -174,7 +177,10 @@ expr :
                                              $startpos.Lexing.pos_fname)} } 
     | r = relOp                       { {Ast.func_structure = r; Ast.func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
-                                             $startpos.Lexing.pos_fname)} } 
+                                             $startpos.Lexing.pos_fname)} }
+    | mp = mid; DOT; SIZE           { {Ast.func_structure = Ast.MapSize(mp); Ast.func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                             ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                             $startpos.Lexing.pos_fname)} }
     | LBRACE; s = st; RBRACE          { {func_structure = Ast.Command(s); func_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                              ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                              $startpos.Lexing.pos_fname)} }
@@ -392,6 +398,27 @@ st:
                                                                                                                    ($endpos(e).Lexing.pos_lnum, $endpos(e).Lexing.pos_cnum - $endpos(e).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }   
     |  IF; ifE = expr; THEN; thenE = st; ELSE; elseE = st                    { {Ast.st_structure = Ast.IfS(ifE, thenE, elseE); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  mp = mid; LARROW; NEW; MAP; LESS; kt = ftype; COMMA; vt = ftype; GREATER; SEMI; p = st     { {Ast.st_structure = Ast.FMapCreate(mp, kt, vt, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  mp = mid; LARROW; NEW; MAP; LESS; kt = ftype; COMMA; vt = stype; GREATER; SEMI; p = st     { {Ast.st_structure = Ast.STMapCreate(mp, kt, vt, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  mp = mid; DOT; INSERT; LPAREN; k = expr; COMMA; v = expr; RPAREN; SEMI; p = st     { {Ast.st_structure = Ast.FMapInsert(mp, k, v, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  mp = mid; DOT; INSERT; LPAREN; k = expr; COMMA; v = mid; RPAREN; SEMI; p = st      { {Ast.st_structure = Ast.STMapInsert(mp, k, v, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  v = ID; EQUALS; mp = mid; DOT; DELETE; LPAREN; k = expr; RPAREN; SEMI; p = st      { {Ast.st_structure = Ast.FMapDelete(v, mp, k, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  v = mid; LARROW; mp = mid; DOT; DELETE; LPAREN; k = expr; RPAREN; SEMI; p = st     { {Ast.st_structure = Ast.STMapDelete(v, mp, k, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+                                                                                                                   ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
+                                                                                                                   $startpos.Lexing.pos_fname)} }
+    |  mp = mid; DOT; CLOSE; SEMI; p = st                                                 { {Ast.st_structure = Ast.MapClose(mp, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }
     |  x = mid; COLON; t = stype; LARROW; MAKECHAN; n = INT; SEMI; p = st     { {Ast.st_structure = Ast.MakeChan(x, t, n, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),

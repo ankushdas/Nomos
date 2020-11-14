@@ -109,6 +109,8 @@ let rec pp_tp_simple a = match a with
   | A.FArrow(t,a) -> pp_ftp_simple t ^ " -> " ^ pp_tp_simple a
   | A.FProduct(t,a) -> pp_ftp_simple t ^ " ^ " ^ pp_tp_simple a 
   | A.TpName(a) -> a
+  | A.FMap(kt,vt) -> "Map<" ^ pp_ftp_simple kt ^ ", " ^ pp_ftp_simple vt ^ ">"
+  | A.STMap(kt,vt) -> "Map<" ^ pp_ftp_simple kt ^ ", " ^ pp_tp_simple vt ^ ">"
   | A.Coin -> "coin"
 
 and pp_choice_simple cs = match cs with
@@ -184,6 +186,17 @@ let rec pp_tp i a = match a with
       let l = len s in
       tstr ^ s ^ pp_tp (i+inc+l) a
   | A.TpName(v) -> v
+  | A.FMap(kt,vt) ->
+      let mapstr = "Map<" in
+      let kstr = pp_ftp_simple kt in
+      let mapkstr = mapstr ^ kstr ^ ", " in
+      mapkstr ^ pp_ftp_simple vt
+  | A.STMap(kt,vt) ->
+      let mapstr = "Map<" in
+      let kstr = pp_ftp_simple kt in
+      let mapkstr = mapstr ^ kstr ^ ", " in
+      let inc = len mapkstr in
+      mapkstr ^ pp_tp (i+inc) vt
   | A.Coin -> "coin"
 
 and pp_tp_after i s a = s ^ pp_tp (i+len(s)) a
@@ -285,6 +298,13 @@ let rec pp_exp env i exp = match exp with
   | A.SendF(x,e,p) -> "send " ^ pp_chan x ^ " (" ^ pp_fexp env i e.A.func_structure ^ ") ;\n" ^ pp_exp_indent env i p
   | A.Let(v,e,p) -> "let " ^ v ^ " = " ^ pp_fexp env i e.A.func_structure ^ " ;\n" ^ pp_exp_indent env i p
   | A.IfS(e,p1,p2) -> "if " ^ pp_fexp env i e.A.func_structure ^ "\n" ^ pp_then i ^ pp_exp_indent env (i+2) p1 ^ "\n" ^ pp_else i ^ pp_exp_indent env (i+2) p2
+  | A.FMapCreate(mp,kt,vt,p) -> pp_chan mp ^ " <- new Map<" ^ pp_ftp_simple kt ^ ", " ^ pp_ftp_simple vt ^ "> ;\n" ^ pp_exp_indent env i p
+  | A.STMapCreate(mp,kt,vt,p) -> pp_chan mp ^ " <- new Map<" ^ pp_ftp_simple kt ^ ", " ^ pp_tp_simple vt ^ "> ;\n" ^ pp_exp_indent env i p
+  | A.FMapInsert(mp,k,v,p) -> pp_chan mp ^ ".insert(" ^ pp_fexp env i k.A.func_structure ^ ", " ^ pp_fexp env i v.A.func_structure ^ ") ;\n" ^ pp_exp_indent env i p
+  | A.STMapInsert(mp,k,v,p) -> pp_chan mp ^ ".insert(" ^ pp_fexp env i k.A.func_structure ^ ", " ^ pp_chan v ^ ") ;\n" ^ pp_exp_indent env i p
+  | A.FMapDelete(v,mp,k,p) -> v ^ " = " ^ pp_chan mp ^ ".delete(" ^ pp_fexp env i k.A.func_structure ^ ") ;\n" ^ pp_exp_indent env i p
+  | A.STMapDelete(v,mp,k,p) -> pp_chan v ^ " <- " ^ pp_chan mp ^ ".delete(" ^ pp_fexp env i k.A.func_structure ^ ") ;\n" ^ pp_exp_indent env i p
+  | A.MapClose(mp,p) -> pp_chan mp ^ ".close ;\n" ^ pp_exp_indent env i p
   | A.MakeChan(x,a,n,p) -> pp_chan x ^ " : " ^ pp_tp env a ^ " <- Nomos.MakeChannel " ^ string_of_int n ^ " ;\n" ^ pp_exp_indent env i p
   | A.Abort -> "abort"
   | A.Print(l,args,p) -> "print(" ^ pp_printable_list env l args ^ ");\n" ^ pp_exp_indent env i p
@@ -383,6 +403,7 @@ and pp_fexp env i e =
     | A.App l ->
         pp_fexp_list env i l
     | A.Tick(pot,e) -> "(tick " ^ pp_potpos pot ^ " ; " ^ pp_fexp env i e.A.func_structure ^ ")"
+    | A.MapSize(mp) -> pp_chan mp ^ ".size"
     | A.GetTxnNum -> "Nomos.GetTxnNum()"
     | A.GetTxnSender -> "Nomos.GetTxnSender()"
     | A.Command(exp) -> "{\n" ^ pp_exp_indent env (i+2) exp ^ "\n" ^ spaces i ^ "}"
@@ -429,6 +450,13 @@ let pp_exp_prefix exp = match exp with
   | A.SendF(x,e,_p) -> "send " ^ pp_chan x ^ " (" ^ pp_fexp () 0 e.A.func_structure ^ ") ; ..."
   | A.Let(v,e,_p) -> "let " ^ v ^ " = " ^ pp_fexp () 0 e.A.func_structure ^ " ; ..."
   | A.IfS(e,_p1,_p2) -> "if " ^ pp_fexp () 0 e.A.func_structure ^ " ... "
+  | A.FMapCreate(mp,kt,vt,_p) -> pp_chan mp ^ " <- new Map<" ^ pp_ftp_simple kt ^ ", " ^ pp_ftp_simple vt ^ "> ; ..."
+  | A.STMapCreate(mp,kt,vt,_p) -> pp_chan mp ^ " <- new Map<" ^ pp_ftp_simple kt ^ ", " ^ pp_tp_simple vt ^ "> ; ..."
+  | A.FMapInsert(mp,k,v,_p) -> pp_chan mp ^ ".insert(" ^ pp_fexp () 0 k.A.func_structure ^ ", " ^ pp_fexp () 0 v.A.func_structure ^ ") ; ..."
+  | A.STMapInsert(mp,k,v,_p) -> pp_chan mp ^ ".insert(" ^ pp_fexp () 0 k.A.func_structure ^ ", " ^ pp_chan v ^ ") ; ..."
+  | A.FMapDelete(v,mp,k,_p) -> v ^ " = " ^ pp_chan mp ^ ".delete(" ^ pp_fexp () 0 k.A.func_structure ^ ") ; ..."
+  | A.STMapDelete(v,mp,k,_p) -> pp_chan v ^ " <- " ^ pp_chan mp ^ ".delete(" ^ pp_fexp () 0 k.A.func_structure ^ ") ; ..."
+  | A.MapClose(mp,_p) -> pp_chan mp ^ ".close ; ..."
   | A.MakeChan(x,a,n,_p) -> pp_chan x ^ " : " ^ pp_tp_simple a ^ " <- Nomos.MakeChannel " ^ string_of_int n ^ " ... "
   | A.Abort -> "abort"
   | A.Print(l,args,_) -> "print(" ^ pp_printable_list () l args ^ "); ..."

@@ -24,7 +24,6 @@ proc env[a] : . |- ($z : ZtoE[a]) =
 
 (* 
 Protocol-specific process code:
-  import_ZtoA
   env_code[a] : ($pw : PWtoZ[a]), ($adv : AtoZ) |- ($z : bit)
   party_code[b] : (id : pid),
                   (#toZ : PtoZ), (#fromZ : ZtoP),
@@ -298,31 +297,3 @@ proc contract communicator[a] : (sid : int), (rid : int), ($l : list[a]) |- (#dc
             )
   )
 }
-
-
-(*
-
-k : EtoZ
-sid : ZtoE
-crupt list : ZtoE
-start : EtoZ
-bit : ZtoE
-
-k : EtoP
-rng : EtoP
-sid : EtoP
-crupt list : EtoP
-
-
-
-let length l = match l with
-    [] -> 0
-  | x::xs -> 1 + (length xs);;
-
-type msg[a] = string ^ a ^ 1
-
-type msg[int] = string ^ int 
-
-string : VAL, ECHO, READY, COMMIT, OPEN
-
-*)

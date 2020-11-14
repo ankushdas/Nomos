@@ -84,6 +84,13 @@ rule token = parse
   | "then"              { THEN }
   | "else"              { ELSE }
   | "="                 { EQUALS }
+
+  (* map related *)
+  | "Map"               { MAP }
+  | "insert"            { INSERT }
+  | "delete"            { DELETE }
+  | "size"              { SIZE }
+  | "new"               { NEW }
   
   (* nomos specific *)
   | "Nomos.GetTxnNum()"       { GETTXNNUM }

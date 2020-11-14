@@ -39,6 +39,8 @@ let rec remove_stars_tp tp = match tp with
   | A.Down(a) -> A.Down(remove_stars_tp a)
   | A.FArrow(t,a) -> A.FArrow(t,remove_stars_tp a)
   | A.FProduct(t,a) -> A.FProduct(t,remove_stars_tp a)
+  | A.FMap(kt,vt) -> A.FMap(kt, vt)
+  | A.STMap(kt,vt) -> A.STMap(kt, remove_stars_tp vt)
   | A.Coin -> A.Coin
 
 and remove_stars_choices choices = match choices with
@@ -76,10 +78,17 @@ let rec remove_stars_exp exp = match exp with
   | A.Accept(x,y,p) -> A.Accept(x,y, remove_stars_aug p)
   | A.Release(x,y,p) -> A.Release(x,y, remove_stars_aug p)
   | A.Detach(x,y,p) -> A.Detach(x,y, remove_stars_aug p)
-  | A.SendF(x,e,p) -> A.SendF(x,e, remove_stars_aug p)
+  | A.SendF(x,e,p) -> A.SendF(x, remove_stars_faug e, remove_stars_aug p)
   | A.RecvF(x,y,p) -> A.RecvF(x,y, remove_stars_aug p)
-  | A.Let(x,e,p) -> A.Let(x,e, remove_stars_aug p)
-  | A.IfS(e,p1,p2) -> A.IfS(e, remove_stars_aug p1, remove_stars_aug p2)
+  | A.Let(x,e,p) -> A.Let(x, remove_stars_faug e, remove_stars_aug p)
+  | A.IfS(e,p1,p2) -> A.IfS(remove_stars_faug e, remove_stars_aug p1, remove_stars_aug p2)
+  | A.FMapCreate(mp,kt,vt,p) -> A.FMapCreate(mp, kt, vt, remove_stars_aug p)
+  | A.STMapCreate(mp,kt,vt,p) -> A.STMapCreate(mp, kt, vt, remove_stars_aug p)
+  | A.FMapInsert(mp,k,v,p) -> A.FMapInsert(mp, k, v, remove_stars_aug p)
+  | A.STMapInsert(mp,k,v,p) -> A.STMapInsert(mp, k, v, remove_stars_aug p)
+  | A.FMapDelete(v,mp,k,p) -> A.FMapDelete(v,mp, k, remove_stars_aug p)
+  | A.STMapDelete(v,mp,k,p) -> A.STMapDelete(v,mp, k, remove_stars_aug p)
+  | A.MapClose(mp,p) -> A.MapClose(mp, remove_stars_aug p)
   | A.MakeChan(x,a,n,p) -> A.MakeChan(x, a, n, remove_stars_aug p)
   | A.Abort -> A.Abort
   | A.Print(l,args,p) -> A.Print(l,args,remove_stars_aug p)
@@ -108,6 +117,7 @@ and remove_stars_fexp fexp = match fexp with
   | A.EqAddr(e1,e2) -> A.EqAddr(remove_stars_faug e1, remove_stars_faug e2)
   | A.RelOp(e1,rop,e2) -> A.RelOp(remove_stars_faug e1, rop, remove_stars_faug e2)
   | A.Tick(pot,e) -> A.Tick(remove_star pot, remove_stars_faug e)
+  | A.MapSize(mp) -> A.MapSize(mp)
   | A.GetTxnNum -> A.GetTxnNum
   | A.GetTxnSender -> A.GetTxnSender
   | A.Command(p) -> A.Command(remove_stars_aug p);;
@@ -163,6 +173,8 @@ let rec substitute_tp tp psols msols = match tp with
   | A.Down(a) -> A.Down(substitute_tp a psols msols)
   | A.FArrow(t,a) -> A.FArrow(t, substitute_tp a psols msols)
   | A.FProduct(t,a) -> A.FProduct(t, substitute_tp a psols msols)
+  | A.FMap(kt,vt) -> A.FMap(kt, vt)
+  | A.STMap(kt,vt) -> A.STMap(kt, substitute_tp vt psols msols)
   | A.Coin -> A.Coin
 
 and substitute_choices choices psols msols = match choices with
@@ -206,6 +218,13 @@ let rec substitute_exp exp psols msols = match exp with
   | A.RecvF(x,y,p) -> A.RecvF(substitute_mode x msols, y, substitute_aug p psols msols)
   | A.Let(x,e,p) -> A.Let(x,e, substitute_aug p psols msols)
   | A.IfS(e,p1,p2) -> A.IfS(e, substitute_aug p1 psols msols, substitute_aug p2 psols msols)
+  | A.FMapCreate(mp,kt,vt,p) -> A.FMapCreate(substitute_mode mp msols, kt, vt, substitute_aug p psols msols)
+  | A.STMapCreate(mp,kt,vt,p) -> A.STMapCreate(substitute_mode mp msols, kt, vt, substitute_aug p psols msols)
+  | A.FMapInsert(mp,k,v,p) -> A.FMapInsert(substitute_mode mp msols, k, v, substitute_aug p psols msols)
+  | A.STMapInsert(mp,k,v,p) -> A.STMapInsert(substitute_mode mp msols, k, substitute_mode v msols, substitute_aug p psols msols)
+  | A.FMapDelete(v,mp,k,p) -> A.FMapDelete(v, substitute_mode mp msols, k, substitute_aug p psols msols)
+  | A.STMapDelete(v,mp,k,p) -> A.STMapDelete(substitute_mode v msols, substitute_mode mp msols, k, substitute_aug p psols msols)
+  | A.MapClose(mp,p) -> A.MapClose(substitute_mode mp msols, substitute_aug p psols msols)
   | A.MakeChan(x,a,n,p) -> A.MakeChan(x, a, n, substitute_aug p psols msols)
   | A.Abort -> A.Abort
   | A.Print(l,args,p) -> A.Print(l,substitute_mode_list args msols,substitute_aug p psols msols)
@@ -234,6 +253,7 @@ and substitute_fexp fexp psols msols = match fexp with
   | A.EqAddr(e1,e2) -> A.EqAddr(substitute_faug e1 psols msols, substitute_faug e2 psols msols)
   | A.RelOp(e1,rop,e2) -> A.RelOp(substitute_faug e1 psols msols, rop, substitute_faug e2 psols msols)
   | A.Tick(pot,e) -> A.Tick(substitute_pot pot psols, substitute_faug e psols msols)
+  | A.MapSize(mp) -> A.MapSize(mp)
   | A.GetTxnNum -> A.GetTxnNum
   | A.GetTxnSender -> A.GetTxnSender
   | A.Command(p) -> A.Command(substitute_aug p psols msols);;
@@ -273,6 +293,8 @@ let rec removeU_tp tp = match tp with
   | A.Down(a) -> A.Down(removeU_tp a)
   | A.FArrow(t,a) -> A.FArrow(t,removeU_tp a)
   | A.FProduct(t,a) -> A.FProduct(t,removeU_tp a)
+  | A.FMap(kt,vt) -> A.FMap(kt,vt)
+  | A.STMap(kt,vt) -> A.STMap(kt, removeU_tp vt)
   | A.Coin -> A.Coin
 
 and removeU_choices choices = match choices with
@@ -303,6 +325,13 @@ let rec removeU_exp exp = match exp with
   | A.RecvF(x,y,p) -> A.RecvF(removeU x, y, removeU_aug p)
   | A.Let(x,e,p) -> A.Let(x,e, removeU_aug p)
   | A.IfS(e,p1,p2) -> A.IfS(e, removeU_aug p1, removeU_aug p2)
+  | A.FMapCreate(mp,kt,vt,p) -> A.FMapCreate(removeU mp, kt, vt, removeU_aug p)
+  | A.STMapCreate(mp,kt,vt,p) -> A.STMapCreate(removeU mp, kt, vt, removeU_aug p)
+  | A.FMapInsert(mp,k,v,p) -> A.FMapInsert(removeU mp, k, v, removeU_aug p)
+  | A.STMapInsert(mp,k,v,p) -> A.STMapInsert(removeU mp, k, v, removeU_aug p)
+  | A.FMapDelete(v,mp,k,p) -> A.FMapDelete(v, removeU mp, k, removeU_aug p)
+  | A.STMapDelete(v,mp,k,p) -> A.STMapDelete(removeU v, removeU mp, k, removeU_aug p)
+  | A.MapClose(mp,p) -> A.MapClose(removeU mp, removeU_aug p)
   | A.MakeChan(x,a,n,p) -> A.MakeChan(removeU x, a, n, removeU_aug p)
   | A.Abort -> A.Abort
   | A.Print(l,args,p) -> A.Print(l, removeU_list args, removeU_aug p)
@@ -331,6 +360,7 @@ and removeU_fexp fexp = match fexp with
   | A.EqAddr(e1,e2) -> A.EqAddr(removeU_faug e1, removeU_faug e2)
   | A.RelOp(e1,rop,e2) -> A.RelOp(removeU_faug e1, rop, removeU_faug e2)
   | A.Tick(pot,e) -> A.Tick(pot, removeU_faug e)
+  | A.MapSize(mp) -> A.MapSize(removeU mp)
   | A.GetTxnNum -> A.GetTxnNum
   | A.GetTxnSender -> A.GetTxnSender
   | A.Command(p) -> A.Command(removeU_aug p);;

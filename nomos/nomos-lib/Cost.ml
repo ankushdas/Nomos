@@ -18,6 +18,7 @@ and cost_tick fexp = match fexp with
   | A.EqAddr(e1,e2) -> A.EqAddr(cost_tick_aug e1, cost_tick_aug e2)
   | A.RelOp(e1,rop,e2) -> A.RelOp(cost_tick_aug e1, rop, cost_tick_aug e2)
   | A.Tick(pot,e) -> A.Tick(pot, cost_tick_aug e)
+  | A.MapSize(mp) -> A.MapSize(mp)
   | A.GetTxnNum -> A.GetTxnNum
   | A.GetTxnSender -> A.GetTxnSender
   | A.Command(p) -> A.Command(cost_work !F.work p)
@@ -61,6 +62,14 @@ and cost_recv d exp = match exp with
   | A.Let(x,e,p) -> work d (A.Let(x, cost_tick_aug e, cost_recv_aug p))
   | A.IfS(e,p1,p2) -> work d (A.IfS(cost_tick_aug e, cost_recv_aug p1, cost_recv_aug p2))
 
+  | A.FMapCreate(mp,kt,vt,p) -> work d (A.FMapCreate(mp, kt, vt, cost_recv_aug p))
+  | A.STMapCreate(mp,kt,vt,p) -> work d (A.STMapCreate(mp, kt, vt, cost_recv_aug p))
+  | A.FMapInsert(mp,k,v,p) -> work d (A.FMapInsert(mp, cost_tick_aug k, cost_tick_aug v, cost_recv_aug p))
+  | A.STMapInsert(mp,k,v,p) -> work d (A.STMapInsert(mp, cost_tick_aug k, v, cost_recv_aug p))
+  | A.FMapDelete(v,mp,k,p) -> work d (A.FMapDelete(v, mp, cost_tick_aug k, cost_recv_aug p))
+  | A.STMapDelete(v,mp,k,p) -> work d (A.STMapDelete(v, mp, cost_tick_aug k, cost_recv_aug p))
+  | A.MapClose(mp,p) -> work d (A.MapClose(mp, cost_recv_aug p))
+
   | A.MakeChan(x,a,n,p) -> work d (A.MakeChan(x, a, n, cost_recv_aug p))
   | A.Abort -> work d (A.Abort)
   (* TODO: add ticks to argument list of spawn and print *)
@@ -102,6 +111,14 @@ and cost_send d exp = match exp with
 
   | A.Let(x,e,p) -> work d (A.Let(x, cost_tick_aug e, cost_send_aug p))
   | A.IfS(e,p1,p2) -> work d (A.IfS(cost_tick_aug e, cost_send_aug p1, cost_send_aug p2))
+
+  | A.FMapCreate(mp,kt,vt,p) -> work d (A.FMapCreate(mp, kt, vt, cost_send_aug p))
+  | A.STMapCreate(mp,kt,vt,p) -> work d (A.STMapCreate(mp, kt, vt, cost_send_aug p))
+  | A.FMapInsert(mp,k,v,p) -> work d (A.FMapInsert(mp, cost_tick_aug k, cost_tick_aug v, cost_send_aug p))
+  | A.STMapInsert(mp,k,v,p) -> work d (A.STMapInsert(mp, cost_tick_aug k, v, cost_send_aug p))
+  | A.FMapDelete(v,mp,k,p) -> work d (A.FMapDelete(v, mp, cost_tick_aug k, cost_send_aug p))
+  | A.STMapDelete(v,mp,k,p) -> work d (A.STMapDelete(v, mp, cost_tick_aug k, cost_send_aug p))
+  | A.MapClose(mp,p) -> work d (A.MapClose(mp, cost_send_aug p))
 
   | A.MakeChan(x,a,n,p) -> work d (A.MakeChan(x, a, n, cost_send_aug p))
   | A.Abort -> work d (A.Abort)

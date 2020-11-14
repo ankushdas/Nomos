@@ -58,10 +58,26 @@ type stype =
   | Down of stype                     (* \/ A *)
   | FArrow of func_tp * stype         (* t -> A *)
   | FProduct of func_tp * stype       (* t ^ A *)
+  | FMap of func_tp * func_tp         (* Map<t,t> *)
+  | STMap of func_tp * stype          (* Map<t,A> *)
   | Coin
 [@@deriving sexp]
 
 and choices = (label * stype) list
+
+(*
+let add_sig (kt,vt) =
+  let ins_branch = FArrow(kt, Lolli(vt, STMap(kt,vt), Unknown)) in
+  let del_branch = FArrow(kt,);;
+
+let fmap_type (kt,vt) =
+  let () = add_sig (kt,FProduct(vt,One)) in
+  FMap(kt,vt);;
+
+let stmap_type (kt,vt) =
+  let () = add_sig (kt,vt) in
+  STMap(kt,vt);;
+*)
 
 type arglist =
   | Single of string * ext 
@@ -117,6 +133,8 @@ and 'a func_expr =
   | EqAddr of 'a func_aug_expr * 'a func_aug_expr
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
   | Tick of potential * 'a func_aug_expr
+  (* map related *)
+  | MapSize of chan
   (* Nomos specific *)
   | GetTxnNum                                   (* Nomos.GetTxnNum(): get txn number *)
   | GetTxnSender                                (* Nomos.GetTxnSender(): get txn issuer *)
@@ -162,6 +180,15 @@ and 'a st_expr =
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr           (* send x (M) ; P *)
   | Let of string * 'a func_aug_expr * 'a st_aug_expr           (* let x = M ; P *)
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr   (* if e then P else Q *)
+
+  (* map related *)
+  | FMapCreate of chan * func_tp * func_tp * 'a st_aug_expr                     (* $mp <- new Map<kt,vt>() *)
+  | STMapCreate of chan * func_tp * stype  * 'a st_aug_expr                     (* $mp <- new Map<kt,vt>() *)
+  | FMapInsert of chan * 'a func_aug_expr * 'a func_aug_expr * 'a st_aug_expr   (* $mp.insert(k,v) *)
+  | STMapInsert of chan * 'a func_aug_expr * chan * 'a st_aug_expr              (* $mp.insert(k,$v) *)
+  | FMapDelete of string * chan * 'a func_aug_expr * 'a st_aug_expr             (* v = $mp.delete(k) *)
+  | STMapDelete of chan * chan * 'a func_aug_expr * 'a st_aug_expr              (* $v <- $mp.delete(k) *)
+  | MapClose of chan * 'a st_aug_expr                                           (* $mp.close *)
 
   (* Nomos specific, get channel from id *)
   | MakeChan of chan * stype * int * 'a st_aug_expr             (* #c : A <- Nomos.MakeChan(n) ; P *)
@@ -290,7 +317,10 @@ let rec is_shared env tp = match tp with
   | One
   | PayPot _ | GetPot _
   | FArrow _ | FProduct _
-  | Down _ | Coin -> false;;
+  | Down _
+  | Coin
+  | FMap _ -> false
+  | STMap(_kt,vt) -> is_shared env vt;;
 
 (*************************)
 (* Operational Semantics *)
@@ -347,6 +377,22 @@ let rec subst c' c expr = match expr with
   | SendF(x,m,p) -> SendF(sub c' c x, m, subst_aug c' c p)
   | Let(x,e,p) -> Let(x, fsubst_aug c' c e, subst_aug c' c p)
   | IfS(e,p1,p2) -> IfS(fsubst_aug c' c e, subst_aug c' c p1, subst_aug c' c p2)
+  | FMapCreate(mp,kt,vt,p) ->
+      if eq_name c mp
+      then FMapCreate(mp,kt,vt,p)
+      else FMapCreate(mp,kt,vt, subst_aug c' c p)
+  | STMapCreate(mp,kt,vt,p) ->
+      if eq_name c mp
+      then STMapCreate(mp,kt,vt,p)
+      else STMapCreate(mp,kt,vt, subst_aug c' c p)
+  | FMapInsert(mp,k,v,p) -> FMapInsert(sub c' c mp, fsubst_aug c' c k, fsubst_aug c' c v, subst_aug c' c p)
+  | STMapInsert(mp,k,v,p) -> STMapInsert(sub c' c mp, fsubst_aug c' c k, sub c' c v, subst_aug c' c p)
+  | FMapDelete(v,mp,k,p) -> FMapDelete(v, sub c' c mp, fsubst_aug c' c k, subst_aug c' c p)
+  | STMapDelete(v,mp,k,p) ->
+      if eq_name c v
+      then STMapDelete(v, sub c' c mp, fsubst_aug c' c k, p)
+      else STMapDelete(v, sub c' c mp, fsubst_aug c' c k, subst_aug c' c p)
+  | MapClose(mp,p) -> MapClose(sub c' c mp, subst_aug c' c p)
   | MakeChan(x,a,n,p) ->
       if eq_name c x
       then MakeChan(x, a, n, p)
@@ -376,6 +422,7 @@ and fsubst c' c fexp = match fexp with
   | EqAddr(e1,e2) -> EqAddr(fsubst_aug c' c e1, fsubst_aug c' c e2)
   | RelOp(e1,rop,e2) -> RelOp(fsubst_aug c' c e1, rop, fsubst_aug c' c e2)
   | Tick(pot,e) -> Tick(pot, fsubst_aug c' c e)
+  | MapSize(mp) -> MapSize(sub c' c mp)
   | GetTxnNum -> GetTxnNum
   | GetTxnSender -> GetTxnSender
   | Command(p) -> Command(subst_aug c' c p)
@@ -419,6 +466,7 @@ let rec substv v' v fexp = match fexp with
   | EqAddr(e1,e2) -> EqAddr(substv_aug v' v e1, substv_aug v' v e2)
   | RelOp(e1,rop,e2) -> RelOp(substv_aug v' v e1, rop, substv_aug v' v e2)
   | Tick(pot,e) -> Tick(pot, substv_aug v' v e)
+  | MapSize(mp) -> MapSize(mp)
   | GetTxnNum -> GetTxnNum
   | GetTxnSender -> GetTxnSender
   | Command(p) -> Command(esubstv_aug v' v p)
@@ -461,6 +509,16 @@ and esubstv v' v exp = match exp with
       then Let(x, substv_aug v' v e, p)
       else Let(x, substv_aug v' v e, esubstv_aug v' v p)
   | IfS(e,p1,p2) -> IfS(substv_aug v' v e, esubstv_aug v' v p1, esubstv_aug v' v p2)
+  | FMapCreate(mp,kt,vt,p) -> FMapCreate(mp,kt,vt, esubstv_aug v' v p)
+  | STMapCreate(mp,kt,vt,p) -> STMapCreate(mp,kt,vt, esubstv_aug v' v p)
+  | FMapInsert(mp,k,value,p) -> FMapInsert(mp, substv_aug v' v k, substv_aug v' v value, esubstv_aug v' v p)
+  | STMapInsert(mp,k,value,p) -> STMapInsert(mp, substv_aug v' v k, value, esubstv_aug v' v p)
+  | FMapDelete(value,mp,k,p) ->
+      if v = value
+      then FMapDelete(value, mp, substv_aug v' v k, p)
+      else FMapDelete(value, mp, substv_aug v' v k, esubstv_aug v' v p)
+  | STMapDelete(value,mp,k,p) -> STMapDelete(value, mp, substv_aug v' v k, esubstv_aug v' v p)
+  | MapClose(mp,p) -> MapClose(mp,p)
   | MakeChan(x,a,n,p) -> MakeChan(x, a, n, esubstv_aug v' v p)
   | Abort -> Abort
   | Print(l,args,p) -> Print(l, List.map (fun arg -> esubstv_arg v' v arg) args, esubstv_aug v' v p)

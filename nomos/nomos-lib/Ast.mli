@@ -36,6 +36,8 @@ type stype =
   | Down of stype
   | FArrow of func_tp * stype
   | FProduct of func_tp * stype
+  | FMap of func_tp * func_tp
+  | STMap of func_tp * stype
   | Coin
 and choices = (label * stype) list
 [@@deriving sexp]
@@ -65,6 +67,7 @@ and 'a func_expr =
   | EqAddr of 'a func_aug_expr * 'a func_aug_expr
   | RelOp of 'a func_aug_expr * rel_operator * 'a func_aug_expr
   | Tick of potential * 'a func_aug_expr
+  | MapSize of chan
   | GetTxnNum
   | GetTxnSender
   | Command of 'a st_aug_expr
@@ -90,6 +93,13 @@ and 'a st_expr =
   | SendF of chan * 'a func_aug_expr * 'a st_aug_expr
   | Let of string * 'a func_aug_expr * 'a st_aug_expr
   | IfS of 'a func_aug_expr * 'a st_aug_expr * 'a st_aug_expr
+  | FMapCreate of chan * func_tp * func_tp * 'a st_aug_expr
+  | STMapCreate of chan * func_tp * stype * 'a st_aug_expr
+  | FMapInsert of chan * 'a func_aug_expr * 'a func_aug_expr * 'a st_aug_expr
+  | STMapInsert of chan * 'a func_aug_expr * chan * 'a st_aug_expr
+  | FMapDelete of string * chan * 'a func_aug_expr * 'a st_aug_expr
+  | STMapDelete of chan * chan * 'a func_aug_expr * 'a st_aug_expr
+  | MapClose of chan * 'a st_aug_expr
   | MakeChan of chan * stype * int * 'a st_aug_expr 
   | Abort
   | Print of printable list * 'a arg list * 'a st_aug_expr

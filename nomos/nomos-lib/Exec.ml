@@ -187,6 +187,7 @@ let rec eval fexp = match fexp.A.func_structure with
             A.Star -> raise RuntimeError
           | A.Arith p -> (v, R.plus c p)
       end
+  | A.MapSize(_mp) -> raise RuntimeError
   | A.GetTxnNum -> (A.IntV !txnNum, R.Int 0)
   | A.GetTxnSender -> (A.AddrV !txnSender, R.Int 0)
   | A.Command(_) -> raise RuntimeError;;
@@ -1181,9 +1182,24 @@ let match_and_one_step env sem config =
             
             | A.IfS _ ->
                 ifS c config
+
+            | A.FMapCreate _ -> Aborted
+            
+            | A.STMapCreate _ -> Aborted
+
+            | A.FMapInsert _ -> Aborted
+
+            | A.STMapInsert _ -> Aborted
+
+            | A.FMapDelete _ -> Aborted
+
+            | A.STMapDelete _ -> Aborted
+
+            | A.MapClose _ -> Aborted
             
             | A.MakeChan _ ->
                 makechan c config
+            
             
             | A.Abort ->
                 Aborted
