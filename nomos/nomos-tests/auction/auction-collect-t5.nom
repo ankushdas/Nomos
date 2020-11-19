@@ -1,0 +1,20 @@
+
+proc transaction collect : . |{*}- ($d : 1) =
+{
+  #a : auction <- Nomos.MakeChannel 2 ;
+  $la <- acquire #a ;
+  pay $la {*} ;
+  case $la (
+    running => $la.collect ;
+               get $la {*} ;
+               #a <- release $la ;
+               deposit {*} ;
+               close $d
+  | ended => get $la {*} ;
+             #a <- release $la ;
+             deposit {*} ;
+             close $d
+  )
+}
+
+exec collect

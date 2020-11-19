@@ -1,0 +1,60 @@
+type ballot = /\ <{*}| +{open : int -> +{vote : int -> |{*}> \/ ballot,
+                                         novote : |{*}> \/ ballot},
+                         closed : int ^ |{*}> \/ ballot}
+
+proc asset candidate : (addr : int) |{*}- ($c : 1) =
+{
+  close $c
+}
+
+proc contract open_election : (T : int), ($votes : dictionary) |{*}- (#sb : ballot) =
+{
+  $lb <- accept #sb ;
+  get $lb {*} ;
+  $lb.open ;
+  v = recv $lb ;
+  $votes.check ;
+  pay $votes {*} ;
+  send $votes v ;
+  r = recv $votes ;
+  if r
+  then
+    $lb.vote ;
+    c = recv $lb ;
+    $c <- candidate <- c ;
+    $votes.add ;
+    pay $votes {*} ;
+    send $votes v ;
+    send $votes $c ;
+    pay $lb {*} ;
+    #sb <- detach $lb ;
+    #sb <- check <- T $votes
+  else
+    $lb.novote ;
+    pay $lb {*} ;
+    #sb <- detach $lb ;
+    #sb <- open_election <- T $votes
+}
+
+proc contract check : (T : int), ($votes : dictionary) |{*}- (#sb : ballot) =
+{
+  $votes.size ;
+  pay $votes {*} ;
+  n = recv $votes ;
+  if n = T
+  then
+    #sb <- open_election <- T $votes
+  else
+    #sb <- closed_election <- T $votes
+}
+
+proc contract closed_election : (w : int), ($votes : dictionary) |{*}- (#sb : ballot) =
+{
+  $lb <- accept #sb ;
+  get $lb {*} ;
+  $lb.closed ;
+  send $lb w ;
+  pay $lb {*} ;
+  #sb <- detach $lb ;
+  #sb <- closed_election <- w $votes
+}

@@ -1,0 +1,28 @@
+
+This is the AWS Lambda deployment package for Nomos
+
+1) Create the contents of the package
+
+   - bin/nomosjson should be the updated Nomos Json binary:
+
+     cp ~/repositories/nomos/_build/default/nomos-bin/nomosjson.exe bin/nomosjson
+
+   - nomos.py should be the latest AWS lambda function from the raml-website git repository:
+
+     cp ~/repositories/nomos/website/backend/nomos.py .
+
+   - lib contains the clp bindings
+
+2) Everything has to be packaged up as a zip file and converted to a aws
+   package using the instructions at
+
+   https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-awscli.html
+   https://docs.aws.amazon.com/lambda/latest/dg/python-package.html
+
+   Update the zip file:
+
+   zip nomos.zip -r .
+
+   # Update the lambda function
+
+   aws lambda update-function-code --function-name run-nomos --zip-file fileb://nomos.zip

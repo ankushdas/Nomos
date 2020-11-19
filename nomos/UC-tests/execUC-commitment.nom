@@ -1,0 +1,436 @@
+type k = int
+type rng = int
+
+type output_bit = +{b0 : 1, b1 : 1}
+type ZtoE[a] = k -> rng -> sid ^ crupt list ^ ZtoA -o PS.PWtoZ[a] -o &{start : output_bit}
+
+type msg[a] = a
+
+proc env[a] : . |- ($z : ZtoE[a]) =
+{
+  k = recv $z ;
+  rng = recv $z ;
+  sid = ...
+  clist = ...
+  send $z sid ;
+  send $z clist ;
+  $adv <- recv $z ;
+  $pw <- recv $z ;
+
+  case $z (
+    start => $z <- PS.env_code <- $pw $adv
+  )
+}
+
+(* 
+Protocol-specific process code:
+
+type PS.bit = int
+type PS.bit_opt = +{some : PS.bit ^ 1, none : 1}
+type PS.msg = +{commit : pid ^ PS.bit_opt,
+                open : pid ^ PS.bit_opt}
+
+PS.env_code[a] : ($pw : PS.PWtoZ[a]), ($adv : PS.AtoZ) |- ($z : output_bit)
+PS.party_code[b] : (id : pid),
+                   (#toZ : PS.PtoZ), (#fromZ : PS.ZtoP),
+                   (#toA : PS.PtoA), (#fromA : PS.AtoP),
+                   (#toF : PS.PtoF), (#fromF : PS.FtoP) |- ($toPW : b)
+PS.F_code : (#pw : PS.PWtoF), (#adv : PS.AtoF) |- ($z : PS.FtoZ)
+type PS.FtoZ = 1
+
+
+type PS.PWtoF = /\ +{commit : (pid, bit) ^ &{commit : pid -> \/ PS.PWtoF},
+                     open : (pid, bit) -> \/ PS.PWtoF }
+
+type PS.AtoF = ???
+
+(*
+  How does F_code know about receiver id?
+*)
+
+proc PS.F_code : (#pw : PS.PWtoF), (#adv : PS.AtoF) |- ($z : PS.FtoZ) =
+{
+  $lpw <- acquire #pw ;
+  case $lpw (
+    commit => (sid, b) = recv $lpw ;
+              $lpw.commit ;
+              send $lpw rid ;
+              #pw <- release $lpw ;
+              $z <- F_code2 <- b #pw #adv
+  | open => abort
+  )
+}
+
+proc F_code2 : (b : bit), (#pw : PS.PWtoF), (#adv : PS.AtoF) |- ($z : PS.FtoZ) =
+{
+  $lpw <- acquire #pw ;
+  case $lpw (
+    commit => abort
+  | open => send $lpw (rid, b) ;
+            #pw <- release $lpw ;
+            $z <- F_code3 <- b #pw #adv
+  )
+}
+
+proc F_code3 : (b : bit), (#pw : PWtoF), (#adv : AtoF) |- ($z : PS.FtoZ) =
+{
+  close $z
+}
+
+type PWtoFH = /\ +{query : int ^ int -> \/ PWtoFH
+                   forward : (pid, msg) ^ (pid, msg) -> \/ PWtoFH}
+
+type AtoFH = /\ +{query : int ^ int -> \/ AtoFH}
+
+proc F_hybrid : (#pw : PS.PWtoFH), (#adv : PS.AtoFH) |- ($z : PS.FtoZ) =
+{
+  $lpw <- acquire #pw ;
+  case $lpw (
+    query => i = recv $lpw ;
+             j = hash(i) ;
+             send $lpw j ;
+             #pw <- release $lpw ;
+             $z <- F_hybrid2 <- b #pw #adv
+  | forward => m = recv $lpw ;
+               rid = get_pid(m) ;
+               send $lpw (rid, m) ;
+               #pw <- release $lpw ;
+               $z <- F_hybrid2 <- b #pw #adv
+}
+
+proc F_hybrid2 : (#pw : PS.PWtoFH), (#adv : PS.AtoFH) |- ($z : PS.FtoZ) =
+{
+  $lpw <- acquire #adv ;
+  case $lpw (
+    query => i = recv $lpw ;
+             j = hash(i)
+             send $lpw j ;
+             #adv <- release $lpw ;
+             $z <- F_hybrid <- b #pw #adv
+}
+
+proc party_code[b] : (id : pid),
+                     (#toZ : PtoZ), (#fromZ : ZtoP),
+                     (#toA : PtoA), (#fromA : AtoP),
+                     (#toF : PtoF), (#fromF : FtoP) |- ($toPW : b) =
+{
+  if id = sid
+  then
+    $lz <- acquire #fromZ ;
+    case $lz (
+      commit => b = recv $lz ;
+                rnd = ... ;
+                $lf <- acquire #toF ;
+                send $lf (b + rnd) ;
+                hash_val = recv $lf ;
+                #fromZ <- release $lz ;
+                #toF <- release $lf ;
+                $toPW <- party_code2[b] <- b rnd hash_val id #toZ #fromZ #toA #fromA #toF #fromF
+    | open => abort
+    )
+  else
+    $lp <- acquire #fromF ;
+    $lp.forward ;
+    (rid, b, rnd, hash_val) = recv $lp ;
+    $lp2 <- acquire #toF ;
+    $lp2.query ;
+    send $lp2 (b + rnd) ;
+    hash_val2 = recv $lp2 ;
+    #fromF <- release $lp ;
+    #toF <- release #toF ;
+    if hash_val = hash_val2
+    then
+      $toPW.good_commit ;
+      close $toPW
+    else
+      $toPW.bad_commit ;
+      close $toPW
+}
+
+proc party_code2[b] : (b : bit), (rnd : int), (hash_val : int) (id : pid),
+                      (#toZ : PtoZ), (#fromZ : ZtoP),
+                      (#toA : PtoA), (#fromA : AtoP),
+                      (#toF : PtoF), (#fromF : FtoP) |- ($toPW : b) =
+{
+  if id = sid
+  then
+    $lz <- acquire #fromZ ;
+    case $lz (
+      commit => abort
+    | open => $lf <- acquire #toF ;
+              $lf.forward ;
+              send $lf (rid, b, rnd, hash_val) ;
+              $toPW.sender_done ;
+              close $toPW
+    )
+}
+
+
+*)
+
+type list[a] = +{cons : a * list[a],
+                 nil : 1}
+
+proc pnil[a] : . |- ($l : list[a]) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc asset pcons : ($m : a), ($tl : list[a]) |- ($l : list[a]) =
+{
+  $l.cons ;
+  send $l $m ;
+  $l <- $tl
+}
+
+proc asset pappend : ($m : a), ($tl : list[a]) |- ($l : list[a]) =
+{
+  case $tl (
+    cons => $x <- recv $tl ;
+            $l.cons ;
+            send $l $x ;
+            $l <- pappend <- $m $tl
+  | nil => wait $tl ;
+           $l.cons ;
+           send $l $m ;
+           $l.nil ;
+           close $l
+  )
+}
+
+type PWtoE = k -> rng -> sid -> crupt list -> ?[a]. ?[b]. PWtoZ[a]
+type PWtoZ[a] = /\ &{z_to_p : sid ^ pid ^ msg[a] * \/ PWtoZ[a]}
+
+proc party_wrapper[a] :
+  (#pw_to_adv : comm[a]), (#adv_to_pw : comm[a]),
+  (#pw_to_f : comm[a]), (#f_to_pw : comm[a]) |- ($pw : PWtoE) =
+{
+  k = recv $pw ;
+  rng = recv $pw ;
+  sid = recv $pw ;
+  clist = recv $pw ;
+  [a] <- recv $pw ;
+  [b] <- recv $pw ;
+  $lp <- nil[pid ^ b] <- ;
+  $pw <- party_wrapper_rec[a][b] <-$lp
+}
+
+proc party_wrapper_rec[a][b] :
+  (#pw_to_adv : comm[a]), (#adv_to_pw : comm[a]),
+  (#pw_tof : comm[a]), (#f_to_pw : comm[a]),
+  ($lp : list[b]) |- ($pw : PWtoZ[a]) =
+{
+  case $pw (
+    z_to_p => s = recv $pw ;
+              p = recv $pw ;
+              m = recv $pw ;
+              exists = find_party p $lp ;
+              if exists
+              then
+                $lpnew <- send_msg <- m p s $lp ;
+                $pw <- party_wrapper_rec[a][b] <- $lp
+              else
+                #toZ <- communicator_init[a] <- p env_id ;
+                #fromZ <- communicator_init[a] <- env_id p ;
+                #toA <- communicator_init[a] <- p adv_id ;
+                #fromA <- communicator_init[a] <- adv_id p ;
+                #toF <- communicator_init[a] <- p f_id ;
+                #fromF <- communicator_init[a] <- f_id p ;
+                $pnew <- PS.party_code <- p #toZ #fromZ #toA #fromA #toF #fromF ;
+                $lp' <- pcons <- $pnew $lp ;
+                $lp <- send_msg <- m p s $lp' ;
+                $pw <- party_wrapper_rec[a][b] <- $lp
+  )
+}
+
+type FtoE = k -> rng -> sid -> crupt list -> PS.FtoZ
+type FtoZ = 1
+
+(*
+  Protocol-specific code:
+    F_code : (#pw : PWtoF), (#adv : AtoF) |- ($z : FtoZ)
+ *)
+
+proc ideal_functionality : . |- ($f : FtoE) =
+{
+  k = recv $f ;
+  rng = recv $f ;
+  sid = recv $f ;
+  clist = recv $f ;
+  $z <- PS.F_code <- #pw #adv
+}
+
+type AtoE = k -> rng -> sid -> crupt list -> AtoZ1
+type AtoZ1 = +{a_to_p : msg -> AtoZ2,
+               a_to_f : msg -> AtoZ2}
+type AtoZ2 = &{msg_to_z : msg ^ AtoZ3,
+               no_msg_to_z : AtoZ3}
+type AtoZ3 = &{msg_to_z : msg ^ AtoZ1,
+               no_msg_to_z : AtoZ1}
+
+proc dummy_adversary[a] :
+  (#pw_to_adv : comm[a]), (#adv_to_pw : comm[a]),
+  (#f_to_adv : comm[a]), (#adv_to_f : comm[a]) |- ($adv : AtoE) =
+{
+  k = recv $adv ;
+  rng = recv $adv ;
+  sid = recv $adv ;
+  clist = recv $adv ;
+  $adv <- dummy_adversary_rec1[a] <- #pw_to_adv #adv_to_pw #f_to_adv #adv_to_f
+}
+
+proc dummy_adversary_rec1[a] :
+  (#pw_to_adv : comm[a]), (#adv_to_pw : comm[a]),
+  (#f_to_adv : comm[a]), (#adv_to_f : comm[a]) |- ($adv : AtoZ1)
+{
+  case $adv (
+    a_to_p => m = recv $adv ;
+              $lf <- acquire #adv_to_pw ;
+              $lf.SEND ;
+              send $lf m ;
+              #adv_to_pw <- release $lf ;
+              $adv <- dummy_adversary_rec2[a] <- #pw_to_adv #adv_to_pw #f_to_adv #adv_to_f
+  | a_to_f => m = recv $adv ;
+              $lf <- acquire #adv_to_f ;
+              $lf.SEND ;
+              send $lf m ;
+              #adv_to_f <- release $lf ;
+              $adv <- dummy_adversary_rec2[a] <- #pw_to_adv #adv_to_pw #f_to_adv #adv_to_f
+  )
+}
+
+proc dummy_adversary_rec2[a] :
+  (#pw_to_adv : comm[a]), (#adv_to_pw : comm[a]),
+  (#f_to_adv : comm[a]), (#adv_to_f : comm[a]) |- ($adv : AtoZ2)
+{
+  $lp <- acquire #pw_to_adv ;
+  $lp.RECV ;
+  case $lp (
+    yes => m = recv $lp ;
+           #pw_to_adv <- release $lp ;
+           $adv.msg_to_z ;
+           send $adv m ;
+           $adv <- dummy_adversary_rec3[a] <- #pw_to_adv #adv_to_pw #f_to_adv #adv_to_f
+  | no => #pw_to_adv <- release $lp ;
+          $adv.no_msg_to_z ;
+          $adv <- dummy_adversary_rec3[a] <- #pw_to_adv #adv_to_pw #f_to_adv #adv_to_f
+  )
+}
+
+proc dummy_adversary_rec3[a] :
+  (#pw_to_adv : comm[a]), (#adv_to_pw : comm[a]),
+  (#f_to_adv : comm[a]), (#adv_to_f : comm[a]) |- ($adv : AtoZ3)
+{
+  $lf <- acquire #f_to_adv ;
+  $lp.RECV ;
+  case $lp (
+    yes => m = recv $lf ;
+           #f_to_adv <- release $lf ;
+           $adv.msg_to_z ;
+           send $adv m ;
+           $adv <- dummy_adversary_rec3[a] <- #pw_to_adv #adv_to_pw #f_to_adv #adv_to_f
+  | no => #f_to_adv <- release $lf ;
+          $adv.no_msg_to_z ;
+          $adv <- dummy_adversary_rec3[a] <- #pw_to_adv #adv_to_pw #f_to_adv #adv_to_f
+  )
+}
+
+proc execUC[a] : (k : int), (rng : int), ($adv : AtoE), ($functionality : FtoE) |- ($d : bit) =
+{
+  (* create/initialize environment *)
+  $z <- env[a] <- ;
+  send $z k ;
+  send $z rng ;
+  sid = recv $z ;
+  clist = recv $z ;
+
+  (* create a channel connecting PW and ADV *)
+  #pw_to_adv <- communicator_init[a] <- pw_id adv_id ;
+  #adv_to_pw <- communicator_init[a] <- adv_id pw_id ;
+
+  (* create a channel connecting PW and F *)
+  #pw_to_f <- communicator_init[a] <- pw_id f_id ;
+  #f_to_pw <- communicator_init[a] <- f_id pw_id ;
+
+  (* create a channel connecting ADV and F *)
+  #f_to_adv <- communicator_init[a] <- f_id adv_id ;
+  #adv_to_f <- communicator_init[a] <- adv_id f_id ;
+
+  (* create/initialize party wrapper *)
+  $pw <- party_wrapper[a] <- #pw_to_adv #adv_to_pw #pw_to_f #f_to_pw ;
+  send $pw k ;
+  send $pw rng ;
+  send $pw sid ;
+  send $pw clist ;
+  send $pw [a] ;      (* sending the type of the messages that need to be exchanged *)
+
+  (* send channel connecting PW to execUC to Z *)
+  send $z $pw ;
+
+  (* initialize ideal functionality *)
+  send $f_ideal k ;
+  send $f_ideal rng ;
+  send $f_ideal sid ;
+  send $f_ideal clist ;
+
+  (* initialize ADV *)
+  send $adv k ;
+  send $adv rng ;
+  send $adv sid ;
+  send $adv clist ;
+
+  (* send channel connecting ADV to execUC to Z *)
+  send $z $adv ;
+
+  $z.start ;
+
+  $d <- $z
+
+}
+
+proc main : . |- ($d : 1) =
+{
+  let k = ... ;
+  let rng = ... ;
+  $b1 <- execUC[real_tp] <- k rng $dummy_adversary $hybrid_functionality ;
+  $b2 <- execUC[ideal_tp] <- k rng $simulator $ideal_functionality ;
+  (* compare b1 and b2 *)
+}
+
+type comm[a] = /\ &{ SEND : a -o \/ comm,
+                     RECV : +{ no : \/ comm,
+                               yes : a * \/ comm }}
+
+proc contract communicator_init[a] : (sid : int), (rid : int) |- (#dc : comm[a]) =
+{
+  $l <- pnil[a] <- ;
+  #dc <- communicator_init[a] <- sid rid $l
+}
+
+proc contract communicator[a] : (sid : int), (rid : int), ($l : list[a]) |- (#dc : comm[a]) =
+{
+  $ldc <- accept #dc ;
+  case $ldc (
+    SEND => $msg <- recv $ldc ;
+            print ("%d-%d comm acquired by %d: message received\n", sid, rid, sid);
+            #dc <- detach $ldc ;
+            $lnew <- pappend[a] <- $msg $l ;
+            #dc <- communicator[a] <- sid rid $lnew
+  
+  | RECV => case $l (
+              cons => $m <- recv $l ;
+                      $ldc.yes ;
+                      print ("%d-%d comm acquired by %d: message delivered\n", sid, rid, rid);
+                      send $ldc $m ;
+                      #dc <- detach $ldc ;
+                      #dc <- communicator[a] <- sid rid $l
+            | nil => wait $l ;
+                     $ldc.no ;
+                     print ("%d-%d comm acquired by %d: no message\n", sid, rid, rid);
+                     $lnew <- pnil[a] <- ;
+                     #dc <- detach $ldc ;
+                     #dc <- communicator[a] <- sid rid $lnew
+            )
+  )
+}

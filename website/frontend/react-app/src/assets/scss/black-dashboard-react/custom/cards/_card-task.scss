@@ -1,0 +1,33 @@
+.card-tasks {
+  .table-full-width {
+    position: relative;
+  }
+
+  .card-header {
+    .title {
+      margin-right: 20px;
+      font-weight: $font-weight-normal;
+    }
+
+    .dropdown {
+      float: right;
+      color: darken($white, 20%);
+    }
+  }
+
+  .card-body {
+    i {
+      color: $dark-gray;
+      font-size: 1.4em;
+    }
+
+    .td-actions {
+	i {
+	    &:hover {
+		color: $white;
+	    }
+	}
+    }
+  }
+    
+}

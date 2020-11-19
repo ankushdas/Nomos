@@ -15,6 +15,12 @@ To configure opam for the first time and install the latest version of OCaml, pl
 $ opam init
 ```
 
+### OCaml Version
+Please make sure you have ocaml version `4.10.0` or higher. To install this version, simply run the following command.
+```
+$ opam switch create 4.10.0
+```
+
 ### Installing Dependencies
 Clone the repository and obtain the source code, and install the necessary libraries to build.
 ```

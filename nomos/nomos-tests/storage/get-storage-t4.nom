@@ -1,0 +1,13 @@
+proc transaction get_storage : . |{*}- ($d : 1) =
+{
+  #s : storage <- Nomos.MakeChannel 1 ;
+  $ls <- acquire #s ;
+  $ls.getter ;
+  pay $ls {*} ;
+  n = recv $ls ;
+  #s <- release $ls ;
+  print ("value of storage : %d\n", n) ;
+  close $d
+}
+
+exec get_storage

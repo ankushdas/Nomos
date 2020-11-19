@@ -1,0 +1,12 @@
+proc transaction set_storage : . |{*}- ($d : 1) =
+{
+  #s : storage <- Nomos.MakeChannel 1 ;
+  $ls <- acquire #s ;
+  $ls.setter ;
+  pay $ls {*} ;
+  send $ls 100 ;
+  #s <- release $ls ;
+  close $d
+}
+
+exec set_storage

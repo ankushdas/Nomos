@@ -1,0 +1,302 @@
+
+
+type maybe_money = +{none: 1, some: money * 1}
+
+type auction = /\ <{*}| +{running : &{bid : int -> money -o |{*}> \/ auction,
+                                      cancel : |{*}> \/ auction},
+                          ended : &{collect : int -> +{won : lot * |{*}> \/ auction,
+                                                       lost : money * |{*}> \/ auction},
+                                    cancel : |{*}> \/ auction}}
+
+
+proc transaction bid_client : (a : int), ($m : money), (#sa : auction) |{*}- ($d : maybe_money) =
+{
+  $la <- acquire #sa ;
+  pay $la {*} ;
+  case $la (
+    running => $la.bid ;
+               send $la a ;
+               send $la $m ;
+               get $la {*} ;
+               #sa <- release $la ;
+               work {*} ;
+               $d.none;
+               close $d
+  | ended => $la.cancel ;
+             get $la {*} ;
+             #sa <- release $la ;
+             $d.some;
+             send $d $m ;
+             close $d
+  )
+}
+
+proc transaction collect_client : (a : int), (#sa : auction) |{*}- ($d : 1) =
+{
+  $la <- acquire #sa ;
+  pay $la {*} ;
+  case $la (
+    running => $la.cancel ;
+               get $la {*} ;
+               #sa <- release $la ;
+               work {*} ;
+               close $d
+  | ended => $la.collect ;
+             send $la a ;
+             case $la (
+               won => $l <- recv $la ;
+                      get $la {*} ;
+                      #sa <- release $la ;
+                      wait $l ;
+                      work {*} ;
+                      close $d
+              | lost => $m <- recv $la ;
+                        get $la {*} ;
+                        #sa <- release $la ;
+                        $m.Coins ;
+                        pay $m {*} ;
+                        wait $m ;
+                        work {*} ;
+                        close $d
+             )
+  )
+}
+
+proc asset empty_lot : . |{*}- ($l : lot) =
+{
+  close $l
+}
+
+proc transaction main : . |{*}- ($d : 1) =
+{
+  let T = 100 ;
+  let w = 0 ;
+  let v = 0 ;
+  let n = 0 ;
+  $D <- dummy <- n ;
+  $l <- empty_lot <- ;
+  #sa <- run <- T w v $D $l ;
+  $M <- empty_wallet <- ;
+  let A = 24 ;
+  $c <- bid_client <- A $M #sa ;
+  case $c (
+    none => wait $c;
+            close $d
+  | some => $m <- recv $c ;
+            wait $c ;
+            #w <- new_full <- $m ;
+            close $d
+  )
+}
+
+exec main
+
+
+proc contract run : (T : int), (w : int), (v : int), ($b : dictionary), ($l : lot) |{*}- (#sa : auction) =
+{
+  $la <- accept #sa ;
+  get $la {*} ;
+  $la.running ;
+  case $la (
+    bid => r = recv $la ;
+           $m <- recv $la ;
+           pay $la {*} ;
+           #sa <- detach $la ;
+           $m.value ;
+           pay $m {*} ;
+           bv = recv $m ;
+           $newb <- addbid <- r $m $b ;
+           if bv > v
+           then
+              #sa <- check <- T r bv $newb $l
+           else
+              #sa <- check <- T w v $newb $l
+  | cancel => pay $la {*} ;
+              #sa <- detach $la ;
+              #sa <- run <- T w v $b $l
+  )
+}
+
+proc contract check : (T : int), (w : int), (v : int), ($b : dictionary), ($l : lot) |{*}- (#sa : auction) =
+{
+  $b.size ;
+  pay $b {*} ;
+  n = recv $b ;
+  if n = T
+  then
+    #sa <- end_lot <- T w $b $l
+  else
+    #sa <- run <- T w v $b $l
+}
+
+proc contract end_lot : (T : int), (w : int), ($b : dictionary), ($l : lot) |{*}- (#sa : auction) =
+{
+  $la <- accept #sa ;
+  get $la {*} ;
+  $la.ended ;
+  case $la (
+    collect => r = recv $la ;
+               if w = r
+               then
+                  $la.won ;
+                  send $la $l ;
+                  pay $la {*} ;
+                  #sa <- detach $la ;
+                  #sa <- end_nolot <- T w $b
+               else
+                  $la.lost ;
+                  $newb <- removebid <- r $b ;
+                  $m <- recv $newb ;
+                  send $la $m ;
+                  pay $la {*} ;
+                  #sa <- detach $la ;
+                  #sa <- end_lot <- T w $newb $l
+  | cancel => pay $la {*} ;
+              #sa <- detach $la ;
+              #sa <- end_lot <- T w $b $l
+  )
+}
+
+proc contract end_nolot : (T : int), (w : int), ($b : dictionary) |{*}- (#sa : auction) =
+{
+  $la <- accept #sa ;
+  get $la {*} ;
+  $la.ended ;
+  case $la (
+    collect => r = recv $la ;
+               $la.lost ;
+               $newb <- removebid <- r $b ;
+               $m <- recv $newb ;
+               send $la $m ;
+               pay $la {*} ;
+               #sa <- detach $la ;
+               work {*} ;
+               #sa <- end_nolot <- T w $newb
+  | cancel => pay $la {*} ;
+              #sa <- detach $la ;
+              work {*} ;
+              #sa <- end_nolot <- T w $b
+  )
+}
+
+proc asset addbid : (r : int), ($m : money), ($bs : dictionary) |{*}- ($newbs : dictionary) =
+  {
+    $bs.add ;
+    pay $bs {*} ;
+    send $bs r ;
+    send $bs $m ;
+    $newbs <- $bs
+  }
+
+
+
+proc asset removebid : (r : int), ($bs : dictionary) |{*}- ($newbs : money * dictionary) =
+  {
+    $bs.delete ;
+    pay $bs {*} ;
+    send $bs r ;
+    $m <- recv $bs ;
+    send $newbs $m ;
+    $newbs <- $bs
+  }
+
+
+
+
+
+type money = &{value : <{*}| int ^ money,
+               Coins : <{*}| lCoin}
+type lCoin = 1
+
+proc asset emp : . |{*}- ($l : lCoin) = 
+{
+  close $l
+}
+
+proc asset empty_wallet : . |{*}- ($m : money) = 
+{
+  $l <- emp <- ;
+  let n = 0 ;
+  $m <- wallet <- n $l
+}
+
+type one_time_wallet = /\ <{*}| +{full : &{take : money * |{*}> \/ one_time_wallet,
+                                           cancel : |{*}> \/ one_time_wallet},
+                                  empty : |{*}> \/ one_time_wallet}
+
+proc contract new_empty : . |{*}- (#w : one_time_wallet) =
+{
+  $wl <- accept #w ;
+  get $wl {*} ;
+  $wl.empty ;
+  pay $wl {*} ;
+  #w <- detach $wl ;
+  #w <- new_empty <-
+}
+
+proc contract new_full : ($m : money) |{*}- (#w : one_time_wallet) =
+{
+  $wl <- accept #w ;
+  get $wl {*} ;
+  $wl.full;
+  case $wl (
+    take => send $wl $m ;
+            pay $wl {*} ;
+            #w <- detach $wl ;
+            #w <- new_empty <-
+  | cancel => pay $wl {*} ;
+              $w <- detach $wl ;
+              #w <- new_full <- $m
+  )
+}
+
+proc asset wallet : (n : int), ($l : lCoin) |{*}- ($m : money) = 
+{
+    case $m (
+      value => get $m {*};
+               send $m n;
+               $m <- wallet <- n $l 
+    | Coins => get $m {*} ;
+               $m <- $l
+    )
+}
+
+type dictionary = &{add : <{*}| int -> money -o dictionary,
+                    delete : <{*}| int -> money * dictionary,
+                    check : <{*}| int -> bool ^ dictionary,
+                    size : <{*}| int ^ dictionary}
+
+proc asset dummy : (n : int) |{*}- ($d : dictionary) =
+{
+  case $d (
+    add => get $d {*} ;
+            key = recv $d ;
+            $v <- recv $d ;
+            $v.Coins ;
+            pay $v {*} ;
+            wait $v ;
+            let n = n+1 ;
+            $d <- dummy <- n
+  | delete => get $d {*} ;
+              key = recv $d ;
+              $v <- empty_wallet <- ;
+              send $d $v ;
+              let n = n-1 ;
+              $d <- dummy <- n 
+  | check => get $d {*} ;
+              key = recv $d ;
+              if key > 0
+              then
+                send $d true ;
+                $d <- dummy <- n
+              else
+                send $d false ;
+                $d <- dummy <- n
+  | size => get $d {*} ;
+            send $d n ;
+            $d <- dummy <- n
+  )
+}
+
+type lot = 1
+

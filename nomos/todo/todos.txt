@@ -1,0 +1,9 @@
+TODOS:
+======
+
+- Check if configuration is poised
+- Add polymorphism
+- Get rid of Nomos.MakeChannel
+
+- submit : should receive a non-starred potential annotation program, check for it
+- all printing to file

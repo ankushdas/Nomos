@@ -1,0 +1,119 @@
+{
+  "request": "submit",
+  "body": {
+    "state": "(0 0 ((ankush 200)) () ((conf ()) (conts ()) (shared ()) (types ())))", 
+    "account": "ankush",
+    "transaction": "type money =  <{*}| &{value : int ^ |{*}> money,
+                      plus : money -o |{*}> money,
+                      minus : int -> +{sufficient : money * |{*}> money,
+                                       insufficient : |{*}> money},
+                      destroy : |{*}> 1}
+
+proc asset money_proc : (n : int) |{*}- ($m : money) =
+{
+  get $m {*} ;
+  case $m (
+    value => send $m n ;
+             pay $m {*} ;
+             work {*} ;
+             $m <- money_proc <- n
+  | plus => $addm <- recv $m ;
+            pay $m {*} ;
+            pay $addm {*} ;
+            $addm.value ;
+            addn = recv $addm ;
+            get $addm {*} ;
+            pay $addm {*} ;
+            $addm.destroy ;
+            get $addm {*} ;
+            wait $addm ;
+            let newn = addn + n ;
+            work {*} ;
+            $m <- money_proc <- newn
+  | minus => subn = recv $m ;
+             if n > subn
+             then
+                $m.sufficient ;
+                $subm <- money_proc <- subn ;
+                send $m $subm ;
+                pay $m {*} ;
+                let newn = n - subn ;
+                work {*} ;
+                $m <- money_proc <- newn
+             else
+                $m.insufficient ;
+                pay $m {*} ;
+                work {*} ;
+                $m <- money_proc <- n
+  | destroy => pay $m {*} ;
+               work {*} ;
+               close $m
+  )
+}
+
+proc contract wallet_proc : ($m : money) |{*}- (#sw : wallet) =
+{
+  $lw <- accept #sw ;
+  get $lw {*} ;
+  pay $m {*} ;
+  case $lw (
+    add => $am <- recv $lw ;
+           pay $lw {*} ;
+           #sw <- detach $lw ;
+           $m.plus ;
+           send $m $am ;
+           get $m {*} ;
+           #sw <- wallet_proc <- $m
+  | sub => to_sub = recv $lw ;
+           $m.minus ;
+           send $m to_sub ;
+           case $m (
+             sufficient => $lw.sufficient ;
+                           $subm <- recv $m ;
+                           send $lw $subm ;
+                           get $m {*} ;
+                           pay $lw {*} ;
+                           #sw <- detach $lw ;
+                           #sw <- wallet_proc <- $m
+           | insufficient => $lw.insufficient ;
+                             get $m {*} ;
+                             pay $lw {*} ;
+                             #sw <- detach $lw ;
+                             #sw <- wallet_proc <- $m
+           )
+  | val => $m.value ;
+           v = recv $m ;
+           get $m {*} ;
+           send $lw v ;
+           pay $lw {*} ;
+           #sw <- detach $lw ;
+           #sw <- wallet_proc <- $m
+  )
+}
+
+
+type wallet = /\\ <{*}| &{add : money -o |{*}> \\/ wallet,
+                         sub : int -> +{sufficient : money * |{*}> \\/ wallet,
+                                        insufficient : |{*}> \\/ wallet},
+                         val : int ^ |{*}> \\/ wallet}
+
+
+proc transaction main1 : . |{*}- ($d : 1) =
+{
+  let n = 1000 ;
+  $c <- create_wallet <- n ;
+  $d <- $c
+}
+
+proc transaction create_wallet : (n : int) |{*}- ($d : 1) =
+{
+  $m <- money_proc <- n ;
+  #sw <- wallet_proc <- $m ;
+  print (\"created a wallet with %d coins on channel %c\n\", n, #sw);
+  deposit {100};
+  close $d
+}
+
+exec main1"
+  }
+}

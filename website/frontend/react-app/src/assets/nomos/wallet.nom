@@ -1,0 +1,31 @@
+type Coin = 1
+type lCoin = +{cons : Coin * lCoin, nil : 1}
+
+type money = /\ &{value : <{*}| int ^ \/ money,
+                  Coins : <{*}| lCoin * \/ money}
+
+proc asset emp : . |{*}- ($l : lCoin) =
+{
+  $l.nil ;
+  close $l
+} 
+
+proc contract wallet : (n : int), ($l : lCoin) |{*}- (#sm : money) =
+  {
+    $m <- accept #sm ;
+    case $m (
+      value => get $m {*} ;
+               send $m n;
+               work {*} ;
+               #sm <- detach $m ;
+               #sm <- wallet <- n $l
+    | Coins => get $m {*} ;
+               work {*} ;
+               send $m $l ;
+               $l <- emp <- ;
+               let n1 = 0 ;
+               #sm <- detach $m ;
+               #sm <- wallet <- n1 $l
+
+    )
+  }

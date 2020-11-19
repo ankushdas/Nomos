@@ -1,0 +1,71 @@
+(* Communicator Code *)
+
+(* Type of messages exchanged: SEND, ECHO or READY along with an integer *)
+type msg = +{SEND : int ^ 1,
+             ECHO : int ^ 1,
+             READY : int ^ 1}
+
+(* Messages to wrapper comms: sender id ^ receiver id ^ msg *)
+type wrapper_msg = int ^ int ^ msg
+
+type wrapper_comm = /\ &{ SEND : wrapper_msg -o \/ wrapper_comm,
+                          FETCH : +{ no : \/ wrapper_comm,
+                                     yes : wrapper_msg * \/ wrapper_comm }}
+
+type list_wrapper_comms = +{cons : wrapper_comm * list_wrapper_comms,
+                            nil : 1}
+
+type list_wrapper_msgs = +{cons : wrapper_msg * list_wrapper_msgs,
+                           nil : 1}
+
+proc asset mnil : . |- ($l : list_wrapper_msgs) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc asset mcons : ($m : wrapper_msg), ($tl : list_wrapper_msgs) |- ($l : list_wrapper_msgs) =
+{
+  $l.cons ;
+  send $l $m ;
+  $l <- $tl
+}
+
+proc asset mappend : ($m : wrapper_msg), ($tl : list_wrapper_msgs) |- ($l : list_wrapper_msgs) =
+{
+  case $tl (
+    cons => $x <- recv $tl ;
+            $l.cons ;
+            send $l $x ;
+            $l <- mappend <- $m $tl
+  | nil => wait $tl ;
+           $l.cons ;
+           send $l $m ;
+           $l.nil ;
+           close $l
+  )
+}
+
+proc contract wrapper_communicator : ($l : list_wrapper_msgs) |- (#wc : wrapper_comm) =
+{
+  $lwc <- accept #wc ;
+  case $lwc (
+    SEND => $m <- recv $lwc ;
+            #wc <- detach $lwc ;
+            $lnew <- mappend <- $m $l ;
+            #wc <- wrapper_communicator <- $lnew
+  | FETCH =>
+      case $l (
+        cons => $m <- recv $l ;
+                $lwc.yes ;
+                send $lwc $m ;
+                #wc <- detach $lwc ;
+                #wc <- wrapper_communicator <- $l
+      | nil => wait $l ;
+               $l <- mnil <- ;
+               $lwc.no ;
+               #wc <- detach $lwc ;
+               #wc <- wrapper_communicator <- $l
+      )
+  )
+}
