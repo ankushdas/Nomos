@@ -190,13 +190,13 @@ let rec pp_tp i a = match a with
       let mapstr = "Map<" in
       let kstr = pp_ftp_simple kt in
       let mapkstr = mapstr ^ kstr ^ ", " in
-      mapkstr ^ pp_ftp_simple vt
+      mapkstr ^ pp_ftp_simple vt ^ ">"
   | A.STMap(kt,vt) ->
       let mapstr = "Map<" in
       let kstr = pp_ftp_simple kt in
       let mapkstr = mapstr ^ kstr ^ ", " in
       let inc = len mapkstr in
-      mapkstr ^ pp_tp (i+inc) vt
+      mapkstr ^ pp_tp (i+inc) vt ^ ">"
   | A.Coin -> "coin"
 
 and pp_tp_after i s a = s ^ pp_tp (i+len(s)) a

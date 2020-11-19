@@ -328,7 +328,7 @@ let rec removeU_exp exp = match exp with
   | A.FMapCreate(mp,kt,vt,p) -> A.FMapCreate(removeU mp, kt, vt, removeU_aug p)
   | A.STMapCreate(mp,kt,vt,p) -> A.STMapCreate(removeU mp, kt, vt, removeU_aug p)
   | A.FMapInsert(mp,k,v,p) -> A.FMapInsert(removeU mp, k, v, removeU_aug p)
-  | A.STMapInsert(mp,k,v,p) -> A.STMapInsert(removeU mp, k, v, removeU_aug p)
+  | A.STMapInsert(mp,k,v,p) -> A.STMapInsert(removeU mp, k, removeU v, removeU_aug p)
   | A.FMapDelete(v,mp,k,p) -> A.FMapDelete(v, removeU mp, k, removeU_aug p)
   | A.STMapDelete(v,mp,k,p) -> A.STMapDelete(removeU v, removeU mp, k, removeU_aug p)
   | A.MapClose(mp,p) -> A.MapClose(removeU mp, removeU_aug p)
