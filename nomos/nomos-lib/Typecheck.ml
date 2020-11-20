@@ -299,6 +299,13 @@ and sub_tp env seen tp tp' = match tp, tp' with
   | A.FProduct(t,a), A.FProduct(t',a') ->
       eq_ftp t t' && sub_tp' env seen a a'
 
+  | A.FMap(kt,vt), A.FMap(kt',vt') ->
+      eq_ftp kt kt' && eq_ftp vt vt'
+  | A.STMap(kt,a), A.STMap(kt',a') ->
+      eq_ftp kt kt' && sub_tp' env seen a a'
+  
+  | A.Coin, A.Coin -> true
+
   | A.TpName(a), A.TpName(a') ->
       sub_name_name env seen a a' (* coinductive subtyping *)
   | A.TpName(a), a' ->
@@ -911,7 +918,8 @@ and check_fexp_simple trace env delta pot (e : A.parsed_expr) tp ext mode isSend
                     begin
                       let a = find_ltp mp delta (e.A.func_data) in
                       match a with
-                          A.FMap _ | A.STMap _ -> (delta,pot)
+                          A.TpName(v) -> check_fexp_simple' trace env (update_tp env mp (A.expd_tp env v) delta) pot e tp ext mode isSend
+                        | A.FMap _ | A.STMap _ -> (delta,pot)
                         | _ -> error (e.A.func_data) ("type mismatch of " ^ PP.pp_chan mp ^ ": expected map, found: " ^ PP.pp_tp_compact env a)
                     end
                   else
@@ -1830,7 +1838,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         else
           let a = find_ltp mp delta (exp.A.st_data) in
           match a with
-              A.FMap(kt,vt) ->
+              A.TpName(v) -> check_exp' trace env (update_tp env mp (A.expd_tp env v) delta) pot exp zc ext mode
+            | A.FMap(kt,vt) ->
                 begin
                   let (delta1, pot1) = check_fexp_simple trace env delta pot k kt ext mode false in
                   let (delta2, pot2) = check_fexp_simple trace env delta1 pot1 v vt ext mode false in
@@ -1851,17 +1860,19 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
           let (_c,a) = find_tp mp delta in
           let (_c,val_t) = find_tp v delta in
           match a with
-              A.STMap(kt,vt) ->
+              A.TpName(v) -> check_exp' trace env (update_tp env mp (A.expd_tp env v) delta) pot exp zc ext mode
+            | A.STMap(kt,vt) ->
                 begin
                   if not (subtp env val_t vt)
                   then error (exp.A.st_data) ("type mismatch: map expects " ^ PP.pp_tp_compact env vt ^
-                                              " but " ^ PP.pp_chan v ^ " has type " ^ PP.pp_tp_compact env vt)
+                                              " but " ^ PP.pp_chan v ^ " has type " ^ PP.pp_tp_compact env val_t)
                   else
                     let (delta1, pot1) = check_fexp_simple trace env delta pot k kt ext mode false in
+                    let delta1 = if A.is_shared env vt then delta1 else (remove_tp v delta1) in
                     check_exp' trace env delta1 pot1 p zc ext mode
                 end
             | _ -> error (exp.A.st_data) ("type mismatch of " ^ PP.pp_chan mp ^
-                                          " expected session-typed map, found: " ^ PP.pp_tp_compact env a)
+                                          ": expected session-typed map, found: " ^ PP.pp_tp_compact env a)
       end
   | A.FMapDelete(v,mp,k,p) ->
       begin
@@ -1876,7 +1887,8 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         else
           let a = find_ltp mp delta (exp.A.st_data) in
           match a with
-              A.FMap(kt,vt) ->
+              A.TpName(v) -> check_exp' trace env (update_tp env mp (A.expd_tp env v) delta) pot exp zc ext mode
+            | A.FMap(kt,vt) ->
                 begin
                   let (delta1, pot1) = check_fexp_simple trace env delta pot k kt ext mode false in
                   check_exp' trace env (add_var (v,vt) delta1) pot1 p zc ext mode
@@ -1895,13 +1907,14 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         else
           let (_c,a) = find_tp mp delta in
           match a with
-              A.STMap(kt,vt) ->
+              A.TpName(v) -> check_exp' trace env (update_tp env mp (A.expd_tp env v) delta) pot exp zc ext mode
+            | A.STMap(kt,vt) ->
                 begin
                   let (delta1, pot1) = check_fexp_simple trace env delta pot k kt ext mode false in
                   check_exp' trace env (add_chan env (v,vt) delta1) pot1 p zc ext mode
                 end
             | _ -> error (exp.A.st_data) ("type mismatch of " ^ PP.pp_chan mp ^
-                                          " expected session-typed map, found: " ^ PP.pp_tp_compact env a)
+                                          ": expected session-typed map, found: " ^ PP.pp_tp_compact env a)
       end
   | A.MapClose(mp,p) ->
       begin
@@ -1910,12 +1923,13 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
         else
           let (_c,a) = find_tp mp delta in
           match a with
-              A.FMap _ -> check_exp' trace env (remove_tp mp delta) pot p zc ext mode
+              A.TpName(v) -> check_exp' trace env (update_tp env mp (A.expd_tp env v) delta) pot exp zc ext mode
+            | A.FMap _ -> check_exp' trace env (remove_tp mp delta) pot p zc ext mode
             | A.STMap(kt,vt) ->
                 if A.is_shared env vt
                 then check_exp' trace env (remove_tp mp delta) pot p zc ext mode
                 else
-                  let cont_type = A.With([("empty", A.One); ("nonempty", A.STMap(kt,vt))]) in
+                  let cont_type = A.Plus([("empty", A.One); ("nonempty", A.STMap(kt,vt))]) in
                   check_exp' trace env (update_tp env mp cont_type delta) pot p zc ext mode
             | _ -> error (exp.A.st_data) ("type mismatch of " ^ PP.pp_chan mp ^
                                           " expected map, found: " ^ PP.pp_tp_compact env a)

@@ -65,6 +65,11 @@ sp_stype:
     | x = ID                    { Ast.TpName(x) }
     | INT                       { Ast.One }
     | LPAREN; s = stype; RPAREN { s             }
+    | COIN                      { Ast.Coin }
+    | MAP; LESS; kt = ftype; COMMA; vt = ftype; GREATER                         { Ast.FMap(kt,vt) }
+    | MAP; LESS; kt = ftype; COMMA; vt = stype; GREATER                         { Ast.STMap(kt,vt) }
+
+
     ;
 
 sp_ftype:
