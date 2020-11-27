@@ -1,8 +1,0 @@
-datadir=/home/ankush/Documents/Nomos/clp/coin-Clp/Data/Netlib
-
-Name: Netlib
-Description: Netlib models
-URL: https://projects.coin-or.org/svn/Data/Netlib
-Version: 1.2
-Libs:
-Cflags:

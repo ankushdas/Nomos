@@ -1,1 +1,0 @@
--L/home/ankush/Documents/Nomos/clp/coin-Clp/lib -lCoinUtils -lm
