@@ -1,0 +1,10 @@
+prefix=/home/ankush/Documents/Nomos/clp/coin-Clp
+libdir=/home/ankush/Documents/Nomos/clp/coin-Clp/CoinUtils/src
+
+Name: CoinUtils
+Description: COIN-OR Utilities
+URL: https://projects.coin-or.org/CoinUtils
+Version: 2.10
+Libs: ${libdir}/libCoinUtils.la -lm 
+Cflags: -I/home/ankush/Documents/Nomos/clp/coin-Clp/CoinUtils/src -I/home/ankush/Documents/Nomos/clp/coin-Clp/CoinUtils/src
+Requires: 

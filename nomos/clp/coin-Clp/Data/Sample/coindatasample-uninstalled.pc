@@ -1,0 +1,8 @@
+datadir=/home/ankush/Documents/Nomos/clp/coin-Clp/Data/Sample
+
+Name: Sample
+Description: Sample models
+URL: https://projects.coin-or.org/svn/Data/Sample
+Version: 1.2
+Libs:
+Cflags:
