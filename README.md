@@ -120,7 +120,7 @@ Next, we create another wallet with 100 coins in it.
 ```
 ./_build/default/nomos-bin/nomos.exe -w send -ts ankush -i s3.conf -o s4.conf nomos-tests/wallet/create-wallet-t2.nom
 ```
-The output at the end should be
+The output of this transaction should be
 ```
 % gas cost of txn: 108 units successfully deducted; txn sender ankush now has 884 gas units
 created a wallet with 100 coins on channel #ch7[S]
