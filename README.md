@@ -80,69 +80,94 @@ Let's first create a gas account using the following command.
 ```
 ./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -create -o s1.conf
 ```
-Here, the name following the `-ts` flag is the transaction sender. You can use any name here.
-I am choosing the name `ankush`.
-You should see the following output.
+The flag `-w send` indicates that the type checker should use the `send` cost model that assigns
+a gas cost of 1 to every compute operation and sending a message. (This does not matter yet, but will
+matter when we execute a transaction.)
+The `-ts` flag indicates the transaction sender. You can use any name here. I am choosing the name `ankush`.
+The `-create` flag indicates that the transaction sender wishes to create a new account.
+Finally, the `-o s1.conf` indicates that the output configuration should be stored in a local file called `s1.conf`.
+After execution, you should see the following output.
 ```
 % account creation of ankush successful!
 ```
 Next, let us deposit some gas units into the account just created.
 ```
-./_build/default/nomos-bin/nomos.exe -w send -ts ankush -deposit 1000 -o s1.conf
+./_build/default/nomos-bin/nomos.exe -w send -ts ankush -deposit 1000 -i s1.conf -o s2.conf
 ```
-Run the following command to run a tranaction to create a wallet with 1000 coins.
+The `-deposit 1000` flag denotes that 1000 gas units be deposited into the sender's account. In a real
+blockchain environment, a user would need to pay real money here!
+At this time, we want to use the input configuration `s1.conf` as indicated by the flag `-i s1.conf`.
+The new configuration is stored in `s2.conf`.
+You should see the following output.
 ```
-./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -o s1.conf nomos-tests/wallet/t1.nom
+% deposit of 1000 gas units successful!
+% account balance of ankush: 1000
 ```
-The output at the end should be
+The fun really begins here! Run the following command to execute a transaction that creates a wallet with 1000 coins.
 ```
+./_build/default/nomos-bin/nomos.exe -w send -ts ankush -i s2.conf -o s3.conf nomos-tests/wallet/create-wallet-t1.nom
+```
+You should see the following output.
+```
+% gas cost of txn: 108 units successfully deducted; txn sender ankush now has 892 gas units
 created a wallet with 1000 coins on channel #ch3[S]
+% depositing leftover gas
+% deposit of 100 gas units successful!
+% account balance of ankush: 992
 % runtime successful!
 ```
-Next, run the following command to create another wallet with 100 coins.
+Next, we create another wallet with 100 coins in it.
 ```
-./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -i s1.conf -o s2.conf nomos-tests/test-wallet/t2.nom
+./_build/default/nomos-bin/nomos.exe -w send -ts ankush -i s3.conf -o s4.conf nomos-tests/wallet/create-wallet-t2.nom
 ```
 The output at the end should be
 ```
+% gas cost of txn: 108 units successfully deducted; txn sender ankush now has 884 gas units
 created a wallet with 100 coins on channel #ch7[S]
+% depositing leftover gas
+% deposit of 100 gas units successful!
+% account balance of ankush: 984
 % runtime successful!
 ```
-Then, run the following command to transfer 100 coins from the first wallet to the second.
+Finally, we run a simple transaction that transfers 100 coins from the first wallet to the second.
 ```
-./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -i s2.conf -o s3.conf nomos-tests/test-wallet/t3.nom
+./_build/default/nomos-bin/nomos.exe -w send -ts ankush -i s4.conf -o s5.conf nomos-tests/wallet/transfer-t3.nom
 ```
 The output at the end should be
 ```
+% gas cost of txn: 48 units successfully deducted; txn sender ankush now has 936 gas units
 transfer of 100 coins from #ch3[S] to #ch7[S] successful
+% depositing leftover gas
+% deposit of 0 gas units successful!
+% account balance of ankush: 936
 % runtime successful!
 ```
-Finally, run the following command to check if the wallets are updated correctly.
+And, for good measure, we have one last transaction to print the new balances of both the wallets.
 ```
-./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -i s3.conf -o s4.conf nomos-tests/test-wallet/t4.nom
+./_build/default/nomos-bin/nomos.exe -w send -ts ankush -i s5.conf -o s6.conf nomos-tests/wallet/print-balance-t4.nom
 ```
 The output at the end should be
 ```
+% gas cost of txn: 43 units successfully deducted; txn sender ankush now has 893 gas units
 The balance of #ch3[S] is 900
 The balance of #ch7[S] is 200
+% depositing leftover gas
+% deposit of 0 gas units successful!
+% account balance of ankush: 893
 % runtime successful!
 ```
+Nomos automatically calculates the gas cost of each transaction and subtracts the amount from the sender's
+account! After these 4 transactions, the gas balance of `ankush` is 893.
 
 ### Executing
-The make command creates an executable for nomos at `_build/default/nomos-bin/nomos.exe`.
-To typecheck a file with nomos, run
+The make command creates an executable for Nomos at `_build/default/nomos-bin/nomos.exe`.
+To typecheck a file with Nomos, run
 ```
 $ _build/default/nomos-bin/nomos.exe -tc <file-path>
 ```
 The `-tc` flag tells Nomos to only typecheck the target file. It ignores any `exec` statements.
 
 You can also omit `-tc` to run the `exec` statements.
-For example, the `nomos-tests/wallet-demo.nom` file has an example transaction as well as the
-necessary support code. You typecheck and run this with
-```
-$ ./_build/default/nomos-bin/nomos.exe -ts someone nomos-tests/wallet-demo.nom
-```
-It should produce the output "% runtime successful!" at the end.
 
 A configuration is a description of the state of the all contracts we have running at a specific time. When we run a
 transaction, the configuration is perturbed but will reach final state, which is where execution stops until the next
