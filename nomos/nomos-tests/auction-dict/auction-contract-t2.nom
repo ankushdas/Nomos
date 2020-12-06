@@ -1,0 +1,91 @@
+type money =  <{*}| &{value : int ^ |{*}> money,
+                      plus : money -o |{*}> money,
+                      minus : int -> +{sufficient : money * |{*}> money,
+                                       insufficient : |{*}> money},
+                      destroy : |{*}> 1}
+
+type auction = /\ <{*}| +{running : money -o |{*}> \/ auction,
+                          ended : +{won : lot * |{*}> \/ auction,
+                                    lost : money * |{*}> \/ auction}}
+
+type lot = +{some : coin, none : 1}
+
+proc asset empty_lot : . |{*}- ($l : lot) =
+{
+  $l.none ;
+  close $l
+}
+
+type bid_map = Map<address, money>
+type bid_map2 = Map<address, int>
+
+proc contract running_auction :
+  (winner : address), (max_bid : int),
+  (owner : address), ($bm : bid_map), ($l : lot) |{*}- (#a : auction) =
+{
+  $la <- accept #a ;
+  get $la {*} ;
+  $la.running ;
+  $m <- recv $la ;
+  pay $m {*} ;
+  $m.value ;
+  mv = recv $m ;
+  get $m {*} ;
+  pay $la {*} ;
+  #a <- detach $la ;
+  let addr = Nomos.GetTxnSender() ;
+  $bm.insert(addr, $m) ;
+  $bm.insert ;
+  send $bm addr ;
+  send $bm $m ;
+  if mv > max_bid
+  then
+    #a <- run_or_end <- addr mv owner $bm $l
+  else
+    #a <- run_or_end <- winner max_bid owner $bm $l
+}
+
+proc contract run_or_end :
+  (winner : address), (max_bid : int),
+  (owner : address), ($bm : bid_map), ($l : lot) |{*}- (#a : auction) =
+{
+  if $bm.size < 5
+  then
+    #a <- running_auction <- winner max_bid owner $bm $l
+  else
+    #a <- ended_auction <- winner max_bid owner $bm $l
+}
+
+proc contract ended_auction :
+  (winner : address), (max_bid : int),
+  (owner : address), ($bm : bid_map), ($l : lot) |{*}- (#a : auction) =
+{
+  $la <- accept #a ;
+  get $la {*} ;
+  $la.ended ;
+  let addr = Nomos.GetTxnSender() ;
+  $bm <- new Map<address, money> ;
+  if winner == addr
+  then
+    $la.won ;
+    send $la $l ;
+    pay $la {*} ;
+    #a <- detach $la ;
+    $l <- empty_lot <- ;
+    #a <- ended_auction <- winner max_bid owner $bm $l
+  else
+    $la.lost ;
+    (* $bmwithm : money * bid_map <- process_delete <- $bm key ; *)
+    (* $m <- $bm.delete(addr) ; *)
+    $bm.delete ;
+    send $bm addr ;
+    case $bm (
+      none => (* $bm : Map<address, money> *)
+    | some => $m <- recv $bm ;
+              send $la $m ; (* $bm : Map<address, money> *)
+              pay $la {*} ;
+              #a <- detach $la ;
+              #a <- ended_auction <- winner max_bid owner $bm $l
+    )
+    
+}
