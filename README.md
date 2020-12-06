@@ -25,7 +25,7 @@ $ opam switch create 4.10.0
 Clone the repository and obtain the source code, and install the necessary libraries to build.
 ```
 $ git clone https://github.com/ankushdas/Nomos.git
-$ cd Nomos
+$ cd Nomos/nomos
 ```
 The next step is installing the [Coin-Or LP solver](https://projects.coin-or.org/Clp). Use the instructions below.
 ```
@@ -75,9 +75,24 @@ make sure they are installed before retrying:
 Please make sure you install `m4`. On Ubuntu machines, this simply amounts to running the command `$ sudo apt install m4`.
 
 ### Testing
-To test whether your installation works, here are a few sample smart contract transactions you can test. Run the following command to run a tranaction to create a wallet with 1000 coins.
+To test whether your installation works, here are a few sample smart contract transactions you can test.
+Let's first create a gas account using the following command.
 ```
-./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -o s1.conf nomos-tests/test-wallet/t1.nom
+./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -create -o s1.conf
+```
+Here, the name following the `-ts` flag is the transaction sender. You can use any name here.
+I am choosing the name `ankush`.
+You should see the following output.
+```
+% account creation of ankush successful!
+```
+Next, let us deposit some gas units into the account just created.
+```
+./_build/default/nomos-bin/nomos.exe -w send -ts ankush -deposit 1000 -o s1.conf
+```
+Run the following command to run a tranaction to create a wallet with 1000 coins.
+```
+./_build/default/nomos-bin/nomos.exe -w send -ts <any-name> -o s1.conf nomos-tests/wallet/t1.nom
 ```
 The output at the end should be
 ```

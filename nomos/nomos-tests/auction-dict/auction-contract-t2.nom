@@ -35,9 +35,6 @@ proc contract running_auction :
   #a <- detach $la ;
   let addr = Nomos.GetTxnSender() ;
   $bm.insert(addr, $m) ;
-  $bm.insert ;
-  send $bm addr ;
-  send $bm $m ;
   if mv > max_bid
   then
     #a <- run_or_end <- addr mv owner $bm $l
@@ -64,7 +61,6 @@ proc contract ended_auction :
   get $la {*} ;
   $la.ended ;
   let addr = Nomos.GetTxnSender() ;
-  $bm <- new Map<address, money> ;
   if winner == addr
   then
     $la.won ;
@@ -75,17 +71,9 @@ proc contract ended_auction :
     #a <- ended_auction <- winner max_bid owner $bm $l
   else
     $la.lost ;
-    (* $bmwithm : money * bid_map <- process_delete <- $bm key ; *)
-    (* $m <- $bm.delete(addr) ; *)
-    $bm.delete ;
-    send $bm addr ;
-    case $bm (
-      none => (* $bm : Map<address, money> *)
-    | some => $m <- recv $bm ;
-              send $la $m ; (* $bm : Map<address, money> *)
-              pay $la {*} ;
-              #a <- detach $la ;
-              #a <- ended_auction <- winner max_bid owner $bm $l
-    )
-    
+    $m <- $bm.delete(addr) ;
+    send $la $m ;
+    pay $la {*} ;
+    #a <- detach $la ;
+    #a <- ended_auction <- winner max_bid owner $bm $l
 }
