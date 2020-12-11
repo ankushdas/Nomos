@@ -208,6 +208,31 @@ module Chan =
       include C.Comparable.Make(T)
   end
 
+type key =
+    IntK of int
+  | BoolK of bool
+  | AddrK of string
+  | StringK of string
+[@@deriving sexp];;
+
+module Key =
+  struct
+    module T =
+      struct
+        type t = key [@@deriving sexp]
+
+        let compare x y =
+          match x, y with
+              IntK x, IntK y -> C.Int.compare x y
+            | BoolK x, BoolK y -> C.Bool.compare x y
+            | AddrK x, AddrK y -> C.String.compare x y
+            | StringK x, StringK y -> C.String.compare x y
+            | _, _ -> -1
+      end
+      include T
+      include C.Comparable.Make(T)
+  end
+
 (* map from offered channel to semantic object *)
 type map_chan_sem = sem Chan.Map.t [@@deriving sexp]
 
@@ -226,7 +251,7 @@ type configuration =
   { conf   : map_chan_sem;
     conts  : map_chan_chan;
     shared : map_chan_chan;
-    types  : map_chan_tp;
+    types  : map_chan_tp
   } [@@deriving sexp]
 
 type stepped_config =
@@ -1064,6 +1089,16 @@ let ifS ch config =
         end
     | _s -> raise ExecImpossible;;
 
+let stmapcreate ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func,c,in_use,t,(w,pot),A.STMapCreate(x,kt,_vt,p)) ->
+        let newch = cfresh (mode_of x) in
+
+        Changed config
+    | _s -> raise ExecImpossible;;
+
 let makechan ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
@@ -1185,7 +1220,8 @@ let match_and_one_step env sem config =
 
             | A.FMapCreate _ -> Aborted
             
-            | A.STMapCreate _ -> Aborted
+            | A.STMapCreate _ ->
+                stmapcreate c config 
 
             | A.FMapInsert _ -> Aborted
 
@@ -1199,7 +1235,6 @@ let match_and_one_step env sem config =
             
             | A.MakeChan _ ->
                 makechan c config
-            
             
             | A.Abort ->
                 Aborted
