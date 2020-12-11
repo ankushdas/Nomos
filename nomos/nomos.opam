@@ -1,8 +1,8 @@
 opam-version: "2.0"
 name: "nomos"
-version: "1.0"
+version: "1.1"
 maintainer: "ankushd@cs.cmu.edu"
-authors: ["Ankush Das, Ishani Santurkar, Frank Pfenning"]
+authors: ["Ankush Das, Stephen McIntosh, Ishani Santurkar, Frank Pfenning"]
 homepage: "https://github.com/ankushdas/Nomos"
 bug-reports: "https://github.com/ankushdas/Nomos/issues"
 license: "Apache-2.0"
