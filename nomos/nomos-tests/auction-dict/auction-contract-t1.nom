@@ -1,4 +1,5 @@
-type money =  <{*}| &{value : int ^ |{*}> money}
+type money =  <{*}| &{value : int ^ |{*}> money,
+                      destroy : |{*}> 1}
 
 type auction = /\ <{*}| +{running : money -o |{*}> \/ auction,
                           ended : +{won : lot * |{*}> \/ auction,
@@ -40,7 +41,7 @@ proc contract run_or_end :
   (winner : address), (max_bid : int),
   (owner : address), ($bm : bid_map), ($l : lot) |{*}- (#a : auction) =
 {
-  if $bm.size < 5
+  if $bm.size < 2
   then
     #a <- running_auction <- winner max_bid owner $bm $l
   else
@@ -80,6 +81,18 @@ proc transaction init_auction : . |{*}- ($d : 1) =
   $l <- lot_proc <- ;
   #sa <- running_auction <- owner max_bid owner $bm $l ;
   close $d
+}
+
+proc asset money_proc : (n : int) |- ($m : money) =
+{
+  get $m {*} ;
+  case $m (
+    value => send $m n ;
+             pay $m {*} ;
+             $m <- money_proc <- n
+  | destroy => pay $m {*} ;
+               close $m
+  )
 }
 
 exec init_auction

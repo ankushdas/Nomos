@@ -1,0 +1,17 @@
+proc transaction bid_jan : . |{*}- ($d : 1) =
+{
+  #a : auction <- Nomos.MakeChannel 3 ;
+  let n = 100 ;
+  $m <- money_proc <- n ;
+  $la <- acquire #a ;
+  pay $la {*} ;
+  case $la (
+    running => send $la $m ;
+               get $la {*} ;
+               #a <- release $la ;
+               close $d
+  | ended => abort
+  )
+}
+
+exec bid_jan
