@@ -149,6 +149,7 @@ type 'a value =
   | AddrV of string
   | ListV of 'a value list
   | LambdaV of arglist * 'a func_aug_expr
+[@@deriving sexp]
 type 'a msg =
     MLabI of chan * label * chan
   | MLabE of chan * label * chan

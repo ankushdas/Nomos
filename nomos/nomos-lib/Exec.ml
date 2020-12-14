@@ -26,18 +26,89 @@ exception StarPotential (* star potential encountered at runtime *)
 
 exception RuntimeError (* should never happen at runtime *)
 
+
+type key =
+    IntK of int
+  | BoolK of bool
+  | AddrK of string
+  | StringK of string
+[@@deriving sexp];;
+
+module Key =
+  struct
+    module T =
+      struct
+        type t = key [@@deriving sexp]
+
+        let compare x y =
+          match x, y with
+              IntK x, IntK y -> C.Int.compare x y
+            | BoolK x, BoolK y -> C.Bool.compare x y
+            | AddrK x, AddrK y -> C.String.compare x y
+            | StringK x, StringK y -> C.String.compare x y
+            | _, _ -> -1
+      end
+      include T
+      include C.Comparable.Make(T)
+  end
+
+(* map from key to session-typed channel *)
+type map_key_chan = A.chan Key.Map.t [@@deriving sexp]
+
+(* map from  *)
+type map_key_value = (A.ext A.value) Key.Map.t [@@deriving sexp]
+
 type sem =
     (* Proc(procname, chan, in_use, time, (work, pot), P) *)
     Proc of string * A.chan * A.chan list * int * (int * int) * A.ext A.st_expr
+    (* MapFProc(chan, in_use, time, (work, pot), map) *)
+  | MapFProc of A.chan * A.chan list * int * (int * int) * map_key_value
+    (* MapSTProc(chan, in_use, time, (work, pot), map) *)
+  | MapSTProc of A.chan * A.chan list * int * (int * int) * map_key_chan
     (* Msg(chan, time, (work, pot), M) *)
   | Msg of A.chan * int * (int * int) * A.ext A.msg
-  [@@deriving sexp]
+  [@@deriving sexp];;
+
+let pp_key k =
+  match k with
+      IntK i -> string_of_int i
+    | BoolK b -> string_of_bool b
+    | AddrK a -> a
+    | StringK s -> s;;
+
+let rec pp_kvlist d =
+  match d with
+      [] -> ""
+    | [(k,v)] -> pp_key k ^ " -> " ^ PP.pp_val v 
+    | (k,v)::d' -> pp_key k ^ " -> " ^ PP.pp_val v ^ " ; " ^ pp_kvlist d';;
+
+let rec pp_kstlist d =
+  match d with
+      [] -> ""
+    | [(k,v)] -> pp_key k ^ " -> " ^ PP.pp_chan v 
+    | (k,v)::d' -> pp_key k ^ " -> " ^ PP.pp_chan v ^ " ; " ^ pp_kstlist d';;
+
+let pp_fmap m =
+  let d = M.to_alist m in
+  "[" ^ pp_kvlist d ^ "]";;
+
+let pp_stmap m =
+  let d = M.to_alist m in
+  "[" ^ pp_kstlist d ^ "]";;
 
 let pp_sem sem = match sem with
     Proc(f,c,in_use,t,(w,pot),p) ->
       f ^ ": proc(" ^ PP.pp_chan c ^ ", in_use = [" ^ PP.pp_channames in_use ^
       "], t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
       ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_exp_prefix p ^ ")"
+  | MapFProc(c,in_use,t,(w,pot),m) ->
+      "fmap(" ^ PP.pp_chan c ^ ", in_use = [" ^ PP.pp_channames in_use ^
+      "], t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      ", pot = " ^ string_of_int pot ^ "), " ^ pp_fmap m ^ ")"
+  | MapSTProc(c,in_use,t,(w,pot),m) ->
+      "stmap(" ^ PP.pp_chan c ^ ", in_use = [" ^ PP.pp_channames in_use ^
+      "], t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
+      ", pot = " ^ string_of_int pot ^ "), " ^ pp_stmap m ^ ")"
   | Msg(c,t,(w,pot),m) ->
       "msg(" ^ PP.pp_chan c ^ ", t = " ^ string_of_int t ^ ", (w = " ^ string_of_int w ^
       ", pot = " ^ string_of_int pot ^ "), " ^ PP.pp_msg m ^ ")";;
@@ -75,124 +146,6 @@ let txnSender = ref "";;
 
 let txnGas = ref 0;;
 
-let rec eval fexp = match fexp.A.func_structure with
-    A.If(e1,e2,e3) ->
-      begin
-        let (v1, c1) = eval e1 in
-        match v1 with
-            A.BoolV true ->
-              let (v2, c2) = eval e2 in
-              (v2, R.plus c1 c2)
-          | A.BoolV false ->
-              let (v3, c3) = eval e3 in
-              (v3, R.plus c1 c3)
-          | _ -> raise RuntimeError
-      end
-  | A.LetIn(x,e1,e2) ->
-      begin
-        let (v1, c1) = eval e1 in
-        let e2 = A.substv_aug (A.toExpr e1.func_data v1) x e2 in
-        let (v2, c2) = eval e2 in
-        (v2, R.plus c1 c2)
-      end
-  | A.Bool b -> (A.BoolV b, R.Int 0)
-  | A.Int i -> (A.IntV i, R.Int 0)
-  | A.Str s -> (A.StrV s, R.Int 0)
-  | A.Addr a -> (A.AddrV a, R.Int 0)
-  | A.Var _ -> raise RuntimeError
-  | A.ListE(l) ->
-      begin
-        let (vs, cs) = proj (List.map eval l) in
-        (A.ListV vs, List.fold_left (fun s x -> R.plus s x) (R.Int 0) cs)
-      end
-  | A.App(l) ->
-      begin
-        let (l', en) = A.split_last l in
-        let (v', c') = eval {A.func_structure = A.App(l') ; A.func_data = None} in
-        let (vn, cn) = eval en in
-        match v' with
-            A.LambdaV (xs, e) ->
-              begin
-                match xs with
-                    A.Single (x,_ext) ->
-                      let (v, c) = eval (A.substv_aug (A.toExpr en.func_data vn) x e) in
-                      (v, R.plus c (R.plus c' cn))
-                  | A.Curry ((x,_ext),xs') -> (A.LambdaV(xs', A.substv_aug (A.toExpr en.func_data vn) x e), R.plus c' cn)
-              end
-          | _ -> raise RuntimeError
-      end
-  | A.Cons(e1,e2) ->
-      begin
-        let (v1, c1) = eval e1 in
-        let (v2, c2) = eval e2 in
-        match v2 with
-            A.ListV l -> (A.ListV(v1::l), R.plus c1 c2)
-          | _ -> raise RuntimeError
-      end
-  | A.Match(e1,e2,x,xs,e3) ->
-      begin
-        let (v1, c1) = eval e1 in
-        match v1 with
-            A.ListV l ->
-              begin
-                match l with
-                    [] ->
-                      let (v2, c2) = eval e2 in
-                      (v2, R.plus c1 c2)
-                  | v::vs ->
-                      let e3 = A.substv_aug (A.toExpr None v) x e3 in
-                      let e3 = A.substv_aug (A.toExpr None (A.ListV vs)) xs e3 in
-                      let (v3, c3) = eval e3 in
-                      (v3, R.plus c1 c3)
-              end
-          | _ -> raise RuntimeError
-      end
-  | A.Lambda(xs,e) -> (A.LambdaV(xs,e), R.Int 0)
-  | A.Op(e1,op,e2) ->
-      begin
-        let (v1, c1) = eval e1 in
-        let (v2, c2) = eval e2 in
-        match v1, v2 with
-            A.IntV i1, A.IntV i2 -> (A.IntV (apply_op op i1 i2), R.plus c1 c2)
-          | _, _ -> raise RuntimeError
-      end
-  | A.CompOp(e1,cop,e2) ->
-      begin
-        let (v1, c1) = eval e1 in
-        let (v2, c2) = eval e2 in
-        match v1, v2 with
-            A.IntV i1, A.IntV i2 -> (A.BoolV (compare_op cop i1 i2), R.plus c1 c2)
-          | _, _ -> raise RuntimeError
-      end
-  | A.EqAddr(e1,e2) ->
-      begin
-        let (v1, c1) = eval e1 in
-        let (v2, c2) = eval e2 in
-        match v1, v2 with
-            A.AddrV a1, A.AddrV a2 -> (A.BoolV (a1 = a2), R.plus c1 c2)
-          | _, _ -> raise RuntimeError
-      end
-  | A.RelOp(e1,rop,e2) ->
-      begin
-        let (v1, c1) = eval e1 in
-        let (v2, c2) = eval e2 in
-        match v1, v2 with
-            A.BoolV b1, A.BoolV b2 -> (A.BoolV (relate_op rop b1 b2), R.plus c1 c2)
-          | _, _ -> raise RuntimeError
-      end
-  | A.Tick(pot,e) ->
-      begin
-        let (v, c) = eval e in
-        match pot with
-            A.Star -> raise RuntimeError
-          | A.Arith p -> (v, R.plus c p)
-      end
-  | A.MapSize(_mp) -> raise RuntimeError
-  | A.GetTxnNum -> (A.IntV !txnNum, R.Int 0)
-  | A.GetTxnSender -> (A.AddrV !txnSender, R.Int 0)
-  | A.Command(_) -> raise RuntimeError;;
-
-
 module Chan =
   struct
     module T =
@@ -203,31 +156,6 @@ module Chan =
           let (_s1,c1,_m1) = x in
           let (_s2,c2,_m2) = y in
           C.String.compare c1 c2
-      end
-      include T
-      include C.Comparable.Make(T)
-  end
-
-type key =
-    IntK of int
-  | BoolK of bool
-  | AddrK of string
-  | StringK of string
-[@@deriving sexp];;
-
-module Key =
-  struct
-    module T =
-      struct
-        type t = key [@@deriving sexp]
-
-        let compare x y =
-          match x, y with
-              IntK x, IntK y -> C.Int.compare x y
-            | BoolK x, BoolK y -> C.Bool.compare x y
-            | AddrK x, AddrK y -> C.String.compare x y
-            | StringK x, StringK y -> C.String.compare x y
-            | _, _ -> -1
       end
       include T
       include C.Comparable.Make(T)
@@ -295,9 +223,9 @@ let rec find_branch l bs =
 let find_sem c config =
   match M.find config.conf c with
       None -> raise ExecImpossible
-    | Some v -> v
+    | Some v -> v;;
 
-type pol = Pos | Neg
+type pol = Pos | Neg;;
 
 let find_msg c { conf; conts; _ } dual =
   match dual with
@@ -310,6 +238,8 @@ let find_msg c { conf; conts; _ } dual =
                 match sem_obj with
                     None -> None
                   | Some (Proc _) -> None
+                  | Some (MapFProc _) -> None
+                  | Some (MapSTProc _) -> None
                   | Some (Msg _) -> sem_obj
         end
     | Pos ->
@@ -317,28 +247,61 @@ let find_msg c { conf; conts; _ } dual =
         match sem_obj with
             None -> None
           | Some (Proc _) -> None
+          | Some (MapFProc _) -> None
+          | Some (MapSTProc _) -> None
           | Some (Msg _) -> sem_obj;;
 
+let find_fmap c { conf; _ } =
+  let sem_obj = M.find conf c in
+  match sem_obj with
+      None -> None
+    | Some (Proc _) -> None
+    | Some (MapFProc _) -> sem_obj
+    | Some (MapSTProc _) -> None
+    | Some (Msg _) -> None;;
+
+let find_stmap c { conf; _ } =
+  let sem_obj = M.find conf c in
+  match sem_obj with
+      None -> None
+    | Some (Proc _) -> None
+    | Some (MapFProc _) -> None
+    | Some (MapSTProc _) -> sem_obj
+    | Some (Msg _) -> None;;
+
+let find_map c { conf; _ } =
+  let sem_obj = M.find conf c in
+  match sem_obj with
+      None -> None
+    | Some (Proc _) -> None
+    | Some (MapFProc _) -> sem_obj
+    | Some (MapSTProc _) -> sem_obj
+    | Some (Msg _) -> None;; 
+
 let remove_sem c config =
-  { config with conf = M.remove config.conf c }
+  { config with conf = M.remove config.conf c };;
+
+let index_chan sem = 
+  match sem with
+      Proc(_f,c,_in_use,_t,_wp,_p) -> c
+    | MapFProc(c,_in_use,_t,_wp,_m) -> c
+    | MapSTProc(c,_in_use,_t,_wp,_m) -> c
+    | Msg(c,_t,_wp,_m) -> c;;
 
 let add_sem sem config =
-  match sem with
-      Proc(_f,c,_in_use,_t,_wp,_p) ->
-        { config with conf = M.add_exn config.conf ~key:c ~data:sem }
-    | Msg(c,_t,_wp,_p) ->
-        { config with conf = M.add_exn config.conf ~key:c ~data:sem }
+  let c = index_chan sem in
+  { config with conf = M.add_exn config.conf ~key:c ~data:sem };;
 
 let add_shared_map (c,c') config =
-  { config with shared = M.add_exn config.shared ~key:c ~data:c' }
+  { config with shared = M.add_exn config.shared ~key:c ~data:c' };;
 
 let get_shared_chan c config =
   match M.find config.shared c with
       None -> raise ExecImpossible
-    | Some c' -> c'
+    | Some c' -> c';;
 
 let remove_shared_map c config =
-  { config with shared = M.remove config.shared c }
+  { config with shared = M.remove config.shared c };;
 
 let add_cont (c,c') config =
   match M.find config.shared c with
@@ -346,10 +309,10 @@ let add_cont (c,c') config =
     | Some cs ->
         let config = remove_shared_map c config in
         let config = add_shared_map (c',cs) config in
-        { config with conts = M.add_exn config.conts ~key:c ~data:c' }
+        { config with conts = M.add_exn config.conts ~key:c ~data:c' };;
 
 let remove_cont c config =
-  { config with conts = M.remove config.conts c }
+  { config with conts = M.remove config.conts c };;
 
 let get_cont c config =
   match M.find config.conts c with
@@ -364,6 +327,131 @@ let eq_name (_s1,c1,_m1) (_s2,c2,_m2) = c1 = c2;;
 let uneq_name c1 c2 = not (eq_name c1 c2);;
 
 let mode_of (_s,_c,m) = m;;
+
+let mapsize config mp =
+  let s = find_sem mp config in
+  match s with
+      MapFProc(_c,_in_use,_t,_wp,fmap) -> M.length fmap
+    | MapSTProc(_c,_in_use,_t,_wp,stmap) -> M.length stmap
+    | Proc _ | Msg _ -> raise RuntimeError;;
+
+let rec eval config fexp = match fexp.A.func_structure with
+    A.If(e1,e2,e3) ->
+      begin
+        let (v1, c1) = eval config e1 in
+        match v1 with
+            A.BoolV true ->
+              let (v2, c2) = eval config e2 in
+              (v2, R.plus c1 c2)
+          | A.BoolV false ->
+              let (v3, c3) = eval config e3 in
+              (v3, R.plus c1 c3)
+          | _ -> raise RuntimeError
+      end
+  | A.LetIn(x,e1,e2) ->
+      begin
+        let (v1, c1) = eval config e1 in
+        let e2 = A.substv_aug (A.toExpr e1.func_data v1) x e2 in
+        let (v2, c2) = eval config e2 in
+        (v2, R.plus c1 c2)
+      end
+  | A.Bool b -> (A.BoolV b, R.Int 0)
+  | A.Int i -> (A.IntV i, R.Int 0)
+  | A.Str s -> (A.StrV s, R.Int 0)
+  | A.Addr a -> (A.AddrV a, R.Int 0)
+  | A.Var _ -> raise RuntimeError
+  | A.ListE(l) ->
+      begin
+        let (vs, cs) = proj (List.map (eval config) l) in
+        (A.ListV vs, List.fold_left (fun s x -> R.plus s x) (R.Int 0) cs)
+      end
+  | A.App(l) ->
+      begin
+        let (l', en) = A.split_last l in
+        let (v', c') = eval config {A.func_structure = A.App(l') ; A.func_data = None} in
+        let (vn, cn) = eval config en in
+        match v' with
+            A.LambdaV (xs, e) ->
+              begin
+                match xs with
+                    A.Single (x,_ext) ->
+                      let (v, c) = eval config (A.substv_aug (A.toExpr en.func_data vn) x e) in
+                      (v, R.plus c (R.plus c' cn))
+                  | A.Curry ((x,_ext),xs') -> (A.LambdaV(xs', A.substv_aug (A.toExpr en.func_data vn) x e), R.plus c' cn)
+              end
+          | _ -> raise RuntimeError
+      end
+  | A.Cons(e1,e2) ->
+      begin
+        let (v1, c1) = eval config e1 in
+        let (v2, c2) = eval config e2 in
+        match v2 with
+            A.ListV l -> (A.ListV(v1::l), R.plus c1 c2)
+          | _ -> raise RuntimeError
+      end
+  | A.Match(e1,e2,x,xs,e3) ->
+      begin
+        let (v1, c1) = eval config e1 in
+        match v1 with
+            A.ListV l ->
+              begin
+                match l with
+                    [] ->
+                      let (v2, c2) = eval config e2 in
+                      (v2, R.plus c1 c2)
+                  | v::vs ->
+                      let e3 = A.substv_aug (A.toExpr None v) x e3 in
+                      let e3 = A.substv_aug (A.toExpr None (A.ListV vs)) xs e3 in
+                      let (v3, c3) = eval config e3 in
+                      (v3, R.plus c1 c3)
+              end
+          | _ -> raise RuntimeError
+      end
+  | A.Lambda(xs,e) -> (A.LambdaV(xs,e), R.Int 0)
+  | A.Op(e1,op,e2) ->
+      begin
+        let (v1, c1) = eval config e1 in
+        let (v2, c2) = eval config e2 in
+        match v1, v2 with
+            A.IntV i1, A.IntV i2 -> (A.IntV (apply_op op i1 i2), R.plus c1 c2)
+          | _, _ -> raise RuntimeError
+      end
+  | A.CompOp(e1,cop,e2) ->
+      begin
+        let (v1, c1) = eval config e1 in
+        let (v2, c2) = eval config e2 in
+        match v1, v2 with
+            A.IntV i1, A.IntV i2 -> (A.BoolV (compare_op cop i1 i2), R.plus c1 c2)
+          | _, _ -> raise RuntimeError
+      end
+  | A.EqAddr(e1,e2) ->
+      begin
+        let (v1, c1) = eval config e1 in
+        let (v2, c2) = eval config e2 in
+        match v1, v2 with
+            A.AddrV a1, A.AddrV a2 -> (A.BoolV (a1 = a2), R.plus c1 c2)
+          | _, _ -> raise RuntimeError
+      end
+  | A.RelOp(e1,rop,e2) ->
+      begin
+        let (v1, c1) = eval config e1 in
+        let (v2, c2) = eval config e2 in
+        match v1, v2 with
+            A.BoolV b1, A.BoolV b2 -> (A.BoolV (relate_op rop b1 b2), R.plus c1 c2)
+          | _, _ -> raise RuntimeError
+      end
+  | A.Tick(pot,e) ->
+      begin
+        let (v, c) = eval config e in
+        match pot with
+            A.Star -> raise RuntimeError
+          | A.Arith p -> (v, R.plus c p)
+      end
+  | A.MapSize(mp) -> (A.IntV (mapsize config mp), R.Int 0)
+  | A.GetTxnNum -> (A.IntV !txnNum, R.Int 0)
+  | A.GetTxnSender -> (A.AddrV !txnSender, R.Int 0)
+  | A.Command(_) -> raise RuntimeError;;
+
 
 let fwd ch config =
   let s = find_sem ch config in
@@ -420,39 +508,36 @@ let fwd ch config =
 let chan_mode env f =
   match A.lookup_expdec env f with
       None -> raise UndefinedProcess
-    | Some(_ctx,_pot,_zc,m) -> m
+    | Some(_ctx,_pot,_zc,m) -> m;;
 
 let chan_tp env f =
   match A.lookup_expdec env f with
       None -> raise UndefinedProcess
-    | Some(_ctx,_pot,zc,_m) -> let (_c, t) = zc in t 
+    | Some(_ctx,_pot,zc,_m) -> let (_c, t) = zc in t;;
 
-let add_chan ch in_use = ch::in_use
+let add_chan ch in_use = ch::in_use;;
 
 let replace_chan ch' ch l =
   if not (List.exists (eq_name ch) l)
   then raise ExecImpossible
-  else
-    List.map
-      (fun other -> if eq_name ch other then ch' else other)
-      l
+  else List.map (fun other -> if eq_name ch other then ch' else other) l;;
 
 let remove_chan ch l =
   match mode_of ch with
       A.Shared -> l
     | _m -> if not (List.exists (eq_name ch) l)
             then raise ExecImpossible
-            else List.filter (uneq_name ch) l
+            else List.filter (uneq_name ch) l;;
 
 let chans_diff chs1 chs2 =
   List.filter
     (fun x -> not (List.exists (eq_name x) chs2))
-    chs1
+    chs1;;
 
 let is_linear (_, _, m) =
   match m with
-    A.Linear | A.Pure -> true
-  | _ -> false
+    A.Linear | A.Pure | A.Transaction -> true
+  | A.Shared | A.Unknown | A.MVar _ -> false;;
 
 let extract_chans l =
   List.filter_map
@@ -460,9 +545,9 @@ let extract_chans l =
        match arg with
          A.STArg c -> Some c
        | A.FArg _ -> None) l |>
-  List.partition is_linear
+  List.partition is_linear;;
 
-let linear_chans = List.filter is_linear
+let linear_chans = List.filter is_linear;;
 
 let spawn env ch config =
   let s = find_sem ch config in
@@ -972,7 +1057,7 @@ let product_S ch config =
         then raise ChannelMismatch
         else
           let c' = cfresh (mode_of c1) in
-          let (v, acost) = eval e in
+          let (v, acost) = eval config e in
           let vcost = R.evaluate acost in
           let msg = Msg(c1,t+1,(0,0),A.MSendP(c1,v,c')) in
           let proc = Proc(func,c',in_use,t+1,(w+vcost,pot-vcost),A.subst c' c1 p.A.st_structure) in
@@ -1018,7 +1103,7 @@ let arrow_S ch config =
         else
           let c' = cfresh (mode_of c) in
           (* let () = print_string ("trying to evaluate " ^ PP.pp_fexp () 0 e.A.func_structure ^ "\n") in *)
-          let (v, acost) = eval e in
+          let (v, acost) = eval config e in
           let vcost = R.evaluate acost in
           (* let () = print_string ("evaluated to: " ^ PP.pp_val v ^ "\n") in *)
           let msg = Msg(c',t+1,(0,0),A.MSendA(c,v,c')) in
@@ -1060,7 +1145,7 @@ let letS ch config =
   let config = remove_sem ch config in
   match s with
       Proc(func,c,in_use,t,(w,pot),A.Let(x,e,p)) ->
-        let (v, acost) = eval e in
+        let (v, acost) = eval config e in
         let vcost = R.evaluate acost in
         let p = A.esubstv_aug (A.toExpr None v) x p in
         let proc = Proc(func,c,in_use,t+1,(w+vcost,pot-vcost),p.A.st_structure) in
@@ -1073,7 +1158,7 @@ let ifS ch config =
   let config = remove_sem ch config in
   match s with
       Proc(func,c,in_use,t,(w,pot),A.IfS(e,p1,p2)) ->
-        let (v, acost) = eval e in
+        let (v, acost) = eval config e in
         let vcost = R.evaluate acost in
         begin
           match v with
@@ -1089,15 +1174,212 @@ let ifS ch config =
         end
     | _s -> raise ExecImpossible;;
 
+let fmapcreate ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func,c,in_use,t,(w,pot),A.FMapCreate(mp,kt,_vt,p)) ->
+        let newch = cfresh (mode_of mp) in
+        let in_use' = add_chan newch in_use in
+        let p = A.subst_aug newch mp p in
+        let map_proc = MapFProc(newch, [], 0, (0, 0), M.empty (module Key)) in
+        let newproc = Proc(func, c, in_use', t+1, (w,pot),p.A.st_structure) in
+        let config = add_sem map_proc config in
+        let config = add_sem newproc config in
+        Changed config
+    | _s -> raise ExecImpossible;;
+
 let stmapcreate ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
   match s with
-      Proc(func,c,in_use,t,(w,pot),A.STMapCreate(x,kt,_vt,p)) ->
-        let newch = cfresh (mode_of x) in
-
+      Proc(func,c,in_use,t,(w,pot),A.STMapCreate(mp,_kt,_vt,p)) ->
+        let newch = cfresh (mode_of mp) in
+        let in_use' = add_chan newch in_use in
+        let p = A.subst_aug newch mp p in
+        let map_proc = MapSTProc(newch, [], 0, (0, 0), M.empty (module Key)) in
+        let newproc = Proc(func, c, in_use', t+1, (w,pot),p.A.st_structure) in
+        let config = add_sem map_proc config in
+        let config = add_sem newproc config in
         Changed config
     | _s -> raise ExecImpossible;;
+
+let make_key k = match k with
+    A.IntV i -> IntK i
+  | A.BoolV b -> BoolK b
+  | A.StrV s -> StringK s
+  | A.AddrV a -> AddrK a
+  | A.ListV _ | A.LambdaV _ -> raise RuntimeError;;
+
+let fmapinsert ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func, c, in_use, t, (w,pot), A.FMapInsert(mp,k,v,p)) ->
+        let map_proc = find_fmap mp config in
+        begin
+          match map_proc with
+              Some(MapFProc(mp', in_use', t', wp', fmap)) ->
+                if uneq_name mp mp'
+                then raise ExecImpossible
+                else
+                  let (kval, acostk) = eval config k in
+                  let (vval, acostv) = eval config v in
+                  let config = remove_sem mp config in
+                  let vcostk = R.evaluate acostk in
+                  let vcostv = R.evaluate acostv in
+                  let vcost = vcostk + vcostv in
+                  let newproc = Proc(func, c, in_use, max(t,t')+1, (w + vcost, pot - vcost), p.A.st_structure) in
+                  let newmap = MapFProc(mp', in_use', max(t,t')+1, wp', M.add_exn fmap ~key:(make_key kval) ~data:vval) in
+                  let config = add_sem newmap config in
+                  let config = add_sem newproc config in
+                  Changed config
+            | _m -> raise ExecImpossible
+        end
+    | _s -> raise ExecImpossible;;
+
+let stmapinsert ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func, c, in_use, t, (w,pot), A.STMapInsert(mp,k,v,p)) ->
+        let map_proc = find_stmap mp config in
+        begin
+          match map_proc with
+              Some(MapSTProc(mp', in_use', t', wp', stmap)) ->
+                if uneq_name mp mp'
+                then raise ExecImpossible
+                else
+                  let new_in_use = remove_chan v in_use in
+                  let new_in_use' = add_chan v in_use' in
+                  let (kval, acost) = eval config k in
+                  let config = remove_sem mp config in
+                  let vcost = R.evaluate acost in
+                  let newproc = Proc(func, c, new_in_use, max(t,t')+1, (w + vcost, pot - vcost), p.A.st_structure) in
+                  let newmap = MapSTProc(mp', new_in_use', max(t,t')+1, wp', M.add_exn stmap ~key:(make_key kval) ~data:v) in
+                  let config = add_sem newmap config in
+                  let config = add_sem newproc config in
+                  Changed config
+            | _m -> raise ExecImpossible
+        end
+    | _s -> raise ExecImpossible;;
+        
+exception KeyNotFound of string * string;;
+
+let fmapdelete ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func, c, in_use, t, (w,pot), A.FMapDelete(y,mp,k,p)) ->
+        let map_proc = find_fmap mp config in
+        begin
+          match map_proc with
+              Some(MapFProc(mp', in_use', t', wp', fmap)) ->
+                if uneq_name mp mp'
+                then raise ExecImpossible
+                else
+                  let (kval, acost) = eval config k in
+                  let key = make_key kval in
+                  let vopt = M.find fmap key in
+                  begin
+                  match vopt with
+                      None -> raise (KeyNotFound(PP.pp_val kval, PP.pp_chan mp))
+                    | Some v ->
+                        let config = remove_sem mp config in
+                        let vcost = R.evaluate acost in
+                        let p' = A.esubstv_aug (A.toExpr None v) y p in
+                        let newproc = Proc(func, c, in_use, max(t,t')+1, (w + vcost, pot - vcost), p'.A.st_structure) in
+                        let newmap = MapFProc(mp', in_use', max(t,t')+1, wp', M.remove fmap key) in
+                        let config = add_sem newmap config in
+                        let config = add_sem newproc config in
+                        Changed config
+                  end
+            | _m -> raise ExecImpossible
+        end
+    | _s -> raise ExecImpossible;;
+
+let stmapdelete ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func, c, in_use, t, (w,pot), A.STMapDelete(y,mp,k,p)) ->
+        let map_proc = find_stmap mp config in
+        begin
+          match map_proc with
+              Some(MapSTProc(mp', in_use', t', wp', stmap)) ->
+                if uneq_name mp mp'
+                then raise ExecImpossible
+                else
+                  let (kval, acost) = eval config k in
+                  let key = make_key kval in
+                  let vopt = M.find stmap key in
+                  begin
+                  match vopt with
+                      None -> raise (KeyNotFound(PP.pp_val kval, PP.pp_chan mp))
+                    | Some v ->
+                        let new_in_use = add_chan v in_use in
+                        let new_in_use' = remove_chan v in_use' in
+                        let config = remove_sem mp config in
+                        let vcost = R.evaluate acost in
+                        let p' = A.subst_aug v y p in
+                        let newproc = Proc(func, c, new_in_use, max(t,t')+1, (w + vcost, pot - vcost), p'.A.st_structure) in
+                        let newmap = MapSTProc(mp', new_in_use', max(t,t')+1, wp', M.remove stmap key) in
+                        let config = add_sem newmap config in
+                        let config = add_sem newproc config in
+                        Changed config
+                  end
+            | _m -> raise ExecImpossible
+        end
+    | _s -> raise ExecImpossible;;
+
+let deletable stmap =
+  if M.length stmap = 0
+  then true
+  else
+    let kvlist = M.to_alist stmap in
+    match kvlist with
+        [] -> raise ExecImpossible
+      | (k,v)::_kvl ->
+          match (mode_of v) with
+              A.Shared -> true
+            | A.Pure -> false
+            | A.Transaction | A.Linear
+            | A.Unknown | A.MVar _ -> raise ExecImpossible;;
+
+let mapclose ch config =
+  let s = find_sem ch config in
+  let config = remove_sem ch config in
+  match s with
+      Proc(func, c, in_use, t, (w,pot), A.MapClose(mp,p)) ->
+        let map_proc = find_map mp config in
+        begin
+          match map_proc with
+              Some(MapSTProc(mp', in_use', t', (w',pot'), stmap)) ->
+                if uneq_name mp mp'
+                then raise ExecImpossible
+                else if (deletable stmap)
+                then
+                  let config = remove_sem mp config in
+                  let new_in_use = remove_chan mp in_use in
+                  let newproc = Proc(func, c, new_in_use, max(t,t')+1, (w+w',pot+pot'), p.A.st_structure) in
+                  let config = add_sem newproc config in
+                  Changed config
+                else
+                  let newproc = Proc(func, c, in_use, max(t,t')+1, (w',pot'), p.A.st_structure) in
+                  let config = add_sem newproc config in
+                  Changed config
+            | Some(MapFProc(mp', in_use', t', (w',pot'), fmap)) ->
+                if uneq_name mp mp'
+                then raise ExecImpossible
+                else
+                  let config = remove_sem mp config in
+                  let new_in_use = remove_chan mp in_use in
+                  let newproc = Proc(func, c, new_in_use, max(t,t')+1, (w+w',pot+pot'), p.A.st_structure) in
+                  let config = add_sem newproc config in
+                  Changed config
+            | _m -> raise ExecImpossible
+        end
+    | _s -> raise ExecImpossible ;;
 
 let makechan ch config =
   let s = find_sem ch config in
@@ -1218,20 +1500,26 @@ let match_and_one_step env sem config =
             | A.IfS _ ->
                 ifS c config
 
-            | A.FMapCreate _ -> Aborted
+            | A.FMapCreate _ ->
+                fmapcreate c config
             
             | A.STMapCreate _ ->
                 stmapcreate c config 
 
-            | A.FMapInsert _ -> Aborted
+            | A.FMapInsert _ ->
+                fmapinsert c config
 
-            | A.STMapInsert _ -> Aborted
+            | A.STMapInsert _ ->
+                stmapinsert c config
 
-            | A.FMapDelete _ -> Aborted
+            | A.FMapDelete _ ->
+                fmapdelete c config
 
-            | A.STMapDelete _ -> Aborted
+            | A.STMapDelete _ ->
+                stmapdelete c config
 
-            | A.MapClose _ -> Aborted
+            | A.MapClose _ ->
+                mapclose c config
             
             | A.MakeChan _ ->
                 makechan c config
@@ -1243,7 +1531,9 @@ let match_and_one_step env sem config =
                 print c config
             
         end
-    | Msg _ -> Unchanged config;;
+    | Msg _ -> Unchanged config
+    | MapFProc _ -> Unchanged config
+    | MapSTProc _ -> Unchanged config;;
 
 let rec pp_sems sems =
   match sems with
@@ -1263,15 +1553,19 @@ type config_outcome =
     Fail
   | Success of configuration;;
 
+let check_existence config sem =
+  match sem with
+      Proc(_f, _c, in_use, _t, _wp, _p) ->
+        let _ = List.map (fun c -> find_sem c config) (linear_chans in_use) in ()
+    | Msg _ -> ()
+    | MapFProc _ -> ()
+    | MapSTProc _ -> ();;
+
 let rec step env config =
   let sems = get_sems config in
   let _ = if !F.verbosity > 1 then print_string (pp_config config) in
   (* check that all in_use linear channels actually exist *)
-  let _ = List.map (fun sem ->
-    match sem with
-      (Proc(_f, _c, in_use, _t, _wp, _p)) ->
-        let _ = List.map (fun c -> find_sem c config) (linear_chans in_use) in ()
-    | (Msg(_, _, _, _)) -> ()) sems in
+  let _ = List.map (check_existence config) sems in
   let config = iterate_and_one_step env sems config false in
   config
 
@@ -1306,26 +1600,65 @@ let checked_remove ch l =
   then None
   else Some(List.filter (uneq_name ch) l)
 
+let valid_final_proc c p m st delta' st' =
+  match m with
+      A.Shared ->
+        begin
+          match p with
+              A.Accept _ -> { st' with gamma = c::st.gamma; delta = delta' }
+            | _ -> error "shared process not blocking on accept"
+        end
+    | A.Pure -> { st' with delta = c::delta' }
+    | A.Linear -> error "channel at mode L in final state"
+    | A.Transaction -> error "transaction still running"
+    | A.Unknown -> error "process mode Unknown during runtime"
+    | A.MVar _ -> error "process mode MVar during runtime";;
+
+let valid_final_fmap c m delta' st' =
+  match m with
+      A.Shared -> error "functional map at mode S found"
+    | A.Pure -> { st' with delta = c::delta' }
+    | A.Linear -> error "functional map at mode L found"
+    | A.Transaction -> error "transaction still running"
+    | A.Unknown -> error "process mode Unknown during runtime"
+    | A.MVar _ -> error "process mode MVar during runtime";;
+
+let valid_final_stmap c m st delta' st' =
+  match m with
+      A.Shared -> { st' with gamma = c::st.gamma ; delta = delta'}
+    | A.Pure -> { st' with delta = c::delta' }
+    | A.Linear -> error "map at mode L found in final state"
+    | A.Transaction -> error "transaction still running"
+    | A.Unknown -> error "process mode Unknown during runtime"
+    | A.MVar _ -> error "process mode MVar during runtime";;
+
 let check_and_add (top : Chan.t) (sem : sem) (st : state): state option =
   match sem with
-    (Proc(_, c, in_use, _t, (work, pot), p)) -> (
+    Proc(_, c, in_use, _t, (work, pot), p) ->
       let (_, _, m) = c in
       let st' = { st with energy = st.energy + work + pot } in
-      match checked_diff st.delta in_use with
-        None -> None
-      | Some(delta') -> Some(
-        match m with
-          | A.Shared -> (
-              match p with
-                  A.Accept _ ->
-                    { st' with gamma = c::st.gamma; delta = delta' }
-                | _ -> error "shared process not blocking on accept")
-          | A.Pure -> { st' with delta = c::delta' }
-          | A.Linear -> error "linear channel in final state"
-          | A.Transaction -> error "transaction still running"
-          | A.Unknown -> error "process mode Unknown during runtime"
-          | A.MVar _ -> error "process mode MVar during runtime"))
-  | (Msg(c, _, _, msg)) ->
+      begin
+        match checked_diff st.delta in_use with
+            None -> None
+          | Some(delta') -> Some(valid_final_proc c p m st delta' st')
+      end
+  | MapFProc(c, in_use, _t, (work, pot), _map) ->
+      let (_, _, m) = c in
+      let st' = { st with energy = st.energy + work + pot } in
+      begin
+        match checked_diff st.delta in_use with
+            None -> None
+          | Some(delta') -> Some(valid_final_fmap c m delta' st')
+      end
+  | MapSTProc(c, in_use, _t, (work, pot), _map) ->
+      let (_, _, m) = c in
+      let st' = { st with energy = st.energy + work + pot } in
+      begin
+        match checked_diff st.delta in_use with
+            None -> None
+          | Some(delta') -> Some(valid_final_stmap c m st delta' st')
+      end
+  | Msg(c, _, _, msg) ->
       let (_, _, m) = c in
       match m with
           A.Transaction ->
