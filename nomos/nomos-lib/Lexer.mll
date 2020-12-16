@@ -111,6 +111,7 @@ rule token = parse
 
   (* expressions *)
   | "<-"                { LARROW }
+  | "<->"               { LRARROW }
   | "recv"              { RECV }
   | ";"                 { SEMI }
   | "send"              { SEND }

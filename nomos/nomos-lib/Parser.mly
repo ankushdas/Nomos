@@ -26,7 +26,7 @@
 %token LOLLI AMPERSAND UP DOWN PRODUCT COIN
 %token LBRACE RBRACE
 %token HASH DOLLAR
-%token LARROW SEMI RRARROW
+%token LARROW LRARROW SEMI RRARROW
 %token RECV SEND CASE DOT CLOSE WAIT WORK DEPOSIT PAY GET ACQUIRE ACCEPT RELEASE DETACH ABORT
 %token MAP INSERT DELETE SIZE NEW
 %right ANDALSO ORELSE
@@ -339,13 +339,13 @@ print_id:
 *)
 
 st:
-    |  x = mid; LARROW; f = ID; LARROW; xs = list(app_arg); SEMI; p = st { {st_structure = Ast.Spawn(x, f, xs, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  x = mid; LARROW; f = ID; xs = list(app_arg); SEMI; p = st { {st_structure = Ast.Spawn(x, f, xs, p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos(xs).Lexing.pos_lnum, $endpos(xs).Lexing.pos_cnum - $endpos(xs).Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }
-    |  x = mid; LARROW; f = ID; LARROW; xs = list(app_arg)               { {st_structure = Ast.ExpName(x, f, xs); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  x = mid; LARROW; f = ID; xs = list(app_arg)               { {st_structure = Ast.ExpName(x, f, xs); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }  
-    |  x = mid; LARROW; y = mid                                          { {st_structure = Ast.Fwd(x,y); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    |  x = mid; LRARROW; y = mid                                          { {st_structure = Ast.Fwd(x,y); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                    ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                    $startpos.Lexing.pos_fname)} }
     |  SEND; x = linid; w = mid; SEMI; p = st                            { {st_structure = Ast.Send(x,w,p); st_data = Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
