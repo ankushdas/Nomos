@@ -88,18 +88,19 @@ let read_txn txn =
 
 (* check validity and typecheck environment *)
 let infer state (RawTransaction decls) =
-  let (_tx, _ch, _gas_accs, config_env_noext, _config) = state in
+  let (_tx, _ch, _gas_accs, config_env_noext, config) = state in
+  let state_channels = config.E.types in
   let config_env = List.map (fun d -> (d, None)) config_env_noext in
   let env = config_env @ decls in
   let t0 = Unix.gettimeofday () in
   let () = EL.check_redecl decls in           (* may raise ErrorMsg.Error *)
-  let () = EL.check_valid env decls in
+  let () = EL.check_valid env decls state_channels in
   (* pragmas apply only to type-checker and execution *)
   (* may only be at beginning of file; apply now *)
   let decls' = EL.commit_channels env decls in
   let env' = config_env @ decls' in
   (* allow for mutually recursive definitions in the same file *)
-  let elab_decls = EL.elab_decls env' decls' in
+  let elab_decls = EL.elab_decls env' decls' state_channels in
   let t1 = Unix.gettimeofday () in
   let elab_decls = EL.remove_stars elab_decls in
   let elab_decls = EL.removeU elab_decls in
@@ -140,11 +141,11 @@ let deposit_gas txnsender d initial_config =
 let run (Transaction env) config =
   let rec run' config dcls =
     match dcls with
-        (A.Exec(f), _ext)::dcls' ->
+        (A.Exec(f, args), _ext)::dcls' ->
           let () = if !F.verbosity >= 1
-                   then print_string (PP.pp_decl env (A.Exec(f)) ^ "\n")
+                   then print_string (PP.pp_decl env (A.Exec(f, args)) ^ "\n")
                    else () in
-          let config' = E.exec env config (f, []) in
+          let config' = E.exec env config (f, args) in
           (* may raise Exec.RuntimeError *)
           run' config' dcls'
       | (A.TpDef _ as dcl, _ext)::dcls'

@@ -23,8 +23,10 @@ module I = Infer
 module F = NomosFlags
 module EM = ErrorMsg
 module IO = InOut
+module M = Core.Map
 
 let error = ErrorMsg.error ErrorMsg.Type;;
+let linkerror = ErrorMsg.error ErrorMsg.Link;;
 
 (*********************)
 (* Validity of Types *)
@@ -67,14 +69,14 @@ let check_nonneg pot ext =
  * checks potential is non-negative.
  * type checks the process also.
  *)
-let rec elab_decl env dcls = match dcls with
+let rec elab_decl env dcls state_channels = match dcls with
     [] -> []
   | ((A.TpDef(v,a), ext') as dcl)::dcls' ->
       let () = if TC.contractive a then ()
                else error ext' ("type " ^ PP.pp_tp env a ^ " not contractive") in
       (*let () = TC.valid env TC.Zero a ext in*)
       let () = TC.ssync_tp env (A.TpName(v)) ext' in
-      dcl::(elab_decl env dcls')
+      dcl::(elab_decl env dcls' state_channels)
   | (A.ExpDecDef(f,m,(delta,pot,(x,a)),p), ext')::dcls' ->
       (* do not print process declaration so they are printed close to their use *)
       let () = if dups ((x,a)::delta.linear) then error ext' ("duplicate variable in process declaration") else () in
@@ -106,14 +108,19 @@ let rec elab_decl env dcls = match dcls with
                         ; TC.checkfexp true env delta pot p' (x,a) ext' m
                       end (* will re-raise ErrorMsg.Error *)
                   else raise (EM.TypeError msg) (* re-raise if not in verbose mode *) in
-      (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'), ext')::(elab_decl env dcls')
-  | ((A.Exec(f), ext') as dcl)::dcls' ->
+      (A.ExpDecDef(f,m,(delta,pot,(x,a)),p'), ext')::(elab_decl env dcls' state_channels)
+  | ((A.Exec(f,args), ext') as dcl)::dcls' ->
       begin
         match A.lookup_expdec env f with
             Some (ctx,_pot,_zc,_m) ->
-              if List.length ctx.A.ordered > 0
-              then error ext' ("process " ^ f ^ " has a non-empty context, cannot be executed")
-              else dcl::(elab_decl env dcls')
+              let num_def = List.length ctx.A.ordered in
+              let num_call = List.length args in
+              if num_def <> num_call
+              then error ext' ("process " ^ f ^ " defined with " ^ string_of_int num_def ^
+                               " arguments but called with " ^ string_of_int num_call ^ " arguments")
+              else
+                let () = TC.link_tps env state_channels args ctx.A.ordered ext' in
+                dcl::(elab_decl env dcls' state_channels)
           | None -> error ext' ("process " ^ f ^ " undefined")
       end;;
 
@@ -121,9 +128,9 @@ let rec elab_decl env dcls = match dcls with
  * if elaboration of decls succeeds with respect to env, yielding env'
  * Returns NONE if there is a static error
  *)
-let elab_decls env dcls =
+let elab_decls env dcls state_channels =
   (* first pass: check validity of types and type check processes *)
-  let env'' = elab_decl env dcls in
+  let env'' = elab_decl env dcls state_channels in
   env'';;
 
 exception ElabImpossible;;
@@ -155,22 +162,35 @@ let rec get_one_exec dcls cnt g = match dcls with
       then g
       else if cnt = 0 then raise (EM.TypeError "no execs in transaction")
       else raise (EM.TypeError "more than 1 exec in transaction")
-  | (A.Exec(f), _ext)::dcls' -> get_one_exec dcls' (cnt+1) f
+  | (A.Exec(f, _args), _ext)::dcls' -> get_one_exec dcls' (cnt+1) f
   | (A.TpDef _, _ext)::dcls' | (A.ExpDecDef _, _ext)::dcls' -> get_one_exec dcls' cnt g;;
 
-let rec check_valid env dcls = match dcls with
+let rec exists_in_state args state_channels ext =
+  match args with
+      (A.STArg c)::argstl ->
+        begin
+          match M.find state_channels c with
+              None -> linkerror ext ("channel " ^ PP.pp_chan c ^ " not found in blockchain state")
+            | Some _ -> exists_in_state argstl state_channels ext
+        end
+    | (A.FArg f)::argstl -> exists_in_state argstl state_channels ext
+    | [] -> ();;
+
+let rec check_valid env dcls state_channels = match dcls with
     [] -> ()
   | (A.TpDef(_v,a), ext)::dcls' ->
       let () = TC.check_declared env ext a in
-      check_valid env dcls'
+      check_valid env dcls' state_channels
   | (A.ExpDecDef(_f,_m,(ctx,_pot,(_x,a)),_p), ext)::dcls' ->
       let () = TC.check_declared_ctx env ext ctx in
       let () = TC.check_declared env ext a in
-      check_valid env dcls'
-  | (A.Exec(f), ext)::dcls' ->
-      if TC.is_expdecdef env f
-      then check_valid env dcls'
-      else error ext ("process " ^ f ^ " undeclared");;
+      check_valid env dcls' state_channels
+  | (A.Exec(f, args), ext)::dcls' ->
+      if not (TC.is_expdecdef env f)
+      then error ext ("process " ^ f ^ " undeclared")
+      else
+        let () = exists_in_state args state_channels ext in
+        check_valid env dcls' state_channels;;
 
 (* separates channels into shared and linear *)
 

@@ -95,7 +95,6 @@ rule token = parse
   (* nomos specific *)
   | "Nomos.GetTxnNum()"       { GETTXNNUM }
   | "Nomos.GetTxnSender()"    { GETTXNSENDER }
-  | "Nomos.MakeChannel"       { MAKECHAN }
 
   (* printing *)
   | "print"             { PRINT }    
@@ -111,7 +110,6 @@ rule token = parse
 
   (* expressions *)
   | "<-"                { LARROW }
-  | "<->"               { LRARROW }
   | "recv"              { RECV }
   | ";"                 { SEMI }
   | "send"              { SEND }
@@ -121,7 +119,7 @@ rule token = parse
   | "close"             { CLOSE }
   | "wait"              { WAIT }
   | "work"              { WORK }
-  | "deposit"           { DEPOSIT }
+  | "Nomos.deposit"     { DEPOSIT }
   | "pay"               { PAY }
   | "get"               { GET }
   | "acquire"           { ACQUIRE }

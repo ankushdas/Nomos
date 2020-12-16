@@ -1,6 +1,5 @@
-proc transaction collect_frank : . |{*}- ($d : 1) =
+proc transaction collect_frank : (#a : auction) |{*}- ($d : 1) =
 {
-  #a : auction <- Nomos.MakeChannel 3 ;
   $la <- acquire #a ;
   pay $la {*} ;
   case $la (
@@ -11,7 +10,7 @@ proc transaction collect_frank : . |{*}- ($d : 1) =
                       get $la {*} ;
                       #a <- release $la ;
                       wait $l ;
-                      deposit {*} ;
+                      Nomos.deposit {*} ;
                       close $d
             | lost => $m <- recv $la ;
                       get $la {*} ;
@@ -20,11 +19,11 @@ proc transaction collect_frank : . |{*}- ($d : 1) =
                       $m.destroy ;
                       get $m {*} ;
                       wait $m ;
-                      deposit {*} ;
+                      Nomos.deposit {*} ;
                       close $d
             )
   | terminated => abort
   )
 }
 
-exec collect_frank
+exec collect_frank #ch3

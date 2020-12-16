@@ -9,8 +9,10 @@ module PP = Pprint
 module E = TpError
 module I = Infer
 module F = NomosFlags
+module M = Core.Map
 
 let error = ErrorMsg.error ErrorMsg.Type;;
+let linkerror = ErrorMsg.error ErrorMsg.Link;;
 
 (*********************)
 (* Validity of types *)
@@ -1934,14 +1936,6 @@ and check_exp trace env delta pot exp zc ext mode = match (exp.A.st_structure) w
             | _ -> error (exp.A.st_data) ("type mismatch of " ^ PP.pp_chan mp ^
                                           " expected map, found: " ^ PP.pp_tp_compact env a)
       end
-  | A.MakeChan(x,a,_,p) ->
-      begin
-        if check_tp x delta || checktp x [zc]
-        then error (exp.A.st_data) ("variable " ^ name_of x ^ " is not fresh")
-        else if not (mode_S x)
-        then error (exp.A.st_data) (PP.pp_chan x ^ " not shared; can only create shared channels")
-        else check_exp' trace env (add_chan env (x,a) delta) pot p zc ext mode
-      end
   | A.Abort -> ()
   | A.Print(l,args,p) -> 
       begin
@@ -1976,6 +1970,27 @@ and check_branchesL trace env delta x choices pot branches zc ext mode = match c
       E.error_label_missing_alt (l) ext
   | (l,_a)::_choices', [] ->
       E.error_label_missing_branch (l) ext;;
+
+let rec link_tps env state_channels args odelta ext =
+  match args, odelta with
+      [], [] -> ()
+    | (A.FArg e)::_args', (A.Functional _)::_odelta' ->
+        linkerror ext ("functional arguments not allowed in executing process: " ^ PP.pp_fexp env 0 e)
+    | (A.FArg e)::_args', (A.STyped _)::_odelta' ->
+        linkerror ext ("expected session-typed argument, found functional argument: " ^ PP.pp_fexp env 0 e)
+    | (A.STArg c)::_args', (A.Functional _)::_odelta' ->
+        linkerror ext ("expected functional argument, found channel: " ^ PP.pp_chan c)
+    | [], _hd::_tl -> raise UnknownTypeError
+    | _hd::_tl, [] -> raise UnknownTypeError
+    | (A.STArg c)::args', (A.STyped(_x,sigt))::odelta' ->
+        match M.find state_channels c with
+            None -> raise UnknownTypeError
+          | Some t ->
+              if not (subtp env t sigt)
+              then linkerror ext ("type mismatch of " ^ PP.pp_chan c ^
+                                  " expected: " ^ PP.pp_tp_compact env sigt ^
+                                  ", found: " ^ PP.pp_tp_compact env t)
+              else link_tps env state_channels args' odelta' ext;;
 
 let rec consistent_mode f delta odelta ext =
   match odelta with

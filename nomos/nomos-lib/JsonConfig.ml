@@ -77,6 +77,7 @@ let create_account initial_state account_name balance =
     | EM.LexError m
     | EM.ParseError m
     | EM.TypeError m
+    | EM.LinkError m
     | EM.PragmaError m
     | EM.RuntimeError m
     | EM.GasAcctError m ->
@@ -109,6 +110,7 @@ let type_check state txn =
     | EM.LexError m
     | EM.ParseError m
     | EM.TypeError m
+    | EM.LinkError m
     | EM.PragmaError m
     | EM.RuntimeError m
     | EM.GasAcctError m ->
@@ -137,7 +139,7 @@ let submit state txn account_name =
            ;("status", `String "success")
            ;("body", body)]
   with
-      EM.LexError m | EM.ParseError m
+      EM.LexError m | EM.ParseError m | EM.LinkError m
     | EM.TypeError m | EM.PragmaError m | EM.RuntimeError m
     | EM.GasAcctError m | EM.FileError m ->
                        report_error "submit" m ""

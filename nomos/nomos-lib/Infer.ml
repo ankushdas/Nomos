@@ -89,7 +89,6 @@ let rec remove_stars_exp exp = match exp with
   | A.FMapDelete(v,mp,k,p) -> A.FMapDelete(v,mp, k, remove_stars_aug p)
   | A.STMapDelete(v,mp,k,p) -> A.STMapDelete(v,mp, k, remove_stars_aug p)
   | A.MapClose(mp,p) -> A.MapClose(mp, remove_stars_aug p)
-  | A.MakeChan(x,a,n,p) -> A.MakeChan(x, a, n, remove_stars_aug p)
   | A.Abort -> A.Abort
   | A.Print(l,args,p) -> A.Print(l,args,remove_stars_aug p)
 
@@ -225,7 +224,6 @@ let rec substitute_exp exp psols msols = match exp with
   | A.FMapDelete(v,mp,k,p) -> A.FMapDelete(v, substitute_mode mp msols, k, substitute_aug p psols msols)
   | A.STMapDelete(v,mp,k,p) -> A.STMapDelete(substitute_mode v msols, substitute_mode mp msols, k, substitute_aug p psols msols)
   | A.MapClose(mp,p) -> A.MapClose(substitute_mode mp msols, substitute_aug p psols msols)
-  | A.MakeChan(x,a,n,p) -> A.MakeChan(x, a, n, substitute_aug p psols msols)
   | A.Abort -> A.Abort
   | A.Print(l,args,p) -> A.Print(l,substitute_mode_list args msols,substitute_aug p psols msols)
 
@@ -332,7 +330,6 @@ let rec removeU_exp exp = match exp with
   | A.FMapDelete(v,mp,k,p) -> A.FMapDelete(v, removeU mp, k, removeU_aug p)
   | A.STMapDelete(v,mp,k,p) -> A.STMapDelete(removeU v, removeU mp, k, removeU_aug p)
   | A.MapClose(mp,p) -> A.MapClose(removeU mp, removeU_aug p)
-  | A.MakeChan(x,a,n,p) -> A.MakeChan(removeU x, a, n, removeU_aug p)
   | A.Abort -> A.Abort
   | A.Print(l,args,p) -> A.Print(l, removeU_list args, removeU_aug p)
 

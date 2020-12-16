@@ -1,6 +1,5 @@
-proc transaction terminate : . |{*}- ($d : 1) =
+proc transaction terminate : (#a : auction) |{*}- ($d : 1) =
 {
-  #a : auction <- Nomos.MakeChannel 3 ;
   $la <- acquire #a ;
   pay $la {*} ;
   case $la (
@@ -14,15 +13,15 @@ proc transaction terminate : . |{*}- ($d : 1) =
                         $m.destroy ;
                         get $m {*} ;
                         wait $m ;
-                        deposit {*} ;
+                        Nomos.deposit {*} ;
                         close $d
             | notowner => get $la {*} ;
                           #a <- release $la ;
-                          deposit {*} ;
+                          Nomos.deposit {*} ;
                           close $d
             )
   | terminated => abort
   )
 }
 
-exec terminate
+exec terminate #ch3

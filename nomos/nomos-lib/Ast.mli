@@ -100,7 +100,6 @@ and 'a st_expr =
   | FMapDelete of string * chan * 'a func_aug_expr * 'a st_aug_expr
   | STMapDelete of chan * chan * 'a func_aug_expr * 'a st_aug_expr
   | MapClose of chan * 'a st_aug_expr
-  | MakeChan of chan * stype * int * 'a st_aug_expr 
   | Abort
   | Print of printable list * 'a arg list * 'a st_aug_expr
   [@@deriving sexp]
@@ -137,7 +136,7 @@ type decl =
     TpDef of tpname * stype
   | ExpDecDef of expname * mode * (context * potential * chan_tp) *
       parsed_expr
-  | Exec of expname
+  | Exec of expname * ext arg list
 [@@deriving sexp]                 
           
 type program = (decl * ext) list

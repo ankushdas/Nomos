@@ -93,7 +93,7 @@ proc contract ended_auction :
                     wait $l ;
                     #a <- closing_auction winner owner $bm max_bid
                   else
-                    deposit {*} ;
+                    Nomos.deposit {*} ;
                     #a <- ended_auction winner max_bid owner $bm $l
     | terminate => print ("Request to terminate while bids not returned, aborting txn!\n") ;
                    abort
@@ -138,12 +138,21 @@ proc contract terminated_auction :
   (owner : address) |{*}- (#a : auction) =
 {
   $la <- accept #a ;
+  print ("Auction terminated, cannot place bids or collect wins!\n") ;
   get $la {*} ;
   $la.terminated ;
   pay $la {*} ;
-  print ("Auction terminated, cannot place bids or collect wins!\n") ;
   #a <- detach $la ;
   #a <- terminated_auction owner
+}
+
+type dummy = /\ \/ dummy
+
+proc contract dummy_proc : . |{*}- (#d : dummy) =
+{
+  $ld <- accept #d ;
+  #d <- detach $ld ;
+  #d <- dummy_proc
 }
 
 proc transaction init_auction : . |{*}- ($d : 1) =
@@ -155,6 +164,8 @@ proc transaction init_auction : . |{*}- ($d : 1) =
   print ("Lot created!\n") ;
   #sa <- running_auction owner max_bid owner $bm $l ;
   print ("Auction hosted on channel %c!\n", #sa) ;
+  #dum <- dummy_proc ;
+  print ("Dummy contract created on channel %c!\n", #dum) ;
   close $d
 }
 

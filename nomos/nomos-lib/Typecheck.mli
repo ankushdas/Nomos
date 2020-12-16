@@ -16,6 +16,11 @@ val checkfexp :
   A.context ->
   A.potential ->
   A.ext A.func_aug_expr -> A.chan * A.stype -> A.ext -> A.mode -> unit
+val link_tps :
+  (A.decl * 'a) list ->
+  (A.chan, A.stype, 'b) Core.Map.t ->
+  'c A.arg list ->
+  A.argument list -> ((int * int) * (int * int) * string) option -> unit
 val pure :
   'a ->
   string ->

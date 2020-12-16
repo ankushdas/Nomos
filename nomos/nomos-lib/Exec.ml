@@ -949,7 +949,8 @@ let rec find_procs ch sems =
   match sems with
       [] -> []
     | (Proc(_,_c,_in_use,_t,_wp,A.Acquire(a,_x,_p)) as proc)::sems' ->
-        if a = ch
+        (* TODO: infer the modes of shared channels *)
+        if eq_name a ch
         then proc::(find_procs ch sems')
         else find_procs ch sems'
     | _sem::sems' -> find_procs ch sems';;
@@ -1396,6 +1397,7 @@ let mapclose ch config =
         end
     | _s -> raise ExecImpossible ;;
 
+(*
 let makechan ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
@@ -1408,6 +1410,7 @@ let makechan ch config =
         let config = add_sem newproc config in
         Changed config
     | _s -> raise ExecImpossible;;
+*)
 
 let toString arg = match arg with
     A.FArg e -> PP.pp_fexp () 0 e
@@ -1535,9 +1538,6 @@ let match_and_one_step env sem config =
 
             | A.MapClose _ ->
                 mapclose c config
-            
-            | A.MakeChan _ ->
-                makechan c config
             
             | A.Abort ->
                 Aborted
@@ -1717,7 +1717,7 @@ let verify_final_configuration top config =
     then error "could not add some sems to final configuration"
     else config'
 
-(* transaction num * channel num * environment * configuration *)
+(* transaction num * channel num * gas accounts * environment * configuration *)
 type blockchain_state = int * int * G.gas_accounts * A.decl list * configuration
 [@@deriving sexp]
 
@@ -1738,6 +1738,7 @@ let empty_blockchain_state =
 let try_exec f c pot args initial_config env types =
   try
     begin
+      (* TODO: add in_use channels *)
       let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
       let config = add_sem sem initial_config in
       match step env config with

@@ -305,7 +305,6 @@ let rec pp_exp env i exp = match exp with
   | A.FMapDelete(v,mp,k,p) -> v ^ " = " ^ pp_chan mp ^ ".delete(" ^ pp_fexp env i k.A.func_structure ^ ") ;\n" ^ pp_exp_indent env i p
   | A.STMapDelete(v,mp,k,p) -> pp_chan v ^ " <- " ^ pp_chan mp ^ ".delete(" ^ pp_fexp env i k.A.func_structure ^ ") ;\n" ^ pp_exp_indent env i p
   | A.MapClose(mp,p) -> pp_chan mp ^ ".close ;\n" ^ pp_exp_indent env i p
-  | A.MakeChan(x,a,n,p) -> pp_chan x ^ " : " ^ pp_tp env a ^ " <- Nomos.MakeChannel " ^ string_of_int n ^ " ;\n" ^ pp_exp_indent env i p
   | A.Abort -> "abort"
   | A.Print(l,args,p) -> "print(" ^ pp_printable_list env l args ^ ");\n" ^ pp_exp_indent env i p
 
@@ -457,7 +456,6 @@ let pp_exp_prefix exp = match exp with
   | A.FMapDelete(v,mp,k,_p) -> v ^ " = " ^ pp_chan mp ^ ".delete(" ^ pp_fexp () 0 k.A.func_structure ^ ") ; ..."
   | A.STMapDelete(v,mp,k,_p) -> pp_chan v ^ " <- " ^ pp_chan mp ^ ".delete(" ^ pp_fexp () 0 k.A.func_structure ^ ") ; ..."
   | A.MapClose(mp,_p) -> pp_chan mp ^ ".close ; ..."
-  | A.MakeChan(x,a,n,_p) -> pp_chan x ^ " : " ^ pp_tp_simple a ^ " <- Nomos.MakeChannel " ^ string_of_int n ^ " ... "
   | A.Abort -> "abort"
   | A.Print(l,args,_) -> "print(" ^ pp_printable_list () l args ^ "); ..."
 
@@ -506,7 +504,7 @@ let pp_decl env dcl = match dcl with
     "proc " ^ pp_outer_mode m ^ " " ^ f ^ " : " ^ pp_ctx env delta ^ " |" ^ potstr ^ "- "
     ^ pp_chan_tp (x,a) ^ " = \n" ^
     (pp_fexp_indent env 0 p.A.func_structure)
-  | A.Exec(f) -> "exec " ^ f;;
+  | A.Exec(f, l) -> "exec " ^ f ^ " " ^ pp_argnames env l;;
 
 let pp_progh env decls = List.fold_left (fun s (d, _ext) -> s ^ pp_decl env d ^ "\n") "" decls;;
 

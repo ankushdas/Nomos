@@ -121,6 +121,7 @@ let maybe_create_account create initial_config =
     | EM.LexError msg
     | EM.ParseError msg
     | EM.TypeError msg
+    | EM.LinkError msg
     | EM.PragmaError msg
     | EM.RuntimeError msg
     | EM.GasAcctError msg
@@ -137,6 +138,7 @@ let maybe_deposit deposit initial_config =
     | EM.LexError msg
     | EM.ParseError msg
     | EM.TypeError msg
+    | EM.LinkError msg
     | EM.PragmaError msg
     | EM.RuntimeError msg
     | EM.GasAcctError msg
@@ -167,6 +169,7 @@ let maybe_tc_and_run_txn tc_only file initial_config =
     | EM.LexError msg
     | EM.ParseError msg
     | EM.TypeError msg
+    | EM.LinkError msg
     | EM.PragmaError msg
     | EM.RuntimeError msg
     | EM.GasAcctError msg

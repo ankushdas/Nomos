@@ -191,7 +191,6 @@ and 'a st_expr =
   | MapClose of chan * 'a st_aug_expr                                           (* $mp.close *)
 
   (* Nomos specific, get channel from id *)
-  | MakeChan of chan * stype * int * 'a st_aug_expr             (* #c : A <- Nomos.MakeChan(n) ; P *)
   | Abort                                                       (* abort *)
   | Print of printable list * 'a arg list * 'a st_aug_expr
 
@@ -241,7 +240,7 @@ type decl =
   | ExpDecDef of expname * mode *
     (context * potential * chan_tp) *         (* proc 'mode' f : Delta |{p}- c : C = expression *)
     parsed_expr
-  | Exec of expname                           (* exec f *)
+  | Exec of expname * ext arg list               (* exec f x1 x2 ... *)
 [@@deriving sexp]
           
 
@@ -393,10 +392,6 @@ let rec subst c' c expr = match expr with
       then STMapDelete(v, sub c' c mp, fsubst_aug c' c k, p)
       else STMapDelete(v, sub c' c mp, fsubst_aug c' c k, subst_aug c' c p)
   | MapClose(mp,p) -> MapClose(sub c' c mp, subst_aug c' c p)
-  | MakeChan(x,a,n,p) ->
-      if eq_name c x
-      then MakeChan(x, a, n, p)
-      else MakeChan(x, a, n, subst_aug c' c p)
   | Abort -> Abort
   | Print(l,args,p) -> Print(l, subst_list c' c args, subst_aug c' c p)
 
@@ -519,7 +514,6 @@ and esubstv v' v exp = match exp with
       else FMapDelete(value, mp, substv_aug v' v k, esubstv_aug v' v p)
   | STMapDelete(value,mp,k,p) -> STMapDelete(value, mp, substv_aug v' v k, esubstv_aug v' v p)
   | MapClose(mp,p) -> MapClose(mp,p)
-  | MakeChan(x,a,n,p) -> MakeChan(x, a, n, esubstv_aug v' v p)
   | Abort -> Abort
   | Print(l,args,p) -> Print(l, List.map (fun arg -> esubstv_arg v' v arg) args, esubstv_aug v' v p)
 

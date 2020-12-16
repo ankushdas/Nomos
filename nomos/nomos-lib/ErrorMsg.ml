@@ -9,6 +9,7 @@ type error_cat =
     Lex
   | Parse
   | Type
+  | Link
   | Pragma
   | Runtime
   | GasAcct
@@ -18,6 +19,7 @@ let err_string cat = match cat with
     Lex -> "lex"
   | Parse -> "parse"
   | Type -> "type"
+  | Link -> "link"
   | Pragma -> "pragma"
   | Runtime -> "runtime"
   | GasAcct -> "gas account"
@@ -50,6 +52,7 @@ let error_msg cat ext note =
 exception LexError of string
 exception ParseError of string
 exception TypeError of string
+exception LinkError of string
 exception PragmaError of string
 exception RuntimeError of string
 exception GasAcctError of string
@@ -61,6 +64,7 @@ let error cat ext msg =
       Lex -> raise (LexError errormsg)
     | Parse -> raise (ParseError errormsg)
     | Type -> raise (TypeError errormsg)
+    | Link -> raise (LinkError errormsg)
     | Pragma -> raise (PragmaError errormsg)
     | Runtime -> raise (RuntimeError errormsg)
     | GasAcct -> raise (GasAcctError errormsg)

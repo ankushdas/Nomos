@@ -70,7 +70,6 @@ and cost_recv d exp = match exp with
   | A.STMapDelete(v,mp,k,p) -> work d (A.STMapDelete(v, mp, cost_tick_aug k, cost_recv_aug p))
   | A.MapClose(mp,p) -> work d (A.MapClose(mp, cost_recv_aug p))
 
-  | A.MakeChan(x,a,n,p) -> work d (A.MakeChan(x, a, n, cost_recv_aug p))
   | A.Abort -> work d (A.Abort)
   (* TODO: add ticks to argument list of spawn and print *)
   | A.Print(l,arg,p) -> work d (A.Print(l,arg, cost_recv_aug p))
@@ -120,7 +119,6 @@ and cost_send d exp = match exp with
   | A.STMapDelete(v,mp,k,p) -> work d (A.STMapDelete(v, mp, cost_tick_aug k, cost_send_aug p))
   | A.MapClose(mp,p) -> work d (A.MapClose(mp, cost_send_aug p))
 
-  | A.MakeChan(x,a,n,p) -> work d (A.MakeChan(x, a, n, cost_send_aug p))
   | A.Abort -> work d (A.Abort)
   (* TODO: add ticks to argument list of spawn and print *)
   | A.Print(l,arg,p) -> work d (A.Print(l, arg, cost_send_aug p))

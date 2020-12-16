@@ -1,6 +1,5 @@
-proc transaction bid_jan : . |{*}- ($d : 1) =
+proc transaction bid_jan : (#a : auction) |{*}- ($d : 1) =
 {
-  #a : auction <- Nomos.MakeChannel 3 ;
   let n = 100 ;
   $m <- money_proc n ;
   $la <- acquire #a ;
@@ -9,11 +8,11 @@ proc transaction bid_jan : . |{*}- ($d : 1) =
     running => send $la $m ;
                get $la {*} ;
                #a <- release $la ;
-               deposit {*} ;
+               Nomos.deposit {*} ;
                close $d
   | ended => abort
   | terminated => abort
   )
 }
 
-exec bid_jan
+exec bid_jan #ch3
