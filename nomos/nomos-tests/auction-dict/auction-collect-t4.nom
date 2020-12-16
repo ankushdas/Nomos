@@ -5,23 +5,25 @@ proc transaction collect_frank : . |{*}- ($d : 1) =
   pay $la {*} ;
   case $la (
     running => abort
-  | ended => case $la (
-      won => $l <- recv $la ;
-             get $la {*} ;
-             #a <- release $la ;
-             wait $l ;
-             deposit {*} ;
-             close $d
-    | lost => $m <- recv $la ;
-              get $la {*} ;
-              #a <- release $la ;
-              pay $m {*} ;
-              $m.destroy ;
-              get $m {*} ;
-              wait $m ;
-              deposit {*} ;
-              close $d
-    )
+  | ended => $la.collect ;
+             case $la (
+               won => $l <- recv $la ;
+                      get $la {*} ;
+                      #a <- release $la ;
+                      wait $l ;
+                      deposit {*} ;
+                      close $d
+            | lost => $m <- recv $la ;
+                      get $la {*} ;
+                      #a <- release $la ;
+                      pay $m {*} ;
+                      $m.destroy ;
+                      get $m {*} ;
+                      wait $m ;
+                      deposit {*} ;
+                      close $d
+            )
+  | terminated => abort
   )
 }
 

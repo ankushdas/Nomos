@@ -2,15 +2,17 @@ proc transaction bid_frank : . |{*}- ($d : 1) =
 {
   #a : auction <- Nomos.MakeChannel 3 ;
   let n = 1000 ;
-  $m <- money_proc <- n ;
+  $m <- money_proc n ;
   $la <- acquire #a ;
   pay $la {*} ;
   case $la (
     running => send $la $m ;
                get $la {*} ;
                #a <- release $la ;
+               deposit {*} ;
                close $d
   | ended => abort
+  | terminated => abort
   )
 }
 

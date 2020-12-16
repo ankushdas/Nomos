@@ -1,0 +1,28 @@
+proc transaction terminate : . |{*}- ($d : 1) =
+{
+  #a : auction <- Nomos.MakeChannel 3 ;
+  $la <- acquire #a ;
+  pay $la {*} ;
+  case $la (
+    running => abort
+  | ended => $la.terminate ;
+             case $la (
+               owner => $m <- recv $la ;
+                        get $la {*} ;
+                        #a <- release $la ;
+                        pay $m {*} ;
+                        $m.destroy ;
+                        get $m {*} ;
+                        wait $m ;
+                        deposit {*} ;
+                        close $d
+            | notowner => get $la {*} ;
+                          #a <- release $la ;
+                          deposit {*} ;
+                          close $d
+            )
+  | terminated => abort
+  )
+}
+
+exec terminate
