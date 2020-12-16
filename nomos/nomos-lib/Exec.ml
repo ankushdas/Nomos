@@ -1332,19 +1332,17 @@ let stmapdelete ch config =
         end
     | _s -> raise ExecImpossible;;
 
-let deletable stmap =
+let deletable mp =
+  match (mode_of mp) with
+      A.Shared -> true
+    | A.Pure -> false
+    | A.Transaction | A.Linear
+    | A.Unknown | A.MVar _ -> raise ExecImpossible;;
+
+let emp_status stmap =
   if M.length stmap = 0
-  then true
-  else
-    let kvlist = M.to_alist stmap in
-    match kvlist with
-        [] -> raise ExecImpossible
-      | (k,v)::_kvl ->
-          match (mode_of v) with
-              A.Shared -> true
-            | A.Pure -> false
-            | A.Transaction | A.Linear
-            | A.Unknown | A.MVar _ -> raise ExecImpossible;;
+  then "empty"
+  else "nonempty";;
 
 let mapclose ch config =
   let s = find_sem ch config in
@@ -1357,15 +1355,32 @@ let mapclose ch config =
               Some(MapSTProc(mp', in_use', t', (w',pot'), stmap)) ->
                 if uneq_name mp mp'
                 then raise ExecImpossible
-                else if (deletable stmap)
+                else if (deletable mp)
                 then
                   let config = remove_sem mp config in
                   let new_in_use = remove_chan mp in_use in
                   let newproc = Proc(func, c, new_in_use, max(t,t')+1, (w+w',pot+pot'), p.A.st_structure) in
                   let config = add_sem newproc config in
                   Changed config
+                else if M.length stmap > 0
+                then
+                  let config = remove_sem mp config in
+                  let mpn = cfresh (mode_of mp) in
+                  let newmap = MapSTProc(mpn, in_use', max(t,t')+1, (w', pot'), stmap) in
+                  let msg = Msg(mp, max(t,t')+1, (0,0), A.MLabI(mp, "nonempty", mpn)) in
+                  let newproc = Proc(func, c, in_use, max(t,t')+1, (w, pot), p.A.st_structure) in
+                  let config = add_sem newmap config in
+                  let config = add_sem msg config in
+                  let config = add_sem newproc config in
+                  Changed config
                 else
-                  let newproc = Proc(func, c, in_use, max(t,t')+1, (w',pot'), p.A.st_structure) in
+                  let config = remove_sem mp config in
+                  let mpn = cfresh (mode_of mp) in
+                  let mclose_proc = Proc("stmap", mpn, [], max(t,t')+1, (w', pot'), A.Close(mpn)) in
+                  let msg = Msg(mp, max(t,t')+1, (0,0), A.MLabI(mp, emp_status stmap, mpn)) in
+                  let newproc = Proc(func, c, in_use, max(t,t')+1, (w, pot), p.A.st_structure) in
+                  let config = add_sem mclose_proc config in
+                  let config = add_sem msg config in
                   let config = add_sem newproc config in
                   Changed config
             | Some(MapFProc(mp', in_use', t', (w',pot'), fmap)) ->
