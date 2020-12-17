@@ -949,8 +949,7 @@ let rec find_procs ch sems =
   match sems with
       [] -> []
     | (Proc(_,_c,_in_use,_t,_wp,A.Acquire(a,_x,_p)) as proc)::sems' ->
-        (* TODO: infer the modes of shared channels *)
-        if eq_name a ch
+        if a = ch
         then proc::(find_procs ch sems')
         else find_procs ch sems'
     | _sem::sems' -> find_procs ch sems';;
@@ -1735,11 +1734,16 @@ let empty_blockchain_state =
      types = M.empty (module Chan);
    });;
 
+let rec arg_chans args =
+  match args with
+      [] -> []
+    | (A.FArg _)::args' -> arg_chans args'
+    | (A.STArg(c))::args' -> c::(arg_chans args');;
+
 let try_exec f c pot args initial_config env types =
   try
     begin
-      (* TODO: add in_use channels *)
-      let sem = Proc(f,c,[],0,(0,pot),A.ExpName(c,f,args)) in
+      let sem = Proc(f,c,arg_chans args,0,(0,pot),A.ExpName(c,f,args)) in
       let config = add_sem sem initial_config in
       match step env config with
           Fail -> (!txnNum + 1, !chan_num, types, initial_config)

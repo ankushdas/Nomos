@@ -124,7 +124,7 @@ decl :
                                                                                                                                                       Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                                                                                                                                       ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                                                                                                                                       $startpos.Lexing.pos_fname)) }
-    | EXEC; f = ID; l = list(app_arg)     { (Ast.Exec(f,l), Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
+    | EXEC; f = ID; l = list(app_arg_shared)     { (Ast.Exec(f,l), Some(($startpos.Lexing.pos_lnum, $startpos.Lexing.pos_cnum - $startpos.Lexing.pos_bol + 1),
                                         ($endpos.Lexing.pos_lnum, $endpos.Lexing.pos_cnum - $endpos.Lexing.pos_bol + 1),
                                         $startpos.Lexing.pos_fname)) }
     ;
@@ -325,6 +325,11 @@ potential :
 app_arg :
     | x = mid           { Ast.STArg(x) }
     | x = ID            { Ast.FArg(Ast.Var(x)) }
+    ;
+
+app_arg_shared :
+    | str = m; x = ID       { Ast.STArg(str, x, Ast.Shared) }
+    | x = ID                { Ast.FArg(Ast.Var(x)) }
     ;
 (*
 print_id:
