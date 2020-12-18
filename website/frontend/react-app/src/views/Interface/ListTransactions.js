@@ -21,15 +21,19 @@ const printRow = arg =>
                 modalTitle = {"Transaction #" + String(arg.number)}
  	        modalBody = <div>
 		              <p>
-	      		        <em>Account of sender: </em>
+	      		        <b>Account of Sender: </b>
   			        {arg.account}
 			      </p>
 		              <p>
-	      		        <em>Gas cost: </em>
+	      		        <b>Gas Bound: </b>
   			        {String(arg.gasCost)}
-			      </p>
+						</p>
+						<p>
+						  <b>Execution Trace Messages: </b>
+						</p>
+						  <pre>{arg.messages}</pre>
 			      <p>
- 			        <em>Transaction code:</em>
+ 			        <b>Transaction Code:</b>
 			      </p>
 	                      <pre>{arg.code}</pre>
                            </div>
@@ -43,7 +47,7 @@ const ListTransactions = props =>
    (
       <Card className="card-plain">
 	 <CardHeader>
-	    <CardTitle tag="h4">Past Transactions</CardTitle>
+	    <CardTitle tag="h4">Transaction History</CardTitle>
 	    <p className="category">The "Blockchain"</p>
 	 </CardHeader>
 	 <CardBody>
@@ -52,7 +56,7 @@ const ListTransactions = props =>
 		  <thead className="text-primary">
 		     <tr>
 			<th>Transaction #</th>
-			<th className="text-center">Source Code</th>
+			<th className="text-center">Execution Details</th>
 		     </tr>
 		  </thead>
 		  <tbody>

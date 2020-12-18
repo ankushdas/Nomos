@@ -179,8 +179,7 @@ type configuration =
   { conf   : map_chan_sem;
     conts  : map_chan_chan;
     shared : map_chan_chan;
-    types  : map_chan_tp;
-    print_state : string
+    types  : map_chan_tp
   } [@@deriving sexp]
 
 type stepped_config =
@@ -292,9 +291,6 @@ let index_chan sem =
 let add_sem sem config =
   let c = index_chan sem in
   { config with conf = M.add_exn config.conf ~key:c ~data:sem };;
-
-let add_print s config =
-  { config with print_state = config.print_state ^ s };;
 
 let add_shared_map (c,c') config =
   { config with shared = M.add_exn config.shared ~key:c ~data:c' };;
@@ -1435,6 +1431,10 @@ let rec get_printable_string l args =
         let tl = get_printable_string ps args' in
         s ^ tl;;
 
+let printed_msgs = ref "";;
+
+let get_exec_msgs () = !printed_msgs;;
+
 let print ch config =
   let s = find_sem ch config in
   let config = remove_sem ch config in
@@ -1442,7 +1442,7 @@ let print ch config =
       Proc(func,c,in_use,t,(w,pot),A.Print(l,args,p)) ->
         let pl = get_printable_string l args in
         let () = if !F.verbosity >= 0 then print_string pl in
-        let config = add_print pl config in
+        let () = printed_msgs := !printed_msgs ^ pl in
         let () = flush_all () in
         let newproc = Proc(func,c,in_use,t+1,(w,pot),p.A.st_structure) in
         let config = add_sem newproc config in
@@ -1788,8 +1788,7 @@ let empty_blockchain_state =
      conf = M.empty (module Chan);
      conts = M.empty (module Chan);
      shared = M.empty (module Chan);
-     types = M.empty (module Chan);
-     print_state = ""
+     types = M.empty (module Chan)
    });;
 
 let rec arg_chans args =

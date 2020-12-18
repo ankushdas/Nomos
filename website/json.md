@@ -100,6 +100,7 @@ CONTRACT_LIST = [ { channel : STRING
          , contlist : CONTRACT_LIST
 	 , acclist : ACCOUNT_LIST
 	 , gascost : INT
+         , execmsgs : STRING
          }
 }
 

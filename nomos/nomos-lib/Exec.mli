@@ -74,9 +74,10 @@ type configuration =
   { conf   : map_chan_sem;
     conts  : map_chan_chan;
     shared : map_chan_chan;
-    types  : map_chan_tp;
-    print_state : string
+    types  : map_chan_tp
   }
+
+val get_exec_msgs : unit -> string
 
 val subconfig : A.chan -> configuration -> string * string
 

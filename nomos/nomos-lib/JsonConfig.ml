@@ -51,7 +51,6 @@ let pp_tpdef env tp =
         end
     | _tp -> PP.pp_tp_simple tp;;
 
-(* fixme: we need to get the code and the gas of a contract*)
 let contract_list state =
   let (_tx, _ch, _gas_accs, env, config) = state in
   let chantps = config.E.types in
@@ -145,11 +144,13 @@ let submit state txn account_name =
     in
     let (state, leftover_gas) = TL.run txn state in
     let str_state = blockchain_state_to_string state in
+    let exec_msgs = E.get_exec_msgs () in
     let body =
       `Assoc [("state",`String str_state)
              ;("contlist", contract_list state)
              ;("acclist", account_list state)
-             ;("gascost", `Int (initial_gas - leftover_gas))]
+             ;("gascost", `Int (initial_gas - leftover_gas))
+             ;("execmsgs", `String exec_msgs)]
     in
     `Assoc [("response",`String "submit")
            ;("status", `String "success")

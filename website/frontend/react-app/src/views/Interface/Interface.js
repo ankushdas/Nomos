@@ -30,10 +30,10 @@ class Interface extends React.Component {
      this.state = {
 	loading: false,
 	transactionCounter: 1,	
-	transactionCode: "(*Write or select a transaction.*)",
+	transactionCode: "(* Write or select a transaction. *)",
         savedTransactionCode: "",
 	/* Ocaml sexp representation of the blockchain state*/
-	ocamlState : "(0 0 () () ((conf ()) (conts ()) (shared ()) (types ()) (print_state \"\")))",
+	ocamlState : "(0 0 () () ((conf ()) (conts ()) (shared ()) (types ())))",
 	contractList : [] ,             /* Array of contracts */
 	accountList :  [] ,             /* Array of accounts */
 	transactionList :  [] ,         /* Array of past transactions */	
@@ -103,7 +103,7 @@ class Interface extends React.Component {
      const transList = this.state.transactionList;
      const transCode = this.state.transactionCode;
      const ocamlState = this.state.ocamlState;     
-     const savedTransCode = this.state.savedTransactionCode;     
+     const savedTransCode = this.state.savedTransactionCode;
 
      this.setState({loading:true});
      this.notify(Messages.serverContacted("Submitting transaction"));
@@ -114,7 +114,7 @@ class Interface extends React.Component {
 	const usedGas = response.body.gascost;
 	const newState = {
 	   transactionCounter: transCounter+1,
-	   transactionList: [{number:transCounter, code:transCode, account:account, gasCost:usedGas},...transList],
+	   transactionList: [{number:transCounter, messages:response.body.execmsgs, code:transCode, account:account, gasCost:usedGas},...transList],
 	   loading: false,
 	   ocamlState: response.body.state,
 	   contractList: response.body.contlist,

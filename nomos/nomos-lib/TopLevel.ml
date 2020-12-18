@@ -138,24 +138,24 @@ let deposit_gas txnsender d initial_config =
   let new_gas_accs = G.deposit gas_accs txnsender d in
   (tx, ch, new_gas_accs, types, config);;
 
-let run (Transaction env) config =
-  let rec run' config dcls =
+let run (Transaction env) state =
+  let rec run' state dcls =
     match dcls with
         (A.Exec(f, args), _ext)::dcls' ->
           let () = if !F.verbosity >= 1
                    then print_string (PP.pp_decl env (A.Exec(f, args)) ^ "\n")
                    else () in
-          let config' = E.exec env config (f, args) in
+          let config' = E.exec env state (f, args) in
           (* may raise Exec.RuntimeError *)
           run' config' dcls'
       | (A.TpDef _ as dcl, _ext)::dcls'
       | (A.ExpDecDef _ as dcl, _ext)::dcls' ->
-          let (tx, ch, ga, env, conf) = config in
+          let (tx, ch, ga, env, conf) = state in
           run' (tx, ch, ga, dcl::env, conf) dcls'
-      | [] -> config
+      | [] -> state
   in
   let leftover = E.leftover_gas () in
-  (run' config env, leftover)
+  (run' state env, leftover)
 
 (********************)
 (* Interactive Mode *)
