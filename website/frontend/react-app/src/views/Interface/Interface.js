@@ -33,7 +33,7 @@ class Interface extends React.Component {
 	transactionCode: "(*Write or select a transaction.*)",
         savedTransactionCode: "",
 	/* Ocaml sexp representation of the blockchain state*/
-	ocamlState : "(0 0 () () ((conf ()) (conts ()) (shared ()) (types ())))",
+	ocamlState : "(0 0 () () ((conf ()) (conts ()) (shared ()) (types ()) (print_state "")))",
 	contractList : [] ,             /* Array of contracts */
 	accountList :  [] ,             /* Array of accounts */
 	transactionList :  [] ,         /* Array of past transactions */	
