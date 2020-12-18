@@ -14,20 +14,18 @@ proc transaction transfer : (#sender : wallet), (#receiver : wallet), (amt : int
                   send $lr $subm ;
                   get $lr {*} ;
                   #receiver <- release $lr ;
-                  work {*} ;
+                  Nomos.deposit {*} ;
                   close $d
   | insufficient => abort
   )
 }
 
-proc transaction main3 : . |{*}- ($d : 1) =
+proc transaction main3 : (#s : wallet), (#r : wallet) |{*}- ($d : 1) =
 {
   let n = 100 ;
-  #s : wallet <- Nomos.MakeChannel 3 ;
-  #r : wallet <- Nomos.MakeChannel 7 ;
   print ("transfer of %d coins from %c to %c successful\n", n, #s, #r);
-  $c <- transfer <- #s #r n ;
+  $c <- transfer #s #r n ;
   $d <- $c
 }
 
-exec main3
+exec main3 #ch3 #ch7

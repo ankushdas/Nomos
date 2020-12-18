@@ -5,18 +5,18 @@ proc contract storage_process : (n : int) |{*}- (#s : storage) =
     setter => get $ls {*} ;
               m = recv $ls ;
               #s <- detach $ls ;
-              #s <- storage_process <- m
+              #s <- storage_process m
   | getter => get $ls {*} ;
               send $ls n ;
               #s <- detach $ls ;
-              #s <- storage_process <- n
+              #s <- storage_process n
   )
 }
 
 proc transaction create_zero_storage : . |{*}- ($d : 1) =
 {
   let n = 0 ;
-  #s <- storage_process <- n ;
+  #s <- storage_process n ;
   close $d
 }
 

@@ -1,14 +1,14 @@
 proc transaction main2 : . |{*}- ($d : 1) =
 {
   let n = 100 ;
-  $c <- create_wallet <- n ;
+  $c <- create_wallet n ;
   $d <- $c
 }
 
 proc transaction create_wallet : (n : int) |{*}- ($d : 1) =
 {
-  $m <- money_proc <- n ;
-  #sw <- wallet_proc <- $m ;
+  $m <- money_proc n ;
+  #sw <- wallet_proc $m ;
   print ("created a wallet with %d coins on channel %c\n", n, #sw);
   close $d
 }

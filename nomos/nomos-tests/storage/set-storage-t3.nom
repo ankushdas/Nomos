@@ -1,6 +1,5 @@
-proc transaction set_storage : . |{*}- ($d : 1) =
+proc transaction set_storage : (#s : storage) |{*}- ($d : 1) =
 {
-  #s : storage <- Nomos.MakeChannel 1 ;
   $ls <- acquire #s ;
   $ls.setter ;
   pay $ls {*} ;
@@ -9,4 +8,4 @@ proc transaction set_storage : . |{*}- ($d : 1) =
   close $d
 }
 
-exec set_storage
+exec set_storage #ch1
