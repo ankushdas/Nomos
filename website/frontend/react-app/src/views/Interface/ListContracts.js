@@ -25,7 +25,7 @@ const printRow = arg =>
 	 <td className="text-center">
 	    <ModalButton
 		buttonLabel = "Show"
-                modalTitle = {"Process Code @" + arg.channel}
+                modalTitle = {"Process State @ " + arg.channel}
 		modalBody = <pre>{arg.code}</pre>
 	       />
 	 </td>
@@ -49,8 +49,8 @@ const ListContracts = props =>
 		     <tr>
 			<th>Channel Name</th>
 			<th className="text-center">Session Type</th>
-			<th className="text-center">Process Code</th>
-			<th className="text-center">Gas</th>		
+			<th className="text-center">Process State</th>
+			<th className="text-center">(Work,Gas)</th>		
 		     </tr>
 		  </thead>
 		  <tbody>
