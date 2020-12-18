@@ -1,0 +1,27 @@
+proc transaction terminate : (#a : auction) |{*}- ($d : 1) =
+{
+  $la <- acquire #a ;
+  pay $la {*} ;
+  case $la (
+    running => abort
+  | ended => $la.terminate ;
+             case $la (
+               owner => $m <- recv $la ;
+                        get $la {*} ;
+                        #a <- release $la ;
+                        pay $m {*} ;
+                        $m.destroy ;
+                        get $m {*} ;
+                        wait $m ;
+                        Nomos.deposit {*} ;
+                        close $d
+            | notowner => get $la {*} ;
+                          #a <- release $la ;
+                          Nomos.deposit {*} ;
+                          close $d
+            )
+  | terminated => abort
+  )
+}
+
+exec terminate #ch3

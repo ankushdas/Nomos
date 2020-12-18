@@ -11,8 +11,9 @@ import walletT4 from "assets/nomos/print-balance-t4.nom"
 import auctionT1 from "assets/nomos/auction-contract-t1.nom"
 import auctionT2 from "assets/nomos/auction-bid-t2.nom"
 import auctionT3 from "assets/nomos/auction-bid-t3.nom"
-import auctionT4 from "assets/nomos/auction-bid-t4.nom"
-import auctionT5 from "assets/nomos/auction-collect-t5.nom"
+import auctionT4 from "assets/nomos/auction-collect-t3.nom"
+import auctionT5 from "assets/nomos/auction-collect-t4.nom"
+import auctionT6 from "assets/nomos/auction-terminate-t5.nom"
 
 const nomosFiles = [
   { name: "Storage: Txn 1", file: storageT1},
@@ -27,7 +28,8 @@ const nomosFiles = [
   { name: "Auction: Txn 2", file: auctionT2},
   { name: "Auction: Txn 3", file: auctionT3},
   { name: "Auction: Txn 4", file: auctionT4},
-  { name: "Auction: Txn 5", file: auctionT5}
+  { name: "Auction: Txn 5", file: auctionT5},
+  { name: "Auction: Txn 6", file: auctionT6}
 ]
 
 
