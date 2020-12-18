@@ -35,15 +35,30 @@ let account_list state =
   in
   `List (List.map f (C.Map.to_alist gas_accs))
 
+let rec lookup_tp decls v = match decls with
+    A.TpDef(v',a)::decls' ->
+      if v = v' then Some a else lookup_tp decls' v
+  | _decl::decls' -> lookup_tp decls' v
+  | [] -> None;;
+
+let pp_tpdef env tp =
+  match tp with
+      A.TpName(v) ->
+        begin
+          match lookup_tp env v with
+              None -> PP.pp_tp_simple tp
+            | Some a -> PP.pp_decl env (A.TpDef(v,a))
+        end
+    | _tp -> PP.pp_tp_simple tp;;
 
 (* fixme: we need to get the code and the gas of a contract*)
 let contract_list state =
-  let (_tx, _ch, _gas_accs, _types, config) = state in
+  let (_tx, _ch, _gas_accs, env, config) = state in
   let chantps = config.E.types in
   let f (channel,typ) =
     `Assoc [ ("channel", `String (PP.pp_chan channel))
-           ; ("type", `String (PP.pp_tp_simple typ))
-           ; ("code", `String "")
+           ; ("type", `String (pp_tpdef env typ))
+           ; ("code", `String (E.pp_config config))
            ; ("gas", `String "") ]
   in
   `List (List.map f (C.Map.to_alist chantps))

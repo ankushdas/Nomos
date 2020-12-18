@@ -82,6 +82,8 @@ val empty_blockchain_state : blockchain_state
 
 val pp_sem : sem -> string
 
+val pp_config : configuration -> string
+
 val exec :
      (A.decl * 'a) list
   -> blockchain_state
