@@ -75,12 +75,13 @@ type configuration =
     conts  : map_chan_chan;
     shared : map_chan_chan;
     types  : map_chan_tp;
+    print_state : string
   }
+
+val subconfig : A.chan -> configuration -> string * string
 
 type blockchain_state = int * int * G.gas_accounts * A.decl list * configuration [@@deriving sexp]
 val empty_blockchain_state : blockchain_state
-
-val pp_sem : sem -> string
 
 val pp_config : configuration -> string
 

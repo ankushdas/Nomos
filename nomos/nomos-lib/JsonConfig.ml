@@ -56,10 +56,11 @@ let contract_list state =
   let (_tx, _ch, _gas_accs, env, config) = state in
   let chantps = config.E.types in
   let f (channel,typ) =
+    let (sub_str, sub_wp) = E.subconfig channel config in
     `Assoc [ ("channel", `String (PP.pp_chan channel))
            ; ("type", `String (pp_tpdef env typ))
-           ; ("code", `String (E.pp_config config))
-           ; ("gas", `String "") ]
+           ; ("code", `String sub_str)
+           ; ("gas", `String sub_wp) ]
   in
   `List (List.map f (C.Map.to_alist chantps))
 

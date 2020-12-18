@@ -179,7 +179,8 @@ type configuration =
   { conf   : map_chan_sem;
     conts  : map_chan_chan;
     shared : map_chan_chan;
-    types  : map_chan_tp
+    types  : map_chan_tp;
+    print_state : string
   } [@@deriving sexp]
 
 type stepped_config =
@@ -291,6 +292,9 @@ let index_chan sem =
 let add_sem sem config =
   let c = index_chan sem in
   { config with conf = M.add_exn config.conf ~key:c ~data:sem };;
+
+let add_print s config =
+  { config with print_state = config.print_state ^ s };;
 
 let add_shared_map (c,c') config =
   { config with shared = M.add_exn config.shared ~key:c ~data:c' };;
@@ -1438,6 +1442,7 @@ let print ch config =
       Proc(func,c,in_use,t,(w,pot),A.Print(l,args,p)) ->
         let pl = get_printable_string l args in
         let () = if !F.verbosity >= 0 then print_string pl in
+        let config = add_print pl config in
         let () = flush_all () in
         let newproc = Proc(func,c,in_use,t+1,(w,pot),p.A.st_structure) in
         let config = add_sem newproc config in
@@ -1551,7 +1556,7 @@ let match_and_one_step env sem config =
 
 let rec pp_sems sems =
   match sems with
-      [] -> "---------------------------------------\n"
+      [] -> ""
     | sem::sems' -> pp_sem sem ^ "\n" ^ pp_sems sems';;
 
 (*
@@ -1562,6 +1567,56 @@ let rec pp_maps maps =
 *)
 
 let pp_config config = pp_sems (get_sems config);;
+
+let rec subconf chlist added config =
+  match chlist with
+      [] -> []
+    | ch::chs ->
+        let s = find_sem ch config in
+        if (List.mem ch added)
+        then subconf chs added config
+        else
+          match s with
+              Proc(_f,_c,in_use,_t,_wp,_p) ->
+                let sub_in = subconf in_use (ch::added) config in
+                let sub_chs = subconf chs (ch::added) config in
+                [s] @ sub_in @ sub_chs
+            | MapFProc(_c,in_use,_t,_wp,_m) ->
+                let sub_in = subconf in_use (ch::added) config in
+                let sub_chs = subconf chs (ch::added) config in
+                [s] @ sub_in @ sub_chs
+            | MapSTProc(_c,in_use,_t,_wp,_m) ->
+                let sub_in = subconf in_use (ch::added) config in
+                let sub_chs = subconf chs (ch::added) config in
+                [s] @ sub_in @ sub_chs
+            | Msg _ ->
+                let sub_chs = subconf chs (ch::added) config in
+                [s] @ sub_chs;;
+
+let add_wp wp1 wp2 =
+  let (w1,p1) = wp1 in
+  let (w2,p2) = wp2 in
+  (w1+w2,p1+p2);;
+
+let wp_sem sem =
+  match sem with
+      Proc(_f,_c,_in_use,_t,wp,_p) -> wp
+    | MapFProc(_c,_in_use,_t,wp,_m) -> wp
+    | MapSTProc(_c,_in_use,_t,wp,_m) -> wp
+    | Msg(_c,_t,wp,_m) -> wp;;
+
+let rec wp_sems sems =
+  match sems with
+      [] -> (0,0)
+    | sem::sems' ->
+        let wp = wp_sem sem in
+        add_wp wp (wp_sems sems');;
+
+let pp_wp (w,p) = "(" ^ string_of_int w ^ "," ^ string_of_int p ^ ")";;
+
+let subconfig ch config =
+  let sems = subconf [ch] [] config in
+  (pp_sems sems, pp_wp (wp_sems sems));;
 
 type config_outcome =
     Fail
@@ -1577,7 +1632,9 @@ let check_existence config sem =
 
 let rec step env config =
   let sems = get_sems config in
-  let _ = if !F.verbosity > 1 then print_string (pp_config config) in
+  let () = if !F.verbosity > 1
+          then print_string ((pp_config config) ^
+                            "---------------------------------------\n") in
   (* check that all in_use linear channels actually exist *)
   let _ = List.map (check_existence config) sems in
   let config = iterate_and_one_step env sems config false in
@@ -1732,6 +1789,7 @@ let empty_blockchain_state =
      conts = M.empty (module Chan);
      shared = M.empty (module Chan);
      types = M.empty (module Chan);
+     print_state = ""
    });;
 
 let rec arg_chans args =
