@@ -269,9 +269,9 @@ let pp_printable x =
 let rec pp_exp env i exp = match exp with
     A.Fwd(x,y) -> pp_chan x ^ " <- " ^ pp_chan y
   | A.Spawn(x,f,xs,q) -> (* exp = x <- f <- xs ; q *)
-      pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames env xs ^ " ;\n"
+      pp_chan x ^ " <- " ^ f ^ " " ^ pp_argnames env xs ^ " ;\n"
       ^ pp_exp_indent env i q
-  | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " <- " ^ pp_argnames env xs
+  | A.ExpName(x,f,xs) -> pp_chan x ^ " <- " ^ f ^ " " ^ pp_argnames env xs
   | A.Lab(x,k,p) -> pp_chan x ^ "." ^ k ^ " ;\n" ^ pp_exp_indent env i p
   | A.Case(x,bs) -> "case " ^ pp_chan x ^ " ( " ^ pp_branches env (i+8+len (pp_chan x)) bs ^ " )"
   | A.Send(x,w,p) -> "send " ^ pp_chan x ^ " " ^ pp_chan w ^ " ;\n" ^ pp_exp_indent env i p
@@ -283,7 +283,7 @@ let rec pp_exp env i exp = match exp with
       "work " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
   | A.Deposit(pot, p) ->
       let potstr = pp_potpos pot in
-      "deposit " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
+      "Nomos.deposit " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
   | A.Pay(x,pot,p) ->
       let potstr = pp_potpos pot in
       "pay " ^ pp_chan x ^ " " ^ potstr ^ ";\n" ^ pp_exp_indent env i p
