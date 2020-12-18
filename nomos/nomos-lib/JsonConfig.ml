@@ -56,7 +56,7 @@ let contract_list state =
   let (_tx, _ch, _gas_accs, env, config) = state in
   let chantps = config.E.types in
   let f (channel,typ) =
-    let (sub_str, sub_wp) = ("process code dummy", "gas dummy") (* TODO: E.subconfig channel config *) in
+    let (sub_str, sub_wp) = E.subconfig channel config in
     `Assoc [ ("channel", `String (PP.pp_chan channel))
            ; ("type", `String (pp_tpdef env typ))
            ; ("code", `String sub_str)
