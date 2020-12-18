@@ -5,7 +5,15 @@ This is the AWS Lambda deployment package for Nomos
 
    - bin/nomosjson should be the updated Nomos Json binary:
 
-     cp ~/repositories/nomos/_build/default/nomos-bin/nomosjson.exe bin/nomosjson
+     To update the packages, go to repositories/nomos
+     And do
+       cd nomos
+       git pull
+       make
+
+     Go to lambda-packages/nomos-package
+
+     cp ~/repositories/nomos/nomos/_build/default/nomos-bin/nomosjson.exe bin/nomosjson
 
    - nomos.py should be the latest AWS lambda function from the raml-website git repository:
 
