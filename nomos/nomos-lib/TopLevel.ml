@@ -116,7 +116,7 @@ let infer state (RawTransaction decls) =
   let () = if !F.verbosity >= 0 then print_string ("TC time: " ^ string_of_float (1000. *. (t1 -. t0)) ^ "\n") in
   let () = if !F.verbosity >= 0 then print_string ("Inference time: " ^ string_of_float (1000. *. (t2 -. t1)) ^ "\n") in
   let () = if !F.verbosity >= 0 then I.print_stats () in
-  Transaction (config_env @ inferred_decls)
+  Transaction inferred_decls;;
 
 (**********************)
 (* Executing Programs *)
