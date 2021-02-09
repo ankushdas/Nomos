@@ -1,5 +1,5 @@
-type sfork = /\ <{*}| p+{ acquired{0.2} : \/ sfork,
-                          available{0.8} : \/ sfork}
+type sfork = /\ <{*}| p+{ acquired{0.6} : \/ sfork,
+                          available{0.4} : \/ sfork}
 
 proc transaction thinking : (#l : sfork), (#r : sfork) |{*}- ($p : 1) =
 {
@@ -63,7 +63,7 @@ proc contract fork_proc : . |{*}- (#f : sfork) =
 {
   $lf <- accept #f ;
   get $lf {*} ;
-  flip {0.2} (
+  flip {0.6} (
     HH => $lf..acquired ;
           #f <- detach $lf ;
           #f <- fork_proc <-
@@ -73,13 +73,53 @@ proc contract fork_proc : . |{*}- (#f : sfork) =
   )
 }
 
-proc transaction main : . |{*}- ($d : 1) =
+type forklist = +{cons : |{*}> sfork * sfork * forklist, nil : 1}
+
+type phillist = +{cons : 1 * phillist, nil : 1}
+
+type unitlist = +{cons : |{*}> unitlist, nil : 1}
+
+proc transaction fnil : . |{*}- ($fl : forklist) =
 {
-  #f1 <- fork_proc <- ;
-  #f2 <- fork_proc <- ;
-  #f3 <- fork_proc <- ;
-  #f4 <- fork_proc <- ;
-  #f5 <- fork_proc <- ;
+  $fl.nil ;
+  close $fl
+}
+
+proc transaction create_forks : ($l : unitlist) |{*}- ($fl : forklist) =
+{
+  case $l (
+    cons => get $l {*} ;
+            #f <- fork_proc <- ;
+            $fl.cons ;
+            pay $fl {*} ;
+            send $fl #f ;
+            send $fl #f ;
+            $fl <- create_forks <- $l
+  | nil => $fl.nil ;
+           wait $l ;
+           close $fl
+  )
+}
+
+proc transaction create_phils : ($fl : forklist) |{*}- ($pl : phillist) =
+{
+  case $fl (
+    cons => get $fl {*} ;
+            #f1 <- recv $fl ;
+            #f2 <- recv $fl ;
+            $pl.cons ;
+            $p <- thinking <- #f1 #f2 ;
+            send $pl $p ;
+            $pl <- create_phils <- $fl
+  | nil => $pl.nil ;
+           wait $fl ;
+           close $pl
+  )
+}
+(*
+proc transaction main : ($l : unitlist) |{*}- ($d : 1) =
+{
+  $fl <- create_forks <- $l ;
   $p1 <- thinking <- #f5 #f1 ;
   $p2 <- thinking <- #f1 #f2 ;
   $p3 <- thinking <- #f2 #f3 ;
@@ -92,3 +132,4 @@ proc transaction main : . |{*}- ($d : 1) =
   wait $p5 ;
   close $d
 }
+*)
