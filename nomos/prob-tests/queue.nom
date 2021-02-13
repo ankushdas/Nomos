@@ -1,0 +1,86 @@
+type A = 1
+
+type listA1 = +{cons : |{*}> A * listA1, nil : 1}
+type listA = +{cons : A * listA, nil : 1}
+
+type queue = p&{ins{0.5} : <{*}| A -o queue,
+                del{0.5} : +{none : 1,
+                             some : A * queue}}
+
+proc asset cons : ($x : A), ($t : listA) |{*}- ($l : listA) =
+{
+  $l.cons ;
+  send $l $x ;
+  $l <- $t
+}
+
+proc asset cons1 : ($x : A), ($t : listA1) |{*}- ($l : listA1) =
+{
+  $l.cons ;
+  pay $l {*} ;
+  send $l $x ;
+  $l <- $t
+}
+
+proc asset nil1 : . |{*}- ($l : listA1) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc asset nil : . |{*}- ($l : listA) =
+{
+  $l.nil ;
+  close $l
+}
+
+proc asset revh : ($inp : listA1), ($h : listA) |- ($out : listA) =
+{
+  case $inp (
+    cons => get $inp {*} ;
+            $x <- recv $inp ;
+            $hh <- cons <- $x $h ;
+            work {1.} ;
+            $out <- revh <- $inp $hh
+  | nil => wait $inp ;
+           $out <- $h
+  )
+}
+
+proc asset rev : ($inp : listA1) |{*}- ($out : listA) =
+{
+  $h <- nil <- ;
+  $out <- revh <- $inp $h
+}
+
+proc asset listA2queue : ($inp : listA1), ($out : listA) |{*}- ($q : queue) =
+{
+  pcase $q (
+    ins => get $q {*} ;
+           $x <- recv $q ;
+           $inpp <- cons1 <- $x $inp ;
+           $q <- listA2queue <- $inpp $out
+  | del =>
+      case $out (
+        cons => $x <- recv $out ;
+                $q.some ;
+                send $q $x ;
+                work {*} ;
+                $q <- listA2queue <- $inp $out
+      | nil => wait $out ;
+               $outt <- rev <- $inp ;
+               case $outt (
+                 cons => $x <- recv $outt ;
+                         $q.some ;
+                         send $q $x ;
+                         $inp <- nil1 <- ;
+                         work {*} ;
+                         $q <- listA2queue <- $inp $outt
+               | nil => $q.none ;
+                        wait $outt ;
+                        work {*} ;
+                        close $q
+               )
+      )
+  )
+}

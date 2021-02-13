@@ -77,7 +77,7 @@ type forklist = +{cons : |{*}> sfork * sfork * forklist, nil : 1}
 
 type phillist = +{cons : 1 * phillist, nil : 1}
 
-type unitlist = +{cons : |{*}> unitlist, nil : 1}
+type potlist = +{cons : |{*}> potlist, nil : 1}
 
 proc transaction fnil : . |{*}- ($fl : forklist) =
 {
@@ -85,7 +85,7 @@ proc transaction fnil : . |{*}- ($fl : forklist) =
   close $fl
 }
 
-proc transaction create_forks : ($l : unitlist) |{*}- ($fl : forklist) =
+proc transaction create_forks_helper : ($l : potlist), (#prev : sfork) |{*}- ($fl : forklist) =
 {
   case $l (
     cons => get $l {*} ;
@@ -93,12 +93,18 @@ proc transaction create_forks : ($l : unitlist) |{*}- ($fl : forklist) =
             $fl.cons ;
             pay $fl {*} ;
             send $fl #f ;
-            send $fl #f ;
-            $fl <- create_forks <- $l
+            send $fl #prev ;
+            $fl <- create_forks_helper <- $l #f
   | nil => $fl.nil ;
            wait $l ;
            close $fl
   )
+}
+
+proc transaction create_forks : ($l : potlist) |{*}- ($fl : forklist) =
+{
+  #f <- fork_proc <- ;
+  $fl <- create_forks_helper <- $l #f
 }
 
 proc transaction create_phils : ($fl : forklist) |{*}- ($pl : phillist) =
@@ -116,20 +122,3 @@ proc transaction create_phils : ($fl : forklist) |{*}- ($pl : phillist) =
            close $pl
   )
 }
-(*
-proc transaction main : ($l : unitlist) |{*}- ($d : 1) =
-{
-  $fl <- create_forks <- $l ;
-  $p1 <- thinking <- #f5 #f1 ;
-  $p2 <- thinking <- #f1 #f2 ;
-  $p3 <- thinking <- #f2 #f3 ;
-  $p4 <- thinking <- #f3 #f4 ;
-  $p5 <- thinking <- #f4 #f5 ;
-  wait $p1 ;
-  wait $p2 ;
-  wait $p3 ;
-  wait $p4 ;
-  wait $p5 ;
-  close $d
-}
-*)
