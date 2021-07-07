@@ -53,7 +53,7 @@ proc contract done_communicator : (sid : int), (rid : int) |- (#dc : comm) =
   )
 }
 
-proc asset create_msg : (m : int) |- ($msg : msg) =
+proc asset create_msg : (m : int) |{*}- ($msg : msg) =
 {
   flip {0.5} (
     HH => $msg..pick ;
@@ -64,7 +64,7 @@ proc asset create_msg : (m : int) |- ($msg : msg) =
   )
 }
 
-proc transaction dealer_init : (id : int), (m : int) |- ($d : recv_comms) =
+proc transaction dealer_init : (id : int), (m : int) |{*}- ($d : recv_comms) =
 {
   print ("created dealer with id %d and number %d\n", id, m);
   $comms <- nil <- ;
@@ -74,7 +74,7 @@ proc transaction dealer_init : (id : int), (m : int) |- ($d : recv_comms) =
 type recv_comms = &{next : comm -o recv_comms,
                     done : 1}
 
-proc transaction dealer_recv : (id : int), (m : int), ($comms : list_comms) |- ($d : recv_comms) =
+proc transaction dealer_recv : (id : int), (m : int), ($comms : list_comms) |{*}- ($d : recv_comms) =
 {
   case $d (
     next => #c <- recv $d ;
@@ -84,7 +84,7 @@ proc transaction dealer_recv : (id : int), (m : int), ($comms : list_comms) |- (
   )
 }
 
-proc transaction dealer : (id : int), (m : int), ($dcs : list_comms) |- ($d : 1) =
+proc transaction dealer : (id : int), (m : int), ($dcs : list_comms) |{*}- ($d : 1) =
 {
   case $dcs (
     cons => #dc <- recv $dcs ;
@@ -100,7 +100,7 @@ proc transaction dealer : (id : int), (m : int), ($dcs : list_comms) |- ($d : 1)
   )
 }
 
-proc transaction cons : ($tl : list_comms), (#d : comm) |- ($l : list_comms) =
+proc transaction cons : ($tl : list_comms), (#d : comm) |{*}- ($l : list_comms) =
 {
   $l.cons ;
   send $l #d ;
@@ -120,7 +120,7 @@ type recv_party_comms = &{nextsend : comm -o recv_party_comms,
                           getid : int ^ recv_party_comms,
                           done : int ^ 1}
 
-proc transaction party_init : (id : int), (T : int) |- ($p : recv_dealer_comm) =
+proc transaction party_init : (id : int), (T : int) |{*}- ($p : recv_dealer_comm) =
 {
   print ("created party with id %d\n", id);
   #c <- recv $p ;
@@ -138,7 +138,7 @@ proc asset parse : ($m : msg) |- ($n : int ^ 1) =
   )
 }
 
-proc transaction party_recv_from_dealer : (id : int), (T : int), (#dc : comm) |- ($p : recv_party_comms) =
+proc transaction party_recv_from_dealer : (id : int), (T : int), (#dc : comm) |{*}- ($p : recv_party_comms) =
 {
   $ldc <- acquire #dc ;
   $ldc.RECV ;
@@ -166,7 +166,7 @@ proc transaction throw : ($l : list_comms) |- ($c : 1) =
 }
 
 proc transaction party_recv_comms : (id : int), (T : int), (m : int),
-  (#dc : comm), ($send_comms : list_comms), ($recv_comms : list_comms) |- ($p : recv_party_comms) =
+  (#dc : comm), ($send_comms : list_comms), ($recv_comms : list_comms) |{*}- ($p : recv_party_comms) =
 {
   case $p (
     nextsend => #sc <- recv $p ;
@@ -186,7 +186,7 @@ proc transaction party_recv_comms : (id : int), (T : int), (m : int),
 }
 
 proc transaction party_send_echos : (id : int), (T : int), (m : int), (#dc : comm),
-  ($unsent_comms : list_comms), ($sent_comms : list_comms), ($recv_comms : list_comms) |- ($p : int ^ 1) =
+  ($unsent_comms : list_comms), ($sent_comms : list_comms), ($recv_comms : list_comms) |{*}- ($p : int ^ 1) =
 {
   case $unsent_comms (
     cons => #sd <- recv $unsent_comms ;
@@ -207,7 +207,7 @@ proc transaction party_send_echos : (id : int), (T : int), (m : int), (#dc : com
 
 proc transaction party_recv_echos : (id : int), (T : int), (m : int), (num_echos : int),
   (#dc : comm), ($send_comms : list_comms), ($received_comms : list_comms),
-  ($unchecked_comms : list_comms), ($checked_comms : list_comms) |- ($p : int ^ 1) =
+  ($unchecked_comms : list_comms), ($checked_comms : list_comms) |{*}- ($p : int ^ 1) =
 {
   case $unchecked_comms (
     cons => #sd <- recv $unchecked_comms ;
@@ -253,7 +253,7 @@ type list_parties = +{cons : recv_party_comms * list_parties,
                       nil : 1}
 
 proc transaction create_parties : (N : int), (T : int),
-  (dealer_id : int), ($d : recv_comms) |- ($ps : list_parties) =
+  (dealer_id : int), ($d : recv_comms) |{*}- ($ps : list_parties) =
 {
   if N = 0
   then
@@ -276,20 +276,20 @@ proc transaction create_parties : (N : int), (T : int),
     $ps <- $ps_tl
 }
 
-proc transaction pcons : ($tl : list_parties), ($p : recv_party_comms) |- ($l : list_parties) =
+proc transaction pcons : ($tl : list_parties), ($p : recv_party_comms) |{*}- ($l : list_parties) =
 {
   $l.cons ;
   send $l $p ;
   $l <- $tl
 }
 
-proc transaction pnil : . |- ($l : list_parties) =
+proc transaction pnil : . |{*}- ($l : list_parties) =
 {
   $l.nil ;
   close $l
 }
 
-proc transaction pappend : ($l1 : list_parties), ($l2 : list_parties) |- ($l : list_parties) =
+proc transaction pappend : ($l1 : list_parties), ($l2 : list_parties) |{*}- ($l : list_parties) =
 {
   case $l1 (
     cons => $p <- recv $l1 ;
@@ -301,7 +301,7 @@ proc transaction pappend : ($l1 : list_parties), ($l2 : list_parties) |- ($l : l
   )
 }
 
-proc transaction get_party : ($ps : list_parties), (I : int), ($tl : list_parties) |- ($ips : recv_party_comms * list_parties) =
+proc transaction get_party : ($ps : list_parties), (I : int), ($tl : list_parties) |{*}- ($ips : recv_party_comms * list_parties) =
 {
   case $ps (
     cons => $p <- recv $ps ;
@@ -319,7 +319,7 @@ proc transaction get_party : ($ps : list_parties), (I : int), ($tl : list_partie
   )
 }
 
-proc transaction create_p2p_communicator : (I : int), (J : int), ($ps : list_parties) |- ($pso : list_parties) =
+proc transaction create_p2p_communicator : (I : int), (J : int), ($ps : list_parties) |{*}- ($pso : list_parties) =
 {
   #pcp <- empty_communicator <- I J ;
   print ("created %d-%d comm: %c\n", I, J, #pcp);
@@ -340,7 +340,7 @@ proc transaction create_p2p_communicator : (I : int), (J : int), ($ps : list_par
   $pso <- $bothijps
 }
 
-proc transaction create_all_communicators : (I : int), (J : int), (N : int), ($ps_in : list_parties) |- ($ps_out : list_parties) =
+proc transaction create_all_communicators : (I : int), (J : int), (N : int), ($ps_in : list_parties) |{*}- ($ps_out : list_parties) =
 {
   if I = N+1
   then
@@ -363,7 +363,7 @@ proc transaction create_all_communicators : (I : int), (J : int), (N : int), ($p
         $ps_out <- create_all_communicators <- In Jn N $ps
 }
 
-proc transaction send_done_msgs : ($ps : list_parties) |- ($d : 1) =
+proc transaction send_done_msgs : ($ps : list_parties) |{*}- ($d : 1) =
 {
   case $ps (
     cons => $p <- recv $ps ;
@@ -378,7 +378,7 @@ proc transaction send_done_msgs : ($ps : list_parties) |- ($d : 1) =
   )
 }
 
-proc transaction main : . |- ($mn : 1) =
+proc transaction main : . |{*}- ($mn : 1) =
 {
   let N = 5 ;
   let T = 4 ;

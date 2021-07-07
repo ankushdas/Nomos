@@ -2,13 +2,13 @@ type coin = p+{H{0.5} : 1, T{0.5} : 1}
 
 proc asset biased_to_fair : . |{*}- ($p : coin) =
 {
-  flip {0.6} (
-    HH => flip {0.6} (
+  flip {0.4} (
+    HH => flip {0.4} (
       HH => $p <- biased_to_fair <-
     | TT => $p..H ;
             close $p
     )
-  | TT => flip {0.6} (
+  | TT => flip {0.4} (
       HH => $p..T ;
             close $p
     | TT => $p <- biased_to_fair <-

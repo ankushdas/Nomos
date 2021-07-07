@@ -1,4 +1,4 @@
-type limit = p+{A{*} : 1, M{*} : 1, N{*} : 1}
+type limit = p+{A{0.4} : 1, M{0.2} : 1, N{0.4} : 1}
 
 proc asset transition : ($IN : limit) |{*}- ($OUT : limit) =
 {
