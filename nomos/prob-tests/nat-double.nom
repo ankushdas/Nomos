@@ -1,0 +1,28 @@
+type pnat = p+{succ{0.8} : pnat, zero{0.2} : 1}
+
+proc asset nat1 : . |{*}- ($x : pnat) =
+{
+  flip {0.8} (
+    HH => $x..succ ;
+          $x <- nat1 <-
+  | TT => $x..zero ;
+          close $x
+  )
+}
+
+type pnat3 = p+{succ{0.8} : |{*}> pnat3, zero{0.2} : 1}
+type pnat4 = p+{succ{0.8} : pnat5, zero{0.2} : 1}
+type pnat5 = p+{succ{1.} : pnat4, zero{0.} : 1}
+
+proc asset double : ($x1 : pnat3) |{*}- ($x : pnat4) =
+{
+  pcase $x1 (
+    succ => get $x1 {*} ;
+            $x..succ ;
+            $x..succ ;
+            $x <- double <- $x1
+  | zero => wait $x1 ;
+            $x..zero ;
+            close $x
+  )
+}
