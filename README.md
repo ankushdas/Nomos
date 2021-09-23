@@ -57,7 +57,7 @@ $ make
 ```
 
 ### Troubleshooting
-1. Sometimes, your `$ make` command may fail with the error "dune: command not found". In this case, try restarting your terminal and running `$ make` again.
+1. Sometimes, your `$ make` command may fail with the error "dune: command not found". In this case, try restarting your terminal and running `$ make` again. Or you may need to run `$ eval $(opam config env)` in your terminal unless this command is already in your `.bashrc`.
 
 2. Sometimes, the core library of ocaml is not correctly installed (generally, if you already have an old installation of core). In these cases, simply run `$ opam install core` and try running `$ make` again.
 
