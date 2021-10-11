@@ -1,6 +1,6 @@
 import auctionDemoT1 from "assets/nomos/auction-contract-demo-t1.nom"
 import auctionDemoT2 from "assets/nomos/auction-bid-demo-t2.nom"
-import auctionDemoT3 from "assets/nomos/auction-collet-demo-t3.nom"
+import auctionDemoT3 from "assets/nomos/auction-collect-demo-t3.nom"
 
 import storageT1 from "assets/nomos/storage-contract-t1.nom"
 import storageT2 from "assets/nomos/get-storage-t2.nom"
