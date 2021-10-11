@@ -1,0 +1,18 @@
+proc transaction bid : (#a : auction) |{*}- ($d : 1) =
+{
+  let n = 100 ;
+  $m <- money_proc n ;
+  $la <- acquire #a ;
+  pay $la {*} ;
+  case $la (
+    running => send $la $m ;
+               get $la {*} ;
+               #a <- release $la ;
+               Nomos.deposit {*} ;
+               close $d
+  | ended => abort
+  | terminated => abort
+  )
+}
+
+exec bid_jan #ch3

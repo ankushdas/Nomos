@@ -1,3 +1,7 @@
+import auctionDemoT1 from "assets/nomos/auction-contract-demo-t1.nom"
+import auctionDemoT2 from "assets/nomos/auction-bid-demo-t2.nom"
+import auctionDemoT3 from "assets/nomos/auction-collet-demo-t3.nom"
+
 import storageT1 from "assets/nomos/storage-contract-t1.nom"
 import storageT2 from "assets/nomos/get-storage-t2.nom"
 import storageT3 from "assets/nomos/set-storage-t3.nom"
@@ -16,6 +20,9 @@ import auctionT5 from "assets/nomos/auction-collect-t4.nom"
 import auctionT6 from "assets/nomos/auction-terminate-t5.nom"
 
 const nomosFiles = [
+  { name: "Auction Demo: Txn 1", file: auctionDemoT1},
+  { name: "Auction Demo: Txn 2", file: auctionDemoT2},
+  { name: "Auction Demo: Txn 3", file: auctionDemoT3},
   { name: "Storage: Txn 1", file: storageT1},
   { name: "Storage: Txn 2", file: storageT2},
   { name: "Storage: Txn 3", file: storageT3},

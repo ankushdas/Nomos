@@ -1,0 +1,184 @@
+type money =  <{*}| &{value : int ^ |{*}> money,
+                      destroy : |{*}> 1}
+
+type auction = /\ <{*}| +{running : money -o |{*}> \/ auction,
+                          ended : &{collect : +{won : lot * |{*}> \/ auction,
+                                                lost : money * |{*}> \/ auction},
+                                    terminate : +{owner : money * |{*}> \/ auction,
+                                                  notowner : |{*}> \/ auction}},
+                          terminated : |{*}> \/ auction}
+
+type lot = 1
+
+proc asset lot_proc : . |{*}- ($l : lot) =
+{
+  close $l
+}
+
+type bid_map = Map<address, money>
+
+proc contract running_auction :
+  (winner : address), (max_bid : int),
+  (owner : address), ($bm : bid_map), ($l : lot) |{*}- (#a : auction) =
+{
+  $la <- accept #a ;
+  get $la {*} ;
+  $la.running ;
+  $m <- recv $la ;
+  pay $m {*} ;
+  $m.value ;
+  mv = recv $m ;
+  get $m {*} ;
+  pay $la {*} ;
+  #a <- detach $la ;
+  let addr = Nomos.GetTxnSender() ;
+  $bm.insert(addr, $m) ;
+  print ("Bid of %d from %a accepted!\n", mv, addr) ;
+  if mv > max_bid
+  then
+    #a <- run_or_end addr mv owner $bm $l
+  else
+    #a <- run_or_end winner max_bid owner $bm $l
+}
+
+proc contract run_or_end :
+  (winner : address), (max_bid : int),
+  (owner : address), ($bm : bid_map), ($l : lot) |{*}- (#a : auction) =
+{
+  if $bm.size < 1
+  then
+    #a <- running_auction winner max_bid owner $bm $l
+  else
+    print ("Bidder threshold reached, moving to ended phase\n") ;
+    #a <- ended_auction winner max_bid owner $bm $l
+}
+
+proc contract ended_auction :
+  (winner : address), (max_bid : int),
+  (owner : address), ($bm : bid_map), ($l : lot) |{*}- (#a : auction) =
+{
+  $la <- accept #a ;
+  get $la {*} ;
+  $la.ended ;
+  case $la (
+     collect => let addr = Nomos.GetTxnSender() ;
+                if winner == addr
+                then
+                  $la.won ;
+                  send $la $l ;
+                  print ("%a won the auction, lot transferred!\n", addr) ;
+                  pay $la {*} ;
+                  #a <- detach $la ;
+                  if $bm.size = 1
+                  then
+                    print ("All bids returned, moving to closing phase\n") ;
+                    #a <- closing_auction winner owner $bm max_bid
+                  else
+                    $l <- lot_proc ;
+                    #a <- ended_auction winner max_bid owner $bm $l
+                else
+                  $la.lost ;
+                  $m <- $bm.delete(addr) ;
+                  pay $m {*} ;
+                  $m.value ;
+                  mv = recv $m ;
+                  get $m {*} ;
+                  send $la $m ;
+                  print ("%a lost the auction, bid of %d returned!\n", addr, mv) ;
+                  pay $la {*} ;
+                  #a <- detach $la ;
+                  if $bm.size = 1
+                  then
+                    print ("All bids returned, moving to closing phase\n") ;
+                    wait $l ;
+                    #a <- closing_auction winner owner $bm max_bid
+                  else
+                    Nomos.deposit {*} ;
+                    #a <- ended_auction winner max_bid owner $bm $l
+    | terminate => print ("Request to terminate while bids not returned, aborting txn!\n") ;
+                   abort
+  )
+}
+
+proc contract closing_auction :
+  (winner : address), (owner : address),
+  ($bm : bid_map), (max_bid : int) |{*}- (#a : auction) =
+{
+  $la <- accept #a ;
+  get $la {*} ;
+  $la.ended ;
+  case $la (
+    collect => print ("Request to collect after auction is closed, aborting txn!\n") ;
+               abort
+  | terminate => let addr = Nomos.GetTxnSender() ;
+                 if addr == owner
+                 then
+                    $la.owner ;
+                    $m <- $bm.delete(winner) ;
+                    send $la $m ;
+                    print ("Transferred highest bid of %d to owner %a\n", max_bid, addr) ;
+                    pay $la {*} ;
+                    #a <- detach $la ;
+                    $bm.close ;
+                    case $bm (
+                      empty => wait $bm ;
+                               print ("Map closed, moving to terminated phase\n") ;
+                               #a <- terminated_auction owner
+                    | nonempty => abort
+                    )
+                 else
+                    $la.notowner ;
+                    pay $la {*} ;
+                    print ("Non-owner %a requested terminating the auction, failed!\n", addr) ;
+                    abort
+  )
+}
+
+proc contract terminated_auction :
+  (owner : address) |{*}- (#a : auction) =
+{
+  $la <- accept #a ;
+  print ("Auction terminated, cannot place bids or collect wins!\n") ;
+  get $la {*} ;
+  $la.terminated ;
+  pay $la {*} ;
+  #a <- detach $la ;
+  #a <- terminated_auction owner
+}
+
+type dummy = /\ \/ dummy
+
+proc contract dummy_proc : . |{*}- (#d : dummy) =
+{
+  $ld <- accept #d ;
+  #d <- detach $ld ;
+  #d <- dummy_proc
+}
+
+proc transaction init_auction : . |{*}- ($d : 1) =
+{
+  let owner = Nomos.GetTxnSender() ;
+  let max_bid = 0 ;
+  $bm <- new Map<address, money> ;
+  $l <- lot_proc ;
+  print ("Lot created!\n") ;
+  #sa <- running_auction owner max_bid owner $bm $l ;
+  print ("Auction hosted on channel %c!\n", #sa) ;
+  #dum <- dummy_proc ;
+  print ("Dummy contract created on channel %c!\n", #dum) ;
+  close $d
+}
+
+proc asset money_proc : (n : int) |- ($m : money) =
+{
+  get $m {*} ;
+  case $m (
+    value => send $m n ;
+             pay $m {*} ;
+             $m <- money_proc n
+  | destroy => pay $m {*} ;
+               close $m
+  )
+}
+
+exec init_auction

@@ -1,0 +1,29 @@
+proc transaction collect : (#a : auction) |{*}- ($d : 1) =
+{
+  $la <- acquire #a ;
+  pay $la {*} ;
+  case $la (
+    running => abort
+  | ended => $la.collect ;
+             case $la (
+               won => $l <- recv $la ;
+                      get $la {*} ;
+                      #a <- release $la ;
+                      wait $l ;
+                      Nomos.deposit {*} ;
+                      close $d
+            | lost => $m <- recv $la ;
+                      get $la {*} ;
+                      #a <- release $la ;
+                      pay $m {*} ;
+                      $m.destroy ;
+                      get $m {*} ;
+                      wait $m ;
+                      Nomos.deposit {*} ;
+                      close $d
+            )
+  | terminated => abort
+  )
+}
+
+exec collect_jan #ch3
