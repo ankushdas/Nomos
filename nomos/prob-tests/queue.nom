@@ -3,8 +3,8 @@ type A = 1
 type listA1 = +{cons : |{*}> A * listA1, nil : 1}
 type listA = +{cons : A * listA, nil : 1}
 
-type queue = p&{ins{0.1} : <{*}| A -o queue,
-                del{0.9} : +{none : 1,
+type queue = p&{ins{0.3} : <{*}| A -o queue,
+                del{0.7} : +{none : 1,
                              some : A * queue}}
 
 proc asset cons : ($x : A), ($t : listA) |{*}- ($l : listA) =
@@ -39,6 +39,7 @@ proc asset revh : ($inp : listA1), ($h : listA) |- ($out : listA) =
   case $inp (
     cons => get $inp {*} ;
             $x <- recv $inp ;
+            work {1.} ;
             $hh <- cons <- $x $h ;
             $out <- revh <- $inp $hh
   | nil => wait $inp ;
@@ -57,9 +58,11 @@ proc asset listA2queue : ($inp : listA1), ($out : listA) |{*}- ($q : queue) =
   pcase $q (
     ins => get $q {*} ;
            $x <- recv $q ;
+           work {1.} ;
            $inpp <- cons1 <- $x $inp ;
            $q <- listA2queue <- $inpp $out
   | del =>
+      work {1.} ;
       case $out (
         cons => $x <- recv $out ;
                 $q.some ;
@@ -95,7 +98,7 @@ proc asset requests : ($q : queue), ($r : reqlist) |{*}- ($d : +{x : reqlist, y 
 {
   case $r (
     cons => get $r {*} ;
-            flip {0.1} (
+            flip {0.3} (
               HH => $q..ins ;
                     pay $q {*} ;
                     $c <- cl <- ;

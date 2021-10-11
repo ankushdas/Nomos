@@ -1,30 +1,100 @@
-type scoin = /\ p+{head{0.5} : \/ scoin,
-                   tail{0.5} : \/ scoin}
+type coin = p+{heads{0.5} : 1, tails{0.5} : 1}
 
-proc transaction cryptographer : (#l : scoin), (#my : scoin) |{*}- ($c : +{agree : 1, disagree : 1}) =
+type outcome = p+{agree{0.5} : 1, disagree{0.5} : 1}
+
+proc asset crypto12 : ($c1 : coin), ($c2 : coin), ($c3 : coin) |{*}- ($d12 : outcome) =
 {
-  $ll <- acquire #l ;
-  $lm <- acquire #my ;
-  pcase $ll (
-    head => pcase $lm (
-      head => $c.agree ;
-              #l <- release $ll ;
-              #my <- release $lm ;
-              close $c
-    | tail => $c.disagree ;
-              #l <- release $ll ;
-              #my <- release $lm ;
-              close $c
+  pcase $c1 (
+    heads =>
+      pcase $c2 (
+        heads =>
+          pcase $c3 (
+            heads => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+      | tails =>
+          pcase $c3 (
+            heads => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
     )
-  | tail => pcase $lm (
-      head => $c.disagree ;
-              #l <- release $ll ;
-              #my <- release $lm ;
-              close $c
-    | tail => $c.agree ;
-              #l <- release $ll ;
-              #my <- release $lm ;
-              close $c
+  | tails =>
+      pcase $c2 (
+        heads =>
+          pcase $c3 (
+            heads => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+      | tails =>
+          pcase $c3 (
+            heads => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
     )
   )
 }
+
+proc asset crypto23 : ($c1 : coin), ($c2 : coin), ($c3 : coin) |{*}- ($d12 : outcome) =
+{
+  pcase $c1 (
+    heads =>
+      pcase $c2 (
+        heads =>
+          pcase $c3 (
+            heads => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+      | tails =>
+          pcase $c3 (
+            heads => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+    )
+  | tails =>
+      pcase $c2 (
+        heads =>
+          pcase $c3 (
+            heads => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+      | tails =>
+          pcase $c3 (
+            heads => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+    )
+  )
+}
+
+proc asset crypto31 : ($c1 : coin), ($c2 : coin), ($c3 : coin) |{*}- ($d12 : outcome) =
+{
+  pcase $c1 (
+    heads =>
+      pcase $c2 (
+        heads =>
+          pcase $c3 (
+            heads => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+      | tails =>
+          pcase $c3 (
+            heads => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+    )
+  | tails =>
+      pcase $c2 (
+        heads =>
+          pcase $c3 (
+            heads => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..disagree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+      | tails =>
+          pcase $c3 (
+            heads => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          | tails => $d12..agree ; wait $c1 ; wait $c2 ; wait $c3 ; close $d12
+          )
+    )
+  )
+}
+
