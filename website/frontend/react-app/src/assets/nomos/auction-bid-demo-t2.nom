@@ -15,4 +15,4 @@ proc transaction bid : (#a : auction) |{*}- ($d : 1) =
   )
 }
 
-exec bid_jan #ch3
+exec bid #ch3

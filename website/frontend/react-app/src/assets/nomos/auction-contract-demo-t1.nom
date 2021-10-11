@@ -146,15 +146,6 @@ proc contract terminated_auction :
   #a <- terminated_auction owner
 }
 
-type dummy = /\ \/ dummy
-
-proc contract dummy_proc : . |{*}- (#d : dummy) =
-{
-  $ld <- accept #d ;
-  #d <- detach $ld ;
-  #d <- dummy_proc
-}
-
 proc transaction init_auction : . |{*}- ($d : 1) =
 {
   let owner = Nomos.GetTxnSender() ;
@@ -164,8 +155,6 @@ proc transaction init_auction : . |{*}- ($d : 1) =
   print ("Lot created!\n") ;
   #sa <- running_auction owner max_bid owner $bm $l ;
   print ("Auction hosted on channel %c!\n", #sa) ;
-  #dum <- dummy_proc ;
-  print ("Dummy contract created on channel %c!\n", #dum) ;
   close $d
 }
 

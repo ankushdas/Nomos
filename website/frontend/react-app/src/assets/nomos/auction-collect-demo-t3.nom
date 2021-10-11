@@ -26,4 +26,4 @@ proc transaction collect : (#a : auction) |{*}- ($d : 1) =
   )
 }
 
-exec collect_jan #ch3
+exec collect #ch3
