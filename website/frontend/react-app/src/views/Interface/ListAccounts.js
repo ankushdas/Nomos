@@ -30,7 +30,7 @@ const ListAccounts = props =>
 	    <p className="category">Existing Accounts in the Current State</p>
 	 </CardHeader>
 	 <CardBody>
-	    <div  style={{height:"5rem",overflowY:"auto"}}>
+	    <div  style={{height:"10rem",overflowY:"auto"}}>
 	       <Table className="tablesorter" responsive>
 		  <thead className="text-primary">
 		     <tr>
