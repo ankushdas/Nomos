@@ -10,13 +10,13 @@ This repository contains an implementation of Nomos, a programming language for 
 The instructions for installing opam are available on the [opam installation page](https://opam.ocaml.org/doc/Install.html). Please install the latest version of opam.
 
 ##### Configuring Opam
-To configure opam for the first time and install the latest version of OCaml, please run the following (skip if you have already configured opam)
+To configure opam for the first time and install a specific version of OCaml, please run the following (skip if you have already configured opam)
 ```
 $ opam init
 ```
 
 ### OCaml Version
-Please make sure you have ocaml version `4.10.0` or higher. To install this version, simply run the following command.
+Please make sure you have ocaml version `4.10.0`. To install this version, simply run the following command.
 ```
 $ opam switch create 4.10.0
 ```
@@ -30,17 +30,18 @@ $ cd Nomos/nomos
 The next step is installing the [Coin-Or LP solver](https://projects.coin-or.org/Clp). Use the instructions below.
 ```
 $ cd clp
-$ svn co https://projects.coin-or.org/svn/Clp/stable/1.16 coin-Clp
-$ cd coin-Clp
-$ ./configure -C
-$ make
-$ make test
-$ make install
-$ cd ../..
+$ wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
+$ chmod u+x coinbrew
+$ ./coinbrew fetch Clp@master
+$ ./coinbrew build Clp
 ```
 The next step is setting up the environment variable `CLP_PATH` to the directory where the Coin-Or LP solver is installed. Use the command below.
 ```
-$ export CLP_PATH=<absolute-path-to-'coin-Clp'-folder>
+$ export CLP_PATH=<absolute-path-to-'Clp'-folder>
+```
+If you followed the instructions below, it will be the following folder
+```
+$ export CLP_PATH=<absolute-path-to-'Nomos'-folder>/nomos/clp/dist
 ```
 
 Now, we need to build and install Nomos.
