@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <coin/Clp_C_Interface.h>
+#include <coin-or/Clp_C_Interface.h>
 #include <caml/alloc.h>
 #include <caml/custom.h>
 #include <caml/memory.h>
