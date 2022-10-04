@@ -1,0 +1,79 @@
+type send_chunk1 = +{chunk: recv_chunk1, done: 1}
+
+type recv_chunk1 = p&{ack{0.8} : send_chunk1, drop{0.2}: send_chunk2}
+
+type send_chunk2 = +{chunk: recv_chunk2, done : 1}
+
+type recv_chunk2 = p&{ack{0.8} : send_chunk1, drop{0.2}: send_chunk3}
+
+type send_chunk3 = +{chunk: recv_chunk3, done : 1}
+
+type recv_chunk3 = p&{ack{0.8} : send_chunk1, drop{0.2}: send_chunk4}
+
+type send_chunk4 = +{chunk: recv_chunk4, done : 1}
+
+type recv_chunk4 = p&{ack{0.8} : send_chunk1, drop{0.2}: 1}
+
+type potlist = +{cons : |{*}> potlist, nil : 1}
+
+proc asset cons : ($t : potlist) |{*}- ($l : potlist) =
+{
+  $l.cons ;
+  pay $l {*} ;
+  $l <- $t
+}
+
+proc asset sender1 : ($t : potlist) |{*}- ($c : send_chunk1) =
+{
+  case $t (
+    cons => get $t {*} ;
+            work {1.} ; $c.chunk ;
+            pcase $c (
+              ack => $c <- sender1 <- $t
+            | drop => $l <- cons <- $t ;
+                      $c <- sender2 <- $l
+            )
+  | nil => $c.done ; $c <- $t
+  )
+}
+
+proc asset sender2 : ($t : potlist) |{*}- ($c : send_chunk2) =
+{
+  case $t (
+    cons => get $t {*} ;
+            work {1.} ; $c.chunk ;
+            pcase $c (
+              ack => $c <- sender1 <- $t
+            | drop => $l <- cons <- $t ;
+                      $c <- sender3 <- $l
+            )
+  | nil => $c.done ; $c <- $t
+  )
+}
+
+proc asset sender3 : ($t : potlist) |{*}- ($c : send_chunk3) =
+{
+  case $t (
+    cons => get $t {*} ;
+            work {1.} ; $c.chunk ;
+            pcase $c (
+              ack => $c <- sender1 <- $t
+            | drop => $l <- cons <- $t ;
+                      $c <- sender4 <- $l
+            )
+  | nil => $c.done ; $c <- $t
+  )
+}
+
+proc asset sender4 : ($t : potlist) |{*}- ($c : send_chunk4) =
+{
+  case $t (
+    cons => get $t {*} ;
+            work {1.} ; $c.chunk ;
+            pcase $c (
+              ack => $c <- sender1 <- $t
+            | drop => abort
+            )
+  | nil => $c.done ; $c <- $t
+  )
+}

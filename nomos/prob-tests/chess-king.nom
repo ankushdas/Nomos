@@ -1,0 +1,811 @@
+type limit = p+{P11{0.007142857} : 1,
+                P12{0.011904761} : 1,
+                P13{0.011904761} : 1,
+                P14{0.011904761} : 1,
+                P15{0.011904761} : 1,
+                P16{0.011904761} : 1,
+                P17{0.011904761} : 1,
+                P18{0.007142857} : 1,
+                P21{0.011904761} : 1,
+                P22{0.019047619} : 1,
+                P23{0.019047619} : 1,
+                P24{0.019047619} : 1,
+                P25{0.019047619} : 1,
+                P26{0.019047619} : 1,
+                P27{0.019047619} : 1,
+                P28{0.011904761} : 1,
+                P31{0.011904761} : 1,
+                P32{0.019047619} : 1,
+                P33{0.019047619} : 1,
+                P34{0.019047619} : 1,
+                P35{0.019047619} : 1,
+                P36{0.019047619} : 1,
+                P37{0.019047619} : 1,
+                P38{0.011904761} : 1,
+                P41{0.011904761} : 1,
+                P42{0.019047619} : 1,
+                P43{0.019047619} : 1,
+                P44{0.019047619} : 1,
+                P45{0.019047619} : 1,
+                P46{0.019047619} : 1,
+                P47{0.019047619} : 1,
+                P48{0.011904761} : 1,
+                P51{0.011904761} : 1,
+                P52{0.019047619} : 1,
+                P53{0.019047619} : 1,
+                P54{0.019047619} : 1,
+                P55{0.019047619} : 1,
+                P56{0.019047619} : 1,
+                P57{0.019047619} : 1,
+                P58{0.011904761} : 1,
+                P61{0.011904761} : 1,
+                P62{0.019047619} : 1,
+                P63{0.019047619} : 1,
+                P64{0.019047619} : 1,
+                P65{0.019047619} : 1,
+                P66{0.019047619} : 1,
+                P67{0.019047619} : 1,
+                P68{0.011904761} : 1,
+                P71{0.011904761} : 1,
+                P72{0.019047619} : 1,
+                P73{0.019047619} : 1,
+                P74{0.019047619} : 1,
+                P75{0.019047619} : 1,
+                P76{0.019047619} : 1,
+                P77{0.019047619} : 1,
+                P78{0.011904761} : 1,
+                P81{0.007142857} : 1,
+                P82{0.011904761} : 1,
+                P83{0.011904761} : 1,
+                P84{0.011904761} : 1,
+                P85{0.011904761} : 1,
+                P86{0.011904761} : 1,
+                P87{0.011904761} : 1,
+                P88{0.007142857} : 1}
+
+type Two = p+{A{0.5} : 1, B{0.5} : 1}
+
+proc asset two : . |{*}- ($t : Two) =
+{
+  flip {0.5} (
+    HH => $t..A ; close $t
+  | TT => $t..B ; close $t
+  )
+}
+
+type Three = p+{A{0.33333333} : 1, B{0.33333333} : 1, C{0.33333333} : 1}
+
+proc asset three : . |{*}- ($t : Three) =
+{
+  flip {0.33333333} (
+    HH => $t..C ; close $t
+  | TT => $a <- two <- ;
+          pcase $a (
+            A => $t..A ; $t <- $a
+          | B => $t..B ; $t <- $a
+          )
+  )
+}
+
+type Four = p+{A{0.25} : 1, B{0.25} : 1, C{0.25} : 1, D{0.25} : 1}
+
+proc asset four : . |{*}- ($t : Four) =
+{
+  flip {0.25} (
+    HH => $t..D ; close $t
+  | TT => $a <- three <- ;
+          pcase $a (
+            A => $t..A ; $t <- $a
+          | B => $t..B ; $t <- $a
+          | C => $t..C ; $t <- $a
+          )
+  )
+}
+
+
+type Five = p+{A{0.2} : 1, B{0.2} : 1, C{0.2} : 1, D{0.2} : 1, E{0.2} : 1}
+
+proc asset five : . |{*}- ($t : Five) =
+{
+  flip {0.2} (
+    HH => $t..E ; close $t
+  | TT => $a <- four <- ;
+          pcase $a (
+            A => $t..A ; $t <- $a
+          | B => $t..B ; $t <- $a
+          | C => $t..C ; $t <- $a
+          | D => $t..D ; $t <- $a
+          )
+  )
+}
+
+type Six = p+{A{0.1666666667} : 1,
+              B{0.1666666667} : 1,
+              C{0.1666666667} : 1,
+              D{0.1666666667} : 1,
+              E{0.1666666667} : 1,
+              F{0.1666666667} : 1}
+
+proc asset six : . |{*}- ($t : Six) =
+{
+  flip {0.1666666667} (
+    HH => $t..F ; close $t
+  | TT => $a <- five <- ;
+          pcase $a (
+            A => $t..A ; $t <- $a
+          | B => $t..B ; $t <- $a
+          | C => $t..C ; $t <- $a
+          | D => $t..D ; $t <- $a
+          | E => $t..E ; $t <- $a
+          )
+  )
+}
+
+type Seven = p+{A{0.14285714} : 1,
+                B{0.14285714} : 1,
+                C{0.14285714} : 1,
+                D{0.14285714} : 1,
+                E{0.14285714} : 1,
+                F{0.14285714} : 1,
+                G{0.14285714} : 1}
+
+proc asset seven : . |{*}- ($t : Seven) =
+{
+  flip {0.14285714} (
+    HH => $t..G ; close $t
+  | TT => $a <- six <- ;
+          pcase $a (
+            A => $t..A ; $t <- $a
+          | B => $t..B ; $t <- $a
+          | C => $t..C ; $t <- $a
+          | D => $t..D ; $t <- $a
+          | E => $t..E ; $t <- $a
+          | F => $t..F ; $t <- $a
+          )
+  )
+}
+
+type Eight = p+{A{0.125} : 1,
+                B{0.125} : 1,
+                C{0.125} : 1,
+                D{0.125} : 1,
+                E{0.125} : 1,
+                F{0.125} : 1,
+                G{0.125} : 1,
+                H{0.125} : 1}
+
+proc asset eight : . |{*}- ($t : Eight) =
+{
+  flip {0.125} (
+    HH => $t..H ; close $t
+  | TT => $a <- seven <- ;
+          pcase $a (
+            A => $t..A ; $t <- $a
+          | B => $t..B ; $t <- $a
+          | C => $t..C ; $t <- $a
+          | D => $t..D ; $t <- $a
+          | E => $t..E ; $t <- $a
+          | F => $t..F ; $t <- $a
+          | G => $t..G ; $t <- $a
+          )
+  )
+}
+
+
+proc asset transition : ($IN : limit) |{*}- ($OUT : limit) =
+{
+  pcase $IN (
+    P11 => $t <- three <- ;
+           pcase $t (
+              A => $OUT..P21 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P22 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P12 ; wait $t ; $OUT <- $IN
+           )
+  | P12 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P11 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P21 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P22 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P23 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P13 ; wait $t ; $OUT <- $IN
+           )
+  | P13 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P12 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P22 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P23 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P24 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P14 ; wait $t ; $OUT <- $IN
+           )
+  | P14 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P13 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P23 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P24 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P25 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P15 ; wait $t ; $OUT <- $IN
+           )
+  | P15 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P14 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P24 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P25 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P26 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P16 ; wait $t ; $OUT <- $IN
+           )
+  | P16 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P15 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P25 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P26 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P27 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P17 ; wait $t ; $OUT <- $IN
+           )
+  | P17 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P16 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P26 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P27 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P28 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P18 ; wait $t ; $OUT <- $IN
+           )
+  | P18 => $t <- three <- ;
+           pcase $t (
+              A => $OUT..P17 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P27 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P28 ; wait $t ; $OUT <- $IN
+           )
+  | P21 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P31 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P32 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P22 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P12 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P11 ; wait $t ; $OUT <- $IN
+           )
+  | P22 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P21 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P31 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P32 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P33 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P23 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P13 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P12 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P11 ; wait $t ; $OUT <- $IN
+           )
+  | P23 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P22 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P32 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P33 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P34 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P24 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P14 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P13 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P12 ; wait $t ; $OUT <- $IN
+           )
+  | P24 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P23 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P33 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P34 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P35 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P25 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P15 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P14 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P13 ; wait $t ; $OUT <- $IN
+           )
+  | P25 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P24 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P34 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P35 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P36 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P26 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P16 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P15 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P14 ; wait $t ; $OUT <- $IN
+           )
+  | P26 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P25 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P35 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P36 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P37 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P27 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P17 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P16 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P15 ; wait $t ; $OUT <- $IN
+           )
+  | P27 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P26 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P36 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P37 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P38 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P28 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P18 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P17 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P16 ; wait $t ; $OUT <- $IN
+           )
+  | P28 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P27 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P37 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P38 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P18 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P17 ; wait $t ; $OUT <- $IN
+           )
+  | P31 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P41 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P42 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P32 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P22 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P21 ; wait $t ; $OUT <- $IN
+           )
+  | P32 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P31 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P41 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P42 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P43 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P33 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P23 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P22 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P21 ; wait $t ; $OUT <- $IN
+           )
+  | P33 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P32 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P42 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P43 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P44 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P34 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P24 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P23 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P22 ; wait $t ; $OUT <- $IN
+           )
+  | P34 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P33 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P43 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P44 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P45 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P35 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P25 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P24 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P23 ; wait $t ; $OUT <- $IN
+           )
+  | P35 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P34 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P44 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P45 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P46 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P36 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P26 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P25 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P24 ; wait $t ; $OUT <- $IN
+           )
+  | P36 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P35 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P45 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P46 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P47 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P37 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P27 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P26 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P25 ; wait $t ; $OUT <- $IN
+           )
+  | P37 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P36 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P46 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P47 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P48 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P38 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P28 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P27 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P26 ; wait $t ; $OUT <- $IN
+           )
+  | P38 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P37 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P47 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P48 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P28 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P27 ; wait $t ; $OUT <- $IN
+           )
+  | P41 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P51 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P52 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P42 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P32 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P31 ; wait $t ; $OUT <- $IN
+           )
+  | P42 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P41 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P51 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P52 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P53 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P43 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P33 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P32 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P31 ; wait $t ; $OUT <- $IN
+           )
+  | P43 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P42 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P52 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P53 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P54 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P44 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P34 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P33 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P32 ; wait $t ; $OUT <- $IN
+           )
+  | P44 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P43 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P53 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P54 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P55 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P45 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P35 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P34 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P33 ; wait $t ; $OUT <- $IN
+           )
+  | P45 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P44 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P54 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P55 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P56 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P46 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P36 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P35 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P34 ; wait $t ; $OUT <- $IN
+           )
+  | P46 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P45 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P55 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P56 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P57 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P47 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P37 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P36 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P35 ; wait $t ; $OUT <- $IN
+           )
+  | P47 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P46 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P56 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P57 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P58 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P48 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P38 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P37 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P36 ; wait $t ; $OUT <- $IN
+           )
+  | P48 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P47 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P57 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P58 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P38 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P37 ; wait $t ; $OUT <- $IN
+           )
+  | P51 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P61 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P62 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P52 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P42 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P41 ; wait $t ; $OUT <- $IN
+           )
+  | P52 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P51 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P61 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P62 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P63 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P53 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P43 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P42 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P41 ; wait $t ; $OUT <- $IN
+           )
+  | P53 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P52 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P62 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P63 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P64 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P54 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P44 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P43 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P42 ; wait $t ; $OUT <- $IN
+           )
+  | P54 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P53 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P63 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P64 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P65 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P55 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P45 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P44 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P43 ; wait $t ; $OUT <- $IN
+           )
+  | P55 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P54 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P64 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P65 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P66 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P56 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P46 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P45 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P44 ; wait $t ; $OUT <- $IN
+           )
+  | P56 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P55 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P65 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P66 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P67 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P57 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P47 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P46 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P45 ; wait $t ; $OUT <- $IN
+           )
+  | P57 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P56 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P66 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P67 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P68 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P58 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P48 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P47 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P46 ; wait $t ; $OUT <- $IN
+           )
+  | P58 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P57 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P67 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P68 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P48 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P47 ; wait $t ; $OUT <- $IN
+           )
+  | P61 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P71 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P72 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P62 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P52 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P51 ; wait $t ; $OUT <- $IN
+           )
+  | P62 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P61 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P71 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P72 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P73 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P63 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P53 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P52 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P51 ; wait $t ; $OUT <- $IN
+           )
+  | P63 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P62 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P72 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P73 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P74 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P64 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P54 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P53 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P52 ; wait $t ; $OUT <- $IN
+           )
+  | P64 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P63 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P73 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P74 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P75 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P65 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P55 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P54 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P53 ; wait $t ; $OUT <- $IN
+           )
+  | P65 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P64 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P74 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P75 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P76 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P66 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P56 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P55 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P54 ; wait $t ; $OUT <- $IN
+           )
+  | P66 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P65 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P75 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P76 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P77 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P67 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P57 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P56 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P55 ; wait $t ; $OUT <- $IN
+           )
+  | P67 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P66 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P76 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P77 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P78 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P68 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P58 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P57 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P56 ; wait $t ; $OUT <- $IN
+           )
+  | P68 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P67 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P77 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P78 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P58 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P57 ; wait $t ; $OUT <- $IN
+           )
+  | P71 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P81 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P82 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P72 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P62 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P61 ; wait $t ; $OUT <- $IN
+           )
+  | P72 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P71 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P81 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P82 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P83 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P73 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P63 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P62 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P61 ; wait $t ; $OUT <- $IN
+           )
+  | P73 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P72 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P82 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P83 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P84 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P74 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P64 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P63 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P62 ; wait $t ; $OUT <- $IN
+           )
+  | P74 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P73 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P83 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P84 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P85 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P75 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P65 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P64 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P63 ; wait $t ; $OUT <- $IN
+           )
+  | P75 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P74 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P84 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P85 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P86 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P76 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P66 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P65 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P64 ; wait $t ; $OUT <- $IN
+           )
+  | P76 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P75 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P85 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P86 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P87 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P77 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P67 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P66 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P65 ; wait $t ; $OUT <- $IN
+           )
+  | P77 => $t <- eight <- ;
+           pcase $t (
+              A => $OUT..P76 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P86 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P87 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P88 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P78 ; wait $t ; $OUT <- $IN
+            | F => $OUT..P68 ; wait $t ; $OUT <- $IN
+            | G => $OUT..P67 ; wait $t ; $OUT <- $IN
+            | H => $OUT..P66 ; wait $t ; $OUT <- $IN
+           )
+  | P78 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P77 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P87 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P88 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P68 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P67 ; wait $t ; $OUT <- $IN
+           )
+  | P81 => $t <- three <- ;
+           pcase $t (
+              A => $OUT..P82 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P72 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P71 ; wait $t ; $OUT <- $IN
+           )
+  | P82 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P81 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P71 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P72 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P73 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P83 ; wait $t ; $OUT <- $IN
+           )
+  | P83 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P82 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P72 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P73 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P74 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P84 ; wait $t ; $OUT <- $IN
+           )
+  | P84 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P83 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P73 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P74 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P75 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P85 ; wait $t ; $OUT <- $IN
+           )
+  | P85 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P84 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P74 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P75 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P76 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P86 ; wait $t ; $OUT <- $IN
+           )
+  | P86 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P85 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P75 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P76 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P77 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P87 ; wait $t ; $OUT <- $IN
+           )
+  | P87 => $t <- five <- ;
+           pcase $t (
+              A => $OUT..P86 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P76 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P77 ; wait $t ; $OUT <- $IN
+            | D => $OUT..P78 ; wait $t ; $OUT <- $IN
+            | E => $OUT..P88 ; wait $t ; $OUT <- $IN
+           )
+  | P88 => $t <- three <- ;
+           pcase $t (
+              A => $OUT..P87 ; wait $t ; $OUT <- $IN
+            | B => $OUT..P77 ; wait $t ; $OUT <- $IN
+            | C => $OUT..P78 ; wait $t ; $OUT <- $IN
+           )
+  )
+}

@@ -116,7 +116,7 @@ proc transaction party : (#x1 : comm), (#x2 : comm),
   $lx1.SEND ;
   send $lx1 $m ;
   #x1 <- release $lx1 ;
-  $m <- round_msg <- round pref2 ;
+  $m <- round_msg <- round $pref2 ;
   $lx2 <- acquire #x2 ;
   $lx2.SEND ;
   send $lx2 $m ;

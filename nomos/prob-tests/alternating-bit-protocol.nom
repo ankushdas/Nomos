@@ -1,0 +1,56 @@
+type potlist = +{ cons : |{*}> potlist, nil : 1 }
+
+proc asset cons : ($t : potlist) |{*}- ($p : potlist) =
+{
+  $p.cons ;
+  pay $p {*} ;
+  $p <- $t
+} 
+
+type lossy_channel_send = |{*}> +{ seq0 : lossy_channel_recv0,
+                                   seq1 : lossy_channel_recv1,
+                                   done : 1}
+
+type lossy_channel_recv0 = p& { ack0{0.9} : lossy_channel_send,
+                                drop{0.1} : lossy_channel_send}
+
+type lossy_channel_recv1 = p& { ack1{0.9} : lossy_channel_send,
+                                drop{0.1} : lossy_channel_send}
+
+proc asset sender0 : ($p : potlist) |{*}- ($c : lossy_channel_send) =
+{
+  pay $c {*} ;
+  case $p (
+    cons => get $p {*} ;
+            $c.seq0 ;
+            pcase $c (
+              ack0 => work {*} ;
+                      $c <- sender1 <- $p
+            | drop => $p0 <- cons <- $p ;
+                      work {*} ;
+                      $c <- sender0 <- $p0
+            )
+  | nil => wait $p ;
+           $c.done ;
+           close $c
+  )
+}
+
+proc asset sender1 : ($p : potlist) |{*}- ($c : lossy_channel_send) =
+{
+  pay $c {*} ;
+  case $p (
+    cons => get $p {*} ;
+            $c.seq1 ;
+            pcase $c (
+              ack1 => work {*} ;
+                      $c <- sender0 <- $p
+            | drop => $p0 <- cons <- $p ;
+                      work {*} ;
+                      $c <- sender1 <- $p0
+            )
+  | nil => wait $p ;
+           $c.done ;
+           close $c
+  )
+}

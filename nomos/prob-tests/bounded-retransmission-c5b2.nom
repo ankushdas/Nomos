@@ -1,0 +1,201 @@
+type send_chunk11 = +{ chunk : recv_chunk11 }
+
+type recv_chunk11 = p&{ack{0.8} : send_chunk21, drop{0.2} : send_chunk12 }
+
+type send_chunk12 = +{ chunk : recv_chunk12 }
+
+type recv_chunk12 = p&{ack{0.8} : send_chunk21, drop{0.2} : send_chunk13 }
+
+type send_chunk13 = 1
+
+type send_chunk21 = +{ chunk : recv_chunk21 }
+
+type recv_chunk21 = p&{ack{0.8} : send_chunk31, drop{0.2} : send_chunk22 }
+
+type send_chunk22 = +{ chunk : recv_chunk22 }
+
+type recv_chunk22 = p&{ack{0.8} : send_chunk31, drop{0.2} : send_chunk23 }
+
+type send_chunk23 = 1
+
+type send_chunk31 = +{ chunk : recv_chunk31 }
+
+type recv_chunk31 = p&{ack{0.8} : send_chunk41, drop{0.2} : send_chunk32 }
+
+type send_chunk32 = +{ chunk : recv_chunk32 }
+
+type recv_chunk32 = p&{ack{0.8} : send_chunk41, drop{0.2} : send_chunk33 }
+
+type send_chunk33 = 1
+
+type send_chunk41 = +{ chunk : recv_chunk41 }
+
+type recv_chunk41 = p&{ack{0.8} : send_chunk51, drop{0.2} : send_chunk42 }
+
+type send_chunk42 = +{ chunk : recv_chunk42 }
+
+type recv_chunk42 = p&{ack{0.8} : send_chunk51, drop{0.2} : send_chunk43 }
+
+type send_chunk43 = 1
+
+type send_chunk51 = +{chunk : recv_chunk51}
+
+type recv_chunk51 = p&{ack{0.8} : send_chunk61, drop{0.2} : send_chunk52 }
+
+type send_chunk52 = +{ chunk : recv_chunk52 }
+
+type recv_chunk52 = p&{ack{0.8} : send_chunk61, drop{0.2} : send_chunk53 }
+
+type send_chunk53 = 1
+
+type send_chunk61 = 1
+
+proc asset sender11 : . |{*}- ($c : send_chunk11) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender21 <-
+  | drop => work {*} ;
+            $c <- sender12 <- 
+  )
+}
+
+proc asset sender12 : . |{*}- ($c : send_chunk12) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender21 <-
+  | drop => work {*} ;
+            $c <- sender13 <- 
+  )
+}
+
+proc asset sender13 : . |{*}- ($c : send_chunk13) =
+{
+  close $c
+}
+
+proc asset sender21 : . |{*}- ($c : send_chunk21) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender31 <-
+  | drop => work {*} ;
+            $c <- sender22 <- 
+  )
+}
+
+proc asset sender22 : . |{*}- ($c : send_chunk22) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender31 <-
+  | drop => work {*} ;
+            $c <- sender23 <- 
+  )
+}
+
+proc asset sender23 : . |{*}- ($c : send_chunk23) =
+{
+  close $c
+}
+
+proc asset sender31 : . |{*}- ($c : send_chunk31) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender41 <-
+  | drop => work {*} ;
+            $c <- sender32 <- 
+  )
+}
+
+proc asset sender32 : . |{*}- ($c : send_chunk32) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender41 <-
+  | drop => work {*} ;
+            $c <- sender33 <- 
+  )
+}
+
+proc asset sender33 : . |{*}- ($c : send_chunk33) =
+{
+  close $c
+}
+
+proc asset sender41 : . |{*}- ($c : send_chunk41) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender51 <-
+  | drop => work {*} ;
+            $c <- sender42 <- 
+  )
+}
+
+proc asset sender42 : . |{*}- ($c : send_chunk42) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender51 <-
+  | drop => work {*} ;
+            $c <- sender43 <- 
+  )
+}
+
+proc asset sender43 : . |{*}- ($c : send_chunk43) =
+{
+  close $c
+}
+
+proc asset sender51 : . |{*}- ($c : send_chunk51) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender61 <-
+  | drop => work {*} ;
+            $c <- sender52 <- 
+  )
+}
+
+proc asset sender52 : . |{*}- ($c : send_chunk52) =
+{
+  work {1.} ;
+  $c.chunk ;
+  pcase $c (
+    ack => work {*} ;
+            $c <- sender61 <-
+  | drop => work {*} ;
+            $c <- sender53 <- 
+  )
+}
+
+proc asset sender53 : . |{*}- ($c : send_chunk53) =
+{
+  close $c
+}
+
+proc asset sender61 : . |{*}- ($c : send_chunk61) =
+{
+  close $c
+}
