@@ -39,7 +39,6 @@ proc asset revh : ($inp : listA1), ($h : listA) |- ($out : listA) =
   case $inp (
     cons => get $inp {*} ;
             $x <- recv $inp ;
-            work {1.} ;
             $hh <- cons <- $x $h ;
             $out <- revh <- $inp $hh
   | nil => wait $inp ;
@@ -58,11 +57,9 @@ proc asset listA2queue : ($inp : listA1), ($out : listA) |{*}- ($q : queue) =
   pcase $q (
     ins => get $q {*} ;
            $x <- recv $q ;
-           work {1.} ;
            $inpp <- cons1 <- $x $inp ;
            $q <- listA2queue <- $inpp $out
   | del =>
-      work {1.} ;
       case $out (
         cons => $x <- recv $out ;
                 $q.some ;

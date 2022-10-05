@@ -1,4 +1,4 @@
-type slot = /\ <{1.}| p+{won{0.2} : |{*}> \/ slot,
+type slot = /\ <{*}| p+{won{0.2} : |{5.}> \/ slot,
                          lost{0.8} : \/ slot}
 
 proc contract machine : . |{*}- (#sl : slot) =
