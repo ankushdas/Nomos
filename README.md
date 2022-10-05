@@ -100,3 +100,6 @@ PRast cost bounds need to be interpreted by reading the potential annotations fo
 #### Caveat
 A caveat is that for the following examples, we have made minor modifications and refactoring in the code, so the number of variables (Vars) and constraints (Cons) reported in Table 1 are slightly different than what is reported by the LP solver: `3dice.nom`, `dice.nom`, `fair-coin.nom`, `expected-trials.nom`, `rnd-walk.nom`, and `slot-machine2.nom`. We will update Table 1 to reflect the latest numbers reported by the LP solver.
 
+## Further Instructions
+Instructions to prepare the VM image are [here](https://github.com/ankushdas/Nomos/blob/prob/BUILD.md).
+
