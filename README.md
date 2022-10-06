@@ -4,14 +4,14 @@
 Session types guarantee that message-passing processes adhere to predefined communication protocols. Prior work on session types has focused on deterministic languages but many message-passing systems, such as Markov chains and randomized distributed algorithms, are probabilistic. To implement and analyze such systems, this article develops the meta theory of probabilistic session types with an application focus on automatic expected resource analysis. Probabilistic session types describe probability distributions over messages and are a conservative extension of intuitionistic (binary) session types. To send on a probabilistic channel, processes have to utilize internal randomness from a probabilistic branching or external randomness from receiving on a probabilistic channel. The analysis for expected resource bounds is smoothly integrated with the type system and is a variant of automatic amortized resource analysis. Type inference relies on linear constraint solving to automatically derive symbolic bounds for various cost metrics. The technical contributions include the meta theory that is based on a novel nested multiverse semantics and a type-reconstruction algorithm that allows flexible mixing of different sources of randomness without burdening the programmer with complex type annotations. The type system has been implemented in the language PRast with linear-time type checking. Experiments demonstrate that PRast is applicable in different domains such as cost analysis of randomized distributed algorithms, analysis of Markov chains, probabilistic analysis of amortized data structures and digital contracts. PRast is also shown to be scalable by (i) implementing two broadcast and a bounded retransmission protocol where messages are dropped with a fixed probability, and (ii) verifying the limiting distribution of a large Markov chain (64 states and 420 transitions).
 
 ## Paper Link
-You can download the paper from [here](https://sandbox.zenodo.org/record/1111274/files/popl23-paper590.pdf?download=1).
+You can download the paper from [here](https://sandbox.zenodo.org/record/1111473/files/popl23-paper590.pdf?download=1).
 
 # Artifact Evaluation
 We would like to thank the reviewers for reviewing the artifact for the POPL 2023 submission 590 titled "Probabilistic Resource-Aware Session Types".
 The `prob` branch of the `Nomos` repository contains the artifact for this submission.
 
 ## VM Link
-You can download the VM image from [here](https://sandbox.zenodo.org/api/files/8acfea2b-10a4-4efc-8eed-770e9219e66b/ubuntu-popl23-submission-590.ova).
+You can download the VM image from [here](https://sandbox.zenodo.org/record/1111473/files/ubuntu-popl23-submission-590.ova?download=1).
 
 ### VM Login
 
