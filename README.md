@@ -25,6 +25,7 @@ The VM contains an image of Ubuntu 22.04.1 LTS with the PRast implementation alr
 Open a terminal and navigate to the PRast implementation and compile (if files have changed).
 ```
 $ cd Documents/Nomos/nomos
+$ git pull
 $ make
 ```
 
