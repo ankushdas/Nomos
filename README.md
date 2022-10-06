@@ -16,6 +16,7 @@ You can download the VM image from [here](https://sandbox.zenodo.org/api/files/8
 ### VM Login
 
 VM Username: popl23-aec
+
 VM Password: popl23-aec
 
 ## VM Instructions
