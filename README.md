@@ -71,7 +71,7 @@ the cost instrumentation engine will insert `work {1}` before each send operatio
 
 ### Running All Test Cases
 We have already created a script called `run_all.sh` in the `Nomos/nomos` directory which runs all the tests specified in the aforementioned list.
-To execute, simply run `$ ./run_all.sh`.
+To execute, simply run `$ ./run_all.sh`. The script is designed to redirect the execution output to a log file with the same name as the test case. The execution output of each test case can be viewed in the `Nomos/nomos/prob-tests` folder.
 
 #### Interpreting Reported Cost Bound
 PRast cost bounds need to be interpreted by reading the potential annotations for types and processes. Below we explain how to determine the cost bound for each test case. For simplicity, the type checker re-prints the program with potential annotations filled in to easily verify the cost bound of each test case.
